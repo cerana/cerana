@@ -1,6 +1,6 @@
 # OpenZFS Resiliency Gaps
 
-This is a summary of factors that may affect the reliability of each major OpenZFs platform.
+This is a summary of factors that may affect the reliability of each major OpenZFS platform.
 
 ## illumos
 FMA on illumos is able to respond to a large set of possible hardware faults. Resources and devices being represented in complete trees makes managing devices much more consistent on other platforms.
