@@ -222,12 +222,6 @@ int main() {
 		fnvlist_free(l);
 	}
 
-	{
-		l = fnvlist_alloc();
-		print(l, "empty");
-		fnvlist_free(l);
-	}
-
 	l = fnvlist_alloc();
 	fnvlist_add_byte(l, "-128", -128);
 	fnvlist_add_byte(l, "0", 0);
