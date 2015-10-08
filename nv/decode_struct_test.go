@@ -17,7 +17,7 @@ func TestDecodeStructGood(t *testing.T) {
 			continue
 		}
 		v := reflect.New(reflect.TypeOf(structs.ptr).Elem())
-		err := DecodeStruct(test.payload, v.Interface())
+		err := Decode(test.payload, v.Interface())
 		if err != nil {
 			t.Log(test.name, "failed:", err)
 			t.Fail()
@@ -28,7 +28,7 @@ func TestDecodeStructGood(t *testing.T) {
 			continue
 		}
 		m := reflect.New(reflect.TypeOf(maps.ptr).Elem())
-		err = DecodeStruct(test.payload, m.Interface())
+		err = Decode(test.payload, m.Interface())
 		if err != nil {
 			t.Log(test.name, "failed:", err)
 			t.Fail()

@@ -61,7 +61,8 @@ func TestEncodeGood(t *testing.T) {
 	for _, test := range good {
 		t.Log(test.name)
 
-		m, err := Decode(test.payload)
+		m := map[string]interface{}{}
+		err := Decode(test.payload, &m)
 		if err != nil {
 			t.Fatal(test.name, err)
 		}

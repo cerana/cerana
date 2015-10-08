@@ -13,7 +13,7 @@ import (
 	xdr "github.com/davecgh/go-xdr/xdr2"
 )
 
-func Decode(buf []byte) (mList, error) {
+func decodeOld(buf []byte) (mList, error) {
 	b := bytes.NewReader(buf)
 
 	enc := encoding{}
@@ -153,7 +153,7 @@ func decodeList(r io.ReadSeeker) (mList, error) {
 	return m, nil
 }
 
-func DecodeStruct(data []byte, target interface{}) (err error) {
+func Decode(data []byte, target interface{}) (err error) {
 	// Catch any panics from reflection
 	defer func() {
 		if r := recover(); r != nil {

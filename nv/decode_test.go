@@ -320,7 +320,8 @@ func TestDecodeGood(t *testing.T) {
 	for _, test := range good {
 		t.Log(test.name)
 
-		m, err := Decode(test.payload)
+		m := map[string]interface{}{}
+		err := Decode(test.payload, &m)
 		if err != nil {
 			t.Fatal(test.name, "failed:", err)
 		}
@@ -340,7 +341,8 @@ func TestDecodeBad(t *testing.T) {
 	for _, test := range decode_bad {
 		t.Log(test.err)
 
-		_, err := Decode(test.payload)
+		m := map[string]interface{}{}
+		err := Decode(test.payload, &m)
 		if err == nil {
 			t.Fatalf("expected an error, wanted:|%s| payload:|%v|\n",
 				test.err, test.payload)
