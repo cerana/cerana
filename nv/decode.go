@@ -221,11 +221,17 @@ func decodeListStruct(r io.ReadSeeker, target reflect.Value) error {
 	}
 
 	// Maps and structs have slightly different handling
-	isMap := (target.Kind() == reflect.Map)
+	// Interface types will be handled as maps
+	isMap := (target.Kind() == reflect.Map || target.Kind() == reflect.Interface)
 
 	if isMap {
 		// Initialize the map. Can't add keys without this.
-		target.Set(reflect.MakeMap(target.Type()))
+		if target.Kind() == reflect.Interface {
+			target.Set(reflect.MakeMap(reflect.TypeOf(map[string]interface{}{})))
+			target = target.Elem()
+		} else {
+			target.Set(reflect.MakeMap(target.Type()))
+		}
 	}
 
 	// For structs, create the lookup table for field name/tag -> field index
@@ -437,6 +443,11 @@ func decodeListStruct(r io.ReadSeeker, target reflect.Value) error {
 			} else {
 				sliceType = targetField.Type()
 			}
+
+			if sliceType.Kind() == reflect.Interface {
+				sliceType = reflect.TypeOf([]map[string]interface{}{})
+			}
+
 			val = reflect.MakeSlice(sliceType, 0, int(dataPair.NElements))
 			for i := uint32(0); i < dataPair.NElements; i++ {
 				elem := reflect.Indirect(reflect.New(sliceType.Elem()))
