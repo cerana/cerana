@@ -9,7 +9,7 @@ import (
 )
 
 func TestDecodeStructGood(t *testing.T) {
-	for i, test := range good {
+	for _, test := range good {
 		t.Log(test.name)
 
 		structs, ok := goodTargetStructs[test.name]
@@ -39,9 +39,5 @@ func TestDecodeStructGood(t *testing.T) {
 		ms, _ := json.Marshal(m.Elem().Interface())
 		t.Logf("Results:\nexp: %s\nstr: %s\nmap: %s\n", string(e), string(o), string(ms))
 		assert.True(t, assert.ObjectsAreEqualValues(structs.out, v.Elem().Interface()), test.name)
-
-		if i == len(goodTargetStructs) {
-			return
-		}
 	}
 }

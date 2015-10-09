@@ -23,18 +23,16 @@ type BoolArray struct {
 type BoolArrayMap map[string][]bool
 
 type Bytes struct {
-	A byte `nv:"-128"`
-	B byte `nv:"0"`
-	C byte `nv:"1"`
-	D byte `nv:"127"`
+	A byte `nv:"0"`
+	B byte `nv:"1"`
+	C byte `nv:"127"`
 }
 type BytesMap map[string]byte
 
 type ByteArray struct {
-	A []byte `nv:"-128;-128;-128;-128;-128"`
-	B []byte `nv:"0;0;0;0;0"`
-	C []byte `nv:"1;1;1;1;1"`
-	D []byte `nv:"127;127;127;127;127"`
+	A []byte `nv:"0;0;0;0;0"`
+	B []byte `nv:"1;1;1;1;1"`
+	C []byte `nv:"127;127;127;127;127"`
 }
 type ByteArrayMap map[string][]byte
 
@@ -125,8 +123,8 @@ var goodTargetStructs = map[string]decodeTest{
 	"empty":      {ptr: new(struct{}), out: struct{}{}},
 	"bools":      {ptr: new(Bools), out: Bools{True: true, False: false}},
 	"bool array": {ptr: new(BoolArray), out: BoolArray{True: []bool{true, true, true, true, true}, False: []bool{false, false, false, false, false}}},
-	"bytes":      {ptr: new(Bytes), out: Bytes{A: 128, B: 0, C: 1, D: 127}},
-	"byte array": {ptr: new(ByteArray), out: ByteArray{A: []byte{128, 128, 128, 128, 128}, B: []byte{0, 0, 0, 0, 0}, C: []byte{1, 1, 1, 1, 1}, D: []byte{127, 127, 127, 127, 127}}},
+	"bytes":      {ptr: new(Bytes), out: Bytes{A: 0, B: 1, C: 127}},
+	"byte array": {ptr: new(ByteArray), out: ByteArray{A: []byte{0, 0, 0, 0, 0}, B: []byte{1, 1, 1, 1, 1}, C: []byte{127, 127, 127, 127, 127}}},
 	"int8s":      {ptr: new(Int8s), out: Int8s{A: math.MinInt8, B: math.MinInt8 + 1, C: math.MinInt8 / 2, D: -1, E: 0, F: 1, G: math.MaxInt8 / 2, H: math.MaxInt8 - 1, I: math.MaxInt8}},
 	"int16s":     {ptr: new(Int16s), out: Int16s{A: math.MinInt16, B: math.MinInt16 + 1, C: math.MinInt16 / 2, D: -1, E: 0, F: 1, G: math.MaxInt16 / 2, H: math.MaxInt16 - 1, I: math.MaxInt16}},
 	"int32s":     {ptr: new(Int32s), out: Int32s{A: math.MinInt32, B: math.MinInt32 + 1, C: math.MinInt32 / 2, D: -1, E: 0, F: 1, G: math.MaxInt32 / 2, H: math.MaxInt32 - 1, I: math.MaxInt32}},
@@ -142,8 +140,8 @@ var goodTargetMaps = map[string]decodeTest{
 	"empty":      {ptr: new(struct{}), out: struct{}{}},
 	"bools":      {ptr: new(BoolsMap), out: BoolsMap{"true": true, "false": false}},
 	"bool array": {ptr: new(BoolArrayMap), out: BoolArrayMap{"true;true;true;true;true": []bool{true, true, true, true, true}, "false;false;false;false;false": []bool{false, false, false, false, false}}},
-	"bytes":      {ptr: new(BytesMap), out: BytesMap{"-128": 128, "0": 0, "1": 1, "127": 127}},
-	"byte array": {ptr: new(ByteArrayMap), out: ByteArrayMap{"-128;-128;-128;-128;-128": []byte{128, 128, 128, 128, 128}, "0;0;0;0;0": []byte{0, 0, 0, 0, 0}, "1;1;1;1;1": []byte{1, 1, 1, 1, 1}, "127;127;127;127;127": []byte{127, 127, 127, 127, 127}}},
+	"bytes":      {ptr: new(BytesMap), out: BytesMap{"0": 0, "1": 1, "127": 127}},
+	"byte array": {ptr: new(ByteArrayMap), out: ByteArrayMap{"0;0;0;0;0": []byte{0, 0, 0, 0, 0}, "1;1;1;1;1": []byte{1, 1, 1, 1, 1}, "127;127;127;127;127": []byte{127, 127, 127, 127, 127}}},
 	"int8s":      {ptr: new(Int8sMap), out: Int8sMap{"-128": math.MinInt8, "-127": math.MinInt8 + 1, "-64": math.MinInt8 / 2, "-1": -1, "0": 0, "1": 1, "63": math.MaxInt8 / 2, "126": math.MaxInt8 - 1, "127": math.MaxInt8}},
 	"int16s":     {ptr: new(Int16sMap), out: Int16sMap{"-32768": math.MinInt16, "-32767": math.MinInt16 + 1, "-16384": math.MinInt16 / 2, "-1": -1, "0": 0, "1": 1, "16383": math.MaxInt16 / 2, "32766": math.MaxInt16 - 1, "32767": math.MaxInt16}},
 	"int32s":     {ptr: new(Int32sMap), out: Int32sMap{"-2147483648": math.MinInt32, "-2147483647": math.MinInt32 + 1, "-1073741824": math.MinInt32 / 2, "-1": -1, "0": 0, "1": 1, "1073741823": math.MaxInt32 / 2, "2147483646": math.MaxInt32 - 1, "2147483647": math.MaxInt32}},
