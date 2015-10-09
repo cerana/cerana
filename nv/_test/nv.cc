@@ -194,7 +194,7 @@ char *strf(double d) {
 	for (auto &kv : map) { \
 		fnvlist_add_##lower##_array(l, kv.first.c_str(), kv.second.data(), kv.second.size()); \
 	} \
-	print(l, stringify(lower)" array"); \
+	print(l, stringify(lower) " array(" stringify(len)")"); \
 	fnvlist_free(l); \
 } while(0) \
 
