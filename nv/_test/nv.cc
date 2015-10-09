@@ -1,4 +1,7 @@
+#include <array>
+#include <iomanip>
 #include <map>
+#include <sstream>
 
 #include <math.h>
 #include <assert.h>
@@ -14,6 +17,8 @@
 #define fnvlist_add_double(l, n, v) assert(nvlist_add_double(l, n, v) == 0)
 #define fnvlist_add_hrtime(l, n, v) assert(nvlist_add_hrtime(l, n, v) == 0)
 
+std::stringstream tests;
+
 static void print(nvlist_t *list, char *name) {
 	char *buf = NULL;
 	size_t blen;
@@ -21,12 +26,15 @@ static void print(nvlist_t *list, char *name) {
 	if ((err = nvlist_pack(list, &buf, &blen, NV_ENCODE_XDR, 0)) != 0) {
 		printf("error:%d\n", err);
 	}
-	printf("\t{name: \"%s\", payload: []byte(\"", name);
-	unsigned int i = 0;
-	for (; i < blen - 1; i++) {
-		printf("\\x%02x", buf[i] & 0xFF);
+
+	tests << "\t{name: \"" << name << "\", payload: []byte(\"";
+
+	for (unsigned i = 0; i < blen; i++) {
+		tests << "\\x"
+			<< std::hex << std::setw(2) << std::setfill('0') << std::right
+			<< (buf[i] & 0xFF);
 	}
-	printf("\\x%02x\")},\n", buf[i]);
+	tests << "\")},\n";
 }
 
 char *stra(char *s, int n) {
@@ -190,14 +198,14 @@ char *strf(double d) {
 } while(0) \
 
 int main() {
-	printf(	"package nv\n"
+	tests <<"package nv\n"
 		"\n"
 		"/* !!! GENERATED FILE DO NOT EDIT !!! */\n"
 		"\n"
 		"var good = []struct {\n"
 		"\tname    string\n"
 		"\tpayload []byte\n"
-		"}{\n");
+		"}{\n";
 
 	nvlist_t *l = NULL;
 	{
@@ -321,6 +329,7 @@ int main() {
 
 	do_double(double, DBL);
 
-	printf("}\n");
+	tests << "}\n";
+	printf("%s", tests.str().c_str());
 	return 0;
 }
