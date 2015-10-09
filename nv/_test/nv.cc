@@ -3,11 +3,14 @@
 #include <map>
 #include <iostream>
 #include <sstream>
+#include <unordered_map>
 
-#include <math.h>
 #include <assert.h>
+#include <ctype.h>
+#include <math.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <libnvpair.h>
@@ -18,7 +21,98 @@
 #define fnvlist_add_double(l, n, v) assert(nvlist_add_double(l, n, v) == 0)
 #define fnvlist_add_hrtime(l, n, v) assert(nvlist_add_hrtime(l, n, v) == 0)
 
+std::stringstream defs;
 std::stringstream tests;
+
+std::unordered_map<int, const char *> types = {
+	{DATA_TYPE_BOOLEAN, "bool"},
+	{DATA_TYPE_BYTE, "byte"},
+	{DATA_TYPE_INT16, "int16"},
+	{DATA_TYPE_UINT16, "uint16"},
+	{DATA_TYPE_INT32, "int32"},
+	{DATA_TYPE_UINT32, "uint32"},
+	{DATA_TYPE_INT64, "int64"},
+	{DATA_TYPE_UINT64, "uint64"},
+	{DATA_TYPE_STRING, "string"},
+	{DATA_TYPE_BYTE_ARRAY, "[]byte"},
+	{DATA_TYPE_INT16_ARRAY, "[]int16"},
+	{DATA_TYPE_UINT16_ARRAY, "[]uint16"},
+	{DATA_TYPE_INT32_ARRAY, "[]int32"},
+	{DATA_TYPE_UINT32_ARRAY, "[]uint32"},
+	{DATA_TYPE_INT64_ARRAY, "[]int64"},
+	{DATA_TYPE_UINT64_ARRAY, "[]uint64"},
+	{DATA_TYPE_STRING_ARRAY, "[]string"},
+	{DATA_TYPE_HRTIME, "time.Duration"},
+	{DATA_TYPE_NVLIST, "interface{}"},
+	{DATA_TYPE_NVLIST_ARRAY, "[]map[string]interface{}"},
+	{DATA_TYPE_BOOLEAN_VALUE, "bool"},
+	{DATA_TYPE_INT8, "int8"},
+	{DATA_TYPE_UINT8, "uint8"},
+	{DATA_TYPE_BOOLEAN_ARRAY, "[]bool"},
+	{DATA_TYPE_INT8_ARRAY, "[]int8"},
+	{DATA_TYPE_UINT8_ARRAY, "[]uint8"},
+	{DATA_TYPE_DOUBLE, "float64"},
+};
+
+// sanitize tags by escaping " and ` characters, and use escaped hex notation
+// for non printable characters
+char *sanitize(char *name) {
+	name = strdup(name);
+	size_t slen = strlen(name);
+	size_t buflen = strlen(name);
+	// let the magic begin
+	for (unsigned int i = 0; i < slen; i++) {
+		assert(name[i] != '`');
+		if (name[i] != '"' && isprint(name[i])) {
+			continue;
+		}
+		if (slen + 2 >= buflen) {
+			// grow the buffer
+			buflen *= 2;
+			char *newbuf = (char *)realloc(name, buflen);
+			memset(newbuf+slen, 0, buflen-slen);
+			name = newbuf;
+		}
+		if (name[i] == '"') {
+			memmove(name+i+1, name+i, slen - i);
+			name[i] = '\\';
+			i+=1;
+			slen+=1;
+		} else {
+			char ch = name[i];
+			char buf[5];
+			memmove(name+i+4, name+i+1, slen - i);
+			sprintf(buf, "\\x%02x", ch & 0xff);
+			memcpy(name+i, buf, 4);
+			i+=3;
+			slen+=3;
+		}
+	}
+	return name;
+}
+
+static std::string define(nvlist_t *list, char *cname) {
+	std::string name("type_");
+	name +=(cname);
+	for (auto &&c: name) {
+		if (c == ' ' || c == '(' || c == ')') {
+			c = '_';
+		}
+	}
+
+	nvpair_t *pair = NULL;
+
+	defs << "type " << name << " struct {\n";
+	char field = 'A';
+	while ((pair = nvlist_next_nvpair(list, pair)) != NULL) {
+		auto name = sanitize(nvpair_name(pair));
+		auto type = nvpair_type(pair);
+		defs << "\t" << field++ << " " << types[type] << " `nv:\"" << name << "\"`\n";
+		free(name);
+	}
+	defs << "}\n\n";
+	return name;
+}
 
 static void print(nvlist_t *list, char *name) {
 	char *buf = NULL;
@@ -28,7 +122,8 @@ static void print(nvlist_t *list, char *name) {
 		std::cerr << "nvlist_pack error:" << err << "\n";
 	}
 
-	tests << "\t{name: \"" << name << "\", payload: []byte(\"";
+	std::string struct_name = define(list, name);
+	tests << "\t{name: \"" << name << "\", ptr: func() interface{} { return &" << struct_name << "{}}, payload: []byte(\"";
 
 	for (unsigned i = 0; i < blen; i++) {
 		tests << "\\x"
@@ -199,12 +294,15 @@ char *strf(double d) {
 } while(0) \
 
 int main() {
-	tests <<"package nv\n"
+	defs <<"package nv\n"
 		"\n"
 		"/* !!! GENERATED FILE DO NOT EDIT !!! */\n"
 		"\n"
-		"var good = []struct {\n"
+		"import \"time\"\n\n";
+
+	tests <<"var good = []struct {\n"
 		"\tname    string\n"
+		"\tptr     func() interface{}\n"
 		"\tpayload []byte\n"
 		"}{\n";
 
@@ -341,6 +439,6 @@ int main() {
 
 	tests << "}\n";
 
-	std::cout << tests.str() << std::flush;
+	std::cout << defs.str() << tests.str() << std::flush;
 	return 0;
 }
