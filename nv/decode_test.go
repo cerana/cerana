@@ -315,6 +315,17 @@ func init() {
 	}
 }
 
+func assertFields(t *testing.T, name string, m map[string]interface{}) {
+	for field, value := range m {
+		valueType := reflect.TypeOf(value).String()
+		fn, ok := checkers[valueType]
+		if !ok {
+			t.Fatal(name, "unknown type:", valueType)
+		}
+		fn(t, field, value)
+	}
+}
+
 //go:generate make -C _test ../known_good_data_test.go
 func TestDecodeGood(t *testing.T) {
 	for _, test := range good {
@@ -326,14 +337,8 @@ func TestDecodeGood(t *testing.T) {
 			t.Fatal(test.name, "failed:", err)
 		}
 
-		for field, value := range m {
-			valueType := reflect.TypeOf(value).String()
-			fn, ok := checkers[valueType]
-			if !ok {
-				t.Fatal(test.name, "unknown type:", valueType)
-			}
-			fn(t, field, value)
-		}
+		t.Log(l)
+		assertFields(t, test.name, l)
 	}
 }
 
