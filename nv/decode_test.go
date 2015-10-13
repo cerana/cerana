@@ -315,6 +315,15 @@ func init() {
 	}
 }
 
+func struct2map(s interface{}) map[string]interface{} {
+	m := map[string]interface{}{}
+	val := reflect.ValueOf(s).Elem()
+	for name, index := range fieldIndexMap(val) {
+		m[name] = val.Field(index).Interface()
+	}
+	return m
+}
+
 func assertFields(t *testing.T, name string, m map[string]interface{}) {
 	for field, value := range m {
 		valueType := reflect.TypeOf(value).String()
