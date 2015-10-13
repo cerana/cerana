@@ -315,7 +315,7 @@ func init() {
 	}
 }
 
-//go:generate make -C _test known_good_data_test.go
+//go:generate make -C _test ../known_good_data_test.go
 func TestDecodeGood(t *testing.T) {
 	for _, test := range good {
 		t.Log(test.name)

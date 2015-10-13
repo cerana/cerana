@@ -10,11 +10,12 @@ nv: nv.cc
 
 nv.txt: nv
 
-.PHONY: known_good_data_test.go
-known_good_data_test.go: ../known_good_data_test.go
-
-../known_good_data_test.go: nv
+known_good_data_test.go: nv
 	./$^ > $@
+
+../known_good_data_test.go: known_good_data_test.go
+	cp $^ $@.tmp
+	mv $@.tmp $@
 
 clean:
 	rm -rf nv known_good_data_test.go
