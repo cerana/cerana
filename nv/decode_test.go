@@ -343,11 +343,23 @@ func TestDecodeGood(t *testing.T) {
 		m := map[string]interface{}{}
 		err := Decode(test.payload, &m)
 		if err != nil {
-			t.Fatal(test.name, "failed:", err)
+			t.Fatal(test.name, "decode as map failed:", err)
 		}
 
-		t.Log(l)
-		assertFields(t, test.name, l)
+		assertFields(t, test.name, m)
+
+		s := test.ptr()
+		err = Decode(test.payload, s)
+		if err != nil {
+			t.Fatal(test.name, "decode as struct failed:", err)
+		}
+
+		m = struct2map(s)
+		if len(m) != reflect.ValueOf(s).Elem().NumField() {
+			t.Fatalf("incorrect number of fields, got: %d %+v want: %d %+v\n",
+				len(m), m, reflect.ValueOf(s).Elem().NumField(), s)
+		}
+		assertFields(t, test.name, m)
 	}
 }
 
