@@ -17,8 +17,8 @@ type Bools struct {
 type BoolsMap map[string]bool
 
 type BoolArray struct {
-	True  []bool `nv:"true,true,true,true,true"`
-	False []bool `nv:"false,false,false,false,false"`
+	True  []bool `nv:"true;true;true;true;true"`
+	False []bool `nv:"false;false;false;false;false"`
 }
 type BoolArrayMap map[string][]bool
 
@@ -31,10 +31,10 @@ type Bytes struct {
 type BytesMap map[string]byte
 
 type ByteArray struct {
-	A []byte `nv:"-128,-128,-128,-128,-128"`
-	B []byte `nv:"0,0,0,0,0"`
-	C []byte `nv:"1,1,1,1,1"`
-	D []byte `nv:"127,127,127,127,127"`
+	A []byte `nv:"-128;-128;-128;-128;-128"`
+	B []byte `nv:"0;0;0;0;0"`
+	C []byte `nv:"1;1;1;1;1"`
+	D []byte `nv:"127;127;127;127;127"`
 }
 type ByteArrayMap map[string][]byte
 
@@ -117,7 +117,7 @@ type NVList struct {
 type NVListMap map[string]BoolsMap
 
 type NVListArray struct {
-	List []Bools `nv:"list,list"`
+	List []Bools `nv:"list;list"`
 }
 type NVListArrayMap map[string][]BoolsMap
 
@@ -141,9 +141,9 @@ var goodTargetStructs = map[string]decodeTest{
 var goodTargetMaps = map[string]decodeTest{
 	"empty":      {ptr: new(struct{}), out: struct{}{}},
 	"bools":      {ptr: new(BoolsMap), out: BoolsMap{"true": true, "false": false}},
-	"bool array": {ptr: new(BoolArrayMap), out: BoolArrayMap{"true,true,true,true,true": []bool{true, true, true, true, true}, "false,false,false,false,false": []bool{false, false, false, false, false}}},
+	"bool array": {ptr: new(BoolArrayMap), out: BoolArrayMap{"true;true;true;true;true": []bool{true, true, true, true, true}, "false;false;false;false;false": []bool{false, false, false, false, false}}},
 	"bytes":      {ptr: new(BytesMap), out: BytesMap{"-128": 128, "0": 0, "1": 1, "127": 127}},
-	"byte array": {ptr: new(ByteArrayMap), out: ByteArrayMap{"-128,-128,-128,-128,-128": []byte{128, 128, 128, 128, 128}, "0,0,0,0,0": []byte{0, 0, 0, 0, 0}, "1,1,1,1,1": []byte{1, 1, 1, 1, 1}, "127,127,127,127,127": []byte{127, 127, 127, 127, 127}}},
+	"byte array": {ptr: new(ByteArrayMap), out: ByteArrayMap{"-128;-128;-128;-128;-128": []byte{128, 128, 128, 128, 128}, "0;0;0;0;0": []byte{0, 0, 0, 0, 0}, "1;1;1;1;1": []byte{1, 1, 1, 1, 1}, "127;127;127;127;127": []byte{127, 127, 127, 127, 127}}},
 	"int8s":      {ptr: new(Int8sMap), out: Int8sMap{"-128": math.MinInt8, "-127": math.MinInt8 + 1, "-64": math.MinInt8 / 2, "-1": -1, "0": 0, "1": 1, "63": math.MaxInt8 / 2, "126": math.MaxInt8 - 1, "127": math.MaxInt8}},
 	"int16s":     {ptr: new(Int16sMap), out: Int16sMap{"-32768": math.MinInt16, "-32767": math.MinInt16 + 1, "-16384": math.MinInt16 / 2, "-1": -1, "0": 0, "1": 1, "16383": math.MaxInt16 / 2, "32766": math.MaxInt16 - 1, "32767": math.MaxInt16}},
 	"int32s":     {ptr: new(Int32sMap), out: Int32sMap{"-2147483648": math.MinInt32, "-2147483647": math.MinInt32 + 1, "-1073741824": math.MinInt32 / 2, "-1": -1, "0": 0, "1": 1, "1073741823": math.MaxInt32 / 2, "2147483646": math.MaxInt32 - 1, "2147483647": math.MaxInt32}},
@@ -152,5 +152,5 @@ var goodTargetMaps = map[string]decodeTest{
 	"hrtimes":    {ptr: new(HRTimesMap), out: HRTimesMap{"-9223372036854775808": time.Duration(math.MinInt64), "-9223372036854775807": time.Duration(math.MinInt64 + 1), "-4611686018427387904": time.Duration(math.MinInt64 / 2), "-1": time.Duration(-1), "0": time.Duration(0), "1": time.Duration(1), "4611686018427387903": time.Duration(math.MaxInt64 / 2), "9223372036854775806": time.Duration(math.MaxInt64 - 1), "9223372036854775807": time.Duration(math.MaxInt64)}},
 
 	"nvlist":       {ptr: new(NVListMap), out: NVListMap{"nvlist": BoolsMap{"true": true, "false": false}}},
-	"nvlist array": {ptr: new(NVListArrayMap), out: NVListArrayMap{"list,list": []BoolsMap{{"true": true, "false": false}, {"true": true, "false": false}}}},
+	"nvlist array": {ptr: new(NVListArrayMap), out: NVListArrayMap{"list;list": []BoolsMap{{"true": true, "false": false}, {"true": true, "false": false}}}},
 }

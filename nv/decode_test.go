@@ -8,7 +8,7 @@ import (
 )
 
 func check_array(t *testing.T, p mVal, l int, fn func([]string)) {
-	expecteds := strings.Split(p.Name, ",")
+	expecteds := strings.Split(p.Name, ";")
 	if len(expecteds) < 2 {
 		t.Fatal("p.Name does not seem to be a list of expected values:", p.Name)
 	}

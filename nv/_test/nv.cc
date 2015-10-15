@@ -135,10 +135,10 @@ static void print(nvlist_t *list, char *name) {
 
 char *stra(char *s, int n) {
 	size_t sl = strlen(s) + 2;
-	char scomma[sl];
-	memset(scomma, '\0', sl);
-	strcat(scomma, s);
-	strcat(scomma, ",");
+	char sep[sl];
+	memset(sep, '\0', sl);
+	strcat(sep, s);
+	strcat(sep, ";");
 	sl -= 1; // remove accounting for '\0'
 
 	size_t size = sl * n + 1; // is really 1 byte extra but makes later stuff easier
@@ -146,7 +146,7 @@ char *stra(char *s, int n) {
 	assert(s);
 
 	for (int i = 0; i < n; i++) {
-		strcat(s, scomma);
+		strcat(s, sep);
 	}
 	s[size - 2] = '\0'; //overwrite trailing ',' with '\0'
 	return s;
@@ -393,7 +393,7 @@ int main() {
 			"\xff\"",
 		};
 		l = fnvlist_alloc();
-		fnvlist_add_string_array(l, "0,1,HiMom,\xff\"", array, 4);
+		fnvlist_add_string_array(l, "0;1;HiMom;\xff\"", array, 4);
 		print(l, "string array");
 		fnvlist_free(l);
 	}
