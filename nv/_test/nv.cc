@@ -380,7 +380,7 @@ int main() {
 	fnvlist_add_string(l, "0", "0");
 	fnvlist_add_string(l, "1", "1");
 	fnvlist_add_string(l, "HiMom", "HiMom");
-	fnvlist_add_string(l, "\xff\"; DROP TABLE USERS;", "\xff\"; DROP TABLE USERS;");
+	fnvlist_add_string(l, "\xff\"", "\xff\"");
 	print(l, "strings");
 	fnvlist_free(l);
 
@@ -390,10 +390,10 @@ int main() {
 			"0",
 			"1",
 			"HiMom",
-			"\xff\"; DROP TABLE USERS;",
+			"\xff\"",
 		};
 		l = fnvlist_alloc();
-		fnvlist_add_string_array(l, "0,1,HiMom,\xff\"; DROP TABLE USERS;", array, 4);
+		fnvlist_add_string_array(l, "0,1,HiMom,\xff\"", array, 4);
 		print(l, "string array");
 		fnvlist_free(l);
 	}
