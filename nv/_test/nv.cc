@@ -225,8 +225,8 @@ int main() {
 		l = fnvlist_alloc();
 		size_t len = 5;
 		boolean_t array[len];
-		arrset(array, len, B_FALSE); fnvlist_add_boolean_array(l, "false,false,false,false,false", array, len);
-		arrset(array, len, B_TRUE); fnvlist_add_boolean_array(l, "true,true,true,true,true", array, len);
+		arrset(array, len, B_FALSE); fnvlist_add_boolean_array(l, stra("false", len), array, len);
+		arrset(array, len, B_TRUE); fnvlist_add_boolean_array(l, stra("true", len), array, len);
 		print(l, "bool array");
 		fnvlist_free(l);
 	}
@@ -243,10 +243,10 @@ int main() {
 		l = fnvlist_alloc();
 		size_t len = 5;
 		unsigned char array[len];
-		arrset(array, len, -128); fnvlist_add_byte_array(l, "-128,-128,-128,-128,-128", array, len);
-		arrset(array, len, 0); fnvlist_add_byte_array(l, "0,0,0,0,0", array, len);
-		arrset(array, len, 1); fnvlist_add_byte_array(l, "1,1,1,1,1", array, len);
-		arrset(array, len, 127); fnvlist_add_byte_array(l, "127,127,127,127,127", array, len);
+		arrset(array, len, -128); fnvlist_add_byte_array(l, stra("-128", len), array, len);
+		arrset(array, len, 0); fnvlist_add_byte_array(l, stra("0", len), array, len);
+		arrset(array, len, 1); fnvlist_add_byte_array(l, stra("1", len), array, len);
+		arrset(array, len, 127); fnvlist_add_byte_array(l, stra("127", len), array, len);
 		print(l, "byte array");
 		fnvlist_free(l);
 	}
@@ -313,7 +313,7 @@ int main() {
 	{
 		l = fnvlist_alloc();
 		nvlist_t *larr[] = {le, le};
-		fnvlist_add_nvlist_array(l, "list,list", larr, 2);
+		fnvlist_add_nvlist_array(l, stra("list", 2), larr, 2);
 		print(l, "nvlist array");
 		fnvlist_free(le);
 		fnvlist_free(l);
