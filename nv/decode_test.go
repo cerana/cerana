@@ -317,21 +317,18 @@ func init() {
 
 //go:generate make -C _test known_good_data_test.go
 func TestDecodeGood(t *testing.T) {
-	for _, s := range good {
-		if s.name != "empty arrays" {
-			continue
-		}
-		t.Log(s.name)
-		t.Log(s.payload)
-		l, err := Decode(s.payload)
+	for _, test := range good {
+		t.Log(test.name)
+
+		m, err := Decode(test.payload)
 		if err != nil {
-			t.Fatal(s.name, "failed:", err)
+			t.Fatal(test.name, "failed:", err)
 		}
 
-		for _, p := range l {
+		for _, p := range m {
 			fn, ok := checkers[p.Type]
 			if !ok {
-				t.Fatal(s.name, "unknown type:", p.Type)
+				t.Fatal(test.name, "unknown type:", p.Type)
 			}
 			fn(t, p)
 		}
@@ -339,16 +336,17 @@ func TestDecodeGood(t *testing.T) {
 }
 
 func TestDecodeBad(t *testing.T) {
-	for _, s := range decode_bad {
-		t.Log(s.err)
-		_, err := Decode(s.payload)
+	for _, test := range decode_bad {
+		t.Log(test.err)
+
+		_, err := Decode(test.payload)
 		if err == nil {
 			t.Fatalf("expected an error, wanted:|%s| payload:|%v|\n",
-				s.err, s.payload)
+				test.err, test.payload)
 		}
-		if s.err != err.Error() {
+		if test.err != err.Error() {
 			t.Fatalf("error mismatch, want:|%s| got:|%s| payload:|%v|\n",
-				s.err, err.Error(), s.payload)
+				test.err, err.Error(), test.payload)
 		}
 	}
 }

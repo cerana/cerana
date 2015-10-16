@@ -58,18 +58,19 @@ func diff(want, got []byte) (string, string) {
 }
 
 func TestEncodeGood(t *testing.T) {
-	for _, s := range good {
-		t.Log(s.name)
-		l, err := Decode(s.payload)
+	for _, test := range good {
+		t.Log(test.name)
+
+		m, err := Decode(test.payload)
 		if err != nil {
-			t.Fatal(s.name, err)
+			t.Fatal(test.name, err)
 		}
-		b, err := Encode(l)
+		encoded, err := Encode(m)
 		if err != nil {
-			t.Fatal(s.name, err)
+			t.Fatal(test.name, err)
 		}
-		if !reflect.DeepEqual(b, s.payload) {
-			want, got := diff(s.payload, b)
+		if !reflect.DeepEqual(encoded, test.payload) {
+			want, got := diff(test.payload, encoded)
 			t.Fatalf("encoded does not match payload\nwant:|%s|\n got:|%s|\n",
 				want, got)
 		}
@@ -77,16 +78,17 @@ func TestEncodeGood(t *testing.T) {
 }
 
 func TestEncodeBad(t *testing.T) {
-	for _, s := range encode_bad {
-		t.Log(s.err)
-		_, err := Encode(s.payload)
+	for _, test := range encode_bad {
+		t.Log(test.err)
+
+		_, err := Encode(test.payload)
 		if err == nil {
 			t.Fatalf("expected an error, wanted:|%s|, payload:|%v|\n",
-				s.err, s.payload)
+				test.err, test.payload)
 		}
-		if s.err != err.Error() {
+		if test.err != err.Error() {
 			t.Fatalf("error mismatch, want:|%s|, got:|%s|, payload:|%v|\n",
-				s.err, err.Error(), s.payload)
+				test.err, err.Error(), test.payload)
 		}
 	}
 }
