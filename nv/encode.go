@@ -71,6 +71,10 @@ func encodeStruct(v reflect.Value, w io.Writer) (int, error) {
 	size := 0
 
 	forEachField(v, func(i int, field reflect.Value) {
+		// Skip fields that can't be set (e.g. unexported)
+		if !field.CanSet() {
+			return
+		}
 		name := v.Type().Field(i).Name
 		if tags := getTags(i, v); len(tags) > 0 && tags[0] != "" {
 			name = tags[0]
