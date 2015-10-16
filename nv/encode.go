@@ -69,18 +69,14 @@ func encodeList(w io.Writer, v reflect.Value) error {
 func encodeStruct(v reflect.Value, w io.Writer) (int, error) {
 	var err error
 	size := 0
-	numFields := v.NumField()
-	for i := 0; i < numFields; i++ {
-		field := v.Field(i)
 
-		structField := v.Type().Field(i)
-		name := structField.Name
+	forEachField(v, func(i int, field reflect.Value) {
+		name := v.Type().Field(i).Name
 		if tags := getTags(i, v); len(tags) > 0 && tags[0] != "" {
 			name = tags[0]
 		}
-
 		encodeItem(w, name, field)
-	}
+	})
 
 	if err = binary.Write(w, binary.BigEndian, uint64(0)); err != nil {
 		return 0, err

@@ -482,19 +482,17 @@ func decodeListStruct(r io.ReadSeeker, target reflect.Value) error {
 // to their index
 func fieldIndexMap(v reflect.Value) map[string]int {
 	vFieldIndexMap := make(map[string]int)
-	for i := 0; i < v.NumField(); i++ {
-		vField := v.Field(i)
+	forEachField(v, func(i int, field reflect.Value) {
 		// Skip fields that can't be set (e.g. unexported)
-		if !vField.CanSet() {
-			continue
+		if !field.CanSet() {
+			return
 		}
-		vTypeField := v.Type().Field(i)
-		dataFieldName := vTypeField.Name
+		name := v.Type().Field(i).Name
 		if tags := getTags(i, v); len(tags) > 0 && tags[0] != "" {
-			dataFieldName = tags[0]
+			name = tags[0]
 		}
-		vFieldIndexMap[dataFieldName] = i
-	}
+		vFieldIndexMap[name] = i
+	})
 	return vFieldIndexMap
 }
 
