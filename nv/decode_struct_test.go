@@ -2,7 +2,6 @@ package nv
 
 import (
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -15,7 +14,6 @@ func TestDecodeStructGood(t *testing.T) {
 
 		structs, ok := goodTargetStructs[test.name]
 		if !ok {
-			fmt.Println("skipping:", test.name)
 			continue
 		}
 		v := reflect.New(reflect.TypeOf(structs.ptr).Elem())
@@ -27,7 +25,6 @@ func TestDecodeStructGood(t *testing.T) {
 
 		maps, ok := goodTargetMaps[test.name]
 		if !ok {
-			fmt.Println("skipping:", test.name)
 			continue
 		}
 		m := reflect.New(reflect.TypeOf(maps.ptr).Elem())
