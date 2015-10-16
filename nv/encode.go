@@ -8,7 +8,6 @@ import (
 	"io"
 	"reflect"
 	"sort"
-	"strings"
 
 	xdr "github.com/davecgh/go-xdr/xdr2"
 )
@@ -76,11 +75,8 @@ func encodeStruct(v reflect.Value, w io.Writer) (int, error) {
 
 		structField := v.Type().Field(i)
 		name := structField.Name
-		if tag := structField.Tag.Get("nv"); tag != "" {
-			tags := strings.Split(tag, ",")
-			if len(tags) > 0 && tags[0] != "" {
-				name = tags[0]
-			}
+		if tags := getTags(i, v); len(tags) > 0 && tags[0] != "" {
+			name = tags[0]
 		}
 
 		encodeItem(w, name, field)
