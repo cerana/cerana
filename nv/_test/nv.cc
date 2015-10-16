@@ -1,6 +1,7 @@
 #include <array>
 #include <iomanip>
 #include <map>
+#include <iostream>
 #include <sstream>
 
 #include <math.h>
@@ -24,7 +25,7 @@ static void print(nvlist_t *list, char *name) {
 	size_t blen;
 	int err;
 	if ((err = nvlist_pack(list, &buf, &blen, NV_ENCODE_XDR, 0)) != 0) {
-		printf("error:%d\n", err);
+		std::cerr << "nvlist_pack error:" << err << "\n";
 	}
 
 	tests << "\t{name: \"" << name << "\", payload: []byte(\"";
@@ -60,7 +61,7 @@ char *stru(unsigned long long i) {
 	char *s = NULL;
 	int err = asprintf(&s, "%llu", i);
 	if (err == -1) {
-		printf("asprintf error: %d\n", err);
+		std::cerr << "asprintf error:" << err << "\n";
 		assert(err != -1);
 	}
 	return s;
@@ -70,7 +71,7 @@ char *stri(long long i) {
 	char *s = NULL;
 	int err = asprintf(&s, "%lld", i);
 	if (err == -1) {
-		printf("asprintf error: %d\n", err);
+		std::cerr << "asprintf error:" << err << "\n";
 		assert(err != -1);
 	}
 	return s;
@@ -80,7 +81,7 @@ char *strf(double d) {
 	char *s = NULL;
 	int err = asprintf(&s, "%16.17g", d);
 	if (err == -1) {
-		printf("asprintf error: %d\n", err);
+		std::cerr << "asprintf error:" << err << "\n";
 		assert(err != -1);
 	}
 	return s;
@@ -330,6 +331,7 @@ int main() {
 	do_double(double, DBL);
 
 	tests << "}\n";
-	printf("%s", tests.str().c_str());
+
+	std::cout << tests.str() << std::flush;
 	return 0;
 }
