@@ -52,8 +52,8 @@ func encodeList(w io.Writer, v reflect.Value) error {
 		}
 		sort.Strings(keys)
 
-		for _, k := range keys {
-			_, err = encodeItem(w, k, v.MapIndex(reflect.ValueOf(k)))
+		for _, name := range keys {
+			_, err = encodeItem(w, name, nil, v.MapIndex(reflect.ValueOf(name)))
 			if err != nil {
 				return err
 			}
@@ -76,10 +76,11 @@ func encodeStruct(v reflect.Value, w io.Writer) (int, error) {
 			return
 		}
 		name := v.Type().Field(i).Name
-		if tags := getTags(i, v); len(tags) > 0 && tags[0] != "" {
+		tags := getTags(i, v)
+		if len(tags) > 0 && tags[0] != "" {
 			name = tags[0]
 		}
-		encodeItem(w, name, field)
+		encodeItem(w, name, tags, field)
 	})
 
 	if err = binary.Write(w, binary.BigEndian, uint64(0)); err != nil {
@@ -88,7 +89,8 @@ func encodeStruct(v reflect.Value, w io.Writer) (int, error) {
 	return size + 8, nil
 }
 
-func encodeItem(w io.Writer, name string, field reflect.Value) ([]byte, error) {
+func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) ([]byte, error) {
+
 	p := pair{
 		Name:      name,
 		NElements: 1,
