@@ -378,8 +378,13 @@ int main() {
 
 	l = fnvlist_alloc();
 	fnvlist_add_string(l, "0", "0");
-	fnvlist_add_string(l, "1", "1");
-	fnvlist_add_string(l, "HiMom", "HiMom");
+	fnvlist_add_string(l, "01", "01");
+	fnvlist_add_string(l, "012", "012");
+	fnvlist_add_string(l, "0123", "0123");
+	fnvlist_add_string(l, "01234", "01234");
+	fnvlist_add_string(l, "012345", "012345");
+	fnvlist_add_string(l, "0123456", "0123456");
+	fnvlist_add_string(l, "01234567", "01234567");
 	fnvlist_add_string(l, "\xff\"", "\xff\"");
 	print(l, "strings");
 	fnvlist_free(l);
@@ -388,12 +393,17 @@ int main() {
 	{
 		char *array[] = {
 			"0",
-			"1",
-			"HiMom",
+			"01",
+			"012",
+			"0123",
+			"01234",
+			"012345",
+			"0123456",
+			"01234567",
 			"\xff\"",
 		};
 		l = fnvlist_alloc();
-		fnvlist_add_string_array(l, "0;1;HiMom;\xff\"", array, 4);
+		fnvlist_add_string_array(l, "0;01;012;0123;01234;012345;0123456;01234567;\xff\"", array, 9);
 		print(l, "string array");
 		fnvlist_free(l);
 	}

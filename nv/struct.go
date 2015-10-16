@@ -135,13 +135,13 @@ func (p pair) encodedSize() int {
 	case INT64_ARRAY, UINT64_ARRAY:
 		valSize = 4 + int(p.NElements*8)
 	case STRING:
-		valSize = 4 + len(p.data.(string)) + 1
+		valSize = 4 + len(p.data.(string))
 	case NVLIST, NVLIST_ARRAY:
 		valSize = len(p.data.([]byte))
 	case STRING_ARRAY:
 		slice := p.data.([]string)
 		for i := range slice {
-			valSize += align4(4 + len(slice[i]) + 1)
+			valSize += align4(4 + len(slice[i]))
 		}
 	}
 	return p.headerSize() + align4(valSize)
@@ -197,9 +197,10 @@ func (p pair) decodedSize() int {
 	case BOOLEAN_ARRAY:
 		valSize = 4 + int(p.NElements*4)
 	case STRING_ARRAY:
+		valSize = int(p.NElements * 8)
 		slice := p.data.([]string)
 		for i := range slice {
-			valSize += align8(4 + len(slice[i]) + 1)
+			valSize += len(slice[i]) + 1
 		}
 	}
 	return align8(nvpair_tSize) + align8(valSize)
