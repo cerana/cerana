@@ -8,7 +8,6 @@ import (
 	"io"
 	"reflect"
 	"runtime"
-	"strings"
 	"time"
 
 	xdr "github.com/davecgh/go-xdr/xdr2"
@@ -479,11 +478,6 @@ func decodeListStruct(r io.ReadSeeker, target reflect.Value) error {
 	return nil
 }
 
-// getTags returns the content of the "nv" tag after splitting on ','
-func getTags(i int, v reflect.Value) []string {
-	return strings.Split(v.Type().Field(i).Tag.Get("nv"), ",")
-}
-
 // fieldIndexMap creates a map of field names, with tag name overrides,
 // to their index
 func fieldIndexMap(v reflect.Value) map[string]int {
@@ -502,4 +496,17 @@ func fieldIndexMap(v reflect.Value) map[string]int {
 		vFieldIndexMap[dataFieldName] = i
 	}
 	return vFieldIndexMap
+}
+
+func isEnd(r io.ReadSeeker) (bool, error) {
+	var end uint64
+	err := binary.Read(r, binary.BigEndian, &end)
+	if err != nil {
+		return false, err
+	}
+	if end == 0 {
+		return true, nil
+	}
+	_, err = r.Seek(-8, 1)
+	return false, err
 }

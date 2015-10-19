@@ -216,3 +216,10 @@ func encodeItem(w io.Writer, name string, field reflect.Value) ([]byte, error) {
 
 	return nil, nil
 }
+
+func deref(v reflect.Value) reflect.Value {
+	for v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	return v
+}

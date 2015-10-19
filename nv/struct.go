@@ -1,11 +1,6 @@
 package nv
 
-import (
-	"encoding/binary"
-	"fmt"
-	"io"
-	"reflect"
-)
+import "fmt"
 
 //go:generate stringer -type=flag
 type flag uint32
@@ -217,34 +212,9 @@ func (p pair) decodedSize() int {
 	return align8(nvpair_tSize) + align8(valSize)
 }
 
-func deref(v reflect.Value) reflect.Value {
-	for v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
-	return v
-}
-
-func writeHeader(w io.Writer) error {
-
-	return nil
-}
-
 type mVal struct {
 	Name  string
 	Type  dataType
 	Value interface{}
 }
 type mList map[string]mVal
-
-func isEnd(r io.ReadSeeker) (bool, error) {
-	var end uint64
-	err := binary.Read(r, binary.BigEndian, &end)
-	if err != nil {
-		return false, err
-	}
-	if end == 0 {
-		return true, nil
-	}
-	_, err = r.Seek(-8, 1)
-	return false, err
-}
