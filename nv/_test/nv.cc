@@ -310,15 +310,6 @@ int main() {
 	print(l, "nvlist");
 	fnvlist_free(l);
 
-	/*
-	{
-		l = fnvlist_alloc();
-		nvlist_t *larr[] = {};
-		fnvlist_add_nvlist_array(l, "empty", larr, 0);
-		print(l, "empty nvlist array");
-		fnvlist_free(l);
-	}
-	*/
 	{
 		l = fnvlist_alloc();
 		nvlist_t *larr[] = {le, le};
@@ -329,6 +320,24 @@ int main() {
 	}
 
 	do_double(double, DBL);
+
+	/*
+	{
+		l = fnvlist_alloc();
+		fnvlist_add_int8_array(l, "empty int8", {}, 0);
+		fnvlist_add_int16_array(l, "empty int16", {}, 0);
+		fnvlist_add_int32_array(l, "empty int32", {}, 0);
+		fnvlist_add_int64_array(l, "empty int64", {}, 0);
+		fnvlist_add_uint8_array(l, "empty uint8", {}, 0);
+		fnvlist_add_uint16_array(l, "empty uint16", {}, 0);
+		fnvlist_add_uint32_array(l, "empty uint32", {}, 0);
+		fnvlist_add_uint64_array(l, "empty uint64", {}, 0);
+		fnvlist_add_string_array(l, "empty string", {}, 0);
+		fnvlist_add_nvlist_array(l, "empty nvlist", {}, 0);
+		print(l, "empty arrays");
+		fnvlist_free(l);
+	}
+	*/
 
 	tests << "}\n";
 
