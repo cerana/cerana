@@ -8,7 +8,6 @@ import (
 	"io"
 	"reflect"
 	"sort"
-	"strings"
 
 	xdr "github.com/davecgh/go-xdr/xdr2"
 )
@@ -53,8 +52,8 @@ func encodeList(w io.Writer, v reflect.Value) error {
 		}
 		sort.Strings(keys)
 
-		for _, k := range keys {
-			_, err = encodeItem(w, k, v.MapIndex(reflect.ValueOf(k)))
+		for _, name := range keys {
+			_, err = encodeItem(w, name, nil, v.MapIndex(reflect.ValueOf(name)))
 			if err != nil {
 				return err
 			}
@@ -70,21 +69,19 @@ func encodeList(w io.Writer, v reflect.Value) error {
 func encodeStruct(v reflect.Value, w io.Writer) (int, error) {
 	var err error
 	size := 0
-	numFields := v.NumField()
-	for i := 0; i < numFields; i++ {
-		field := v.Field(i)
 
-		structField := v.Type().Field(i)
-		name := structField.Name
-		if tag := structField.Tag.Get("nv"); tag != "" {
-			tags := strings.Split(tag, ",")
-			if len(tags) > 0 && tags[0] != "" {
-				name = tags[0]
-			}
+	forEachField(v, func(i int, field reflect.Value) {
+		// Skip fields that can't be set (e.g. unexported)
+		if !field.CanSet() {
+			return
 		}
-
-		encodeItem(w, name, field)
-	}
+		name := v.Type().Field(i).Name
+		tags := getTags(i, v)
+		if len(tags) > 0 && tags[0] != "" {
+			name = tags[0]
+		}
+		encodeItem(w, name, tags, field)
+	})
 
 	if err = binary.Write(w, binary.BigEndian, uint64(0)); err != nil {
 		return 0, err
@@ -92,41 +89,88 @@ func encodeStruct(v reflect.Value, w io.Writer) (int, error) {
 	return size + 8, nil
 }
 
-func encodeItem(w io.Writer, name string, field reflect.Value) ([]byte, error) {
+func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) ([]byte, error) {
+	var types = map[reflect.Kind]dataType{
+		reflect.Bool:    BOOLEAN_VALUE,
+		reflect.Float32: DOUBLE,
+		reflect.Float64: DOUBLE,
+		reflect.Int16:   INT16,
+		reflect.Int32:   INT32,
+		reflect.Int64:   INT64,
+		reflect.Int8:    INT8,
+		reflect.Int:     INT32,
+		reflect.Map:     NVLIST,
+		reflect.String:  STRING,
+		reflect.Struct:  NVLIST,
+		reflect.Uint16:  UINT16,
+		reflect.Uint32:  UINT32,
+		reflect.Uint64:  UINT64,
+		reflect.Uint8:   UINT8,
+		reflect.Uint:    UINT32,
+	}
+
+	var sliceTypes = map[reflect.Kind]dataType{
+		reflect.Bool:   BOOLEAN_ARRAY,
+		reflect.Int16:  INT16_ARRAY,
+		reflect.Int32:  INT32_ARRAY,
+		reflect.Int64:  INT64_ARRAY,
+		reflect.Int8:   INT8_ARRAY,
+		reflect.Int:    INT32_ARRAY,
+		reflect.Map:    NVLIST_ARRAY,
+		reflect.String: STRING_ARRAY,
+		reflect.Struct: NVLIST_ARRAY,
+		reflect.Uint16: UINT16_ARRAY,
+		reflect.Uint32: UINT32_ARRAY,
+		reflect.Uint64: UINT64_ARRAY,
+		reflect.Uint8:  UINT8_ARRAY,
+		reflect.Uint:   UINT32_ARRAY,
+	}
+	var tagType dataType
+	if len(tags) > 1 {
+		if tags[1] == "byte" {
+			tagType = BYTE
+		} else if tags[1] == "uint8" {
+			tagType = UINT8
+		}
+	}
+
 	p := pair{
 		Name:      name,
 		NElements: 1,
 	}
 
-	switch t := field.Kind(); t {
-	case reflect.String:
-		p.Type = STRING
-	case reflect.Uint64:
-		p.Type = UINT64
-	case reflect.Int32, reflect.Int:
-		p.Type = INT32
-	case reflect.Struct:
-		p.Type = NVLIST
-	default:
-		return nil, fmt.Errorf("unknown type:", t)
-	}
+	var ok bool
+	p.Type, ok = types[field.Kind()]
 
-	if field.Type().String() == "nv.mVal" {
-		p.Type = field.FieldByName("Type").Interface().(dataType)
-		p.Name = field.FieldByName("Name").Interface().(string)
-		p.data = field.FieldByName("Value").Interface()
-	} else {
-		if !field.CanSet() {
-			panic("can't Set")
-			return nil, nil
+	switch field.Kind() {
+	case reflect.Interface:
+		return encodeItem(w, name, tags, reflect.ValueOf(field.Interface()))
+	case reflect.Slice, reflect.Array:
+		p.Type, ok = sliceTypes[field.Index(0).Kind()]
+		switch tagType {
+		case BYTE:
+			p.Type = BYTE_ARRAY
+		case UINT8:
+			p.Type = UINT8_ARRAY
 		}
-		p.data = field.Interface()
+	case reflect.Int64:
+		if field.Type().String() == "time.Duration" {
+			p.Type = HRTIME
+		}
+	case reflect.Uint8:
+		switch tagType {
+		case BYTE:
+			p.Type = BYTE
+		case UINT8:
+			p.Type = UINT8
+		}
 	}
 
-	if p.Type == UNKNOWN || p.Type > DOUBLE {
-		return nil, fmt.Errorf("invalid Type '%v'", p.Type)
+	if !ok {
+		return nil, fmt.Errorf("unknown type: %v", field.Kind())
 	}
 
+	p.data = field.Interface()
 	value := p.data
 	vbuf := &bytes.Buffer{}
 	switch p.Type {
@@ -184,8 +228,8 @@ func encodeItem(w io.Writer, name string, field reflect.Value) ([]byte, error) {
 		}
 		p.data = vbuf.Bytes()
 	case NVLIST_ARRAY:
-		p.NElements = uint32(len(value.([]mList)))
-		for _, l := range value.([]mList) {
+		p.NElements = uint32(len(value.([]map[string]interface{})))
+		for _, l := range value.([]map[string]interface{}) {
 			if err := encodeList(vbuf, reflect.ValueOf(l)); err != nil {
 				return nil, err
 			}
@@ -219,4 +263,11 @@ func encodeItem(w io.Writer, name string, field reflect.Value) ([]byte, error) {
 	}
 
 	return nil, nil
+}
+
+func deref(v reflect.Value) reflect.Value {
+	for v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	return v
 }

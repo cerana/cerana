@@ -1,10 +1,6 @@
 package nv
 
-import (
-	"encoding/binary"
-	"io"
-	"reflect"
-)
+import "fmt"
 
 //go:generate stringer -type=flag
 type flag uint32
@@ -104,6 +100,16 @@ type pair struct {
 	data        interface{}
 }
 
+func (p pair) String() string {
+	return fmt.Sprintf("{%d, %d, \"%s\", %s, %d, %#v}",
+		p.EncodedSize, p.DecodedSize, p.Name, p.Type, p.NElements, p.data)
+}
+
+func (p pair) GoString() string {
+	return fmt.Sprintf("{EncodedSize:%d, DecodedSize:%d, Name:\"%s\", Type:%s, NElements:%d, data:%#v}",
+		p.EncodedSize, p.DecodedSize, p.Name, p.Type, p.NElements, p.data)
+}
+
 type Pair struct {
 	pair
 	Value interface{}
@@ -135,13 +141,13 @@ func (p pair) encodedSize() int {
 	case INT64_ARRAY, UINT64_ARRAY:
 		valSize = 4 + int(p.NElements*8)
 	case STRING:
-		valSize = 4 + len(p.data.(string)) + 1
+		valSize = 4 + len(p.data.(string))
 	case NVLIST, NVLIST_ARRAY:
 		valSize = len(p.data.([]byte))
 	case STRING_ARRAY:
 		slice := p.data.([]string)
 		for i := range slice {
-			valSize += align4(4 + len(slice[i]) + 1)
+			valSize += align4(4 + len(slice[i]))
 		}
 	}
 	return p.headerSize() + align4(valSize)
@@ -197,42 +203,11 @@ func (p pair) decodedSize() int {
 	case BOOLEAN_ARRAY:
 		valSize = 4 + int(p.NElements*4)
 	case STRING_ARRAY:
+		valSize = int(p.NElements * 8)
 		slice := p.data.([]string)
 		for i := range slice {
-			valSize += align8(4 + len(slice[i]) + 1)
+			valSize += len(slice[i]) + 1
 		}
 	}
 	return align8(nvpair_tSize) + align8(valSize)
-}
-
-func deref(v reflect.Value) reflect.Value {
-	for v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
-	return v
-}
-
-func writeHeader(w io.Writer) error {
-
-	return nil
-}
-
-type mVal struct {
-	Name  string
-	Type  dataType
-	Value interface{}
-}
-type mList map[string]mVal
-
-func isEnd(r io.ReadSeeker) (bool, error) {
-	var end uint64
-	err := binary.Read(r, binary.BigEndian, &end)
-	if err != nil {
-		return false, err
-	}
-	if end == 0 {
-		return true, nil
-	}
-	_, err = r.Seek(-8, 1)
-	return false, err
 }
