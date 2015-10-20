@@ -37,8 +37,4 @@ var encode_bad = []struct {
 }{
 	{"can not encode a nil pointer", nil},
 	{"invalid type 'int', must be a struct", 0},
-	{"invalid Type 'UNKNOWN'", mList{"foo1": mVal{}}},
-	{"invalid Type 'dataType(28)'", mList{"foo2": mVal{Type: DOUBLE + 1}}},
-	{"xdr:Marshal: can't marshal nil interface", mList{"foo2": mVal{Type: DOUBLE}}},
-	//{"empty NVLIST_ARRAY", List{Pairs: []Pair{Pair{pair: pair{Type: NVLIST_ARRAY}, Value: []List{}}}}},
 }

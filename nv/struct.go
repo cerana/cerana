@@ -211,10 +211,3 @@ func (p pair) decodedSize() int {
 	}
 	return align8(nvpair_tSize) + align8(valSize)
 }
-
-type mVal struct {
-	Name  string
-	Type  dataType
-	Value interface{}
-}
-type mList map[string]mVal
