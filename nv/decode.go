@@ -153,6 +153,10 @@ func decodeList(r io.ReadSeeker) (mList, error) {
 	return m, nil
 }
 
+// Decode
+// Note: care should be taken when decoding into a `map[string]interface{}` as
+// bytes/uint8s (and their array forms) can not be distinguished and will be
+// treated as uint8/[]uint8.
 func Decode(data []byte, target interface{}) (err error) {
 	// Catch any panics from reflection
 	defer func() {

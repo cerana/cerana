@@ -107,7 +107,11 @@ static std::string define(nvlist_t *list, char *cname) {
 	while ((pair = nvlist_next_nvpair(list, pair)) != NULL) {
 		auto name = sanitize(nvpair_name(pair));
 		auto type = nvpair_type(pair);
-		defs << "\t" << field++ << " " << types[type] << " `nv:\"" << name << "\"`\n";
+		defs << "\t" << field++ << " " << types[type] << " `nv:\"" << name;
+		if (type == DATA_TYPE_BYTE || type == DATA_TYPE_BYTE_ARRAY) {
+			defs << ",byte";
+		}
+		defs << "\"`\n";
 		free(name);
 	}
 	defs << "}\n\n";

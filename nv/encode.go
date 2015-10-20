@@ -125,6 +125,14 @@ func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) ([
 		reflect.Uint8:  UINT8_ARRAY,
 		reflect.Uint:   UINT32_ARRAY,
 	}
+	var tagType dataType
+	if len(tags) > 1 {
+		if tags[1] == "byte" {
+			tagType = BYTE
+		} else if tags[1] == "uint8" {
+			tagType = UINT8
+		}
+	}
 
 	p := pair{
 		Name:      name,
@@ -139,9 +147,22 @@ func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) ([
 		return encodeItem(w, name, tags, reflect.ValueOf(field.Interface()))
 	case reflect.Slice, reflect.Array:
 		p.Type, ok = sliceTypes[field.Index(0).Kind()]
+		switch tagType {
+		case BYTE:
+			p.Type = BYTE_ARRAY
+		case UINT8:
+			p.Type = UINT8_ARRAY
+		}
 	case reflect.Int64:
 		if field.Type().String() == "time.Duration" {
 			p.Type = HRTIME
+		}
+	case reflect.Uint8:
+		switch tagType {
+		case BYTE:
+			p.Type = BYTE
+		case UINT8:
+			p.Type = UINT8
 		}
 	}
 

@@ -18,15 +18,15 @@ type type_bool_array struct {
 }
 
 type type_bytes struct {
-	A byte `nv:"0"`
-	B byte `nv:"1"`
-	C byte `nv:"127"`
+	A byte `nv:"0,byte"`
+	B byte `nv:"1,byte"`
+	C byte `nv:"127,byte"`
 }
 
 type type_byte_array struct {
-	A []byte `nv:"0;0;0;0;0"`
-	B []byte `nv:"1;1;1;1;1"`
-	C []byte `nv:"127;127;127;127;127"`
+	A []byte `nv:"0;0;0;0;0,byte"`
+	B []byte `nv:"1;1;1;1;1,byte"`
+	C []byte `nv:"127;127;127;127;127,byte"`
 }
 
 type type_int8s struct {
