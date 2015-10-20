@@ -57,24 +57,39 @@ func diff(want, got []byte) (string, string) {
 	return strings.Join(w, " "), strings.Join(g, " ")
 }
 
+func assertEqual(t *testing.T, name, typ string, payload []byte, put interface{}) {
+	encoded, err := Encode(put)
+	if err != nil {
+		t.Fatalf("%s: failed to encode as %s: error:%s\n", name, typ, err)
+	}
+	if !reflect.DeepEqual(encoded, payload) {
+		want, got := diff(payload, encoded)
+		t.Fatalf("%s: %s: encoded does not match payload\nwant:|%s|\n got:|%s|\n",
+			name, typ, want, got)
+	}
+}
+
 func TestEncodeGood(t *testing.T) {
 	for _, test := range good {
 		t.Log(test.name)
+		if strings.Contains(test.name, "byte") {
+			t.Log("skipping", test.name)
+			continue
+		}
 
 		m := map[string]interface{}{}
 		err := Decode(test.payload, &m)
 		if err != nil {
-			t.Fatal(test.name, err)
+			t.Fatal(test.name, "failed to decode as map", err)
 		}
-		encoded, err := Encode(m)
+		assertEqual(t, test.name, "map", test.payload, m)
+
+		s := test.ptr()
+		err = Decode(test.payload, s)
 		if err != nil {
-			t.Fatal(test.name, err)
+			t.Fatal(test.name, "failed to decode as struct:", err)
 		}
-		if !reflect.DeepEqual(encoded, test.payload) {
-			want, got := diff(test.payload, encoded)
-			t.Fatalf("encoded does not match payload\nwant:|%s|\n got:|%s|\n",
-				want, got)
-		}
+		assertEqual(t, test.name, "struct", test.payload, s)
 	}
 }
 
