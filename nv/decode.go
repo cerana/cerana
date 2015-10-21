@@ -98,6 +98,9 @@ func decodeListStruct(r io.ReadSeeker, target reflect.Value) error {
 		}
 	}
 
+	// Special map alias that collects values and nvlist types
+	isList := target.Type().String() == "nv.list"
+
 	// For structs, create the lookup table for field name/tag -> field index
 	var targetFieldIndexMap map[string]int
 	if !isMap {
@@ -291,7 +294,9 @@ func decodeListStruct(r io.ReadSeeker, target reflect.Value) error {
 				}
 			}
 		case NVLIST:
-			if isMap {
+			if isList {
+				val = reflect.Indirect(reflect.New(target.Type()))
+			} else if isMap {
 				val = reflect.Indirect(reflect.New(target.Type().Elem()))
 			} else {
 				val = reflect.Indirect(reflect.New(targetField.Type()))
@@ -302,7 +307,9 @@ func decodeListStruct(r io.ReadSeeker, target reflect.Value) error {
 			}
 		case NVLIST_ARRAY:
 			var sliceType reflect.Type
-			if isMap {
+			if isList {
+				sliceType = target.Type()
+			} else if isMap {
 				sliceType = target.Type().Elem()
 			} else {
 				sliceType = targetField.Type()
@@ -334,7 +341,14 @@ func decodeListStruct(r io.ReadSeeker, target reflect.Value) error {
 
 		// Set the value appropriately
 		if isMap {
-			target.SetMapIndex(reflect.ValueOf(dataPair.Name), val)
+			name := reflect.ValueOf(dataPair.Name)
+			if isList {
+				val = reflect.ValueOf(map[string]interface{}{
+					"type":  dataPair.Type.String(),
+					"value": val.Interface(),
+				})
+			}
+			target.SetMapIndex(name, val)
 		} else {
 			fieldSetFunc()
 		}

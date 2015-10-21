@@ -1,6 +1,11 @@
 package nv
 
-import "fmt"
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"sort"
+)
 
 //go:generate stringer -type=flag
 type flag uint32
@@ -13,6 +18,54 @@ const (
 
 //go:generate stringer -type=dataType
 type dataType uint32
+
+// PrettyPrint writes into `dst` a decoded form of `src` meant for human
+// consumption. The nv/xdr types are printed in sorted order along with the name
+// and value of the nvp.
+func PrettyPrint(dst *bytes.Buffer, src []byte, indent string) error {
+	m, err := pretty(src)
+	if err != nil {
+		return err
+	}
+	prettyPrint(dst, m, indent, "")
+	return nil
+}
+
+type list map[string]interface{}
+
+// pretty decodes the NVList in src as a `nv.list` which stores the nv type
+// information.
+func pretty(src []byte) (map[string]interface{}, error) {
+
+	l := list{}
+	err := Decode(src, &l)
+	return l, err
+}
+
+func prettyPrint(dst io.Writer, m map[string]interface{}, indenter, indent string) {
+	names := make([]string, 0, len(m))
+	for k := range m {
+		names = append(names, k)
+	}
+	sort.Strings(names)
+
+	for _, name := range names {
+		v := m[name]
+		value, ok := v.(map[string]interface{})
+		if !ok {
+			fmt.Fprintf(dst, "%sName: %s, Value:%+v\n", indent, name, v)
+			continue
+		}
+
+		if value["type"] == "NVLIST" {
+			fmt.Fprintf(dst, "%sName: %s, Type: %s\n", indent, name, value["type"])
+			prettyPrint(dst, value["value"].(list), indenter, indent+indenter)
+		} else {
+			fmt.Fprintf(dst, "%sName: %s, Type: %s, Value:%+v\n",
+				indent, name, value["type"], value["value"])
+		}
+	}
+}
 
 const (
 	UNKNOWN dataType = iota
