@@ -1,6 +1,6 @@
 package main
 
-import "gozfs/nv"
+import "github.com/mistifyio/gozfs/nv"
 
 func exists(name string) error {
 	m := map[string]interface{}{
