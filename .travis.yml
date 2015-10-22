@@ -1,0 +1,29 @@
+language: go
+sudo: required
+dist: trusty
+
+go:
+  - 1.5
+
+before_install:
+  - version=0.6.5
+  - sudo apt-get update -y && sudo apt-get install -y linux-headers-$(uname -r) uuid-dev tree
+  - cd $HOME
+  - curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$version/spl-$version.tar.gz | tar xz
+  - curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$version/zfs-$version.tar.gz | tar xz
+  - JOBS=$(($(grep -c '^processor' /proc/cpuinfo) * 2 + 1))
+  - cd spl-$version
+  - ./configure --prefix=/usr && make -j$JOBS && sudo make install
+  - cd ../zfs-$version
+  - curl -L https://github.com/zfsonlinux/zfs/pull/3907.patch | patch -p1
+  - curl -L https://github.com/ClusterHQ/zfs/pull/13.patch | patch -p1
+  - ./configure --prefix=/usr && make -j$JOBS && sudo make install
+  - sudo modprobe zfs
+  - cd $TRAVIS_BUILD_DIR
+  - go get github.com/alecthomas/gometalinter
+  - gometalinter --install --update
+
+script:
+  - sudo -E $(which go) test -v ./...
+  - gometalinter --disable=golint --disable=vetshadow --enable=gofmt ./... || true
+  - gometalinter --disable-all --enable=golint --enable=vetshadow ./... || true
