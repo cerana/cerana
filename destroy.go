@@ -2,11 +2,11 @@ package main
 
 import "github.com/mistifyio/gozfs/nv"
 
-func destroy(name string) error {
+func destroy(name string, deferFlag bool) error {
 	m := map[string]interface{}{
 		"cmd":     "zfs_destroy",
 		"version": uint64(0),
-		"defer":   false,
+		"defer":   deferFlag,
 	}
 
 	encoded, err := nv.Encode(m)
