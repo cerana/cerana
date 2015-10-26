@@ -17,7 +17,9 @@ func init() {
 }
 
 var funcs = map[string]func(string) error{
-	"exists": exists,
+	"exists":  exists,
+	"destroy": destroy,
+	"unmount": unmount,
 }
 
 func main() {
