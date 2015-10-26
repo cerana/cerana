@@ -45,40 +45,6 @@ const (
 	DOUBLE
 )
 
-var goToNV = map[string]dataType{
-	"bool":          BOOLEAN_VALUE,
-	"boolean_array": BOOLEAN_ARRAY,
-	"byte":          BYTE,
-	"byte_array":    BYTE_ARRAY,
-	"float64":       DOUBLE,
-	"int16":         INT16,
-	"int16_array":   INT16_ARRAY,
-	"int32":         INT32,
-	"int32_array":   INT32_ARRAY,
-	"int64":         INT64,
-	"int64_array":   INT64_ARRAY,
-	"int8":          INT8,
-	"int8_array":    INT8_ARRAY,
-	"nv.List":       NVLIST,
-	"nvlist_array":  NVLIST_ARRAY,
-	"string":        STRING,
-	"string_array":  STRING_ARRAY,
-	"time.Time":     HRTIME,
-	"uint16":        UINT16,
-	"uint16_array":  UINT16_ARRAY,
-	"uint32":        UINT32,
-	"uint32_array":  UINT32_ARRAY,
-	"uint64":        UINT64,
-	"uint64_array":  UINT64_ARRAY,
-	"uint8":         UINT8,
-	"uint8_array":   UINT8_ARRAY,
-}
-
-type List struct {
-	header
-	Pairs []Pair
-}
-
 type encoding struct {
 	Encoding  uint8
 	Endianess uint8
