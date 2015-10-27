@@ -1,9 +1,10 @@
 package main
 
 import (
-	"flag"
-	"fmt"
 	"os"
+
+	log "github.com/Sirupsen/logrus"
+	cobra "github.com/spf13/cobra"
 )
 
 var zfs *os.File
@@ -16,34 +17,65 @@ func init() {
 	zfs = z
 }
 
-var funcs = map[string]func(string) error{
-	"exists": exists,
+func main() {
+	root := &cobra.Command{
+		Use:  "gozfs",
+		Long: "gozfs is the cli for testing the go zfs ioctl api",
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			if cmd.Use == "gozfs" {
+				return
+			}
+			name, err := cmd.Flags().GetString("name")
+			if err != nil {
+				log.Fatal(err)
+			}
+			if name == "" {
+				log.Fatal("missing name")
+			}
+		},
+		Run: help,
+	}
+	root.PersistentFlags().StringP("name", "n", "", "dataset name")
+
+	cmdExists := &cobra.Command{
+		Use:   "exists",
+		Short: "check whether dataset exists",
+		Run: func(cmd *cobra.Command, args []string) {
+			name, _ := cmd.Flags().GetString("name")
+			if err := exists(name); err != nil {
+				log.Fatal(err)
+			} else {
+				log.Info("exists")
+			}
+		},
+	}
+
+	cmdDestroy := &cobra.Command{
+		Use:   "destroy",
+		Short: "destroy an unmounted dataset, volume, or snapshot",
+		Run: func(cmd *cobra.Command, args []string) {
+			name, _ := cmd.Flags().GetString("name")
+			deferFlag, _ := cmd.Flags().GetBool("defer")
+			if err := destroy(name, deferFlag); err != nil {
+				log.Fatal(err)
+			} else {
+				log.Info("destroyed")
+			}
+		},
+	}
+	cmdDestroy.Flags().BoolP("defer", "d", false, "defer destroy")
+
+	root.AddCommand(
+		cmdExists,
+		cmdDestroy,
+	)
+	if err := root.Execute(); err != nil {
+		log.Fatal("root execute failed:", err)
+	}
 }
 
-func main() {
-	name := flag.String("name", "", "dataset name")
-	cmd := flag.String("cmd", "", "command to invoke")
-	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
-		flag.PrintDefaults()
-		fmt.Fprintf(os.Stderr, "\nAvailable commands:\n")
-		for cmd := range funcs {
-			fmt.Fprintln(os.Stderr, "  ", cmd)
-		}
-	}
-	flag.Parse()
-
-	if *cmd == "" {
-		fmt.Println("error: cmd is required")
-		return
-	}
-	fn, ok := funcs[*cmd]
-	if !ok {
-		fmt.Println("error: uknown command", *cmd)
-		return
-	}
-
-	if err := fn(*name); err != nil {
-		fmt.Println("error:", err)
+func help(cmd *cobra.Command, _ []string) {
+	if err := cmd.Help(); err != nil {
+		log.Fatal("help failed:", err)
 	}
 }
