@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	log "github.com/Sirupsen/logrus"
@@ -15,6 +16,24 @@ func init() {
 		panic(err)
 	}
 	zfs = z
+}
+
+type handler func(*cobra.Command, []string) error
+
+func genCommand(use, short string, fn handler) *cobra.Command {
+	run := func(cmd *cobra.Command, args []string) {
+		if err := fn(cmd, args); err != nil {
+			log.Fatal(err)
+		} else {
+			log.Info(use)
+		}
+	}
+	return &cobra.Command{
+		Use:   use,
+		Short: short,
+		Run:   run,
+	}
+
 }
 
 func main() {
@@ -37,37 +56,34 @@ func main() {
 	}
 	root.PersistentFlags().StringP("name", "n", "", "dataset name")
 
-	cmdExists := &cobra.Command{
-		Use:   "exists",
-		Short: "check whether dataset exists",
-		Run: func(cmd *cobra.Command, args []string) {
+	cmdExists := genCommand("exists", "Test for dataset existence.",
+		func(cmd *cobra.Command, args []string) error {
 			name, _ := cmd.Flags().GetString("name")
-			if err := exists(name); err != nil {
-				log.Fatal(err)
-			} else {
-				log.Info("exists")
-			}
-		},
-	}
+			return exists(name)
+		})
 
-	cmdDestroy := &cobra.Command{
-		Use:   "destroy",
-		Short: "destroy an unmounted dataset, volume, or snapshot",
-		Run: func(cmd *cobra.Command, args []string) {
+	cmdDestroy := genCommand("destroy", "Destroys a dataset or volume.",
+		func(cmd *cobra.Command, args []string) error {
 			name, _ := cmd.Flags().GetString("name")
 			deferFlag, _ := cmd.Flags().GetBool("defer")
-			if err := destroy(name, deferFlag); err != nil {
-				log.Fatal(err)
-			} else {
-				log.Info("destroyed")
-			}
-		},
-	}
+			return destroy(name, deferFlag)
+		})
 	cmdDestroy.Flags().BoolP("defer", "d", false, "defer destroy")
+
+	cmdHolds := genCommand("holds", "Retrieve list of user holds on the specified snapshot.",
+		func(cmd *cobra.Command, args []string) error {
+			name, _ := cmd.Flags().GetString("name")
+			holds, err := holds(name)
+			if err == nil {
+				fmt.Println(holds)
+			}
+			return err
+		})
 
 	root.AddCommand(
 		cmdExists,
 		cmdDestroy,
+		cmdHolds,
 	)
 	if err := root.Execute(); err != nil {
 		log.Fatal("root execute failed:", err)
