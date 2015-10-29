@@ -99,8 +99,8 @@ func main() {
 
 			errlist := make(map[string]int32)
 			err := snapshot(zpool, snaps, props, &errlist)
-			if err != nil {
-				log.Info(errlist)
+			if len(errlist) > 0 {
+				log.Error(errlist)
 			}
 			return err
 		},

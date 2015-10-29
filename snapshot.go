@@ -1,7 +1,7 @@
 package main
 
 import (
-	"io"
+	"syscall"
 
 	"github.com/mistifyio/gozfs/nv"
 )
@@ -26,10 +26,12 @@ func snapshot(zpool string, snapNames []string, props map[string]string, errlist
 		panic(err)
 	}
 
-	var out []byte
+	out := make([]byte, 1024)
 	err = ioctl(zfs, zpool, encoded, out)
-	if err := nv.Decode(out, errlist); err != nil && err != io.EOF {
-		panic(err)
+	if errno, ok := err.(syscall.Errno); ok && errno == 17 {
+		if err := nv.Decode(out, errlist); err != nil {
+			panic(err)
+		}
 	}
 	return err
 }
