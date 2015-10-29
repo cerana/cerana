@@ -39,7 +39,7 @@ func main() {
 
 	cmdExists := &cobra.Command{
 		Use:   "exists",
-		Short: "check whether dataset exists",
+		Short: "Test for dataset existence.",
 		Run: func(cmd *cobra.Command, args []string) {
 			name, _ := cmd.Flags().GetString("name")
 			if err := exists(name); err != nil {
@@ -52,7 +52,7 @@ func main() {
 
 	cmdDestroy := &cobra.Command{
 		Use:   "destroy",
-		Short: "destroy an unmounted dataset, volume, or snapshot",
+		Short: "Destroys a dataset or volume.",
 		Run: func(cmd *cobra.Command, args []string) {
 			name, _ := cmd.Flags().GetString("name")
 			deferFlag, _ := cmd.Flags().GetBool("defer")
