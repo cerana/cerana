@@ -29,7 +29,7 @@ func snapshot(zpool string, snapNames []string, props map[string]string) (map[st
 	var errlist map[string]int32
 	out := make([]byte, 1024)
 	err = ioctl(zfs, zpool, encoded, out)
-	if errno, ok := err.(syscall.Errno); ok && errno == 17 {
+	if errno, ok := err.(syscall.Errno); ok && errno == syscall.EEXIST {
 		// Try to get errlist info, but ignore any errors in the attempt
 		_ = nv.Decode(out, &errlist)
 	}
