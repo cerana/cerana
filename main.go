@@ -97,9 +97,8 @@ func main() {
 				log.Fatal("bad prop json")
 			}
 
-			errlist := make(map[string]int32)
-			err := snapshot(zpool, snaps, props, &errlist)
-			if len(errlist) > 0 {
+			errlist, err := snapshot(zpool, snaps, props)
+			if errlist != nil {
 				log.Error(errlist)
 			}
 			return err
