@@ -110,11 +110,23 @@ func main() {
 	cmdSnapshot.Flags().StringP("zpool", "z", "", "zpool")
 	cmdSnapshot.Flags().StringP("props", "p", "{}", "snapshot properties")
 
+	cmdRollback := genCommand("rollback", "Rollback this filesystem or volume to its most recent snapshot.",
+		func(cmd *cobra.Command, args []string) error {
+			name, _ := cmd.Flags().GetString("name")
+			result, err := rollback(name)
+			if err == nil {
+				fmt.Println(result)
+			}
+			return err
+		},
+	)
+
 	root.AddCommand(
 		cmdExists,
 		cmdDestroy,
 		cmdHolds,
 		cmdSnapshot,
+		cmdRollback,
 	)
 	if err := root.Execute(); err != nil {
 		log.Fatal("root execute failed:", err)
