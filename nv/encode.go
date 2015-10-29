@@ -90,6 +90,7 @@ func encodeStruct(v reflect.Value, w io.Writer) (int, error) {
 }
 
 func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) ([]byte, error) {
+	field = deref(field)
 	var types = map[reflect.Kind]dataType{
 		reflect.Bool:    BOOLEAN_VALUE,
 		reflect.Float32: DOUBLE,
@@ -146,7 +147,7 @@ func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) ([
 	case reflect.Interface:
 		return encodeItem(w, name, tags, reflect.ValueOf(field.Interface()))
 	case reflect.Slice, reflect.Array:
-		p.Type, ok = sliceTypes[field.Index(0).Kind()]
+		p.Type, ok = sliceTypes[field.Type().Elem().Kind()]
 		switch tagType {
 		case BYTE:
 			p.Type = BYTE_ARRAY

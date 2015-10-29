@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -25,7 +26,7 @@ func genCommand(use, short string, fn handler) *cobra.Command {
 		if err := fn(cmd, args); err != nil {
 			log.Fatal(err)
 		} else {
-			log.Info(use)
+			log.Info("success")
 		}
 	}
 	return &cobra.Command{
@@ -80,10 +81,40 @@ func main() {
 			return err
 		})
 
+	cmdSnapshot := genCommand("snapshot <snap1> <snap2> ...", "Creates a snapshot of a dataset or volume",
+		func(cmd *cobra.Command, snaps []string) error {
+			zpool, _ := cmd.Flags().GetString("zpool")
+			if zpool == "" {
+				log.Fatal("zpool required")
+			}
+			if len(snaps) == 0 {
+				log.Fatal("at least one snapshot name required")
+			}
+
+			var props map[string]string
+			propJSON, _ := cmd.Flags().GetString("props")
+			if err := json.Unmarshal([]byte(propJSON), &props); err != nil {
+				log.Fatal("bad prop json")
+			}
+
+			errlist, err := snapshot(zpool, snaps, props)
+			if errlist != nil {
+				log.Error(errlist)
+			}
+			return err
+		},
+	)
+	cmdSnapshot.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+		// Use PersistentPreRun here to replace the root one
+	}
+	cmdSnapshot.Flags().StringP("zpool", "z", "", "zpool")
+	cmdSnapshot.Flags().StringP("props", "p", "{}", "snapshot properties")
+
 	root.AddCommand(
 		cmdExists,
 		cmdDestroy,
 		cmdHolds,
+		cmdSnapshot,
 	)
 	if err := root.Execute(); err != nil {
 		log.Fatal("root execute failed:", err)
