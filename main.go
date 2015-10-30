@@ -121,12 +121,46 @@ func main() {
 		},
 	)
 
+	cmdCreate := genCommand("create", "Create a ZFS dataset or volume",
+		func(cmd *cobra.Command, args []string) error {
+			name, _ := cmd.Flags().GetString("name")
+			createTypeName, _ := cmd.Flags().GetString("type")
+			createType, err := getDMUType(createTypeName)
+			if err != nil {
+				log.Fatal("invalid type")
+			}
+
+			propJSON, _ := cmd.Flags().GetString("props")
+			var props map[string]interface{}
+			if err := json.Unmarshal([]byte(propJSON), &props); err != nil {
+				log.Fatal("bad prop json")
+			}
+
+			if volsize, ok := props["volsize"]; ok {
+				if volsizeFloat, ok := volsize.(float64); ok {
+					props["volsize"] = uint64(volsizeFloat)
+				}
+			}
+
+			if volblocksize, ok := props["volblocksize"]; ok {
+				if volblocksizeFloat, ok := volblocksize.(float64); ok {
+					props["volblocksize"] = uint64(volblocksizeFloat)
+				}
+			}
+
+			return create(name, createType, props)
+		},
+	)
+	cmdCreate.Flags().StringP("type", "t", "zfs", "zfs or zvol")
+	cmdCreate.Flags().StringP("props", "p", "{}", "create properties")
+
 	root.AddCommand(
 		cmdExists,
 		cmdDestroy,
 		cmdHolds,
 		cmdSnapshot,
 		cmdRollback,
+		cmdCreate,
 	)
 	if err := root.Execute(); err != nil {
 		log.Fatal("root execute failed:", err)
