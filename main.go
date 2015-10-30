@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"syscall"
 
 	log "github.com/Sirupsen/logrus"
 	cobra "github.com/spf13/cobra"
@@ -162,7 +161,7 @@ func main() {
 			embedOK, _ := cmd.Flags().GetBool("embed")
 			fromSnap, _ := cmd.Flags().GetString("fromsnap")
 
-			outputFD := uintptr(syscall.Stdout)
+			outputFD := os.Stdout.Fd()
 			output, _ := cmd.Flags().GetString("output")
 			if output != "" {
 				outputFile, err := os.Create(output)
