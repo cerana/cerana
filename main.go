@@ -154,6 +154,37 @@ func main() {
 	cmdCreate.Flags().StringP("type", "t", "zfs", "zfs or zvol")
 	cmdCreate.Flags().StringP("props", "p", "{}", "create properties")
 
+	cmdSend := genCommand("send", "Generate a send stream from a snapshot",
+		func(cmd *cobra.Command, args []string) error {
+			name, _ := cmd.Flags().GetString("name")
+			largeBlockOK, _ := cmd.Flags().GetBool("largeblock")
+			embedOK, _ := cmd.Flags().GetBool("embed")
+			fromSnap, _ := cmd.Flags().GetString("fromsnap")
+
+			outputFD := os.Stdout.Fd()
+			output, _ := cmd.Flags().GetString("output")
+			if output != "" {
+				outputFile, err := os.Create(output)
+				if err != nil {
+					return err
+				}
+				defer outputFile.Close()
+
+				outputFD = outputFile.Fd()
+			} else {
+				// If sending on stdout, don't log anything else unless there's
+				// an error
+				log.SetLevel(log.ErrorLevel)
+			}
+
+			return send(name, outputFD, fromSnap, largeBlockOK, embedOK)
+		},
+	)
+	cmdSend.Flags().StringP("output", "o", "", "output file")
+	cmdSend.Flags().StringP("fromsnap", "f", "", "full snap name to send incremental from")
+	cmdSend.Flags().BoolP("embed", "e", false, "embed data")
+	cmdSend.Flags().BoolP("largeblock", "l", false, "large block")
+
 	root.AddCommand(
 		cmdExists,
 		cmdDestroy,
@@ -161,6 +192,7 @@ func main() {
 		cmdSnapshot,
 		cmdRollback,
 		cmdCreate,
+		cmdSend,
 	)
 	if err := root.Execute(); err != nil {
 		log.Fatal("root execute failed:", err)
