@@ -185,6 +185,26 @@ func main() {
 	cmdSend.Flags().BoolP("embed", "e", false, "embed data")
 	cmdSend.Flags().BoolP("largeblock", "l", false, "large block")
 
+	cmdClone := genCommand("clone", "Creates a clone from a snapshot",
+		func(cmd *cobra.Command, args []string) error {
+			name, _ := cmd.Flags().GetString("name")
+			origin, _ := cmd.Flags().GetString("origin")
+			if origin == "" {
+				log.Fatal("missing origin snapshot")
+			}
+
+			var props map[string]interface{}
+			propJSON, _ := cmd.Flags().GetString("props")
+			if err := json.Unmarshal([]byte(propJSON), &props); err != nil {
+				log.Fatal("bad prop json")
+			}
+
+			return clone(name, origin, props)
+		},
+	)
+	cmdClone.Flags().StringP("origin", "o", "", "name of origin snapshot")
+	cmdClone.Flags().StringP("props", "p", "{}", "snapshot properties")
+
 	root.AddCommand(
 		cmdExists,
 		cmdDestroy,
@@ -193,6 +213,7 @@ func main() {
 		cmdRollback,
 		cmdCreate,
 		cmdSend,
+		cmdClone,
 	)
 	if err := root.Execute(); err != nil {
 		log.Fatal("root execute failed:", err)
