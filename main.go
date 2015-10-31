@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	cobra "github.com/spf13/cobra"
@@ -38,6 +39,9 @@ func genCommand(use, short string, fn handler) *cobra.Command {
 }
 
 func main() {
+	dummyPersistentPreRun := func(cmd *cobra.Command, args []string) {
+		// Use PersistentPreRun here to replace the root one
+	}
 	root := &cobra.Command{
 		Use:  "gozfs",
 		Long: "gozfs is the cli for testing the go zfs ioctl api",
@@ -104,9 +108,7 @@ func main() {
 			return err
 		},
 	)
-	cmdSnapshot.PersistentPreRun = func(cmd *cobra.Command, args []string) {
-		// Use PersistentPreRun here to replace the root one
-	}
+	cmdSnapshot.PersistentPreRun = dummyPersistentPreRun
 	cmdSnapshot.Flags().StringP("zpool", "z", "", "zpool")
 	cmdSnapshot.Flags().StringP("props", "p", "{}", "snapshot properties")
 
@@ -221,6 +223,36 @@ func main() {
 	cmdRename.Flags().StringP("newname", "o", "", "new name of dataset")
 	cmdRename.Flags().BoolP("recursive", "r", false, "recursively rename snapshots")
 
+	cmdList := genCommand("list", "List filesystems, volumes, snapshots and bookmarks.",
+		func(cmd *cobra.Command, args []string) error {
+			name, _ := cmd.Flags().GetString("name")
+			recurse, _ := cmd.Flags().GetBool("recurse")
+			depth, _ := cmd.Flags().GetUint64("depth")
+			typesList, _ := cmd.Flags().GetString("types")
+
+			types := map[string]bool{}
+			if typesList != "" {
+				for _, t := range strings.Split(typesList, ",") {
+					types[t] = true
+				}
+			}
+
+			m, err := list(name, types, recurse, depth)
+			if err != nil {
+				return err
+			}
+			out, err := json.MarshalIndent(m, "", "  ")
+			if err != nil {
+				return err
+			}
+			fmt.Printf("%s\n", out)
+			return nil
+		})
+	cmdList.PersistentPreRun = dummyPersistentPreRun
+	cmdList.Flags().StringP("types", "t", "", "Comma seperated list of dataset types to list.")
+	cmdList.Flags().BoolP("recurse", "r", false, "Recurse to all levels.")
+	cmdList.Flags().Uint64P("depth", "d", 0, "Recursion depth limit, 0 for unlimited")
+
 	root.AddCommand(
 		cmdExists,
 		cmdDestroy,
@@ -231,6 +263,7 @@ func main() {
 		cmdSend,
 		cmdClone,
 		cmdRename,
+		cmdList,
 	)
 	if err := root.Execute(); err != nil {
 		log.Fatal("root execute failed:", err)
