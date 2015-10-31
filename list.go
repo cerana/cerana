@@ -49,6 +49,20 @@ func getSize(b []byte) (int64, error) {
 	return int64(h.Size), nil
 }
 
+func properties(name string, types map[string]bool, recurse bool, depth uint64) (map[string]interface{}, error) {
+	listing, err := list(name, types, recurse, depth)
+	if err != nil {
+		return nil, err
+	}
+	ret := make(map[string]interface{}, len(listing))
+	for _, l := range listing {
+		name := l["name"].(string)
+		props := l["properties"].(map[string]interface{})
+		ret[name] = props
+	}
+	return ret, nil
+}
+
 func list(name string, types map[string]bool, recurse bool, depth uint64) ([]map[string]interface{}, error) {
 	var reader io.Reader
 	reader, writer, err := os.Pipe()
