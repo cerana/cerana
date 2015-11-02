@@ -26,7 +26,7 @@ func genCommand(use, short string, fn handler) *cobra.Command {
 		if err := fn(cmd, args); err != nil {
 			log.Fatal(err)
 		} else {
-			log.Info("success")
+			log.Debug("success")
 		}
 	}
 	return &cobra.Command{
