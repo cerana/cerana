@@ -11,7 +11,7 @@ func destroy(name string, deferFlag bool) error {
 
 	encoded, err := nv.Encode(m)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	return ioctl(zfs, name, encoded, nil)

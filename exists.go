@@ -10,7 +10,7 @@ func exists(name string) error {
 
 	encoded, err := nv.Encode(m)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	return ioctl(zfs, name, encoded, nil)
