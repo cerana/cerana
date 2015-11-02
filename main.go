@@ -205,6 +205,22 @@ func main() {
 	cmdClone.Flags().StringP("origin", "o", "", "name of origin snapshot")
 	cmdClone.Flags().StringP("props", "p", "{}", "snapshot properties")
 
+	cmdRename := genCommand("rename", "Rename a dataset",
+		func(cmd *cobra.Command, args []string) error {
+			name, _ := cmd.Flags().GetString("name")
+			newName, _ := cmd.Flags().GetString("newname")
+			recursive, _ := cmd.Flags().GetBool("recursive")
+
+			failedName, err := rename(name, newName, recursive)
+			if failedName != "" {
+				log.Error(failedName)
+			}
+			return err
+		},
+	)
+	cmdRename.Flags().StringP("newname", "o", "", "new name of dataset")
+	cmdRename.Flags().BoolP("recursive", "r", false, "recursively rename snapshots")
+
 	root.AddCommand(
 		cmdExists,
 		cmdDestroy,
@@ -214,6 +230,7 @@ func main() {
 		cmdCreate,
 		cmdSend,
 		cmdClone,
+		cmdRename,
 	)
 	if err := root.Execute(); err != nil {
 		log.Fatal("root execute failed:", err)
