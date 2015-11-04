@@ -19,6 +19,14 @@ const (
 //go:generate stringer -type=dataType
 type dataType uint32
 
+// Boolean is used for encoding and decoding the nvlist BOOLEAN datatype, which
+// is different than BOOLEAN_VALUE.  An nvlist BOOLEAN data type consists of a
+// string key and a zero length value. Instead of dealing with inconsistencies
+// when working with go structs vs map[string]interface, special go property
+// annotations, and/or inferring when to handle data as a BOOLEAN based on
+// nil/interface{} values, this explicitly named go type is to be used.
+type Boolean bool
+
 // PrettyPrint writes into `dst` a decoded form of `src` meant for human
 // consumption. The nv/xdr types are printed in sorted order along with the name
 // and value of the nvp.
@@ -149,6 +157,8 @@ func (p pair) headerSize() int {
 func (p pair) encodedSize() int {
 	valSize := 0
 	switch p.Type {
+	case BOOLEAN:
+		valSize = 0
 	case BYTE, INT8, UINT8, INT16, UINT16, BOOLEAN_VALUE, INT32, UINT32:
 		valSize = 4
 	case INT64, UINT64, HRTIME, DOUBLE:
@@ -187,6 +197,8 @@ func (p pair) decodedSize() int {
 
 	valSize := 0
 	switch p.Type {
+	case BOOLEAN:
+		valSize = 0
 	case BYTE, INT8, UINT8:
 		valSize = 1
 	case INT16, UINT16:

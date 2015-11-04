@@ -145,6 +145,12 @@ func decodeListStruct(r io.ReadSeeker, target reflect.Value) error {
 		var v interface{}
 		dec := newDecoder(r)
 		switch dataPair.Type {
+		case BOOLEAN:
+			v := Boolean(true)
+			val = reflect.ValueOf(v)
+			fieldSetFunc = func() {
+				targetField.Set(val)
+			}
 		case BOOLEAN_VALUE:
 			v, err = dec.DecodeBool()
 			val = reflect.ValueOf(v)
