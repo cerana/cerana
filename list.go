@@ -138,6 +138,11 @@ func list(name string, types map[string]bool, recurse bool, depth uint64) ([]*ds
 		if err != nil {
 			break
 		}
+
+		if m.Properties.Clones.Value == nil {
+			m.Properties.Clones.Value = make(map[string]nv.Boolean)
+		}
+
 		ret = append(ret, m)
 	}
 	return ret, err
