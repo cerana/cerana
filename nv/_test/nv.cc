@@ -25,7 +25,7 @@ std::stringstream defs;
 std::stringstream tests;
 
 std::unordered_map<int, const char *> types = {
-	{DATA_TYPE_BOOLEAN, "bool"},
+	{DATA_TYPE_BOOLEAN, "Boolean"},
 	{DATA_TYPE_BYTE, "byte"},
 	{DATA_TYPE_INT16, "int16"},
 	{DATA_TYPE_UINT16, "uint16"},
@@ -316,7 +316,15 @@ int main() {
 		print(l, "empty");
 		fnvlist_free(l);
 	}
-	{
+
+    {
+        l = fnvlist_alloc();
+        fnvlist_add_boolean(l,"true");
+        print(l,"boolean");
+        fnvlist_free(l);
+    }
+
+    {
 		l = fnvlist_alloc();
 		fnvlist_add_boolean_value(l, "false", B_FALSE);
 		fnvlist_add_boolean_value(l, "true", B_TRUE);

@@ -144,6 +144,10 @@ func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) ([
 	p.Type, ok = types[field.Kind()]
 
 	switch field.Kind() {
+	case reflect.Bool:
+		if field.Type().Name() == "Boolean" {
+			p.Type = BOOLEAN
+		}
 	case reflect.Interface:
 		return encodeItem(w, name, tags, reflect.ValueOf(field.Interface()))
 	case reflect.Slice, reflect.Array:
@@ -175,6 +179,8 @@ func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) ([
 	value := p.data
 	vbuf := &bytes.Buffer{}
 	switch p.Type {
+	case BOOLEAN:
+		p.NElements = 0
 	case BYTE:
 		value = int8(value.(uint8))
 	case UINT8:
@@ -238,7 +244,7 @@ func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) ([
 		p.data = vbuf.Bytes()
 	}
 
-	if vbuf.Len() == 0 {
+	if vbuf.Len() == 0 && p.Type != BOOLEAN {
 		_, err := xdr.NewEncoder(vbuf).Encode(value)
 		if err != nil {
 			return nil, err

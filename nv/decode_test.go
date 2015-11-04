@@ -21,7 +21,15 @@ func check_array(t *testing.T, field string, value interface{}, l int, fn func([
 }
 
 func check_boolean(t *testing.T, field string, value interface{}) {
-	check_boolean_value(t, field, value)
+	exp := false
+	_, err := fmt.Sscanf(field, "%t", &exp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := bool(value.(Boolean))
+	if got != exp {
+		t.Fatal("expected:", exp, "got:", got)
+	}
 }
 func check_boolean_value(t *testing.T, field string, value interface{}) {
 	exp := false
@@ -286,7 +294,8 @@ var checkers map[string]func(*testing.T, string, interface{})
 
 func init() {
 	checkers = map[string]func(*testing.T, string, interface{}){
-		"bool":                      check_boolean,
+		"nv.Boolean":                check_boolean,
+		"bool":                      check_boolean_value,
 		"byte":                      check_byte,
 		"int16":                     check_int16,
 		"uint16":                    check_uint16,
