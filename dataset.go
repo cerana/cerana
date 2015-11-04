@@ -1,6 +1,10 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/mistifyio/gozfs/nv"
+)
 
 const (
 	DatasetFilesystem = "filesystem"
@@ -74,7 +78,7 @@ type dsProperties struct {
 }
 
 type clones struct {
-	Value map[string]bool `nv:"value"`
+	Value map[string]nv.Boolean `nv:"value"`
 }
 
 type propUint64 struct {
