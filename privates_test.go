@@ -137,6 +137,72 @@ func (s *internal) TestClone() {
 	s.NoError(clone(s.pool+"/a/z", s.pool+"/a/1@snap1", nil))
 }
 
+func (s *internal) TestCreateFS() {
+	s.EqualError(create("gozfs-test-no-exists/1", dmuZFS, nil), enoent)
+	s.EqualError(create(s.pool+"/~1", dmuZFS, nil), einval)
+	s.EqualError(create(s.pool+"/1", dmuNumtypes+1, nil), einval)
+	s.EqualError(create(s.pool+"/1", dmuZFS, map[string]interface{}{"bad-prop": true}), einval)
+	s.EqualError(create(s.pool+"/"+longName, dmuZFS, nil), einval) // WANTE(ENAMETOOLONG)
+	s.NoError(create(s.pool+"/1", dmuZFS, nil))
+	s.EqualError(create(s.pool+"/1", dmuZFS, nil), eexist)
+	s.EqualError(create(s.pool+"/2/2", dmuZFS, nil), enoent)
+}
+
+func (s *internal) TestCreateVOL() {
+	type p map[string]interface{}
+	u1024 := uint64(1024)
+	u8192 := u1024 * 8
+
+	tests := []struct {
+		name  string
+		props p
+		err   string
+	}{
+		{"gozfs-test-no-exists/1", nil, enoent},
+		{s.pool + "/" + longName, nil, einval}, // WANTE(ENAMETOOLONG)
+		{s.pool + "/~1", nil, einval},
+		{s.pool + "/1", p{"bad-prop": true}, einval},
+		{s.pool + "/2", p{"volsize": 0}, einval},
+		{s.pool + "/3", p{"volsize": 1}, einval},
+		{s.pool + "/4", p{"volsize": 8*1024 + 1}, einval},
+		{s.pool + "/5", p{"volsize": 8 * 1024}, einval},
+		{s.pool + "/6", p{"volsize": uint64(0)}, einval},
+		{s.pool + "/7", p{"volsize": uint64(1)}, einval},
+		{s.pool + "/8", p{"volsize": u8192 + 1}, einval},
+		{s.pool + "/9", p{"volsize": u8192}, ""},
+		{s.pool + "/9", p{"volsize": u8192}, eexist},
+		{s.pool + "/10", p{"volsize": 0, "volblocksize": 1024}, einval},
+		{s.pool + "/11", p{"volsize": 1, "volblocksize": 1024}, einval},
+		{s.pool + "/12", p{"volsize": 1024 + 1, "volblocksize": 1024}, einval},
+		{s.pool + "/13", p{"volsize": 1024, "volblocksize": 1024}, einval},
+		{s.pool + "/14", p{"volsize": uint64(0), "volblocksize": 1024}, einval},
+		{s.pool + "/15", p{"volsize": uint64(1), "volblocksize": 1024}, einval},
+		{s.pool + "/16", p{"volsize": u1024 + 1, "volblocksize": 1024}, einval},
+		{s.pool + "/17", p{"volsize": u1024, "volblocksize": 1024}, einval},
+		{s.pool + "/18", p{"volsize": 0, "volblocksize": u1024}, einval},
+		{s.pool + "/19", p{"volsize": 1, "volblocksize": u1024}, einval},
+		{s.pool + "/20", p{"volsize": 1024 + 1, "volblocksize": u1024}, einval},
+		{s.pool + "/21", p{"volsize": 1024, "volblocksize": u1024}, einval},
+		{s.pool + "/22", p{"volsize": uint64(0), "volblocksize": u1024}, einval},
+		{s.pool + "/23", p{"volsize": uint64(1), "volblocksize": u1024}, einval},
+		{s.pool + "/24", p{"volsize": u1024 + 1, "volblocksize": u1024}, einval},
+		{s.pool + "/25", p{"volsize": u1024, "volblocksize": u1024}, ""},
+		{s.pool + "/25", p{"volsize": u1024, "volblocksize": u1024}, eexist},
+		{s.pool + "/26/1", p{"volsize": u1024, "volblocksize": u1024}, enoent},
+	}
+	for _, test := range tests {
+		err := create(test.name, dmuZVOL, test.props)
+		if test.err == "" {
+			s.NoError(err, "name: %v, props: %v",
+				test.name, test.props)
+		} else {
+			s.EqualError(err, test.err, "name: %v, props: %v",
+				test.name, test.props)
+		}
+	}
+
+}
+
 func (s *internal) TestListEmpty() {
 	s.destroy()
 
