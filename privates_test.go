@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"strings"
 	"syscall"
 	"testing"
 
@@ -12,8 +11,10 @@ import (
 )
 
 var (
-	einval = syscall.EINVAL.Error()
-	enoent = syscall.ENOENT.Error()
+	eexist       = syscall.EEXIST.Error()
+	einval       = syscall.EINVAL.Error()
+	enametoolong = syscall.ENAMETOOLONG.Error()
+	enoent       = syscall.ENOENT.Error()
 )
 
 const (
@@ -126,6 +127,14 @@ func (s *internal) SetupTest() {
 
 func (s *internal) TearDownTest() {
 	s.destroy()
+}
+
+func (s *internal) TestClone() {
+	s.EqualError(clone(s.pool+"/a/2", s.pool+"/a/1", nil), eexist)
+	s.EqualError(clone(s.pool+"/a 3", s.pool+"/a/1", nil), einval)
+	s.EqualError(clone(s.pool+"/a/"+longName, s.pool+"/a/1", nil), einval) // WANTE(ENAMETOOLONG)
+	s.EqualError(clone(s.pool+"/a/z", s.pool+"/a/"+longName, nil), enametoolong)
+	s.NoError(clone(s.pool+"/a/z", s.pool+"/a/1@snap1", nil))
 }
 
 func (s *internal) TestListEmpty() {
