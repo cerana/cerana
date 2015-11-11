@@ -4,9 +4,21 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"strings"
+	"syscall"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
+)
+
+var (
+	einval = syscall.EINVAL.Error()
+	enoent = syscall.ENOENT.Error()
+)
+
+const (
+	// 257 * "z"
+	longName = "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
 )
 
 type internal struct {
@@ -116,5 +128,53 @@ func (s *internal) TearDownTest() {
 	s.destroy()
 }
 
-func (s *internal) TestDummy() {
+func (s *internal) TestListEmpty() {
+	s.destroy()
+
+	m, err := list("", nil, true, 0)
+	s.NoError(err, "m: %v", m)
+	s.Assert().Len(m, 0)
+
+	s.create(s.pool)
+}
+
+func (s *internal) TestList() {
+	type t map[string]bool
+	tests := []struct {
+		name    string
+		types   t
+		recurse bool
+		depth   uint64
+		expNum  int
+		err     string
+	}{
+		{name: "blah", err: enoent},
+		{name: s.pool + "/" + longName, err: einval}, // WANTE(ENAMETOOLONG)
+		{name: s.pool, expNum: 1},
+		{name: s.pool, recurse: true, expNum: 11},
+		{name: s.pool, recurse: true, depth: 1, expNum: 4},
+		{name: s.pool + "/a", recurse: true, expNum: 5},
+		{name: s.pool + "/a", recurse: true, depth: 1, expNum: 5},
+		{name: s.pool, types: t{"volume": true}, recurse: true, expNum: 4},
+		{name: s.pool, types: t{"volume": true}, recurse: true, depth: 1, expNum: 0},
+		{name: s.pool + "/a", types: t{"volume": true}, recurse: true, expNum: 0},
+		{name: s.pool + "/b", types: t{"volume": true}, recurse: true, expNum: 4},
+		{name: s.pool + "/b", types: t{"volume": true}, recurse: true, depth: 1, expNum: 4},
+		{name: s.pool, types: t{"snapshot": true}, recurse: true, expNum: 12},
+		{name: s.pool, types: t{"snapshot": true}, recurse: true, depth: 1, expNum: 0},
+		{name: s.pool + "/a", types: t{"snapshot": true}, recurse: true, expNum: 4},
+		{name: s.pool + "/a/1", types: t{"snapshot": true}, recurse: true, expNum: 1},
+		{name: s.pool + "/b", types: t{"snapshot": true}, recurse: true, expNum: 4},
+		{name: s.pool + "/b/1", types: t{"snapshot": true}, recurse: true, expNum: 1},
+	}
+	for i, test := range tests {
+		m, err := list(test.name, test.types, test.recurse, test.depth)
+		if test.err != "" {
+			s.EqualError(err, test.err, "test num:%d", i)
+			s.Nil(m, "test:%d", i)
+		} else {
+			s.NoError(err, "test:%d", i)
+			s.Len(m, test.expNum, "test num:%d", i)
+		}
+	}
 }
