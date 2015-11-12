@@ -11,6 +11,7 @@ import (
 )
 
 var (
+	ebusy        = syscall.EBUSY.Error()
 	eexist       = syscall.EEXIST.Error()
 	einval       = syscall.EINVAL.Error()
 	enametoolong = syscall.ENAMETOOLONG.Error()
@@ -200,6 +201,74 @@ func (s *internal) TestCreateVOL() {
 				test.name, test.props)
 		}
 	}
+
+}
+
+func unmount(ds string) error {
+	return command("sudo", "zfs", "unmount", ds).Run()
+}
+
+func unhold(tag, snapshot string) error {
+	return command("sudo", "zfs", "release", tag, snapshot).Run()
+}
+
+func destroyKids(ds string) error {
+	script := `
+		ds=` + ds + `
+		for fs in $(zfs list -H -t all $ds | sort -r | tail -n +2 | awk '{print $1}'); do
+			zfs destroy -r $fs
+		done
+		zfs list -t all $ds;
+		`
+	return command("sudo", "bash", "-c", script).Run()
+}
+
+func (s *internal) TestDestroy() {
+	s.EqualError(destroy("non-existent-pool", false), enoent)
+	s.EqualError(destroy("non-existent-pool", true), enoent)
+	s.EqualError(destroy(s.pool+"/"+longName, false), einval) // WANTE(ENAMETOOLONG)
+	s.EqualError(destroy(s.pool+"/"+longName, true), einval)  // WANTE(ENAMETOOLONG)
+	s.EqualError(destroy(s.pool+"/z", false), enoent)
+	s.EqualError(destroy(s.pool+"/z", true), enoent)
+
+	// mounted
+	s.EqualError(destroy(s.pool+"/a/3", false), ebusy)
+	s.NoError(unmount(s.pool + "/a/3"))
+	s.NoError(destroy(s.pool+"/a/3", true))
+
+	// has holds
+	s.EqualError(destroy(s.pool+"/a/2@snap1", false), ebusy)
+	s.NoError(unhold("hold1", s.pool+"/a/2@snap1"))
+	s.NoError(destroy(s.pool+"/a/2@snap1", false))
+	s.EqualError(destroy(s.pool+"/a/2@snap2", false), ebusy)
+	s.NoError(unhold("hold2", s.pool+"/a/2@snap2"))
+	s.NoError(destroy(s.pool+"/a/2@snap2", true))
+
+	s.EqualError(destroy(s.pool+"/b/2@snap1", false), ebusy)
+	s.NoError(unhold("hold1", s.pool+"/b/2@snap1"))
+	s.NoError(destroy(s.pool+"/b/2@snap1", true))
+	s.EqualError(destroy(s.pool+"/b/2@snap2", false), ebusy)
+	s.NoError(unhold("hold2", s.pool+"/b/2@snap2"))
+	s.NoError(destroy(s.pool+"/b/2@snap2", true))
+
+	// misc
+	s.NoError(destroy(s.pool+"/a/4", true))
+	s.EqualError(destroy(s.pool+"/a/4", false), enoent)
+	s.EqualError(destroy(s.pool+"/a/4", true), enoent)
+	s.NoError(destroy(s.pool+"/b/4", false))
+	s.NoError(destroy(s.pool+"/b/3", true))
+
+	// has child datasets
+	s.EqualError(destroy(s.pool+"/a", false), ebusy)
+	s.NoError(unmount(s.pool + "/a"))
+	s.EqualError(destroy(s.pool+"/a", false), eexist)
+	s.NoError(destroyKids(s.pool + "/a"))
+	s.NoError(destroy(s.pool+"/a", false))
+
+	s.EqualError(destroy(s.pool+"/b", false), ebusy)
+	s.NoError(destroyKids(s.pool + "/b"))
+	s.NoError(unmount(s.pool + "/b"))
+	s.NoError(destroy(s.pool+"/b", true))
 
 }
 
