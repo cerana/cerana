@@ -272,6 +272,11 @@ func (s *internal) TestDestroy() {
 
 }
 
+func (s *internal) TestExists() {
+	s.EqualError(exists("should-not-exist"), enoent)
+	s.NoError(exists(s.pool + "/a"))
+}
+
 func (s *internal) TestListEmpty() {
 	s.destroy()
 
