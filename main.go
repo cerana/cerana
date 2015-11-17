@@ -239,22 +239,27 @@ func main() {
 	cmdList := genCommand("list", "List filesystems, volumes, snapshots and bookmarks.",
 		func(cmd *cobra.Command, args []string) error {
 			name, _ := cmd.Flags().GetString("name")
-			recurse, _ := cmd.Flags().GetBool("recurse")
-			depth, _ := cmd.Flags().GetUint64("depth")
-			typesList, _ := cmd.Flags().GetString("types")
-
-			types := map[string]bool{}
-			if typesList != "" {
-				for _, t := range strings.Split(typesList, ",") {
-					types[t] = true
-				}
+			dsType, _ := cmd.Flags().GetString("type")
+			if dsType == "" {
+				dsType = "all"
 			}
 
-			m, err := list(name, types, recurse, depth)
+			var datasets []*Dataset
+			var err error
+			switch dsType {
+			case "all":
+				datasets, err = Datasets(name)
+			case DatasetFilesystem:
+				datasets, err = Filesystems(name)
+			case DatasetSnapshot:
+				datasets, err = Snapshots(name)
+			case DatasetVolume:
+				datasets, err = Volumes(name)
+			}
 			if err != nil {
 				return err
 			}
-			out, err := json.MarshalIndent(m, "", "  ")
+			out, err := json.MarshalIndent(datasets, "", "  ")
 			if err != nil {
 				return err
 			}
@@ -262,9 +267,7 @@ func main() {
 			return nil
 		})
 	cmdList.PersistentPreRun = dummyPersistentPreRun
-	cmdList.Flags().StringP("types", "t", "", "Comma seperated list of dataset types to list.")
-	cmdList.Flags().BoolP("recurse", "r", false, "Recurse to all levels.")
-	cmdList.Flags().Uint64P("depth", "d", 0, "Recursion depth limit, 0 for unlimited")
+	cmdList.Flags().StringP("type", "t", "all", strings.Join([]string{"all", DatasetFilesystem, DatasetVolume, DatasetSnapshot}, ","))
 
 	cmdGet := genCommand("get", "Get dataset properties",
 		func(cmd *cobra.Command, args []string) error {
