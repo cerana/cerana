@@ -137,11 +137,8 @@ func main() {
 	cmdCreate := genCommand("create", "Create a ZFS dataset or volume",
 		func(cmd *cobra.Command, args []string) error {
 			name, _ := cmd.Flags().GetString("name")
+			volsize, _ := cmd.Flags().GetUint64("volsize")
 			createTypeName, _ := cmd.Flags().GetString("type")
-			createType, err := getDMUType(createTypeName)
-			if err != nil {
-				log.Fatal("invalid type")
-			}
 
 			propJSON, _ := cmd.Flags().GetString("props")
 			var props map[string]interface{}
@@ -149,22 +146,23 @@ func main() {
 				log.Fatal("bad prop json")
 			}
 
-			if volsize, ok := props["volsize"]; ok {
-				if volsizeFloat, ok := volsize.(float64); ok {
-					props["volsize"] = uint64(volsizeFloat)
+			if createTypeName == "zvol" {
+				if volblocksize, ok := props["volblocksize"]; ok {
+					if volblocksizeFloat, ok := volblocksize.(float64); ok {
+						props["volblocksize"] = uint64(volblocksizeFloat)
+					}
 				}
-			}
 
-			if volblocksize, ok := props["volblocksize"]; ok {
-				if volblocksizeFloat, ok := volblocksize.(float64); ok {
-					props["volblocksize"] = uint64(volblocksizeFloat)
-				}
+				_, err := CreateVolume(name, volsize, props)
+				return err
+			} else {
+				_, err := CreateFilesystem(name, props)
+				return err
 			}
-
-			return create(name, createType, props)
 		},
 	)
 	cmdCreate.Flags().StringP("type", "t", "zfs", "zfs or zvol")
+	cmdCreate.Flags().Uint64P("volsize", "s", 0, "volume size")
 	cmdCreate.Flags().StringP("props", "p", "{}", "create properties")
 
 	cmdSend := genCommand("send", "Generate a send stream from a snapshot",
