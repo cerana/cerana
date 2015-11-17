@@ -277,6 +277,25 @@ func (s *internal) TestExists() {
 	s.NoError(exists(s.pool + "/a"))
 }
 
+func (s *internal) TestHolds() {
+	h, err := holds(s.pool + "should-not-exist")
+	s.EqualError(err, enoent)
+
+	h, err = holds(s.pool + "/" + longName)
+	s.EqualError(err, einval) // WANTE(ENAMETOOLONG)
+
+	h, err = holds(s.pool + "/a/2@snap42")
+	s.EqualError(err, enoent)
+
+	h, err = holds(s.pool + "/a")
+	s.NoError(err)
+	s.Len(h, 0)
+
+	h, err = holds(s.pool + "/a/2@snap2")
+	s.NoError(err)
+	s.Len(h, 1)
+}
+
 func (s *internal) TestListEmpty() {
 	s.destroy()
 
