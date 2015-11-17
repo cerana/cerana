@@ -254,7 +254,7 @@ func GetDataset(name string) (*Dataset, error) {
 		return nil, err
 	}
 	if len(datasets) != 1 {
-		return nil, fmt.Errorf("expected 1 dataset, got %s", len(datasets))
+		return nil, fmt.Errorf("expected 1 dataset, got %d", len(datasets))
 	}
 	return datasets[0], nil
 }
