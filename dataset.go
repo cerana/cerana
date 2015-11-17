@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"sort"
 	"strings"
 
 	"github.com/mistifyio/gozfs/nv"
@@ -32,6 +33,39 @@ type Dataset struct {
 	Logicalused   uint64
 	Quota         uint64
 	ds            *ds
+}
+
+// By is the type of a "less" function that defines the ordering of its Dataset arguments.
+type By func(p1, p2 *Dataset) bool
+
+// Sort is a method on the function type, By, that sorts the argument slice according to the function.
+func (by By) Sort(datasets []*Dataset) {
+	ds := &datasetSorter{
+		datasets: datasets,
+		by:       by, // The Sort method's receiver is the function (closure) that defines the sort order.
+	}
+	sort.Sort(ds)
+}
+
+// datasetSorter joins a By function and a slice of Datasets to be sorted.
+type datasetSorter struct {
+	datasets []*Dataset
+	by       func(p1, p2 *Dataset) bool // Closure used in the Less method.
+}
+
+// Len is part of sort.Interface.
+func (s *datasetSorter) Len() int {
+	return len(s.datasets)
+}
+
+// Swap is part of sort.Interface.
+func (s *datasetSorter) Swap(i, j int) {
+	s.datasets[i], s.datasets[j] = s.datasets[j], s.datasets[i]
+}
+
+// Less is part of sort.Interface. It is implemented by calling the "by" closure in the sorter.
+func (s *datasetSorter) Less(i, j int) bool {
+	return s.by(s.datasets[i], s.datasets[j])
 }
 
 type ds struct {
@@ -262,7 +296,9 @@ func (d *Dataset) Children(depth uint64) ([]*Dataset, error) {
 }
 
 // Clones returns a list of clones of the dataset
-func (d *Dataset) Clones()
+func (d *Dataset) Clones() {
+
+}
 
 // Clone clones a snapshot and returns a clone dataset
 func (d *Dataset) Clone(name string, properties map[string]interface{}) (*Dataset, error) {
@@ -340,7 +376,38 @@ func (d *Dataset) SetProperty(name string, value interface{}) error {
 
 // Rollback rolls back a dataset to a previous snapshot
 func (d *Dataset) Rollback(destroyMoreRecent bool) error {
-	// TODO: Handle the destroyMoreRecent option
+	if destroyMoreRecent {
+		// Get the dataset's snapshots
+		dsName := strings.Split(d.Name, "@")[0]
+		snapshots, err := getDatasets(dsName, DatasetSnapshot, true, 1)
+		if err != nil {
+			return err
+		}
+
+		// Order from oldest to newest
+		creation := func(d1, d2 *Dataset) bool {
+			return d1.ds.Properties.Creation.Value < d2.ds.Properties.Creation.Value
+		}
+		By(creation).Sort(snapshots)
+
+		// Destroy any snapshots newer than the target
+		found := false
+		for _, snapshot := range snapshots {
+			// Ignore this snapshot and all older
+			if !found {
+				if snapshot.Name == d.Name {
+					found = true
+					continue
+				}
+			}
+
+			if err := snapshot.Destroy(&DestroyOptions{}); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Rollback to the target snapshot
 	_, err := rollback(d.Name)
 	return err
 }
