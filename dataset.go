@@ -10,6 +10,7 @@ import (
 	"github.com/mistifyio/gozfs/nv"
 )
 
+// ZFS Dataset Types
 const (
 	DatasetFilesystem = "filesystem"
 	DatasetSnapshot   = "snapshot"
@@ -41,7 +42,7 @@ type ds struct {
 
 type dmuObjsetStats struct {
 	CreationTxg  uint64 `nv:"dds_creation_txg"`
-	Guid         uint64 `nv:"dds_guid"`
+	GUID         uint64 `nv:"dds_guid"`
 	Inconsistent bool   `nv:"dds_inconsistent"`
 	IsSnapshot   bool   `nv:"dds_is_snapshot"`
 	NumClones    uint64 `nv:"dds_num_clonse"`
@@ -57,7 +58,7 @@ type dsProperties struct {
 	CreateTxg            propUint64           `nv:"createtxg"`
 	Creation             propUint64           `nv:"creation"`
 	DeferDestroy         propUint64           `nv:"defer_destroy"`
-	Guid                 propUint64           `nv:"guid"`
+	GUID                 propUint64           `nv:"guid"`
 	LogicalReferenced    propUint64           `nv:"logicalreferenced"`
 	LogicalUsed          propUint64           `nv:"logicalused"`
 	Mountpoint           propStringWithSource `nv:"mountpoint"`
@@ -96,8 +97,9 @@ type propClones struct {
 func (p propClones) value() []string {
 	clones := make([]string, len(p.Value))
 	i := 0
-	for clone, _ := range p.Value {
+	for clone := range p.Value {
 		clones[i] = clone
+		i++
 	}
 	return clones
 }
@@ -262,6 +264,7 @@ func (d *Dataset) Children(depth uint64) ([]*Dataset, error) {
 // Clones returns a list of clones of the dataset
 func (d *Dataset) Clones()
 
+// Clone clones a snapshot and returns a clone dataset
 func (d *Dataset) Clone(name string, properties map[string]interface{}) (*Dataset, error) {
 	if err := clone(name, d.Name, properties); err != nil {
 		return nil, err
@@ -269,6 +272,7 @@ func (d *Dataset) Clone(name string, properties map[string]interface{}) (*Datase
 	return GetDataset(name)
 }
 
+// DestroyOptions are used to determine the behavior when destroying a dataset
 type DestroyOptions struct {
 	Recursive       bool
 	RecursiveClones bool
@@ -294,7 +298,7 @@ func (d *Dataset) Destroy(opts *DestroyOptions) error {
 
 	// Recurse Clones
 	if opts.RecursiveClones {
-		for cloneName, _ := range d.ds.Properties.Clones.Value {
+		for cloneName := range d.ds.Properties.Clones.Value {
 			clone, err := GetDataset(cloneName)
 			if err != nil {
 				return err
@@ -312,10 +316,12 @@ func (d *Dataset) Destroy(opts *DestroyOptions) error {
 	return destroy(d.Name, opts.Defer)
 }
 
+// Diff returns changes between a snapshot and the given dataset.
 func (d *Dataset) Diff(name string) {
 	// TODO: Implement when we have a zfs diff implementation
 }
 
+// GetProperty returns the current value of a property from the dataset
 func (d *Dataset) GetProperty(name string) (interface{}, error) {
 	dV := reflect.ValueOf(d.ds.Properties)
 	propertyIndex, ok := dsPropertyIndexes[strings.ToLower(name)]
@@ -326,22 +332,26 @@ func (d *Dataset) GetProperty(name string) (interface{}, error) {
 	return property.value(), nil
 }
 
+// SetProperty sets the value of a property of the dataset
 func (d *Dataset) SetProperty(name string, value interface{}) error {
 	// TODO: Implement when we have a zfs set property implementation
 	return errors.New("zfs set property not implemented yet")
 }
 
+// Rollback rolls back a dataset to a previous snapshot
 func (d *Dataset) Rollback(destroyMoreRecent bool) error {
 	// TODO: Handle the destroyMoreRecent option
 	_, err := rollback(d.Name)
 	return err
 }
 
+// SendSnapshot sends a stream of a snapshot to the filedescriptor
 // TODO: Decide whether asking for a fd here instead of an io.Writer is ok
 func (d *Dataset) SendSnapshot(outputFD uintptr) error {
 	return send(d.Name, outputFD, "", false, false)
 }
 
+// Snapshot creates a new snapshot of the dataset
 func (d *Dataset) Snapshot(name string, recursive bool) error {
 	zpool := strings.Split(d.Name, "/")[0]
 	snapName := fmt.Sprintf("%s@%s", d.Name, name)
@@ -349,6 +359,7 @@ func (d *Dataset) Snapshot(name string, recursive bool) error {
 	return err
 }
 
+// Snapshots returns a list of snapshots of the dataset
 func (d *Dataset) Snapshots() ([]*Dataset, error) {
 	return Snapshots(d.Name)
 }
