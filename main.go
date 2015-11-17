@@ -155,10 +155,9 @@ func main() {
 
 				_, err := CreateVolume(name, volsize, props)
 				return err
-			} else {
-				_, err := CreateFilesystem(name, props)
-				return err
 			}
+			_, err := CreateFilesystem(name, props)
+			return err
 		},
 	)
 	cmdCreate.Flags().StringP("type", "t", "zfs", "zfs or zvol")

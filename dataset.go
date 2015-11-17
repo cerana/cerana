@@ -458,6 +458,7 @@ func (d *Dataset) Snapshots() ([]*Dataset, error) {
 	return Snapshots(d.Name)
 }
 
+// Zpool returns the zpool of the dataset
 func (d *Dataset) Zpool() string {
 	return strings.Split(d.Name, "/")[0]
 }
