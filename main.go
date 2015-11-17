@@ -200,7 +200,7 @@ func main() {
 			name, _ := cmd.Flags().GetString("name")
 			origin, _ := cmd.Flags().GetString("origin")
 			if origin == "" {
-				log.Fatal("missing origin snapshot")
+				log.Fatal("missing origin snapshot name")
 			}
 
 			var props map[string]interface{}
@@ -209,7 +209,12 @@ func main() {
 				log.Fatal("bad prop json")
 			}
 
-			return clone(name, origin, props)
+			d, err := GetDataset(origin)
+			if err != nil {
+				return err
+			}
+			_, err = d.Clone(name, props)
+			return err
 		},
 	)
 	cmdClone.Flags().StringP("origin", "o", "", "name of origin snapshot")
