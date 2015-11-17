@@ -224,6 +224,11 @@ func getDatasets(name, dsType string, recurse bool, depth uint64) ([]*Dataset, e
 		datasets[i] = dsToDataset(ds)
 	}
 
+	byName := func(d1, d2 *Dataset) bool {
+		return d1.Name < d2.Name
+	}
+	By(byName).Sort(datasets)
+
 	return datasets, nil
 }
 
