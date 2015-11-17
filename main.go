@@ -168,12 +168,9 @@ func main() {
 	cmdSend := genCommand("send", "Generate a send stream from a snapshot",
 		func(cmd *cobra.Command, args []string) error {
 			name, _ := cmd.Flags().GetString("name")
-			largeBlockOK, _ := cmd.Flags().GetBool("largeblock")
-			embedOK, _ := cmd.Flags().GetBool("embed")
-			fromSnap, _ := cmd.Flags().GetString("fromsnap")
+			output, _ := cmd.Flags().GetString("output")
 
 			outputFD := os.Stdout.Fd()
-			output, _ := cmd.Flags().GetString("output")
 			if output != "/dev/stdout" {
 				outputFile, err := os.Create(output)
 				if err != nil {
@@ -188,13 +185,15 @@ func main() {
 				log.SetLevel(log.ErrorLevel)
 			}
 
-			return send(name, outputFD, fromSnap, largeBlockOK, embedOK)
+			d, err := GetDataset(name)
+			if err != nil {
+				return err
+			}
+
+			return d.Send(outputFD)
 		},
 	)
 	cmdSend.Flags().StringP("output", "o", "/dev/stdout", "output file")
-	cmdSend.Flags().StringP("fromsnap", "f", "", "full snap name to send incremental from")
-	cmdSend.Flags().BoolP("embed", "e", false, "embed data")
-	cmdSend.Flags().BoolP("largeblock", "l", false, "large block")
 
 	cmdClone := genCommand("clone", "Creates a clone from a snapshot",
 		func(cmd *cobra.Command, args []string) error {

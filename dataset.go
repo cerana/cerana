@@ -422,9 +422,9 @@ func (d *Dataset) Rollback(destroyMoreRecent bool) error {
 	return err
 }
 
-// SendSnapshot sends a stream of a snapshot to the filedescriptor
+// Send sends a stream of a snapshot to the filedescriptor
 // TODO: Decide whether asking for a fd here instead of an io.Writer is ok
-func (d *Dataset) SendSnapshot(outputFD uintptr) error {
+func (d *Dataset) Send(outputFD uintptr) error {
 	return send(d.Name, outputFD, "", false, false)
 }
 
