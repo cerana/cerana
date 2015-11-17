@@ -272,31 +272,19 @@ func main() {
 	cmdGet := genCommand("get", "Get dataset properties",
 		func(cmd *cobra.Command, args []string) error {
 			name, _ := cmd.Flags().GetString("name")
-			recurse, _ := cmd.Flags().GetBool("recurse")
-			depth, _ := cmd.Flags().GetUint64("depth")
-			typesList, _ := cmd.Flags().GetString("types")
 
-			types := map[string]bool{}
-			if typesList != "" {
-				for _, t := range strings.Split(typesList, ",") {
-					types[t] = true
-				}
-			}
-
-			m, err := properties(name, types, recurse, depth)
+			ds, err := GetDataset(name)
 			if err != nil {
 				return err
 			}
-			out, err := json.MarshalIndent(m, "", "  ")
+
+			out, err := json.MarshalIndent(ds, "", "  ")
 			if err != nil {
 				return err
 			}
 			fmt.Printf("%s\n", out)
 			return nil
 		})
-	cmdGet.Flags().StringP("types", "t", "", "Comma seperated list of dataset types to list.")
-	cmdGet.Flags().BoolP("recurse", "r", false, "Recurse to all levels.")
-	cmdGet.Flags().Uint64P("depth", "d", 0, "Recursion depth limit, 0 for unlimited")
 
 	root.AddCommand(
 		cmdExists,
