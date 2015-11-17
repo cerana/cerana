@@ -121,14 +121,18 @@ func main() {
 
 	cmdRollback := genCommand("rollback", "Rollback this filesystem or volume to its most recent snapshot.",
 		func(cmd *cobra.Command, args []string) error {
+			destroyMoreRecent, _ := cmd.Flags().GetBool("destroyrecent")
 			name, _ := cmd.Flags().GetString("name")
-			result, err := rollback(name)
-			if err == nil {
-				fmt.Println(result)
+
+			d, err := GetDataset(name)
+			if err != nil {
+				return err
 			}
-			return err
+
+			return d.Rollback(destroyMoreRecent)
 		},
 	)
+	cmdRollback.Flags().BoolP("destroyrecent", "r", false, "destroy more recent snapshots and their clones")
 
 	cmdCreate := genCommand("create", "Create a ZFS dataset or volume",
 		func(cmd *cobra.Command, args []string) error {
