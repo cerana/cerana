@@ -60,10 +60,28 @@ func main() {
 	cmdDestroy := genCommand("destroy", "Destroys a dataset or volume.",
 		func(cmd *cobra.Command, args []string) error {
 			name, _ := cmd.Flags().GetString("name")
-			deferFlag, _ := cmd.Flags().GetBool("defer")
-			return destroy(name, deferFlag)
+			recursive, _ := cmd.Flags().GetBool("recursive")
+			recursiveClones, _ := cmd.Flags().GetBool("recursiveclones")
+			forceUnmount, _ := cmd.Flags().GetBool("forceunmount")
+			deferDestroy, _ := cmd.Flags().GetBool("defer")
+
+			d, err := GetDataset(name)
+			if err != nil {
+				return err
+			}
+
+			opts := &DestroyOptions{
+				Recursive:       recursive,
+				RecursiveClones: recursiveClones,
+				ForceUnmount:    forceUnmount,
+				Defer:           deferDestroy,
+			}
+			return d.Destroy(opts)
 		})
 	cmdDestroy.Flags().BoolP("defer", "d", false, "defer destroy")
+	cmdDestroy.Flags().BoolP("recursive", "r", false, "recursively destroy datasets")
+	cmdDestroy.Flags().BoolP("recursiveclones", "c", false, "recursively destroy clones")
+	cmdDestroy.Flags().BoolP("forceunmount", "f", false, "force unmount")
 
 	cmdHolds := genCommand("holds", "Retrieve list of user holds on the specified snapshot.",
 		func(cmd *cobra.Command, args []string) error {
