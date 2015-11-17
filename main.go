@@ -93,14 +93,13 @@ func main() {
 			return err
 		})
 
-	cmdSnapshot := genCommand("snapshot <snap1> <snap2> ...", "Creates a snapshot of a dataset or volume",
+	cmdSnapshot := genCommand("snapshot", "Creates a snapshot of a dataset or volume",
 		func(cmd *cobra.Command, snaps []string) error {
-			zpool, _ := cmd.Flags().GetString("zpool")
-			if zpool == "" {
-				log.Fatal("zpool required")
-			}
-			if len(snaps) == 0 {
-				log.Fatal("at least one snapshot name required")
+			recursive, _ := cmd.Flags().GetBool("recursive")
+			name, _ := cmd.Flags().GetString("name")
+			nameParts := strings.Split(name, "@")
+			if len(nameParts) != 2 {
+				log.Fatal("invalid snapshot name")
 			}
 
 			var props map[string]string
@@ -109,16 +108,16 @@ func main() {
 				log.Fatal("bad prop json")
 			}
 
-			errlist, err := snapshot(zpool, snaps, props)
-			if errlist != nil {
-				log.Error(errlist)
+			d, err := GetDataset(nameParts[0])
+			if err != nil {
+				return err
 			}
-			return err
+
+			return d.Snapshot(nameParts[1], recursive)
 		},
 	)
-	cmdSnapshot.PersistentPreRun = dummyPersistentPreRun
-	cmdSnapshot.Flags().StringP("zpool", "z", "", "zpool")
 	cmdSnapshot.Flags().StringP("props", "p", "{}", "snapshot properties")
+	cmdSnapshot.Flags().BoolP("recursive", "r", false, "recurisvely create snapshots")
 
 	cmdRollback := genCommand("rollback", "Rollback this filesystem or volume to its most recent snapshot.",
 		func(cmd *cobra.Command, args []string) error {
