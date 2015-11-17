@@ -425,15 +425,36 @@ func (d *Dataset) SendSnapshot(outputFD uintptr) error {
 
 // Snapshot creates a new snapshot of the dataset
 func (d *Dataset) Snapshot(name string, recursive bool) error {
-	zpool := strings.Split(d.Name, "/")[0]
-	snapName := fmt.Sprintf("%s@%s", d.Name, name)
-	_, err := snapshot(zpool, []string{snapName}, map[string]string{})
-	return err
+	snapNames := []string{fmt.Sprintf("%s@%s", d.Name, name)}
+	props := map[string]string{}
+	if _, err := snapshot(d.Zpool(), snapNames, props); err != nil {
+		return err
+	}
+	if recursive {
+		children, err := d.Children(1)
+		if err != nil {
+			return err
+		}
+		for _, child := range children {
+			// Can't snapshot a snapshot
+			if child.Type == DatasetSnapshot {
+				continue
+			}
+			if err := child.Snapshot(name, recursive); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // Snapshots returns a list of snapshots of the dataset
 func (d *Dataset) Snapshots() ([]*Dataset, error) {
 	return Snapshots(d.Name)
+}
+
+func (d *Dataset) Zpool() string {
+	return strings.Split(d.Name, "/")[0]
 }
 
 func init() {
