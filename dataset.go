@@ -282,6 +282,7 @@ func CreateFilesystem(name string, properties map[string]interface{}) (*Dataset,
 func CreateVolume(name string, size uint64, properties map[string]interface{}) (*Dataset, error) {
 	// TODO: Sort out handling of properties. Custom struct?
 	properties["volsize"] = size
+	fmt.Println(properties)
 	return createDataset(name, dmuZVOL, properties)
 }
 
@@ -298,11 +299,6 @@ func (d *Dataset) Children(depth uint64) ([]*Dataset, error) {
 		return nil, err
 	}
 	return datasets[1:], nil
-}
-
-// Clones returns a list of clones of the dataset
-func (d *Dataset) Clones() {
-
 }
 
 // Clone clones a snapshot and returns a clone dataset
