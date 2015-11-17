@@ -381,39 +381,48 @@ func (d *Dataset) SetProperty(name string, value interface{}) error {
 
 // Rollback rolls back a dataset to a previous snapshot
 func (d *Dataset) Rollback(destroyMoreRecent bool) error {
-	if destroyMoreRecent {
-		// Get the dataset's snapshots
-		dsName := strings.Split(d.Name, "@")[0]
-		snapshots, err := getDatasets(dsName, DatasetSnapshot, true, 1)
-		if err != nil {
+	// Name of dataset the snapshot belongs to
+	dsName := strings.Split(d.Name, "@")[0]
+
+	// Get all of the dataset's snapshots
+	snapshots, err := getDatasets(dsName, DatasetSnapshot, true, 1)
+	if err != nil {
+		return err
+	}
+
+	// Order snapshots from oldest to newest
+	creation := func(d1, d2 *Dataset) bool {
+		return d1.ds.Properties.Creation.Value < d2.ds.Properties.Creation.Value
+	}
+	By(creation).Sort(snapshots)
+
+	// Destroy any snapshots newer than the target
+	found := false
+	for _, snapshot := range snapshots {
+		// Ignore this snapshot and all older
+		if !found {
+			if snapshot.Name == d.Name {
+				found = true
+			}
+			continue
+		}
+
+		// Only destroy if the flag is explicitly set
+		if !destroyMoreRecent {
+			return errors.New("not most recent snapshot")
+		}
+
+		opts := &DestroyOptions{
+			Recursive:       true,
+			RecursiveClones: true,
+		}
+		if err := snapshot.Destroy(opts); err != nil {
 			return err
-		}
-
-		// Order from oldest to newest
-		creation := func(d1, d2 *Dataset) bool {
-			return d1.ds.Properties.Creation.Value < d2.ds.Properties.Creation.Value
-		}
-		By(creation).Sort(snapshots)
-
-		// Destroy any snapshots newer than the target
-		found := false
-		for _, snapshot := range snapshots {
-			// Ignore this snapshot and all older
-			if !found {
-				if snapshot.Name == d.Name {
-					found = true
-					continue
-				}
-			}
-
-			if err := snapshot.Destroy(&DestroyOptions{}); err != nil {
-				return err
-			}
 		}
 	}
 
-	// Rollback to the target snapshot
-	_, err := rollback(d.Name)
+	// Rollback to the target snapshot, which is now the most recent
+	_, err = rollback(dsName)
 	return err
 }
 
