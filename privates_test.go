@@ -381,3 +381,45 @@ func (s *internal) TestRename() {
 		}
 	}
 }
+
+func touch(name string) error {
+	return command("sudo", "touch", name).Run()
+}
+
+func snap(name string) error {
+	return command("zfs", "snapshot", name).Run()
+}
+
+func (s *internal) TestRollback() {
+	var tests = []struct {
+		name   string
+		latest string
+		err    string
+	}{
+		{"should-not-exist", "", enoent},
+		{s.pool + "/" + longName + "@snap3", "", einval}, // WANTE(ENAMETOOLONG)
+		{s.pool + "/a/2@snap3", "", einval},
+		{"/a/2@snap2", "", einval},
+		{"/a/2@snap3", s.pool + "/a/2@snap3", einval},
+		{s.pool + "/a/2", s.pool + "/a/2@tempsnap", ""},
+	}
+	for _, test := range tests {
+		s.T().Log("name:", test.name)
+		name := "/" + test.name + "/" + "markerfile"
+		if test.err == "" {
+			NoError := s.Require().NoError
+			NoError(touch(name))
+			NoError(snap(test.name + "@tempsnap"))
+			NoError(command("sudo", "rm", name).Run())
+		}
+		latest, err := rollback(test.name)
+		if test.err == "" {
+			s.NoError(err)
+			s.Equal(test.latest, latest)
+			_, err = os.Stat(name)
+			s.NoError(err)
+		} else {
+			s.EqualError(err, test.err)
+		}
+	}
+}
