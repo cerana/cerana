@@ -16,6 +16,7 @@ var (
 	einval       = syscall.EINVAL.Error()
 	enametoolong = syscall.ENAMETOOLONG.Error()
 	enoent       = syscall.ENOENT.Error()
+	exdev        = syscall.EXDEV.Error()
 )
 
 const (
@@ -343,6 +344,40 @@ func (s *internal) TestList() {
 		} else {
 			s.NoError(err, "test:%d", i)
 			s.Len(m, test.expNum, "test num:%d", i)
+		}
+	}
+}
+
+func (s *internal) TestRename() {
+	var tests = []struct {
+		old   string
+		new   string
+		err   string
+		erred string // implies recursive
+	}{
+		{"should-not-exist", s.pool + "/blah", enoent, ""},
+		{s.pool + "/" + longName, s.pool + "/a/zz", einval, ""}, // WANTE(ENAMETOOLONG)
+		{s.pool + "/a/3", s.pool + "/" + longName, einval, ""},  // WANTE(ENAMETOOLONG)
+		{s.pool + "/a/3", s.pool + "-not", exdev, ""},
+		{s.pool + "/a/2@snap1", s.pool + "/a/2@snap1.1", "", ""},
+		//{s.pool + "/c@snap1", @snap2", "", ""},
+	}
+	for _, test := range tests {
+		s.T().Log("old:", test.old, "new:", test.new)
+
+		recursive := test.erred != ""
+		if test.err == "" {
+			s.NoError(exists(test.old))
+			s.EqualError(exists(test.new), enoent)
+		}
+		erred, err := rename(test.old, test.new, recursive)
+		if test.err == "" {
+			s.NoError(err)
+			s.NoError(exists(test.new))
+			s.EqualError(exists(test.old), enoent)
+		} else {
+			s.EqualError(err, test.err)
+			s.Equal(test.erred, erred)
 		}
 	}
 }
