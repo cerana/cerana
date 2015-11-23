@@ -84,7 +84,7 @@ sudo ln -s /mistify/private/usr/local /usr/local
 
 **NOTE:** Using this method the symbolic link is not persistent across reboots and needs to be restored on boot. An additional script in */etc/pre-init.d* can be used to do this.
 
-Another method is to add a script to */etc/pre-init.d* which uses *aufs* to mount the directory. The existing script */etc/pre-init.d/mount-aufs.sh* can be used as an example of how to do this.
+To make */usr/local* persistent you can add a script to */etc/pre-init.d* which uses *aufs* to mount the directory. The existing script */etc/pre-init.d/mount-aufs.sh* can be used as an example of how to do this.
 
 Installing *clang*
 ------------------
@@ -107,4 +107,20 @@ cd build
 ../configure --prefix=/usr/local --enable-shared
 make
 sudo make install
+```
+
+Building Mistify-OS
+===================
+
+Mistify-OS can be built. In the simplest form:
+
+Use *ssh* to log into Mistify-OS SDK. It's recommended a screen session be used to run the build. This avoids having to restart the build following a failure of the *ssh* session.
+
+```bash
+# Optional
+screen -S build
+# Run the build
+git clone https://github.com/mistifyio/mistify-os.git
+cd mistify-os
+./buildmistify
 ```
