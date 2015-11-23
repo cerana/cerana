@@ -155,7 +155,7 @@ func main() {
 
 			outputFD := os.Stdout.Fd()
 			output, _ := cmd.Flags().GetString("output")
-			if output != "" {
+			if output != "/dev/stdout" {
 				outputFile, err := os.Create(output)
 				if err != nil {
 					return err
@@ -172,7 +172,7 @@ func main() {
 			return send(name, outputFD, fromSnap, largeBlockOK, embedOK)
 		},
 	)
-	cmdSend.Flags().StringP("output", "o", "", "output file")
+	cmdSend.Flags().StringP("output", "o", "/dev/stdout", "output file")
 	cmdSend.Flags().StringP("fromsnap", "f", "", "full snap name to send incremental from")
 	cmdSend.Flags().BoolP("embed", "e", false, "embed data")
 	cmdSend.Flags().BoolP("largeblock", "l", false, "large block")
