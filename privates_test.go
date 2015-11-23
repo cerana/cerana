@@ -1,9 +1,11 @@
 package main
 
 import (
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"strings"
 	"syscall"
 	"testing"
 
@@ -11,11 +13,14 @@ import (
 )
 
 var (
+	eagain       = syscall.EAGAIN.Error()
+	ebadf        = syscall.EBADF.Error()
 	ebusy        = syscall.EBUSY.Error()
 	eexist       = syscall.EEXIST.Error()
 	einval       = syscall.EINVAL.Error()
 	enametoolong = syscall.ENAMETOOLONG.Error()
 	enoent       = syscall.ENOENT.Error()
+	epipe        = syscall.EPIPE.Error()
 	exdev        = syscall.EXDEV.Error()
 )
 
@@ -422,4 +427,83 @@ func (s *internal) TestRollback() {
 			s.EqualError(err, test.err)
 		}
 	}
+}
+
+func receive(r *os.File, target string) error {
+	cmd := command("sudo", "zfs", "receive", "-e", target)
+	in, err := cmd.StdinPipe()
+	if err != nil {
+		return err
+	}
+	go func() {
+		_, err := io.Copy(in, r)
+		if err != nil {
+			panic(err)
+		}
+		in.Close()
+		r.Close()
+	}()
+	cmdErr := cmd.Run()
+	if cmdErr != nil {
+		return cmdErr
+	}
+	return err
+}
+
+func (s *internal) TestSendSimple() {
+	s.EqualError(send("should-not-exist", 0, "", true, true), enoent)
+	s.EqualError(send(s.pool+"/a/2@snap1", 42, "", true, true), ebadf)
+	s.EqualError(send(s.pool+"/"+longName, 42, "", true, true), einval) // WANTE(ENAMETOOLONG)
+
+	// expect epipe
+	reader, writer, err := os.Pipe()
+	s.Require().NoError(err)
+	reader.Close()
+	s.EqualError(send(s.pool+"/a/2@snap1", writer.Fd(), "", true, true), epipe)
+	writer.Close()
+
+	// expect ebadf
+	reader, writer, err = os.Pipe()
+	s.Require().NoError(err)
+	writer.Close()
+	s.EqualError(send(s.pool+"/a/2@snap1", writer.Fd(), "", true, true), ebadf)
+	reader.Close()
+
+	// ok
+	reader, writer, err = os.Pipe()
+	s.Require().NoError(err)
+	s.NoError(send(s.pool+"/a/4", writer.Fd(), "", true, true))
+	s.NoError(receive(reader, s.pool+"/c"))
+	reader.Close()
+	writer.Close()
+}
+
+// Tests both incremental and verifies actual file changes
+func (s *internal) TestSendComplex() {
+	name := "/" + s.pool + "/a/2/markerfile"
+	NoError := s.Require().NoError
+
+	NoError(touch(name))
+	NoError(snap(s.pool + "/a/2@pre"))
+	NoError(command("sudo", "rm", name).Run())
+	NoError(snap(s.pool + "/a/2@post"))
+
+	reader, writer, err := os.Pipe()
+	NoError(err)
+	NoError(send(s.pool+"/a/2@pre", writer.Fd(), "", true, true))
+	writer.Close() // must be before receiver, otherwise can block
+	s.NoError(receive(reader, s.pool+"/c"))
+	reader.Close()
+	name = strings.Replace(name, "/a/", "/c/", 1)
+	_, err = os.Stat(name)
+	s.NoError(err)
+
+	reader, writer, err = os.Pipe()
+	NoError(err)
+	s.NoError(send(s.pool+"/a/2@post", writer.Fd(), s.pool+"/a/2@pre", false, false))
+	writer.Close() // must be before receiver, otherwise can block
+	s.NoError(receive(reader, s.pool+"/c"))
+	reader.Close()
+	_, err = os.Stat(name)
+	s.IsType(&os.PathError{}, err)
 }
