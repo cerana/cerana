@@ -509,7 +509,7 @@ func (s *internal) TestSendComplex() {
 }
 
 func (s *internal) TestSnapshot() {
-	type errs map[string]int32
+	type errs map[string]syscall.Errno
 	type props map[string]string
 	tests := []struct {
 		desc  string
@@ -535,7 +535,7 @@ func (s *internal) TestSnapshot() {
 			pool:  s.pool,
 			snaps: []string{s.pool + "/a/1@snap1"},
 			err:   eexist,
-			errs:  errs{s.pool + "/a/1@snap1": 17},
+			errs:  errs{s.pool + "/a/1@snap1": syscall.EEXIST},
 		},
 		{
 			desc:  "too long snap name",
@@ -594,7 +594,7 @@ func (s *internal) TestSnapshot() {
 		if test.errs == nil {
 			s.Nil(errs)
 		} else {
-			s.Equal(map[string]int32(test.errs), errs)
+			s.Equal(map[string]syscall.Errno(test.errs), errs)
 		}
 	}
 }
