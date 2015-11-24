@@ -507,3 +507,94 @@ func (s *internal) TestSendComplex() {
 	_, err = os.Stat(name)
 	s.IsType(&os.PathError{}, err)
 }
+
+func (s *internal) TestSnapshot() {
+	type errs map[string]int32
+	type props map[string]string
+	tests := []struct {
+		desc  string
+		pool  string
+		snaps []string
+		props props
+		err   string
+		errs  errs
+	}{
+		{
+			desc: "non existent pool",
+			pool: "non-existent-pool",
+			err:  enoent,
+		},
+		{
+			desc:  "non existent fs",
+			pool:  s.pool,
+			snaps: []string{s.pool + "/non-existent-fs@1"},
+			err:   enoent,
+		},
+		{
+			desc:  "existing snapshot",
+			pool:  s.pool,
+			snaps: []string{s.pool + "/a/1@snap1"},
+			err:   eexist,
+			errs:  errs{s.pool + "/a/1@snap1": 17},
+		},
+		{
+			desc:  "too long snap name",
+			pool:  s.pool,
+			snaps: []string{s.pool + "/a/1@snap" + longName},
+			err:   einval, // WANTE ENAMETOOLONG
+		},
+		{
+			desc:  "too long property name",
+			pool:  s.pool,
+			snaps: []string{s.pool + "/a/1@snapZ"},
+			props: props{longName: "true"},
+			err:   einval, // WANTE ENAMETOOLONG
+		},
+		{
+			desc:  "too long property value",
+			pool:  s.pool,
+			snaps: []string{s.pool + "/a/1@snapZ"},
+			props: props{"aprop": strings.Repeat("a", 8192)},
+			err:   einval, // WANTE E2BIG
+		},
+		{
+			desc: "multiple snapshots on one fs",
+			pool: s.pool,
+			snaps: []string{
+				s.pool + "/a/1@snapY",
+				s.pool + "/a/1@snapZ",
+			},
+			err: exdev,
+		},
+		{
+			desc: "one valid snapshot",
+			pool: s.pool,
+			snaps: []string{
+				s.pool + "@snapX",
+			},
+		},
+		{
+			desc: "multiple valid snapshots",
+			pool: s.pool,
+			snaps: []string{
+				s.pool + "/a@snapY",
+				s.pool + "/b@snapY",
+				s.pool + "/c@snapY",
+			},
+		},
+	}
+	for _, test := range tests {
+		s.T().Log(test.desc)
+		errs, err := snapshot(test.pool, test.snaps, test.props)
+		if test.err == "" {
+			s.NoError(err)
+		} else {
+			s.EqualError(err, test.err)
+		}
+		if test.errs == nil {
+			s.Nil(errs)
+		} else {
+			s.Equal(map[string]int32(test.errs), errs)
+		}
+	}
+}
