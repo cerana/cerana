@@ -2,6 +2,8 @@ package main
 
 import "github.com/mistifyio/gozfs/nv"
 
+const emptyList = "\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00"
+
 func holds(name string) ([]string, error) {
 	m := map[string]interface{}{
 		"cmd":     "zfs_get_holds",
@@ -14,6 +16,8 @@ func holds(name string) ([]string, error) {
 	}
 
 	out := make([]byte, 1024)
+	copy(out, emptyList)
+
 	err = ioctl(zfs, name, encoded, out)
 	if err != nil {
 		return nil, err

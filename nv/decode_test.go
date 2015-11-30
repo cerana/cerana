@@ -388,3 +388,25 @@ func TestDecodeBad(t *testing.T) {
 		}
 	}
 }
+
+func TestDecodeBadArgs(t *testing.T) {
+	bad_args := []struct {
+		arg interface{}
+		err string
+	}{
+		{
+			arg: struct{}{},
+			err: "cannot decode into non-pointer: reflect.Value",
+		},
+	}
+	for _, test := range bad_args {
+		err := Decode([]byte(enc_dec_name_typ), test.arg)
+		if err == nil {
+			t.Fatalf("expected an error, wanted:|%s|\n", test.err)
+		}
+		if test.err != err.Error() {
+			t.Fatalf("error mismatch, want:|%s| got:|%s|\n",
+				test.err, err.Error())
+		}
+	}
+}
