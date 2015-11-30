@@ -265,7 +265,7 @@ func GetDataset(name string) (*Dataset, error) {
 }
 
 func createDataset(name string, createType dmuType, properties map[string]interface{}) (*Dataset, error) {
-	if err := create(name, dmuZFS, properties); err != nil {
+	if err := create(name, createType, properties); err != nil {
 		return nil, err
 	}
 
