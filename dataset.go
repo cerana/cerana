@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"reflect"
 	"sort"
 	"strings"
@@ -424,10 +425,44 @@ func (d *Dataset) Rollback(destroyMoreRecent bool) error {
 	return err
 }
 
-// Send sends a stream of a snapshot to the filedescriptor
-// TODO: Decide whether asking for a fd here instead of an io.Writer is ok
-func (d *Dataset) Send(outputFD uintptr) error {
-	return send(d.Name, outputFD, "", false, false)
+// fdCloser is the interface that wraps a file
+type fdCloser interface {
+	Fd() uintptr
+	Close() error
+}
+
+// Send sends a stream of a snapshot to the writer
+func (d *Dataset) Send(output io.Writer) error {
+	done := make(chan error, 1)
+
+	outputFdCloser, isFdCloser := output.(fdCloser)
+	// Connect a file descriptor to the output Writer
+	if !isFdCloser {
+		r, w, err := os.Pipe()
+		if err != nil {
+			return err
+		}
+		defer w.Close()
+		defer r.Close()
+
+		outputFdCloser = w
+
+		// Copy data to the output Writer
+		go func() {
+			_, err := io.Copy(output, r)
+			done <- err
+		}()
+	} else {
+		done <- nil
+	}
+
+	if err := send(d.Name, outputFdCloser.Fd(), "", false, false); err != nil {
+		return err
+	}
+	if !isFdCloser {
+		outputFdCloser.Close()
+	}
+	return <-done
 }
 
 // Snapshot creates a new snapshot of the dataset

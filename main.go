@@ -169,7 +169,7 @@ func main() {
 			name, _ := cmd.Flags().GetString("name")
 			output, _ := cmd.Flags().GetString("output")
 
-			outputFD := os.Stdout.Fd()
+			outputWriter := os.Stdout
 			if output != "/dev/stdout" {
 				outputFile, err := os.Create(output)
 				if err != nil {
@@ -177,7 +177,7 @@ func main() {
 				}
 				defer outputFile.Close()
 
-				outputFD = outputFile.Fd()
+				outputWriter = outputFile
 			} else {
 				// If sending on stdout, don't log anything else unless there's
 				// an error
@@ -189,7 +189,7 @@ func main() {
 				return err
 			}
 
-			return d.Send(outputFD)
+			return d.Send(outputWriter)
 		},
 	)
 	cmdSend.Flags().StringP("output", "o", "/dev/stdout", "output file")
