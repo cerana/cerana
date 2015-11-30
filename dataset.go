@@ -280,6 +280,9 @@ func CreateFilesystem(name string, properties map[string]interface{}) (*Dataset,
 // CreateVolume creates a new volume
 func CreateVolume(name string, size uint64, properties map[string]interface{}) (*Dataset, error) {
 	if size != 0 {
+		if properties == nil {
+			properties = make(map[string]interface{})
+		}
 		properties["volsize"] = size
 	}
 	return createDataset(name, dmuZVOL, properties)
