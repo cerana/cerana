@@ -10,16 +10,6 @@ import (
 	cobra "github.com/spf13/cobra"
 )
 
-var zfs *os.File
-
-func init() {
-	z, err := os.OpenFile("/dev/zfs", os.O_RDWR, 0)
-	if err != nil {
-		panic(err)
-	}
-	zfs = z
-}
-
 type handler func(*cobra.Command, []string) error
 
 func genCommand(use, short string, fn handler) *cobra.Command {
