@@ -279,9 +279,9 @@ func CreateFilesystem(name string, properties map[string]interface{}) (*Dataset,
 
 // CreateVolume creates a new volume
 func CreateVolume(name string, size uint64, properties map[string]interface{}) (*Dataset, error) {
-	// TODO: Sort out handling of properties. Custom struct?
-	properties["volsize"] = size
-	fmt.Println(properties)
+	if size != 0 {
+		properties["volsize"] = size
+	}
 	return createDataset(name, dmuZVOL, properties)
 }
 
