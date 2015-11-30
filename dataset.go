@@ -274,7 +274,6 @@ func createDataset(name string, createType dmuType, properties map[string]interf
 
 // CreateFilesystem creates a new filesystem
 func CreateFilesystem(name string, properties map[string]interface{}) (*Dataset, error) {
-	// TODO: Sort out handling of properties. Custom struct?
 	return createDataset(name, dmuZFS, properties)
 }
 
@@ -286,9 +285,9 @@ func CreateVolume(name string, size uint64, properties map[string]interface{}) (
 	return createDataset(name, dmuZVOL, properties)
 }
 
-// ReceiveSnapshot creates a snapshot from a zfs send stream
+// ReceiveSnapshot creates a snapshot from a zfs send stream. Currently a stub.
 func ReceiveSnapshot(input io.Reader, name string) (*Dataset, error) {
-	// TODO: Fix when zfs receive is implemented
+	// TODO: Implement when we have a zfs_receive
 	return nil, errors.New("zfs receive not yet implemented")
 }
 
@@ -347,15 +346,15 @@ func (d *Dataset) Destroy(opts *DestroyOptions) error {
 	}
 
 	// Unmount this dataset
-	// TODO: Implement when we have unmount
+	// TODO: Implement when we have a zfs_unmount
 
 	// Destroy this dataset
 	return destroy(d.Name, opts.Defer)
 }
 
-// Diff returns changes between a snapshot and the given dataset.
+// Diff returns changes between a snapshot and the given dataset. Currently a stub.
 func (d *Dataset) Diff(name string) {
-	// TODO: Implement when we have a zfs diff implementation
+	// TODO: Implement when we have a zfs_diff
 }
 
 // GetProperty returns the current value of a property from the dataset
@@ -369,9 +368,9 @@ func (d *Dataset) GetProperty(name string) (interface{}, error) {
 	return property.value(), nil
 }
 
-// SetProperty sets the value of a property of the dataset
+// SetProperty sets the value of a property of the dataset. Currently a stub.
 func (d *Dataset) SetProperty(name string, value interface{}) error {
-	// TODO: Implement when we have a zfs set property implementation
+	// TODO: Implement when we have a zfs_set_property
 	return errors.New("zfs set property not implemented yet")
 }
 
