@@ -127,21 +127,6 @@ type pair struct {
 	data        interface{}
 }
 
-func (p pair) String() string {
-	return fmt.Sprintf("{%d, %d, \"%s\", %s, %d, %#v}",
-		p.EncodedSize, p.DecodedSize, p.Name, p.Type, p.NElements, p.data)
-}
-
-func (p pair) GoString() string {
-	return fmt.Sprintf("{EncodedSize:%d, DecodedSize:%d, Name:\"%s\", Type:%s, NElements:%d, data:%#v}",
-		p.EncodedSize, p.DecodedSize, p.Name, p.Type, p.NElements, p.data)
-}
-
-type Pair struct {
-	pair
-	Value interface{}
-}
-
 func align4(n int) int {
 	return (n + 3) & ^3
 }
