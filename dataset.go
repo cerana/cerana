@@ -425,7 +425,9 @@ func (d *Dataset) Rollback(destroyMoreRecent bool) error {
 	return err
 }
 
-// fdCloser is the interface that wraps a file
+// fdCloser is the interface for zfs send output destination.
+// send requires a file descriptor.
+// Close will only be called on internally created instances used to connect non-implementing io.Writers to send.
 type fdCloser interface {
 	Fd() uintptr
 	Close() error
