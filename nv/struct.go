@@ -12,8 +12,8 @@ type flag uint32
 
 const (
 	_ flag = iota
-	UNIQUE_NAME
-	UNIQUE_NAME_TYPE
+	_UNIQUE_NAME
+	_UNIQUE_NAME_TYPE
 )
 
 //go:generate stringer -type=dataType
@@ -65,7 +65,7 @@ func prettyPrint(dst io.Writer, m map[string]interface{}, indenter, indent strin
 			continue
 		}
 
-		if value["type"] == "NVLIST" {
+		if value["type"] == "_NVLIST" {
 			fmt.Fprintf(dst, "%sName: %s, Type: %s\n", indent, name, value["type"])
 			prettyPrint(dst, value["value"].(list), indenter, indent+indenter)
 		} else {
@@ -76,34 +76,34 @@ func prettyPrint(dst io.Writer, m map[string]interface{}, indenter, indent strin
 }
 
 const (
-	UNKNOWN dataType = iota
-	BOOLEAN
-	BYTE
-	INT16
-	UINT16
-	INT32
-	UINT32
-	INT64
-	UINT64
-	STRING
-	BYTE_ARRAY
-	INT16_ARRAY
-	UINT16_ARRAY
-	INT32_ARRAY
-	UINT32_ARRAY
-	INT64_ARRAY
-	UINT64_ARRAY // 0x10
-	STRING_ARRAY
-	HRTIME
-	NVLIST
-	NVLIST_ARRAY
-	BOOLEAN_VALUE
-	INT8
-	UINT8
-	BOOLEAN_ARRAY
-	INT8_ARRAY
-	UINT8_ARRAY
-	DOUBLE
+	_UNKNOWN dataType = iota
+	_BOOLEAN
+	_BYTE
+	_INT16
+	_UINT16
+	_INT32
+	_UINT32
+	_INT64
+	_UINT64
+	_STRING
+	_BYTE_ARRAY
+	_INT16_ARRAY
+	_UINT16_ARRAY
+	_INT32_ARRAY
+	_UINT32_ARRAY
+	_INT64_ARRAY
+	_UINT64_ARRAY // 0x10
+	_STRING_ARRAY
+	_HRTIME
+	_NVLIST
+	_NVLIST_ARRAY
+	_BOOLEAN_VALUE
+	_INT8
+	_UINT8
+	_BOOLEAN_ARRAY
+	_INT8_ARRAY
+	_UINT8_ARRAY
+	_DOUBLE
 )
 
 type encoding struct {
@@ -142,23 +142,23 @@ func (p pair) headerSize() int {
 func (p pair) encodedSize() int {
 	valSize := 0
 	switch p.Type {
-	case BOOLEAN:
+	case _BOOLEAN:
 		valSize = 0
-	case BYTE, INT8, UINT8, INT16, UINT16, BOOLEAN_VALUE, INT32, UINT32:
+	case _BYTE, _INT8, _UINT8, _INT16, _UINT16, _BOOLEAN_VALUE, _INT32, _UINT32:
 		valSize = 4
-	case INT64, UINT64, HRTIME, DOUBLE:
+	case _INT64, _UINT64, _HRTIME, _DOUBLE:
 		valSize = 8
-	case BYTE_ARRAY:
+	case _BYTE_ARRAY:
 		valSize = int(p.NElements * 1)
-	case BOOLEAN_ARRAY, INT8_ARRAY, UINT8_ARRAY, INT16_ARRAY, UINT16_ARRAY, INT32_ARRAY, UINT32_ARRAY:
+	case _BOOLEAN_ARRAY, _INT8_ARRAY, _UINT8_ARRAY, _INT16_ARRAY, _UINT16_ARRAY, _INT32_ARRAY, _UINT32_ARRAY:
 		valSize = 4 + int(p.NElements*4)
-	case INT64_ARRAY, UINT64_ARRAY:
+	case _INT64_ARRAY, _UINT64_ARRAY:
 		valSize = 4 + int(p.NElements*8)
-	case STRING:
+	case _STRING:
 		valSize = 4 + len(p.data.(string))
-	case NVLIST, NVLIST_ARRAY:
+	case _NVLIST, _NVLIST_ARRAY:
 		valSize = len(p.data.([]byte))
-	case STRING_ARRAY:
+	case _STRING_ARRAY:
 		slice := p.data.([]string)
 		for i := range slice {
 			valSize += align4(4 + len(slice[i]))
@@ -182,27 +182,27 @@ func (p pair) decodedSize() int {
 
 	valSize := 0
 	switch p.Type {
-	case BOOLEAN:
+	case _BOOLEAN:
 		valSize = 0
-	case BYTE, INT8, UINT8:
+	case _BYTE, _INT8, _UINT8:
 		valSize = 1
-	case INT16, UINT16:
+	case _INT16, _UINT16:
 		valSize = 2
-	case BOOLEAN_VALUE, INT32, UINT32:
+	case _BOOLEAN_VALUE, _INT32, _UINT32:
 		valSize = 4
-	case INT64, UINT64, HRTIME, DOUBLE:
+	case _INT64, _UINT64, _HRTIME, _DOUBLE:
 		valSize = 8
-	case BYTE_ARRAY, INT8_ARRAY, UINT8_ARRAY:
+	case _BYTE_ARRAY, _INT8_ARRAY, _UINT8_ARRAY:
 		valSize = int(p.NElements * 1)
-	case INT16_ARRAY, UINT16_ARRAY:
+	case _INT16_ARRAY, _UINT16_ARRAY:
 		valSize = int(p.NElements * 2)
-	case INT32_ARRAY, UINT32_ARRAY:
+	case _INT32_ARRAY, _UINT32_ARRAY:
 		valSize = int(p.NElements * 4)
-	case INT64_ARRAY, UINT64_ARRAY:
+	case _INT64_ARRAY, _UINT64_ARRAY:
 		valSize = int(p.NElements * 8)
-	case STRING:
+	case _STRING:
 		valSize = len(p.data.(string)) + 1
-	case NVLIST:
+	case _NVLIST:
 		// /* nvlist header */
 		// typedef struct nvlist {
 		// 	int32_t		nvl_version;
@@ -212,13 +212,13 @@ func (p pair) decodedSize() int {
 		// 	int32_t		nvl_pad;	/* currently not used, for alignment */
 		// } nvlist_t;
 		valSize = 4 + 4 + 8 + 4 + 4
-	case NVLIST_ARRAY:
+	case _NVLIST_ARRAY:
 		// value_sz = (uint64_t)nelem * sizeof (uint64_t) +
 		//	      (uint64_t)nelem * NV_ALIGN(sizeof (nvlist_t));
 		valSize = int(p.NElements) * (8 + align8(4+4+8+4+4))
-	case BOOLEAN_ARRAY:
+	case _BOOLEAN_ARRAY:
 		valSize = 4 + int(p.NElements*4)
-	case STRING_ARRAY:
+	case _STRING_ARRAY:
 		valSize = int(p.NElements * 8)
 		slice := p.data.([]string)
 		for i := range slice {
