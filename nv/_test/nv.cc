@@ -127,7 +127,7 @@ static void print(nvlist_t *list, char *name) {
 	}
 
 	std::string struct_name = define(list, name);
-	tests << "\t{name: \"" << name << "\", ptr: func() interface{} { return &" << struct_name << "{}}, payload: []byte(\"";
+	tests << "\t{name: \"" << name << "\", ptr: func() interface{} { return &" << struct_name << "{} }, payload: []byte(\"";
 
 	for (unsigned i = 0; i < blen; i++) {
 		tests << "\\x"
