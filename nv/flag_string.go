@@ -4,9 +4,9 @@ package nv
 
 import "fmt"
 
-const _flag_name = "UNIQUE_NAMEUNIQUE_NAME_TYPE"
+const _flag_name = "_UNIQUE_NAME_UNIQUE_NAME_TYPE"
 
-var _flag_index = [...]uint8{0, 11, 27}
+var _flag_index = [...]uint8{0, 12, 29}
 
 func (i flag) String() string {
 	i -= 1

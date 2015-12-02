@@ -37,7 +37,7 @@ func Encode(i interface{}) ([]byte, error) {
 
 func encodeList(w io.Writer, v reflect.Value) error {
 	var err error
-	if err = binary.Write(w, binary.BigEndian, header{Flag: UNIQUE_NAME}); err != nil {
+	if err = binary.Write(w, binary.BigEndian, header{Flag: _UNIQUE_NAME}); err != nil {
 		return err
 	}
 
@@ -92,46 +92,46 @@ func encodeStruct(v reflect.Value, w io.Writer) (int, error) {
 func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) ([]byte, error) {
 	field = deref(field)
 	var types = map[reflect.Kind]dataType{
-		reflect.Bool:    BOOLEAN_VALUE,
-		reflect.Float32: DOUBLE,
-		reflect.Float64: DOUBLE,
-		reflect.Int16:   INT16,
-		reflect.Int32:   INT32,
-		reflect.Int64:   INT64,
-		reflect.Int8:    INT8,
-		reflect.Int:     INT32,
-		reflect.Map:     NVLIST,
-		reflect.String:  STRING,
-		reflect.Struct:  NVLIST,
-		reflect.Uint16:  UINT16,
-		reflect.Uint32:  UINT32,
-		reflect.Uint64:  UINT64,
-		reflect.Uint8:   UINT8,
-		reflect.Uint:    UINT32,
+		reflect.Bool:    _BOOLEAN_VALUE,
+		reflect.Float32: _DOUBLE,
+		reflect.Float64: _DOUBLE,
+		reflect.Int16:   _INT16,
+		reflect.Int32:   _INT32,
+		reflect.Int64:   _INT64,
+		reflect.Int8:    _INT8,
+		reflect.Int:     _INT32,
+		reflect.Map:     _NVLIST,
+		reflect.String:  _STRING,
+		reflect.Struct:  _NVLIST,
+		reflect.Uint16:  _UINT16,
+		reflect.Uint32:  _UINT32,
+		reflect.Uint64:  _UINT64,
+		reflect.Uint8:   _UINT8,
+		reflect.Uint:    _UINT32,
 	}
 
 	var sliceTypes = map[reflect.Kind]dataType{
-		reflect.Bool:   BOOLEAN_ARRAY,
-		reflect.Int16:  INT16_ARRAY,
-		reflect.Int32:  INT32_ARRAY,
-		reflect.Int64:  INT64_ARRAY,
-		reflect.Int8:   INT8_ARRAY,
-		reflect.Int:    INT32_ARRAY,
-		reflect.Map:    NVLIST_ARRAY,
-		reflect.String: STRING_ARRAY,
-		reflect.Struct: NVLIST_ARRAY,
-		reflect.Uint16: UINT16_ARRAY,
-		reflect.Uint32: UINT32_ARRAY,
-		reflect.Uint64: UINT64_ARRAY,
-		reflect.Uint8:  UINT8_ARRAY,
-		reflect.Uint:   UINT32_ARRAY,
+		reflect.Bool:   _BOOLEAN_ARRAY,
+		reflect.Int16:  _INT16_ARRAY,
+		reflect.Int32:  _INT32_ARRAY,
+		reflect.Int64:  _INT64_ARRAY,
+		reflect.Int8:   _INT8_ARRAY,
+		reflect.Int:    _INT32_ARRAY,
+		reflect.Map:    _NVLIST_ARRAY,
+		reflect.String: _STRING_ARRAY,
+		reflect.Struct: _NVLIST_ARRAY,
+		reflect.Uint16: _UINT16_ARRAY,
+		reflect.Uint32: _UINT32_ARRAY,
+		reflect.Uint64: _UINT64_ARRAY,
+		reflect.Uint8:  _UINT8_ARRAY,
+		reflect.Uint:   _UINT32_ARRAY,
 	}
 	var tagType dataType
 	if len(tags) > 1 {
 		if tags[1] == "byte" {
-			tagType = BYTE
+			tagType = _BYTE
 		} else if tags[1] == "uint8" {
-			tagType = UINT8
+			tagType = _UINT8
 		}
 	}
 
@@ -146,28 +146,28 @@ func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) ([
 	switch field.Kind() {
 	case reflect.Bool:
 		if field.Type().Name() == "Boolean" {
-			p.Type = BOOLEAN
+			p.Type = _BOOLEAN
 		}
 	case reflect.Interface:
 		return encodeItem(w, name, tags, reflect.ValueOf(field.Interface()))
 	case reflect.Slice, reflect.Array:
 		p.Type, ok = sliceTypes[field.Type().Elem().Kind()]
 		switch tagType {
-		case BYTE:
-			p.Type = BYTE_ARRAY
-		case UINT8:
-			p.Type = UINT8_ARRAY
+		case _BYTE:
+			p.Type = _BYTE_ARRAY
+		case _UINT8:
+			p.Type = _UINT8_ARRAY
 		}
 	case reflect.Int64:
 		if field.Type().String() == "time.Duration" {
-			p.Type = HRTIME
+			p.Type = _HRTIME
 		}
 	case reflect.Uint8:
 		switch tagType {
-		case BYTE:
-			p.Type = BYTE
-		case UINT8:
-			p.Type = UINT8
+		case _BYTE:
+			p.Type = _BYTE
+		case _UINT8:
+			p.Type = _UINT8
 		}
 	}
 
@@ -179,13 +179,13 @@ func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) ([
 	value := p.data
 	vbuf := &bytes.Buffer{}
 	switch p.Type {
-	case BOOLEAN:
+	case _BOOLEAN:
 		p.NElements = 0
-	case BYTE:
+	case _BYTE:
 		value = int8(value.(uint8))
-	case UINT8:
+	case _UINT8:
 		value = int(int8(value.(uint8)))
-	case BYTE_ARRAY:
+	case _BYTE_ARRAY:
 		p.NElements = uint32(len(value.([]byte)))
 		n := int(p.NElements)
 		arrType := reflect.ArrayOf(n, reflect.TypeOf(byte(0)))
@@ -194,17 +194,17 @@ func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) ([
 			arr.Index(i).SetUint(uint64(b))
 		}
 		value = arr.Interface()
-	case BOOLEAN_ARRAY:
+	case _BOOLEAN_ARRAY:
 		p.NElements = uint32(len(value.([]bool)))
-	case INT8_ARRAY:
+	case _INT8_ARRAY:
 		p.NElements = uint32(len(value.([]int8)))
-	case INT16_ARRAY:
+	case _INT16_ARRAY:
 		p.NElements = uint32(len(value.([]int16)))
-	case INT32_ARRAY:
+	case _INT32_ARRAY:
 		p.NElements = uint32(len(value.([]int32)))
-	case INT64_ARRAY:
+	case _INT64_ARRAY:
 		p.NElements = uint32(len(value.([]int64)))
-	case UINT8_ARRAY:
+	case _UINT8_ARRAY:
 		// this one is weird since UINT8s are encoded as char
 		// aka int32s... :(
 		p.NElements = uint32(len(value.([]uint8)))
@@ -215,13 +215,13 @@ func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) ([
 			slice.Index(i).SetInt(int64(int8(b)))
 		}
 		value = slice.Interface()
-	case UINT16_ARRAY:
+	case _UINT16_ARRAY:
 		p.NElements = uint32(len(value.([]uint16)))
-	case UINT32_ARRAY:
+	case _UINT32_ARRAY:
 		p.NElements = uint32(len(value.([]uint32)))
-	case UINT64_ARRAY:
+	case _UINT64_ARRAY:
 		p.NElements = uint32(len(value.([]uint64)))
-	case STRING_ARRAY:
+	case _STRING_ARRAY:
 		p.NElements = uint32(len(value.([]string)))
 		arrType := reflect.ArrayOf(int(p.NElements), reflect.TypeOf(""))
 		arr := reflect.New(arrType).Elem()
@@ -229,12 +229,12 @@ func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) ([
 			arr.Index(i).SetString(b)
 		}
 		value = arr.Interface()
-	case NVLIST:
+	case _NVLIST:
 		if err := encodeList(vbuf, reflect.ValueOf(value)); err != nil {
 			return nil, err
 		}
 		p.data = vbuf.Bytes()
-	case NVLIST_ARRAY:
+	case _NVLIST_ARRAY:
 		p.NElements = uint32(len(value.([]map[string]interface{})))
 		for _, l := range value.([]map[string]interface{}) {
 			if err := encodeList(vbuf, reflect.ValueOf(l)); err != nil {
@@ -244,7 +244,7 @@ func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) ([
 		p.data = vbuf.Bytes()
 	}
 
-	if vbuf.Len() == 0 && p.Type != BOOLEAN {
+	if vbuf.Len() == 0 && p.Type != _BOOLEAN {
 		_, err := xdr.NewEncoder(vbuf).Encode(value)
 		if err != nil {
 			return nil, err

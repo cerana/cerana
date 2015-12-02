@@ -73,7 +73,7 @@ func decodeListStruct(r io.ReadSeeker, target reflect.Value) error {
 	if h.Version != 0 {
 		return fmt.Errorf("unexpected version: %v", h.Version)
 	}
-	if h.Flag < UNIQUE_NAME || h.Flag > UNIQUE_NAME_TYPE {
+	if h.Flag < _UNIQUE_NAME || h.Flag > _UNIQUE_NAME_TYPE {
 		return fmt.Errorf("unexpected Flag: %v", h.Flag)
 	}
 
@@ -145,91 +145,91 @@ func decodeListStruct(r io.ReadSeeker, target reflect.Value) error {
 		var v interface{}
 		dec := newDecoder(r)
 		switch dataPair.Type {
-		case BOOLEAN:
+		case _BOOLEAN:
 			v := Boolean(true)
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.Set(val)
 			}
-		case BOOLEAN_VALUE:
+		case _BOOLEAN_VALUE:
 			v, err = dec.DecodeBool()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.SetBool(v.(bool))
 			}
-		case BYTE:
+		case _BYTE:
 			v, err = dec.DecodeByte()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.SetUint(uint64(v.(uint8)))
 			}
-		case INT8:
+		case _INT8:
 			v, err = dec.DecodeInt8()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.SetInt(int64(v.(int8)))
 			}
-		case INT16:
+		case _INT16:
 			v, err = dec.DecodeInt16()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.SetInt(int64(v.(int16)))
 			}
-		case INT32:
+		case _INT32:
 			v, err = dec.DecodeInt32()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.SetInt(int64(v.(int32)))
 			}
-		case INT64:
+		case _INT64:
 			v, err = dec.DecodeInt64()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.SetInt(v.(int64))
 			}
-		case UINT8:
+		case _UINT8:
 			v, err = dec.DecodeUint8()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.SetUint(uint64(v.(uint8)))
 			}
-		case UINT16:
+		case _UINT16:
 			v, err = dec.DecodeUint16()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.SetUint(uint64(v.(uint16)))
 			}
-		case UINT32:
+		case _UINT32:
 			v, err = dec.DecodeUint32()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.SetUint(uint64(v.(uint32)))
 			}
-		case UINT64:
+		case _UINT64:
 			v, err = dec.DecodeUint64()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.SetUint(uint64(v.(uint64)))
 			}
-		case HRTIME:
+		case _HRTIME:
 			v, err = dec.DecodeHRTime()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.SetInt(int64(v.(time.Duration)))
 			}
-		case DOUBLE:
+		case _DOUBLE:
 			v, err = dec.DecodeFloat64()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.SetFloat(v.(float64))
 			}
-		case BOOLEAN_ARRAY:
+		case _BOOLEAN_ARRAY:
 			v, err = dec.DecodeBoolArray()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.Set(val)
 			}
-		case BYTE_ARRAY:
+		case _BYTE_ARRAY:
 			if _, err = r.Seek(-4, 1); err == nil {
 				v, err = dec.DecodeByteArray()
 				val = reflect.ValueOf(v)
@@ -237,61 +237,61 @@ func decodeListStruct(r io.ReadSeeker, target reflect.Value) error {
 					targetField.SetBytes(v.([]byte))
 				}
 			}
-		case INT8_ARRAY:
+		case _INT8_ARRAY:
 			v, err = dec.DecodeInt8Array()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.Set(val)
 			}
-		case INT16_ARRAY:
+		case _INT16_ARRAY:
 			v, err = dec.DecodeInt16Array()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.Set(val)
 			}
-		case INT32_ARRAY:
+		case _INT32_ARRAY:
 			v, err = dec.DecodeInt32Array()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.Set(val)
 			}
-		case INT64_ARRAY:
+		case _INT64_ARRAY:
 			v, err = dec.DecodeInt64Array()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.Set(val)
 			}
-		case UINT8_ARRAY:
+		case _UINT8_ARRAY:
 			v, err = dec.DecodeUint8Array()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.Set(val)
 			}
-		case UINT16_ARRAY:
+		case _UINT16_ARRAY:
 			v, err = dec.DecodeUint16Array()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.Set(val)
 			}
-		case UINT32_ARRAY:
+		case _UINT32_ARRAY:
 			v, err = dec.DecodeUint32Array()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.Set(val)
 			}
-		case UINT64_ARRAY:
+		case _UINT64_ARRAY:
 			v, err = dec.DecodeUint64Array()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.Set(val)
 			}
-		case STRING:
+		case _STRING:
 			v, err = dec.DecodeString()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.SetString(v.(string))
 			}
-		case STRING_ARRAY:
+		case _STRING_ARRAY:
 			if _, err = r.Seek(-4, 1); err == nil {
 				v, err = dec.DecodeStringArray()
 				val = reflect.ValueOf(v)
@@ -299,7 +299,7 @@ func decodeListStruct(r io.ReadSeeker, target reflect.Value) error {
 					targetField.Set(val)
 				}
 			}
-		case NVLIST:
+		case _NVLIST:
 			if isList {
 				val = reflect.Indirect(reflect.New(target.Type()))
 			} else if isMap {
@@ -311,7 +311,7 @@ func decodeListStruct(r io.ReadSeeker, target reflect.Value) error {
 			fieldSetFunc = func() {
 				targetField.Set(val)
 			}
-		case NVLIST_ARRAY:
+		case _NVLIST_ARRAY:
 			var sliceType reflect.Type
 			if isList {
 				sliceType = target.Type()
