@@ -109,6 +109,38 @@ make
 sudo make install
 ```
 
+Installing *Robot Framework*
+----------------------------
+
+[Robot Framework](http://robotframework.org/) is a test automation framework used for testing Mistify-OS builds and behaviors. Being Python based most of the components needed to run *Robot Framework* are already available in Mistifgy-OS. However, the tool and it's required libraries need to be installed before test scripts can be executed. To do so first install *pip* using instructions in the [Python packaging guide](http://python-packaging-user-guide.readthedocs.org/en/latest/installing/#install-pip-setuptools-and-wheel). You can then install *Robot Framework* and it's libraries. To save some reading time here are some concise instructions:
+
+```bash
+wget https://raw.github.com/pypa/pip/master/contrib/get-pip.py
+sudo python get-pip.py
+# NOTE: To make this install persistent you may want to install to the
+# /usr/local directory using the --prefix install option.
+sudo pip install robotframework
+sudo pip install --install-option="--prefix=/usr/local/robotframework" robotframework
+sudo ln -s /usr/local/robotframework/bin/pybot /usr/local/bin/pybot
+sudo ln -s /usr/local/robotframework/bin/rebot /usr/local/bin/rebot
+sudo pip install --install-option="--prefix=/usr/local/robotframework" robotframework-sshlibrary
+
+```
+
+Installing *Java*
+-----------------
+
+A prebuilt 64 bit runtime for Java can be installed using the following steps:
+
+```bash
+cd /tmp
+wget http://javadl.sun.com/webapps/download/AutoDL?BundleId=111741
+sudo mkdir /usr/local/java
+cd /usr/local/java
+sudo tar zxvf /tmp/jre-8u66-linux-x64.tar.gz
+sudo ln -s /usr/local/java/jre1.8.0_66/bin/java /usr/local/bin/java
+```
+
 Building Mistify-OS
 ===================
 
