@@ -323,14 +323,14 @@ int main() {
 		fnvlist_free(l);
 	}
 
-    {
-        l = fnvlist_alloc();
-        fnvlist_add_boolean(l,"true");
-        print(l,"boolean");
-        fnvlist_free(l);
-    }
+	{
+		l = fnvlist_alloc();
+		fnvlist_add_boolean(l,"true");
+		print(l,"boolean");
+		fnvlist_free(l);
+	}
 
-    {
+	{
 		l = fnvlist_alloc();
 		fnvlist_add_boolean_value(l, "false", B_FALSE);
 		fnvlist_add_boolean_value(l, "true", B_TRUE);
@@ -347,13 +347,15 @@ int main() {
 		fnvlist_free(l);
 	}
 
-	l = fnvlist_alloc();
-	//fnvlist_add_byte(l, "-128", -128);
-	fnvlist_add_byte(l, "0", 0);
-	fnvlist_add_byte(l, "1", 1);
-	fnvlist_add_byte(l, "127", 127);
-	print(l, "bytes");
-	fnvlist_free(l);
+	{
+		l = fnvlist_alloc();
+		//fnvlist_add_byte(l, "-128", -128);
+		fnvlist_add_byte(l, "0", 0);
+		fnvlist_add_byte(l, "1", 1);
+		fnvlist_add_byte(l, "127", 127);
+		print(l, "bytes");
+		fnvlist_free(l);
+	}
 
 	{
 		l = fnvlist_alloc();
@@ -421,33 +423,48 @@ int main() {
 			"\xff\"",
 		};
 		l = fnvlist_alloc();
-		fnvlist_add_string_array(l, "0;01;012;0123;01234;012345;0123456;01234567;\xff\"", array, 9);
+		fnvlist_add_string_array(l,
+					 "0;"
+					 "01;"
+					 "012;"
+					 "0123;"
+					 "01234;"
+					 "012345;"
+					 "0123456;"
+					 "01234567;"
+					 "\xff\""
+					 , array, 9);
 		print(l, "string array");
 		fnvlist_free(l);
 	}
 
 	do_signed(hrtime, INT64);
 
-	l = fnvlist_alloc();
-	nvlist_t *le = fnvlist_alloc();
-	fnvlist_add_boolean_value(le, "false", B_FALSE);
-	fnvlist_add_boolean_value(le, "true", B_TRUE);
-	fnvlist_add_nvlist(l, "nvlist", le);
-	print(l, "nvlist");
-	fnvlist_free(l);
-
 	{
 		l = fnvlist_alloc();
-		nvlist_t *larr[] = {le, le};
+		nvlist_t *ll = fnvlist_alloc();
+		fnvlist_add_boolean_value(ll, "false", B_FALSE);
+		fnvlist_add_boolean_value(ll, "true", B_TRUE);
+		fnvlist_add_nvlist(l, "nvlist", ll);
+		print(l, "nvlist");
+		fnvlist_free(ll);
+		fnvlist_free(l);
+	}
+	{
+		nvlist_t *ll = fnvlist_alloc();
+		fnvlist_add_boolean_value(ll, "false", B_FALSE);
+		fnvlist_add_boolean_value(ll, "true", B_TRUE);
+		nvlist_t *larr[] = {ll, ll};
+		l = fnvlist_alloc();
 		fnvlist_add_nvlist_array(l, stra("list", 2), larr, 2);
 		print(l, "nvlist array");
-		fnvlist_free(le);
+		fnvlist_free(ll);
 		fnvlist_free(l);
 	}
 
 	do_double(double, DBL);
 
-	/*
+#if 0
 	{
 		l = fnvlist_alloc();
 		fnvlist_add_int8_array(l, "empty int8", {}, 0);
@@ -463,7 +480,7 @@ int main() {
 		print(l, "empty arrays");
 		fnvlist_free(l);
 	}
-	*/
+#endif
 
 	tests << "}\n";
 
