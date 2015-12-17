@@ -1,7 +1,5 @@
 #include <array>
-#include <iomanip>
 #include <map>
-#include <iostream>
 #include <sstream>
 #include <unordered_map>
 
@@ -128,7 +126,7 @@ static void pack(nvlist_t *list, const char *name) {
 	size_t blen;
 	int err;
 	if ((err = nvlist_pack(list, &buf, &blen, NV_ENCODE_XDR, 0)) != 0) {
-		std::cerr << "nvlist_pack error:" << err << "\n";
+		fprintf(stderr, "nvlist_pack error: %d", err);
 	}
 
 	std::string struct_name = type_name(name);
@@ -137,9 +135,9 @@ static void pack(nvlist_t *list, const char *name) {
 	tests << "\t{name: \"" << name << "\", ptr: func() interface{} { return &" << struct_name << "{} }, payload: []byte(\"";
 
 	for (unsigned i = 0; i < blen; i++) {
-		tests << "\\x"
-			<< std::hex << std::setw(2) << std::setfill('0') << std::right
-			<< (buf[i] & 0xFF);
+		char tmp[8];
+		snprintf(tmp, arrlen(tmp), "\\x%02x", (uint8_t)(buf[i] & 0xFF));
+		tests << std::string(tmp);
 	}
 	tests << "\")},\n";
 }
@@ -167,7 +165,7 @@ static char *stru(unsigned long long i) {
 	char *s = NULL;
 	int err = asprintf(&s, "%llu", i);
 	if (err == -1) {
-		std::cerr << "asprintf error:" << err << "\n";
+		fprintf(stderr, "asprintf error: %d\n", err);
 		assert(err != -1);
 	}
 	return s;
@@ -177,7 +175,7 @@ static char *stri(long long i) {
 	char *s = NULL;
 	int err = asprintf(&s, "%lld", i);
 	if (err == -1) {
-		std::cerr << "asprintf error:" << err << "\n";
+		fprintf(stderr, "asprintf error: %d\n", err);
 		assert(err != -1);
 	}
 	return s;
@@ -187,7 +185,7 @@ static char *strf(double d) {
 	char *s = NULL;
 	int err = asprintf(&s, "%16.17g", d);
 	if (err == -1) {
-		std::cerr << "asprintf error:" << err << "\n";
+		fprintf(stderr, "asprintf error: %d\n", err);
 		assert(err != -1);
 	}
 	return s;
@@ -485,6 +483,6 @@ int main() {
 
 	tests << "}\n";
 
-	std::cout << defs.str() << tests.str() << std::flush;
+	fprintf(stdout, "%s%s", defs.str().c_str(), tests.str().c_str());
 	return 0;
 }
