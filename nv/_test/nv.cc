@@ -60,6 +60,74 @@ std::unordered_map<int, const char *> types = {
 	{DATA_TYPE_DOUBLE, "float64"},
 };
 
+static void hexdump(const std::string str) {
+	using namespace std;
+
+	const char *bytes = str.c_str();
+	const size_t length = str.size();
+
+	if (length == 0) {
+		return;
+	}
+
+	// Print bytes
+	size_t pos = 0;
+	char asciibytes[17];
+	memset(asciibytes, '\0', 17);
+	size_t end = length - (length % 16);
+	for (; pos < end ; pos++) {
+		unsigned i = pos % 16;
+		if (i == 0) {
+			// Print position
+			printf("%08x ", static_cast<uint32_t>(pos));
+
+		}
+		unsigned curbyte = bytes[pos] & 0xFF;
+		asciibytes[i] = isprint(curbyte) ? curbyte : '.';
+
+		// Print current byte in hex
+		printf("%02x ", curbyte);
+		if (i == 7) {
+			// Print current byte in hex with extra space at the end
+			printf(" ");
+		} else if (i == 15) {
+			// Print ascii chars + endl
+			printf("|%s|\n", asciibytes);
+		}
+	}
+
+	memset(asciibytes, ' ', 16);
+	size_t fill = 16 - (length - pos);
+	for (; pos < length ; pos++) {
+		unsigned i = pos % 16;
+		if (i == 0) {
+			// Print position
+			printf("%08x ", static_cast<uint32_t>(pos));
+
+		}
+		unsigned curbyte = bytes[pos] & 0xFF;
+		asciibytes[i] = isprint(curbyte) ? curbyte : '.';
+
+		// Print current byte in hex
+		printf("%02x ", curbyte);
+		if (i == 7) {
+			// Print current byte in hex with extra space at the end
+			printf(" ");
+		}
+	}
+
+	for (unsigned int i = 0 ; i < fill; i++) {
+		if (i == 7) {
+			// Print current byte in hex with extra space at the end
+			printf(" ");
+		}
+		printf("   ");
+	}
+	if (fill) {
+		printf("|%s|\n", asciibytes);
+	}
+}
+
 // sanitize tags by escaping " and ` characters, and use escaped hex notation
 // for non printable characters
 static char *sanitize(char *name) {
@@ -356,7 +424,7 @@ static char *strf(double d) {
 	pack(list, "string array"); \
 } while(0)
 
-int main() {
+int main(int argc, char** argv) {
 	nvlist_t *l = NULL;
 	{
 		l = fnvlist_alloc();
@@ -533,6 +601,35 @@ int main() {
 		fnvlist_free(l);
 	}
 
+	char *testrun = getenv("NV_TEST_RUN");
+	bool xdr = false;
+	bool native = false;
+	for (int i = 0; i < argc; i++) {
+		if (!(strcmp(argv[i], "-x") && strcmp(argv[i], "--xdr"))) {
+			xdr = true;
+		}
+		if (!(strcmp(argv[i], "-n") && strcmp(argv[i], "--native"))) {
+			native = true;
+		}
+	}
+	if (xdr || native) {
+		for (test &t: tests) {
+			if (testrun && t.name != testrun) {
+				continue;
+			}
+			printf("%s ", t.name.c_str());
+			if (xdr) {
+				printf("xdr:\n");
+				hexdump(t.xdr);
+			}
+			if (native) {
+				printf("native:\n");
+				hexdump(t.native);
+			}
+			printf("\n");
+		}
+		return 0;
+	}
 
 	printf("package nv\n"
 	       "\n"
