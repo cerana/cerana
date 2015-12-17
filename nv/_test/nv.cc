@@ -56,7 +56,7 @@ std::unordered_map<int, const char *> types = {
 
 // sanitize tags by escaping " and ` characters, and use escaped hex notation
 // for non printable characters
-char *sanitize(char *name) {
+static char *sanitize(char *name) {
 	name = strdup(name);
 	size_t slen = strlen(name);
 	size_t buflen = strlen(name);
@@ -143,7 +143,7 @@ static void print(nvlist_t *list, char *name) {
 	tests << "\")},\n";
 }
 
-char *stra(char *s, int n) {
+static char *stra(char *s, int n) {
 	size_t sl = strlen(s) + 2;
 	char sep[sl];
 	memset(sep, '\0', sl);
@@ -162,7 +162,7 @@ char *stra(char *s, int n) {
 	return s;
 }
 
-char *stru(unsigned long long i) {
+static char *stru(unsigned long long i) {
 	char *s = NULL;
 	int err = asprintf(&s, "%llu", i);
 	if (err == -1) {
@@ -172,7 +172,7 @@ char *stru(unsigned long long i) {
 	return s;
 }
 
-char *stri(long long i) {
+static char *stri(long long i) {
 	char *s = NULL;
 	int err = asprintf(&s, "%lld", i);
 	if (err == -1) {
@@ -182,7 +182,7 @@ char *stri(long long i) {
 	return s;
 }
 
-char *strf(double d) {
+static char *strf(double d) {
 	char *s = NULL;
 	int err = asprintf(&s, "%16.17g", d);
 	if (err == -1) {
