@@ -102,22 +102,24 @@ static std::string type_name(const char *cname) {
 	return name;
 }
 
-static void define(nvlist_t *list, std::string type_name) {
+static std::string define(nvlist_t *list, std::string type_name) {
 	nvpair_t *pair = NULL;
+	std::stringstream def;
 
-	defs << "type " << type_name << " struct {\n";
+	def << "type " << type_name << " struct {\n";
 	char field = 'A';
 	while ((pair = nvlist_next_nvpair(list, pair)) != NULL) {
 		auto name = sanitize(nvpair_name(pair));
 		auto type = nvpair_type(pair);
-		defs << "\t" << field++ << " " << types[type] << " `nv:\"" << name;
+		def << "\t" << field++ << " " << types[type] << " `nv:\"" << name;
 		if (type == DATA_TYPE_BYTE || type == DATA_TYPE_BYTE_ARRAY) {
-			defs << ",byte";
+			def << ",byte";
 		}
-		defs << "\"`\n";
+		def << "\"`\n";
 		free(name);
 	}
-	defs << "}\n\n";
+	def << "}\n\n";
+	return def.str();
 }
 
 static void print(nvlist_t *list, char *name) {
@@ -129,7 +131,8 @@ static void print(nvlist_t *list, char *name) {
 	}
 
 	std::string struct_name = type_name(name);
-	define(list, struct_name);
+	std::string def = define(list, struct_name);
+	defs << def;
 	tests << "\t{name: \"" << name << "\", ptr: func() interface{} { return &" << struct_name << "{} }, payload: []byte(\"";
 
 	for (unsigned i = 0; i < blen; i++) {
