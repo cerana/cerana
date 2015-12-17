@@ -22,6 +22,11 @@
 
 std::stringstream defs;
 std::stringstream tests;
+struct test {
+	std::string name;
+	std::string structName;
+	std::string xdrPayload;
+};
 
 std::unordered_map<int, const char *> types = {
 	{DATA_TYPE_BOOLEAN, "Boolean"},
@@ -123,18 +128,26 @@ static std::string define(nvlist_t *list, std::string type_name) {
 
 static void pack(nvlist_t *list, const char *name) {
 	char *buf = NULL;
-	size_t blen;
+	size_t len;
 	int err;
-	if ((err = nvlist_pack(list, &buf, &blen, NV_ENCODE_XDR, 0)) != 0) {
+	if ((err = nvlist_pack(list, &buf, &len, NV_ENCODE_XDR, 0)) != 0) {
 		fprintf(stderr, "nvlist_pack error: %d", err);
 	}
 
 	std::string struct_name = type_name(name);
 	std::string def = define(list, struct_name);
 	defs << def;
-	tests << "\t{name: \"" << name << "\", ptr: func() interface{} { return &" << struct_name << "{} }, payload: []byte(\"";
 
-	for (unsigned i = 0; i < blen; i++) {
+	test t;
+	t.name = name;
+	t.structName = struct_name;
+	t.xdrPayload = std::string(buf, len);
+
+	tests << "\t{name: \"" << t.name << "\", ptr: func() interface{} { return &" << t.structName << "{} }, payload: []byte(\"";
+
+	buf = (char *)t.xdrPayload.c_str();
+	len = t.xdrPayload.size();
+	for (unsigned i = 0; i < len; i++) {
 		char tmp[8];
 		snprintf(tmp, arrlen(tmp), "\\x%02x", (uint8_t)(buf[i] & 0xFF));
 		tests << std::string(tmp);
