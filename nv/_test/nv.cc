@@ -126,6 +126,22 @@ static std::string define(nvlist_t *list, std::string type_name) {
 	return def.str();
 }
 
+static void print(test &t) {
+	char *buf = NULL;
+	size_t len;
+
+	tests << "\t{name: \"" << t.name << "\", ptr: func() interface{} { return &" << t.structName << "{} }, payload: []byte(\"";
+
+	buf = (char *)t.xdrPayload.c_str();
+	len = t.xdrPayload.size();
+	for (unsigned i = 0; i < len; i++) {
+		char tmp[8];
+		snprintf(tmp, arrlen(tmp), "\\x%02x", buf[i] & 0xFF);
+		tests << std::string(tmp);
+	}
+	tests << "\")},\n";
+}
+
 static void pack(nvlist_t *list, const char *name) {
 	char *buf = NULL;
 	size_t len;
@@ -142,17 +158,7 @@ static void pack(nvlist_t *list, const char *name) {
 	t.name = name;
 	t.structName = struct_name;
 	t.xdrPayload = std::string(buf, len);
-
-	tests << "\t{name: \"" << t.name << "\", ptr: func() interface{} { return &" << t.structName << "{} }, payload: []byte(\"";
-
-	buf = (char *)t.xdrPayload.c_str();
-	len = t.xdrPayload.size();
-	for (unsigned i = 0; i < len; i++) {
-		char tmp[8];
-		snprintf(tmp, arrlen(tmp), "\\x%02x", (uint8_t)(buf[i] & 0xFF));
-		tests << std::string(tmp);
-	}
-	tests << "\")},\n";
+	print(t);
 }
 
 static char *stra(char *s, int n) {
