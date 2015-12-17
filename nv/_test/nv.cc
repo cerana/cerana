@@ -122,7 +122,7 @@ static std::string define(nvlist_t *list, std::string type_name) {
 	return def.str();
 }
 
-static void print(nvlist_t *list, char *name) {
+static void print(nvlist_t *list, const char *name) {
 	char *buf = NULL;
 	size_t blen;
 	int err;
@@ -152,14 +152,14 @@ static char *stra(char *s, int n) {
 	sl -= 1; // remove accounting for '\0'
 
 	size_t size = sl * n + 1; // is really 1 byte extra but makes later stuff easier
-	s = (char *)calloc(1, size);
+	char *ss = (char *)calloc(1, size);
 	assert(s);
 
 	for (int i = 0; i < n; i++) {
-		strcat(s, sep);
+		strcat(ss, sep);
 	}
-	s[size - 2] = '\0'; //overwrite trailing ',' with '\0'
-	return s;
+	ss[size - 2] = '\0'; //overwrite trailing ',' with '\0'
+	return ss;
 }
 
 static char *stru(unsigned long long i) {
@@ -411,7 +411,7 @@ int main() {
 
 
 	{
-		char *array[] = {
+		const char *array[] = {
 			"0",
 			"01",
 			"012",
@@ -433,7 +433,7 @@ int main() {
 					 "0123456;"
 					 "01234567;"
 					 "\xff\""
-					 , array, 9);
+					 , (char **)array, 9);
 		print(l, "string array");
 		fnvlist_free(l);
 	}
