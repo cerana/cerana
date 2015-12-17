@@ -123,7 +123,7 @@ static std::string define(nvlist_t *list, std::string type_name) {
 	return def.str();
 }
 
-static void print(nvlist_t *list, const char *name) {
+static void pack(nvlist_t *list, const char *name) {
 	char *buf = NULL;
 	size_t blen;
 	int err;
@@ -208,7 +208,7 @@ static char *strf(double d) {
 	for (auto &kv : map) { \
 		fnvlist_add_##lower(l, kv.first.c_str(), kv.second); \
 	} \
-	print(l, stringify(lower) "s"); \
+	pack(l, stringify(lower) "s"); \
 	fnvlist_free(l); \
 } while(0)
 
@@ -223,7 +223,7 @@ static char *strf(double d) {
 	for (auto &kv : map) { \
 		fnvlist_add_##lower(l, kv.first.c_str(), kv.second); \
 	} \
-	print(l, stringify(lower) "s"); \
+	pack(l, stringify(lower) "s"); \
 	fnvlist_free(l); \
 } while(0)
 
@@ -255,7 +255,7 @@ static char *strf(double d) {
 	for (auto &kv : map) { \
 		fnvlist_add_##lower(l, kv.first.c_str(), kv.second); \
 	} \
-	print(l, stringify(lower) "s"); \
+	pack(l, stringify(lower) "s"); \
 	fnvlist_free(l); \
 } while(0)
 
@@ -283,7 +283,7 @@ static char *strf(double d) {
 	for (auto &kv : map) { \
 		fnvlist_add_##lower##_array(l, kv.first.c_str(), kv.second.data(), kv.second.size()); \
 	} \
-	print(l, stringify(lower) " array(" stringify(len)")"); \
+	pack(l, stringify(lower) " array(" stringify(len)")"); \
 	fnvlist_free(l); \
 } while(0) \
 
@@ -300,7 +300,7 @@ static char *strf(double d) {
 	for (auto &kv : map) { \
 		fnvlist_add_##lower##_array(l, kv.first.c_str(), kv.second.data(), kv.second.size()); \
 	} \
-	print(l, stringify(lower) " array(" stringify(len)")"); \
+	pack(l, stringify(lower) " array(" stringify(len)")"); \
 	fnvlist_free(l); \
 } while(0) \
 
@@ -320,14 +320,14 @@ int main() {
 	nvlist_t *l = NULL;
 	{
 		l = fnvlist_alloc();
-		print(l, "empty");
+		pack(l, "empty");
 		fnvlist_free(l);
 	}
 
 	{
 		l = fnvlist_alloc();
 		fnvlist_add_boolean(l,"true");
-		print(l,"boolean");
+		pack(l,"boolean");
 		fnvlist_free(l);
 	}
 
@@ -335,7 +335,7 @@ int main() {
 		l = fnvlist_alloc();
 		fnvlist_add_boolean_value(l, "false", B_FALSE);
 		fnvlist_add_boolean_value(l, "true", B_TRUE);
-		print(l, "bools");
+		pack(l, "bools");
 		fnvlist_free(l);
 	}
 	{
@@ -344,7 +344,7 @@ int main() {
 		boolean_t array[len];
 		arrset(array, len, B_FALSE); fnvlist_add_boolean_array(l, stra("false", len), array, len);
 		arrset(array, len, B_TRUE); fnvlist_add_boolean_array(l, stra("true", len), array, len);
-		print(l, "bool array");
+		pack(l, "bool array");
 		fnvlist_free(l);
 	}
 
@@ -354,7 +354,7 @@ int main() {
 		fnvlist_add_byte(l, "0", 0);
 		fnvlist_add_byte(l, "1", 1);
 		fnvlist_add_byte(l, "127", 127);
-		print(l, "bytes");
+		pack(l, "bytes");
 		fnvlist_free(l);
 	}
 
@@ -366,7 +366,7 @@ int main() {
 		arrset(array, len, 0); fnvlist_add_byte_array(l, stra("0", len), array, len);
 		arrset(array, len, 1); fnvlist_add_byte_array(l, stra("1", len), array, len);
 		arrset(array, len, 127); fnvlist_add_byte_array(l, stra("127", len), array, len);
-		print(l, "byte array");
+		pack(l, "byte array");
 		fnvlist_free(l);
 	}
 
@@ -407,7 +407,7 @@ int main() {
 	fnvlist_add_string(l, "0123456", "0123456");
 	fnvlist_add_string(l, "01234567", "01234567");
 	fnvlist_add_string(l, "\xff\"", "\xff\"");
-	print(l, "strings");
+	pack(l, "strings");
 	fnvlist_free(l);
 
 
@@ -435,7 +435,7 @@ int main() {
 					 "01234567;"
 					 "\xff\""
 					 , (char **)array, arrlen(array));
-		print(l, "string array");
+		pack(l, "string array");
 		fnvlist_free(l);
 	}
 
@@ -447,7 +447,7 @@ int main() {
 		fnvlist_add_boolean_value(ll, "false", B_FALSE);
 		fnvlist_add_boolean_value(ll, "true", B_TRUE);
 		fnvlist_add_nvlist(l, "nvlist", ll);
-		print(l, "nvlist");
+		pack(l, "nvlist");
 		fnvlist_free(ll);
 		fnvlist_free(l);
 	}
@@ -458,7 +458,7 @@ int main() {
 		nvlist_t *larr[] = {ll, ll};
 		l = fnvlist_alloc();
 		fnvlist_add_nvlist_array(l, stra("list", arrlen(larr)), larr, arrlen(larr));
-		print(l, "nvlist array");
+		pack(l, "nvlist array");
 		fnvlist_free(ll);
 		fnvlist_free(l);
 	}
@@ -478,7 +478,7 @@ int main() {
 		fnvlist_add_uint64_array(l, "empty uint64", {}, 0);
 		fnvlist_add_string_array(l, "empty string", {}, 0);
 		fnvlist_add_nvlist_array(l, "empty nvlist", {}, 0);
-		print(l, "empty arrays");
+		pack(l, "empty arrays");
 		fnvlist_free(l);
 	}
 #endif
