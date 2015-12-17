@@ -20,6 +20,7 @@
 
 #define fnvlist_add_double(l, n, v) assert(nvlist_add_double(l, n, v) == 0)
 #define fnvlist_add_hrtime(l, n, v) assert(nvlist_add_hrtime(l, n, v) == 0)
+#define arrlen(x) (sizeof(x)/sizeof(x[0]))
 
 std::stringstream defs;
 std::stringstream tests;
@@ -433,7 +434,7 @@ int main() {
 					 "0123456;"
 					 "01234567;"
 					 "\xff\""
-					 , (char **)array, 9);
+					 , (char **)array, arrlen(array));
 		print(l, "string array");
 		fnvlist_free(l);
 	}
@@ -456,7 +457,7 @@ int main() {
 		fnvlist_add_boolean_value(ll, "true", B_TRUE);
 		nvlist_t *larr[] = {ll, ll};
 		l = fnvlist_alloc();
-		fnvlist_add_nvlist_array(l, stra("list", 2), larr, 2);
+		fnvlist_add_nvlist_array(l, stra("list", arrlen(larr)), larr, arrlen(larr));
 		print(l, "nvlist array");
 		fnvlist_free(ll);
 		fnvlist_free(l);
