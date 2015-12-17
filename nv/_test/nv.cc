@@ -91,7 +91,7 @@ char *sanitize(char *name) {
 	return name;
 }
 
-static std::string define(nvlist_t *list, char *cname) {
+static std::string type_name(const char *cname) {
 	std::string name("type_");
 	name +=(cname);
 	for (auto &&c: name) {
@@ -99,10 +99,13 @@ static std::string define(nvlist_t *list, char *cname) {
 			c = '_';
 		}
 	}
+	return name;
+}
 
+static void define(nvlist_t *list, std::string type_name) {
 	nvpair_t *pair = NULL;
 
-	defs << "type " << name << " struct {\n";
+	defs << "type " << type_name << " struct {\n";
 	char field = 'A';
 	while ((pair = nvlist_next_nvpair(list, pair)) != NULL) {
 		auto name = sanitize(nvpair_name(pair));
@@ -115,7 +118,6 @@ static std::string define(nvlist_t *list, char *cname) {
 		free(name);
 	}
 	defs << "}\n\n";
-	return name;
 }
 
 static void print(nvlist_t *list, char *name) {
@@ -126,7 +128,8 @@ static void print(nvlist_t *list, char *name) {
 		std::cerr << "nvlist_pack error:" << err << "\n";
 	}
 
-	std::string struct_name = define(list, name);
+	std::string struct_name = type_name(name);
+	define(list, struct_name);
 	tests << "\t{name: \"" << name << "\", ptr: func() interface{} { return &" << struct_name << "{} }, payload: []byte(\"";
 
 	for (unsigned i = 0; i < blen; i++) {
