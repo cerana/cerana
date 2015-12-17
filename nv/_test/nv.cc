@@ -2,6 +2,7 @@
 #include <map>
 #include <sstream>
 #include <unordered_map>
+#include <vector>
 
 #include <assert.h>
 #include <ctype.h>
@@ -20,13 +21,13 @@
 #define fnvlist_add_hrtime(l, n, v) assert(nvlist_add_hrtime(l, n, v) == 0)
 #define arrlen(x) (sizeof(x)/sizeof(x[0]))
 
-std::stringstream defs;
-std::stringstream tests;
 struct test {
 	std::string name;
 	std::string structName;
+	std::string definition;
 	std::string xdrPayload;
 };
+std::vector<test> tests;
 
 std::unordered_map<int, const char *> types = {
 	{DATA_TYPE_BOOLEAN, "Boolean"},
@@ -130,16 +131,18 @@ static void print(test &t) {
 	char *buf = NULL;
 	size_t len;
 
-	tests << "\t{name: \"" << t.name << "\", ptr: func() interface{} { return &" << t.structName << "{} }, payload: []byte(\"";
+	printf("\t{"
+	       "name: \"%s\", "
+	       "ptr: func() interface{} { return &%s{} }, "
+	       "payload: []byte(\"",
+	       t.name.c_str(), t.structName.c_str());
 
 	buf = (char *)t.xdrPayload.c_str();
 	len = t.xdrPayload.size();
 	for (unsigned i = 0; i < len; i++) {
-		char tmp[8];
-		snprintf(tmp, arrlen(tmp), "\\x%02x", buf[i] & 0xFF);
-		tests << std::string(tmp);
+		printf("\\x%02x", buf[i] & 0xFF);
 	}
-	tests << "\")},\n";
+	printf("\")},\n");
 }
 
 static void pack(nvlist_t *list, const char *name) {
@@ -152,13 +155,13 @@ static void pack(nvlist_t *list, const char *name) {
 
 	std::string struct_name = type_name(name);
 	std::string def = define(list, struct_name);
-	defs << def;
 
 	test t;
 	t.name = name;
 	t.structName = struct_name;
+	t.definition = def;
 	t.xdrPayload = std::string(buf, len);
-	print(t);
+	tests.push_back(t);
 }
 
 static char *stra(char *s, int n) {
@@ -322,17 +325,6 @@ static char *strf(double d) {
 } while(0) \
 
 int main() {
-	defs <<"package nv\n"
-		"\n"
-		"/* !!! GENERATED FILE DO NOT EDIT !!! */\n"
-		"\n"
-		"import \"time\"\n\n";
-
-	tests <<"var good = []struct {\n"
-		"\tname    string\n"
-		"\tptr     func() interface{}\n"
-		"\tpayload []byte\n"
-		"}{\n";
 
 	nvlist_t *l = NULL;
 	{
@@ -500,8 +492,27 @@ int main() {
 	}
 #endif
 
-	tests << "}\n";
 
-	fprintf(stdout, "%s%s", defs.str().c_str(), tests.str().c_str());
+	printf("package nv\n"
+	       "\n"
+	       "/* !!! GENERATED FILE DO NOT EDIT !!! */\n"
+	       "\n"
+	       "import \"time\"\n\n");
+
+	for (test &t: tests) {
+		printf("%s", t.definition.c_str());
+	}
+
+	printf("var good = []struct {\n"
+	       "\tname    string\n"
+	       "\tptr     func() interface{}\n"
+	       "\tpayload []byte\n"
+	       "}{\n");
+
+	for (test &t: tests) {
+		print(t);
+	}
+	printf("}\n");
+
 	return 0;
 }
