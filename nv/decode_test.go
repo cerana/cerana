@@ -384,7 +384,7 @@ func TestDecodeGood(t *testing.T) {
 		} else {
 			t.Log(" -- ", test.name)
 		}
-		decode(t, test.name, test.ptr(), test.payload, Decode)
+		decode(t, test.name, test.ptr(), test.xdr, Decode)
 	}
 }
 

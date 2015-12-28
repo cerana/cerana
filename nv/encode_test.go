@@ -78,20 +78,20 @@ func TestEncodeGood(t *testing.T) {
 		}
 
 		m := map[string]interface{}{}
-		err := Decode(test.payload, &m)
+		err := Decode(test.xdr, &m)
 		if err != nil {
 			t.Fatal(test.name, "failed to decode as map", err)
 		}
 		if !strings.Contains(test.name, "byte") {
-			assertEqual(t, test.name, "map", test.payload, m)
+			assertEqual(t, test.name, "map", test.xdr, m)
 		}
 
 		s := test.ptr()
-		err = Decode(test.payload, s)
+		err = Decode(test.xdr, s)
 		if err != nil {
 			t.Fatal(test.name, "failed to decode as struct:", err)
 		}
-		assertEqual(t, test.name, "struct", test.payload, s)
+		assertEqual(t, test.name, "struct", test.xdr, s)
 	}
 }
 

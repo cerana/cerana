@@ -23,9 +23,9 @@
 
 struct test {
 	std::string name;
-	std::string structName;
+	std::string type;
 	std::string definition;
-	std::string xdrPayload;
+	std::string xdr;
 };
 std::vector<test> tests;
 
@@ -96,7 +96,7 @@ static char *sanitize(char *name) {
 	return name;
 }
 
-static std::string type_name(const char *cname) {
+static std::string gen_type(const char *cname) {
 	std::string name("type_");
 	name +=(cname);
 	for (auto &&c: name) {
@@ -107,11 +107,11 @@ static std::string type_name(const char *cname) {
 	return name;
 }
 
-static std::string define(nvlist_t *list, std::string type_name) {
+static std::string define(nvlist_t *list, std::string type) {
 	nvpair_t *pair = NULL;
 	std::stringstream def;
 
-	def << "type " << type_name << " struct {\n";
+	def << "type " << type << " struct {\n";
 	char field = 'A';
 	while ((pair = nvlist_next_nvpair(list, pair)) != NULL) {
 		auto name = sanitize(nvpair_name(pair));
@@ -134,11 +134,11 @@ static void print(test &t) {
 	printf("\t{"
 	       "name: \"%s\", "
 	       "ptr: func() interface{} { return &%s{} }, "
-	       "payload: []byte(\"",
-	       t.name.c_str(), t.structName.c_str());
+	       "xdr: []byte(\"",
+	       t.name.c_str(), t.type.c_str());
 
-	buf = (char *)t.xdrPayload.c_str();
-	len = t.xdrPayload.size();
+	buf = (char *)t.xdr.c_str();
+	len = t.xdr.size();
 	for (unsigned i = 0; i < len; i++) {
 		printf("\\x%02x", buf[i] & 0xFF);
 	}
@@ -146,21 +146,22 @@ static void print(test &t) {
 }
 
 static void pack(nvlist_t *list, const char *name) {
-	char *buf = NULL;
-	size_t len;
+	char *xdr = NULL;
+	size_t xlen;
 	int err;
-	if ((err = nvlist_pack(list, &buf, &len, NV_ENCODE_XDR, 0)) != 0) {
-		fprintf(stderr, "nvlist_pack error: %d", err);
+	if ((err = nvlist_pack(list, &xdr, &xlen, NV_ENCODE_XDR, 0)) != 0) {
+		fprintf(stderr, "nvlist_pack XDR error: %d", err);
+		assert(err);
 	}
 
-	std::string struct_name = type_name(name);
-	std::string def = define(list, struct_name);
+	std::string type = gen_type(name);
+	std::string def = define(list, type);
 
 	test t;
 	t.name = name;
-	t.structName = struct_name;
+	t.type = type;
 	t.definition = def;
-	t.xdrPayload = std::string(buf, len);
+	t.xdr= std::string(xdr, xlen);
 	tests.push_back(t);
 }
 
@@ -444,7 +445,6 @@ int main() {
 	pack(l, "strings");
 	fnvlist_free(l);
 
-
 	{
 		const char *array[] = {
 			"0",
@@ -519,9 +519,9 @@ int main() {
 	}
 
 	printf("var good = []struct {\n"
-	       "\tname    string\n"
-	       "\tptr     func() interface{}\n"
-	       "\tpayload []byte\n"
+	       "\tname string\n"
+	       "\tptr  func() interface{}\n"
+	       "\txdr  []byte\n"
 	       "}{\n");
 
 	for (test &t: tests) {
