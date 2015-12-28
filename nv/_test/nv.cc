@@ -26,6 +26,7 @@ struct test {
 	std::string type;
 	std::string definition;
 	std::string xdr;
+	std::string native;
 };
 std::vector<test> tests;
 
@@ -142,15 +143,32 @@ static void print(test &t) {
 	for (unsigned i = 0; i < len; i++) {
 		printf("\\x%02x", buf[i] & 0xFF);
 	}
-	printf("\")},\n");
+	printf("\"), ");
+
+	buf = (char *)t.native.c_str();
+	len = t.native.size();
+	printf("native: []byte(\"");
+	for (unsigned i = 0; i < len; i++) {
+		printf("\\x%02x", buf[i] & 0xFF);
+	}
+	printf("\")");
+
+	printf("},\n");
 }
 
 static void pack(nvlist_t *list, const char *name) {
 	char *xdr = NULL;
+	char *native = NULL;
 	size_t xlen;
+	size_t nlen;
 	int err;
 	if ((err = nvlist_pack(list, &xdr, &xlen, NV_ENCODE_XDR, 0)) != 0) {
 		fprintf(stderr, "nvlist_pack XDR error: %d", err);
+		assert(err);
+	}
+
+	if ((err = nvlist_pack(list, &native, &nlen, NV_ENCODE_NATIVE, 0)) != 0) {
+		fprintf(stderr, "nvlist_pack NATIVE error: %d", err);
 		assert(err);
 	}
 
@@ -162,6 +180,7 @@ static void pack(nvlist_t *list, const char *name) {
 	t.type = type;
 	t.definition = def;
 	t.xdr= std::string(xdr, xlen);
+	t.native= std::string(native, nlen);
 	tests.push_back(t);
 }
 
@@ -526,9 +545,10 @@ int main() {
 	}
 
 	printf("var good = []struct {\n"
-	       "\tname string\n"
-	       "\tptr  func() interface{}\n"
-	       "\txdr  []byte\n"
+	       "\tname   string\n"
+	       "\tptr    func() interface{}\n"
+	       "\txdr    []byte\n"
+	       "\tnative []byte\n"
 	       "}{\n");
 
 	for (test &t: tests) {
