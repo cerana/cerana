@@ -360,14 +360,14 @@ int main() {
 	}
 	{
 		l = fnvlist_alloc();
-		size_t len = 5;
-		boolean_t array[len];
+		size_t nelems = 5;
+		boolean_t array[nelems];
 
-		arrset(array, len, B_FALSE);
-		fnvlist_add_boolean_array(l, stra("false", len), array, len);
+		arrset(array, nelems, B_FALSE);
+		fnvlist_add_boolean_array(l, stra("false", nelems), array, nelems);
 
-		arrset(array, len, B_TRUE);
-		fnvlist_add_boolean_array(l, stra("true", len), array, len);
+		arrset(array, nelems, B_TRUE);
+		fnvlist_add_boolean_array(l, stra("true", nelems), array, nelems);
 
 		pack(l, "bool array");
 		fnvlist_free(l);
@@ -385,20 +385,20 @@ int main() {
 
 	{
 		l = fnvlist_alloc();
-		size_t len = 5;
-		unsigned char array[len];
+		size_t nelems = 5;
+		unsigned char array[nelems];
 
-		//arrset(array, len, -128);
-		//fnvlist_add_byte_array(l, stra("-128", len), array, len);
+		//arrset(array, nelems, -128);
+		//fnvlist_add_byte_array(l, stra("-128", nelems), array, nelems);
 
-		arrset(array, len, 0);
-		fnvlist_add_byte_array(l, stra("0", len), array, len);
+		arrset(array, nelems, 0);
+		fnvlist_add_byte_array(l, stra("0", nelems), array, nelems);
 
-		arrset(array, len, 1);
-		fnvlist_add_byte_array(l, stra("1", len), array, len);
+		arrset(array, nelems, 1);
+		fnvlist_add_byte_array(l, stra("1", nelems), array, nelems);
 
-		arrset(array, len, 127);
-		fnvlist_add_byte_array(l, stra("127", len), array, len);
+		arrset(array, nelems, 127);
+		fnvlist_add_byte_array(l, stra("127", nelems), array, nelems);
 
 		pack(l, "byte array");
 		fnvlist_free(l);
