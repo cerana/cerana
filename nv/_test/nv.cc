@@ -362,8 +362,13 @@ int main() {
 		l = fnvlist_alloc();
 		size_t len = 5;
 		boolean_t array[len];
-		arrset(array, len, B_FALSE); fnvlist_add_boolean_array(l, stra("false", len), array, len);
-		arrset(array, len, B_TRUE); fnvlist_add_boolean_array(l, stra("true", len), array, len);
+
+		arrset(array, len, B_FALSE);
+		fnvlist_add_boolean_array(l, stra("false", len), array, len);
+
+		arrset(array, len, B_TRUE);
+		fnvlist_add_boolean_array(l, stra("true", len), array, len);
+
 		pack(l, "bool array");
 		fnvlist_free(l);
 	}
