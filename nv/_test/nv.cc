@@ -387,10 +387,19 @@ int main() {
 		l = fnvlist_alloc();
 		size_t len = 5;
 		unsigned char array[len];
-		//arrset(array, len, -128); fnvlist_add_byte_array(l, stra("-128", len), array, len);
-		arrset(array, len, 0); fnvlist_add_byte_array(l, stra("0", len), array, len);
-		arrset(array, len, 1); fnvlist_add_byte_array(l, stra("1", len), array, len);
-		arrset(array, len, 127); fnvlist_add_byte_array(l, stra("127", len), array, len);
+
+		//arrset(array, len, -128);
+		//fnvlist_add_byte_array(l, stra("-128", len), array, len);
+
+		arrset(array, len, 0);
+		fnvlist_add_byte_array(l, stra("0", len), array, len);
+
+		arrset(array, len, 1);
+		fnvlist_add_byte_array(l, stra("1", len), array, len);
+
+		arrset(array, len, 127);
+		fnvlist_add_byte_array(l, stra("127", len), array, len);
+
 		pack(l, "byte array");
 		fnvlist_free(l);
 	}
