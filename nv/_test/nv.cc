@@ -324,8 +324,19 @@ static char *strf(double d) {
 	fnvlist_free(l); \
 } while(0) \
 
-int main() {
+#define do_string_array(list, array) do { \
+	size_t nelems = arrlen(array); \
+	std::string name; \
+	for (size_t i = 0; i < nelems - 1; i++) { \
+		name += array[i]; \
+		name += ";"; \
+	} \
+	name += array[nelems - 1]; \
+	fnvlist_add_string_array(list, name.c_str(), (char **)array, nelems); \
+	pack(list, "string array"); \
+} while(0)
 
+int main() {
 	nvlist_t *l = NULL;
 	{
 		l = fnvlist_alloc();
@@ -433,21 +444,9 @@ int main() {
 			"\xff\"",
 		};
 		l = fnvlist_alloc();
-		fnvlist_add_string_array(l,
-					 "0;"
-					 "01;"
-					 "012;"
-					 "0123;"
-					 "01234;"
-					 "012345;"
-					 "0123456;"
-					 "01234567;"
-					 "\xff\""
-					 , (char **)array, arrlen(array));
-		pack(l, "string array");
+		do_string_array(l, array);
 		fnvlist_free(l);
 	}
-
 	do_signed(hrtime, INT64);
 
 	{
