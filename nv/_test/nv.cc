@@ -468,7 +468,7 @@ int main() {
 		nvlist_t *ll = fnvlist_alloc();
 		fnvlist_add_boolean_value(ll, "false", B_FALSE);
 		fnvlist_add_boolean_value(ll, "true", B_TRUE);
-		fnvlist_add_nvlist(l, "nvlist", ll);
+		fnvlist_add_nvlist(l, "2", ll);
 		pack(l, "nvlist");
 		fnvlist_free(ll);
 		fnvlist_free(l);
@@ -481,7 +481,7 @@ int main() {
 		size_t nelems = arrlen(larr);
 
 		l = fnvlist_alloc();
-		fnvlist_add_nvlist_array(l, stra("list", nelems), larr, nelems);
+		fnvlist_add_nvlist_array(l, stra(stru(nelems), nelems), larr, nelems);
 		pack(l, "nvlist array");
 		fnvlist_free(ll);
 		fnvlist_free(l);

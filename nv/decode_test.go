@@ -3,6 +3,7 @@ package nv
 import (
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -260,7 +261,15 @@ func check_uint64_array(t *testing.T, field string, value interface{}) {
 }
 
 func check_nvlist(t *testing.T, field string, value interface{}) {
+	num, err := strconv.Atoi(field)
+	if err != nil {
+		t.Fatal(err)
+	}
 	list := value.(map[string]interface{})
+	if num != len(list) {
+		t.Fatal("length mismatch between expected and decoded lists",
+			"expected:", num, "got:", len(list))
+	}
 	for f, v := range list {
 		checkers[reflect.TypeOf(v).String()](t, f, v)
 	}
