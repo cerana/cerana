@@ -478,8 +478,10 @@ int main() {
 		fnvlist_add_boolean_value(ll, "false", B_FALSE);
 		fnvlist_add_boolean_value(ll, "true", B_TRUE);
 		nvlist_t *larr[] = {ll, ll};
+		size_t nelems = arrlen(larr);
+
 		l = fnvlist_alloc();
-		fnvlist_add_nvlist_array(l, stra("list", arrlen(larr)), larr, arrlen(larr));
+		fnvlist_add_nvlist_array(l, stra("list", nelems), larr, nelems);
 		pack(l, "nvlist array");
 		fnvlist_free(ll);
 		fnvlist_free(l);
