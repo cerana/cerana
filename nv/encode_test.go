@@ -71,7 +71,11 @@ func assertEqual(t *testing.T, name, typ string, payload []byte, put interface{}
 
 func TestEncodeGood(t *testing.T) {
 	for _, test := range good {
-		t.Log(test.name)
+		if testing.Verbose() {
+			fmt.Println(" -- ", test.name)
+		} else {
+			t.Log(" -- ", test.name)
+		}
 
 		m := map[string]interface{}{}
 		err := Decode(test.payload, &m)
@@ -80,8 +84,6 @@ func TestEncodeGood(t *testing.T) {
 		}
 		if !strings.Contains(test.name, "byte") {
 			assertEqual(t, test.name, "map", test.payload, m)
-		} else {
-			t.Log("skipping encode as map for", test.name)
 		}
 
 		s := test.ptr()
@@ -95,7 +97,11 @@ func TestEncodeGood(t *testing.T) {
 
 func TestEncodeBad(t *testing.T) {
 	for _, test := range encode_bad {
-		t.Log(test.err)
+		if testing.Verbose() {
+			fmt.Println(" -- ", test.err)
+		} else {
+			t.Log(" -- ", test.err)
+		}
 
 		_, err := Encode(test.payload)
 		if err == nil {
