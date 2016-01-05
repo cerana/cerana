@@ -36,8 +36,7 @@ func Encode(i interface{}) ([]byte, error) {
 }
 
 func encodeList(w io.Writer, v reflect.Value) error {
-	var err error
-	if err = binary.Write(w, binary.BigEndian, header{Flag: _UNIQUE_NAME}); err != nil {
+	if err := binary.Write(w, binary.BigEndian, header{Flag: _UNIQUE_NAME}); err != nil {
 		return err
 	}
 
