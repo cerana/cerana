@@ -60,12 +60,11 @@ func encodeList(w io.Writer, v reflect.Value) error {
 				return err
 			}
 		}
-		err = binary.Write(w, binary.BigEndian, uint64(0))
 	default:
 		return fmt.Errorf("invalid type '%s', must be a struct", v.Kind().String())
 	}
 
-	return err
+	return binary.Write(w, binary.BigEndian, uint64(0))
 }
 
 func encodeStruct(v reflect.Value, w io.Writer) error {
@@ -88,11 +87,7 @@ func encodeStruct(v reflect.Value, w io.Writer) error {
 		return true
 	})
 
-	if err != nil {
-		return err
-	}
-
-	return binary.Write(w, binary.BigEndian, uint64(0))
+	return err
 }
 
 func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) error {
