@@ -70,18 +70,26 @@ func encodeStruct(v reflect.Value, w io.Writer) (int, error) {
 	var err error
 	size := 0
 
-	forEachField(v, func(i int, field reflect.Value) {
+	forEachField(v, func(i int, field reflect.Value) bool {
 		// Skip fields that can't be set (e.g. unexported)
 		if !field.CanSet() {
-			return
+			return true
 		}
 		name := v.Type().Field(i).Name
 		tags := getTags(i, v)
 		if len(tags) > 0 && tags[0] != "" {
 			name = tags[0]
 		}
-		encodeItem(w, name, tags, field)
+
+		if _, err = encodeItem(w, name, tags, field); err != nil {
+			return false
+		}
+		return true
 	})
+
+	if err != nil {
+		return 0, err
+	}
 
 	if err = binary.Write(w, binary.BigEndian, uint64(0)); err != nil {
 		return 0, err

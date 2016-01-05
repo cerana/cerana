@@ -140,16 +140,17 @@ func decodeList(dec decoder, target reflect.Value) error {
 // to their index
 func fieldIndexMap(v reflect.Value) map[string]int {
 	vFieldIndexMap := make(map[string]int)
-	forEachField(v, func(i int, field reflect.Value) {
+	forEachField(v, func(i int, field reflect.Value) bool {
 		// Skip fields that can't be set (e.g. unexported)
 		if !field.CanSet() {
-			return
+			return true
 		}
 		name := v.Type().Field(i).Name
 		if tags := getTags(i, v); len(tags) > 0 && tags[0] != "" {
 			name = tags[0]
 		}
 		vFieldIndexMap[name] = i
+		return true
 	})
 	return vFieldIndexMap
 }
