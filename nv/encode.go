@@ -138,39 +138,33 @@ func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) er
 	}
 
 	field = deref(field)
-
-	p := pair{
-		Name:      name,
-		NElements: 1,
-	}
-	var ok bool
-	p.Type, ok = types[field.Kind()]
+	dtype, ok := types[field.Kind()]
 
 	switch field.Kind() {
 	case reflect.Bool:
 		if field.Type().Name() == "Boolean" {
-			p.Type = _BOOLEAN
+			dtype = _BOOLEAN
 		}
 	case reflect.Interface:
 		return encodeItem(w, name, tags, reflect.ValueOf(field.Interface()))
 	case reflect.Slice, reflect.Array:
-		p.Type, ok = sliceTypes[field.Type().Elem().Kind()]
+		dtype, ok = sliceTypes[field.Type().Elem().Kind()]
 		switch tagType {
 		case _BYTE:
-			p.Type = _BYTE_ARRAY
+			dtype = _BYTE_ARRAY
 		case _UINT8:
-			p.Type = _UINT8_ARRAY
+			dtype = _UINT8_ARRAY
 		}
 	case reflect.Int64:
 		if field.Type().String() == "time.Duration" {
-			p.Type = _HRTIME
+			dtype = _HRTIME
 		}
 	case reflect.Uint8:
 		switch tagType {
 		case _BYTE:
-			p.Type = _BYTE
+			dtype = _BYTE
 		case _UINT8:
-			p.Type = _UINT8
+			dtype = _UINT8
 		}
 	}
 
@@ -178,7 +172,13 @@ func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) er
 		return fmt.Errorf("unknown type: %v", field.Kind())
 	}
 
-	p.data = field.Interface()
+	p := pair{
+		Name:      name,
+		NElements: 1,
+		Type:      dtype,
+		data:      field.Interface(),
+	}
+
 	value := p.data
 	vbuf := &bytes.Buffer{}
 	switch p.Type {
