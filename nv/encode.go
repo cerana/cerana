@@ -53,8 +53,8 @@ func encodeList(w io.Writer, v reflect.Value) error {
 		sort.Strings(keys)
 
 		for _, name := range keys {
-			_, err = encodeItem(w, name, nil, v.MapIndex(reflect.ValueOf(name)))
-			if err != nil {
+			v := v.MapIndex(reflect.ValueOf(name))
+			if err := encodeItem(w, name, nil, v); err != nil {
 				return err
 			}
 		}
@@ -81,7 +81,7 @@ func encodeStruct(v reflect.Value, w io.Writer) (int, error) {
 			name = tags[0]
 		}
 
-		if _, err = encodeItem(w, name, tags, field); err != nil {
+		if err = encodeItem(w, name, tags, field); err != nil {
 			return false
 		}
 		return true
@@ -97,7 +97,7 @@ func encodeStruct(v reflect.Value, w io.Writer) (int, error) {
 	return size + 8, nil
 }
 
-func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) ([]byte, error) {
+func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) error {
 	field = deref(field)
 	var types = map[reflect.Kind]dataType{
 		reflect.Bool:    _BOOLEAN_VALUE,
@@ -180,7 +180,7 @@ func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) ([
 	}
 
 	if !ok {
-		return nil, fmt.Errorf("unknown type: %v", field.Kind())
+		return fmt.Errorf("unknown type: %v", field.Kind())
 	}
 
 	p.data = field.Interface()
@@ -239,14 +239,14 @@ func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) ([
 		value = arr.Interface()
 	case _NVLIST:
 		if err := encodeList(vbuf, reflect.ValueOf(value)); err != nil {
-			return nil, err
+			return err
 		}
 		p.data = vbuf.Bytes()
 	case _NVLIST_ARRAY:
 		p.NElements = uint32(len(value.([]map[string]interface{})))
 		for _, l := range value.([]map[string]interface{}) {
 			if err := encodeList(vbuf, reflect.ValueOf(l)); err != nil {
-				return nil, err
+				return err
 			}
 		}
 		p.data = vbuf.Bytes()
@@ -255,7 +255,7 @@ func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) ([
 	if vbuf.Len() == 0 && p.Type != _BOOLEAN {
 		_, err := xdr.NewEncoder(vbuf).Encode(value)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
@@ -265,17 +265,17 @@ func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) ([
 	pbuf := &bytes.Buffer{}
 	_, err := xdr.NewEncoder(pbuf).Encode(p)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	_, err = pbuf.WriteTo(w)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	_, err = vbuf.WriteTo(w)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return nil, nil
+	return nil
 }
