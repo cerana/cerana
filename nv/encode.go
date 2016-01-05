@@ -12,6 +12,44 @@ import (
 	xdr "github.com/davecgh/go-xdr/xdr2"
 )
 
+var (
+	types = map[reflect.Kind]dataType{
+		reflect.Bool:    _BOOLEAN_VALUE,
+		reflect.Float32: _DOUBLE,
+		reflect.Float64: _DOUBLE,
+		reflect.Int16:   _INT16,
+		reflect.Int32:   _INT32,
+		reflect.Int64:   _INT64,
+		reflect.Int8:    _INT8,
+		reflect.Int:     _INT32,
+		reflect.Map:     _NVLIST,
+		reflect.String:  _STRING,
+		reflect.Struct:  _NVLIST,
+		reflect.Uint16:  _UINT16,
+		reflect.Uint32:  _UINT32,
+		reflect.Uint64:  _UINT64,
+		reflect.Uint8:   _UINT8,
+		reflect.Uint:    _UINT32,
+	}
+
+	sliceTypes = map[reflect.Kind]dataType{
+		reflect.Bool:   _BOOLEAN_ARRAY,
+		reflect.Int16:  _INT16_ARRAY,
+		reflect.Int32:  _INT32_ARRAY,
+		reflect.Int64:  _INT64_ARRAY,
+		reflect.Int8:   _INT8_ARRAY,
+		reflect.Int:    _INT32_ARRAY,
+		reflect.Map:    _NVLIST_ARRAY,
+		reflect.String: _STRING_ARRAY,
+		reflect.Struct: _NVLIST_ARRAY,
+		reflect.Uint16: _UINT16_ARRAY,
+		reflect.Uint32: _UINT32_ARRAY,
+		reflect.Uint64: _UINT64_ARRAY,
+		reflect.Uint8:  _UINT8_ARRAY,
+		reflect.Uint:   _UINT32_ARRAY,
+	}
+)
+
 func Encode(i interface{}) ([]byte, error) {
 	if i == nil {
 		return nil, errors.New("can not encode a nil pointer")
@@ -91,41 +129,6 @@ func encodeStruct(v reflect.Value, w io.Writer) error {
 
 func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) error {
 	field = deref(field)
-	var types = map[reflect.Kind]dataType{
-		reflect.Bool:    _BOOLEAN_VALUE,
-		reflect.Float32: _DOUBLE,
-		reflect.Float64: _DOUBLE,
-		reflect.Int16:   _INT16,
-		reflect.Int32:   _INT32,
-		reflect.Int64:   _INT64,
-		reflect.Int8:    _INT8,
-		reflect.Int:     _INT32,
-		reflect.Map:     _NVLIST,
-		reflect.String:  _STRING,
-		reflect.Struct:  _NVLIST,
-		reflect.Uint16:  _UINT16,
-		reflect.Uint32:  _UINT32,
-		reflect.Uint64:  _UINT64,
-		reflect.Uint8:   _UINT8,
-		reflect.Uint:    _UINT32,
-	}
-
-	var sliceTypes = map[reflect.Kind]dataType{
-		reflect.Bool:   _BOOLEAN_ARRAY,
-		reflect.Int16:  _INT16_ARRAY,
-		reflect.Int32:  _INT32_ARRAY,
-		reflect.Int64:  _INT64_ARRAY,
-		reflect.Int8:   _INT8_ARRAY,
-		reflect.Int:    _INT32_ARRAY,
-		reflect.Map:    _NVLIST_ARRAY,
-		reflect.String: _STRING_ARRAY,
-		reflect.Struct: _NVLIST_ARRAY,
-		reflect.Uint16: _UINT16_ARRAY,
-		reflect.Uint32: _UINT32_ARRAY,
-		reflect.Uint64: _UINT64_ARRAY,
-		reflect.Uint8:  _UINT8_ARRAY,
-		reflect.Uint:   _UINT32_ARRAY,
-	}
 	var tagType dataType
 	if len(tags) > 1 {
 		if tags[1] == "byte" {
