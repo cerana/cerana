@@ -128,7 +128,6 @@ func encodeStruct(v reflect.Value, w io.Writer) error {
 }
 
 func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) error {
-	field = deref(field)
 	var tagType dataType
 	if len(tags) > 1 {
 		if tags[1] == "byte" {
@@ -138,11 +137,12 @@ func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) er
 		}
 	}
 
+	field = deref(field)
+
 	p := pair{
 		Name:      name,
 		NElements: 1,
 	}
-
 	var ok bool
 	p.Type, ok = types[field.Kind()]
 
