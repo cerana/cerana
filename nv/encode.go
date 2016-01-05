@@ -44,7 +44,9 @@ func encodeList(w io.Writer, v reflect.Value) error {
 	v = deref(v)
 	switch v.Kind() {
 	case reflect.Struct:
-		_, err = encodeStruct(v, w)
+		if err := encodeStruct(v, w); err != nil {
+			return err
+		}
 	case reflect.Map:
 		keys := make([]string, len(v.MapKeys()))
 		for i, k := range v.MapKeys() {
@@ -66,9 +68,8 @@ func encodeList(w io.Writer, v reflect.Value) error {
 	return err
 }
 
-func encodeStruct(v reflect.Value, w io.Writer) (int, error) {
+func encodeStruct(v reflect.Value, w io.Writer) error {
 	var err error
-	size := 0
 
 	forEachField(v, func(i int, field reflect.Value) bool {
 		// Skip fields that can't be set (e.g. unexported)
@@ -88,13 +89,10 @@ func encodeStruct(v reflect.Value, w io.Writer) (int, error) {
 	})
 
 	if err != nil {
-		return 0, err
+		return err
 	}
 
-	if err = binary.Write(w, binary.BigEndian, uint64(0)); err != nil {
-		return 0, err
-	}
-	return size + 8, nil
+	return binary.Write(w, binary.BigEndian, uint64(0))
 }
 
 func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) error {
