@@ -127,7 +127,7 @@ func decodeList(r io.ReadSeeker, target reflect.Value) error {
 
 		var err error
 		var v interface{}
-		dec := newDecoder(r)
+		dec := newXDRDecoder(r)
 		switch dataPair.Type {
 		case _BOOLEAN:
 			v := Boolean(true)
