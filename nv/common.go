@@ -17,3 +17,11 @@ func forEachField(v reflect.Value, fn func(int, reflect.Value)) {
 		fn(i, field)
 	}
 }
+
+// deref will follow all pointers until it reaches a value, which it returns
+func deref(v reflect.Value) reflect.Value {
+	for v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	return v
+}
