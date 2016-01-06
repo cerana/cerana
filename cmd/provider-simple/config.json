@@ -1,0 +1,8 @@
+{
+    "tasks": {
+        "foo":{
+            "priority": 100
+        }
+    },
+    "default_priority": 30
+}
