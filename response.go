@@ -57,9 +57,9 @@ func NewResponse(req *Request, result interface{}, err error) (*Response, error)
 func (resp *Response) Send(responseHook *url.URL) error {
 	switch responseHook.Scheme {
 	case "unix":
-		return resp.sendUnix(responseHook.RequestURI())
+		return resp.sendUnix(responseHook)
 	case "http", "https":
-		return resp.sendHTTP(responseHook.String())
+		return resp.sendHTTP(responseHook)
 	default:
 		err := errors.New("unknown response hook type")
 		log.WithFields(log.Fields{
@@ -72,7 +72,7 @@ func (resp *Response) Send(responseHook *url.URL) error {
 }
 
 // sendUnix sends the Response via a Unix socket.
-func (resp *Response) sendUnix(responseHook string) error {
+func (resp *Response) sendUnix(responseHook *url.URL) error {
 	respJSON, err := json.Marshal(resp)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -82,7 +82,7 @@ func (resp *Response) sendUnix(responseHook string) error {
 		return err
 	}
 
-	conn, err := net.Dial("unix", responseHook)
+	conn, err := net.Dial("unix", responseHook.RequestURI())
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error":        err,
@@ -108,7 +108,7 @@ func (resp *Response) sendUnix(responseHook string) error {
 }
 
 // sendHTTP sends the Response via HTTP/HTTPS
-func (resp *Response) sendHTTP(responseHook string) error {
+func (resp *Response) sendHTTP(responseHook *url.URL) error {
 	respJSON, err := json.Marshal(resp)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -118,7 +118,7 @@ func (resp *Response) sendHTTP(responseHook string) error {
 		return err
 	}
 
-	httpResp, err := http.Post(responseHook, "application/json", bytes.NewReader(respJSON))
+	httpResp, err := http.Post(responseHook.String(), "application/json", bytes.NewReader(respJSON))
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error":        err,
