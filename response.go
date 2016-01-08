@@ -57,7 +57,7 @@ func NewResponse(req *Request, result interface{}, err error) (*Response, error)
 func (resp *Response) Send(responseHook *url.URL) error {
 	switch responseHook.Scheme {
 	case "unix":
-		return resp.sendUnix(responseHook.String())
+		return resp.sendUnix(responseHook.RequestURI())
 	case "http", "https":
 		return resp.sendHTTP(responseHook.String())
 	default:
