@@ -34,6 +34,9 @@ func NewTracker(socketDir string) *Tracker {
 
 // NumRequests returns the number of tracked requests
 func (t *Tracker) NumRequests() int {
+	t.requestsLock.Lock()
+	defer t.requestsLock.Unlock()
+
 	return len(t.requests)
 }
 

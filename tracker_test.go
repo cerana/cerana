@@ -3,7 +3,6 @@ package acomm_test
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -19,20 +18,21 @@ type TrackerTestSuite struct {
 	suite.Suite
 	Tracker    *acomm.Tracker
 	RespServer *httptest.Server
-	LastResp   *acomm.Response
+	Responses  chan *acomm.Response
 	Request    *acomm.Request
 }
 
 func (s *TrackerTestSuite) SetupSuite() {
 	log.SetLevel(log.FatalLevel)
+	s.Responses = make(chan *acomm.Response, 10)
 
 	// Mock HTTP response server
 	s.RespServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := &acomm.Response{}
 		body, err := ioutil.ReadAll(r.Body)
 		s.NoError(err, "should not fail reading body")
-		if !s.NoError(json.Unmarshal(body, s.LastResp), "should not fail unmarshalling response") {
-			fmt.Println("BODY:", string(body))
-		}
+		s.NoError(json.Unmarshal(body, resp), "should not fail unmarshalling response")
+		s.Responses <- resp
 	}))
 }
 
@@ -41,7 +41,6 @@ func (s *TrackerTestSuite) SetupTest() {
 	s.Request, err = acomm.NewRequest(s.RespServer.URL, nil)
 	s.Require().NoError(err, "request should be valid")
 
-	s.LastResp = &acomm.Response{}
 	s.Tracker = acomm.NewTracker("")
 	s.Require().NotNil(s.Tracker, "failed to create new Tracker")
 }
@@ -56,6 +55,21 @@ func (s *TrackerTestSuite) TearDownSuite() {
 
 func TestTrackerTestSuite(t *testing.T) {
 	suite.Run(t, new(TrackerTestSuite))
+}
+
+func (s *TrackerTestSuite) NextResp() *acomm.Response {
+	timeout := make(chan struct{}, 1)
+	go func() {
+		time.Sleep(1 * time.Second)
+		timeout <- struct{}{}
+	}()
+
+	var resp *acomm.Response
+	select {
+	case resp = <-s.Responses:
+	case <-timeout:
+	}
+	return resp
 }
 
 func (s *TrackerTestSuite) TestTrackRequest() {
@@ -111,7 +125,8 @@ func (s *TrackerTestSuite) TestProxyUnix() {
 		return
 	}
 	time.Sleep(100 * time.Millisecond)
-	s.Equal(resp.ID, s.LastResp.ID, "response should have been proxied to original http response hook")
+	lastResp := s.NextResp()
+	s.Equal(resp.ID, lastResp.ID, "response should have been proxied to original http response hook")
 	s.Equal(0, s.Tracker.NumRequests(), "should have removed the request from tracking")
 
 	// Should not proxy a request already using unix response hook

@@ -21,14 +21,31 @@ import (
 
 type ResponseTestSuite struct {
 	suite.Suite
+	Responses chan *acomm.Response
 }
 
 func (s *ResponseTestSuite) SetupSuite() {
 	log.SetLevel(log.FatalLevel)
+	s.Responses = make(chan *acomm.Response, 10)
 }
 
 func TestResponseTestSuite(t *testing.T) {
 	suite.Run(t, new(ResponseTestSuite))
+}
+
+func (s *ResponseTestSuite) NextResp() *acomm.Response {
+	timeout := make(chan struct{}, 1)
+	go func() {
+		time.Sleep(1 * time.Second)
+		timeout <- struct{}{}
+	}()
+
+	var resp *acomm.Response
+	select {
+	case resp = <-s.Responses:
+	case <-timeout:
+	}
+	return resp
 }
 
 func (s *ResponseTestSuite) TestNewResponse() {
@@ -75,13 +92,13 @@ func (s *ResponseTestSuite) TestNewResponse() {
 }
 
 func (s *ResponseTestSuite) TestSend() {
-	sentResp := &acomm.Response{}
-
 	// Mock HTTP response server
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := &acomm.Response{}
 		body, err := ioutil.ReadAll(r.Body)
 		s.NoError(err, "should not fail reading body")
-		s.NoError(json.Unmarshal(body, sentResp), "should not fail unmarshalling response")
+		s.NoError(json.Unmarshal(body, resp), "should not fail unmarshalling response")
+		s.Responses <- resp
 	}))
 	defer ts.Close()
 
@@ -101,12 +118,14 @@ func (s *ResponseTestSuite) TestSend() {
 	go func() {
 		for {
 			conn, err := listener.Accept()
-			if !s.NoError(err, "listener accept error") {
-				continue
+			if err != nil {
+				return
 			}
+			resp := &acomm.Response{}
 			body, err := ioutil.ReadAll(conn)
 			s.NoError(err, "should not fail reading body")
-			s.NoError(json.Unmarshal(body, sentResp), "should not fail unmarshalling response")
+			s.NoError(json.Unmarshal(body, resp), "should not fail unmarshalling response")
+			s.Responses <- resp
 			conn.Close()
 		}
 	}()
@@ -128,19 +147,18 @@ func (s *ResponseTestSuite) TestSend() {
 	}
 
 	for _, test := range tests {
-		sentResp = &acomm.Response{}
+		msg := testMsgFunc(test.responseHook)
 		u, _ := url.ParseRequestURI(test.responseHook)
 		err := response.Send(u)
-		time.Sleep(10 * time.Millisecond)
+		resp := s.NextResp()
 		if test.expectedErr {
-			s.Error(err, test.responseHook)
-			s.Empty(sentResp.ID, test.responseHook)
+			s.Error(err, msg("send should fail"))
+			s.Nil(resp, msg("response hook should not receive a response"))
 		} else {
-			if !s.NoError(err, test.responseHook) {
+			if !s.NoError(err, msg("send should not fail")) {
 				continue
 			}
-			s.Equal(response.ID, sentResp.ID, test.responseHook)
+			s.Equal(response.ID, resp.ID, msg("response should be what was sent"))
 		}
 	}
-
 }
