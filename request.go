@@ -1,7 +1,6 @@
 package acomm
 
 import (
-	"errors"
 	"net/url"
 
 	log "github.com/Sirupsen/logrus"
@@ -35,21 +34,7 @@ func NewRequest(responseHook string, args interface{}) (*Request, error) {
 	}, nil
 }
 
-// Respond sends a Response to a Request's ResponseHook. Supports UNIX sockets
-// and http/https URLs.
+// Respond sends a Response to a Request's ResponseHook.
 func (req *Request) Respond(resp *Response) error {
-	switch req.ResponseHook.Scheme {
-	case "unix":
-		return resp.SendUnix(req.ResponseHook.String())
-	case "http", "https":
-		return resp.SendHTTP(req.ResponseHook.String())
-	default:
-		err := errors.New("unknown response hook type")
-		log.WithFields(log.Fields{
-			"error":        err,
-			"type":         req.ResponseHook.Scheme,
-			"responseHook": req.ResponseHook,
-		}).Error(err)
-		return err
-	}
+	return resp.Send(req.ResponseHook)
 }

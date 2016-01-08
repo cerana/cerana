@@ -2,7 +2,7 @@
 
 [![acomm](https://godoc.org/github.com/mistifyio/async-comm?status.png)](https://godoc.org/github.com/mistifyio/async-comm)
 
-
+Package acomm is a library for asynchronous communication between services.
 
 ## Usage
 
@@ -32,8 +32,7 @@ NewRequest creates a new Request instance.
 ```go
 func (req *Request) Respond(resp *Response) error
 ```
-Respond sends a Response to a Request's ResponseHook. Supports UNIX sockets and
-http/https URLs.
+Respond sends a Response to a Request's ResponseHook.
 
 #### type Response
 
@@ -56,19 +55,11 @@ func NewResponse(req *Request, result interface{}, err error) (*Response, error)
 ```
 NewResponse creates a new Response instance based on a Request.
 
-#### func (*Response) SendHTTP
+#### func (*Response) Send
 
 ```go
-func (resp *Response) SendHTTP(responseHook string) error
+func (resp *Response) Send(responseHook *url.URL) error
 ```
-SendHTTP sends the Response via HTTP/HTTPS
-
-#### func (*Response) SendUnix
-
-```go
-func (resp *Response) SendUnix(responseHook string) error
-```
-SendUnix sends the Response via a Unix socket.
 
 #### type Tracker
 

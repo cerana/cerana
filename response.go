@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	"net/url"
 
 	log "github.com/Sirupsen/logrus"
 	logx "github.com/mistifyio/mistify-logrus-ext"
@@ -53,8 +54,25 @@ func NewResponse(req *Request, result interface{}, err error) (*Response, error)
 	}, nil
 }
 
-// SendUnix sends the Response via a Unix socket.
-func (resp *Response) SendUnix(responseHook string) error {
+func (resp *Response) Send(responseHook *url.URL) error {
+	switch responseHook.Scheme {
+	case "unix":
+		return resp.sendUnix(responseHook.String())
+	case "http", "https":
+		return resp.sendHTTP(responseHook.String())
+	default:
+		err := errors.New("unknown response hook type")
+		log.WithFields(log.Fields{
+			"error":        err,
+			"type":         responseHook.Scheme,
+			"responseHook": responseHook,
+		}).Error(err)
+		return err
+	}
+}
+
+// sendUnix sends the Response via a Unix socket.
+func (resp *Response) sendUnix(responseHook string) error {
 	respJSON, err := json.Marshal(resp)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -89,8 +107,8 @@ func (resp *Response) SendUnix(responseHook string) error {
 	return nil
 }
 
-// SendHTTP sends the Response via HTTP/HTTPS
-func (resp *Response) SendHTTP(responseHook string) error {
+// sendHTTP sends the Response via HTTP/HTTPS
+func (resp *Response) sendHTTP(responseHook string) error {
 	respJSON, err := json.Marshal(resp)
 	if err != nil {
 		log.WithFields(log.Fields{
