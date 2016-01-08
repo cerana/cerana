@@ -19,7 +19,7 @@ type Request struct {
 
 // NewRequest creates a new Request instance.
 func NewRequest(responseHook string, args interface{}) (*Request, error) {
-	hook, err := url.Parse(responseHook)
+	hook, err := url.ParseRequestURI(responseHook)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error":        err,
@@ -27,6 +27,7 @@ func NewRequest(responseHook string, args interface{}) (*Request, error) {
 		}).Error("invalid response hook url")
 		return nil, err
 	}
+
 	return &Request{
 		ID:           uuid.New(),
 		ResponseHook: hook,
