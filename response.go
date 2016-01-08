@@ -54,6 +54,7 @@ func NewResponse(req *Request, result interface{}, err error) (*Response, error)
 	}, nil
 }
 
+// Send attempts send the Response to the specified URL.
 func (resp *Response) Send(responseHook *url.URL) error {
 	switch responseHook.Scheme {
 	case "unix":
