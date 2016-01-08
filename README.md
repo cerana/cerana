@@ -60,6 +60,7 @@ NewResponse creates a new Response instance based on a Request.
 ```go
 func (resp *Response) Send(responseHook *url.URL) error
 ```
+Send attempts send the Response to the specified URL.
 
 #### type Tracker
 
@@ -77,6 +78,13 @@ func NewTracker(socketDir string) *Tracker
 ```
 NewTracker creates and initializes a new Tracker. If a socketDir is not
 provided, the response socket will be created in a temporary directory.
+
+#### func (*Tracker) NumRequests
+
+```go
+func (t *Tracker) NumRequests() int
+```
+NumRequests returns the number of tracked requests
 
 #### func (*Tracker) ProxyUnix
 
@@ -118,7 +126,7 @@ to notify when the Tracker is fully stopped.
 #### func (*Tracker) TrackRequest
 
 ```go
-func (t *Tracker) TrackRequest(req *Request) error
+func (t *Tracker) TrackRequest(req *Request)
 ```
 TrackRequest tracks a request. This should only be called directly when the
 Tracker is being used by an original source of requests. Responses should then
