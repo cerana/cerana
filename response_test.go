@@ -87,17 +87,23 @@ func (s *ResponseTestSuite) TestSend() {
 
 	// Mock Unix response listener
 	f, err := ioutil.TempFile("", "acommTest-")
-	s.Require().NoError(err, "failed to create test unix socket")
+	if !s.NoError(err, "failed to create test unix socket") {
+		return
+	}
 	_ = f.Close()
 	_ = os.Remove(f.Name())
 	socketPath := fmt.Sprintf("%s.sock", f.Name())
 	listener, err := net.Listen("unix", socketPath)
-	s.Require().NoError(err, "failed to listen on unix socket")
+	if !s.NoError(err, "failed to listen on unix socket") {
+		return
+	}
 	defer func() { _ = listener.Close() }()
 	go func() {
 		for {
 			conn, err := listener.Accept()
-			s.Require().NoError(err, "listener accept error")
+			if !s.NoError(err, "listener accept error") {
+				continue
+			}
 			body, err := ioutil.ReadAll(conn)
 			s.NoError(err, "should not fail reading body")
 			s.NoError(json.Unmarshal(body, sentResp), "should not fail unmarshalling response")
