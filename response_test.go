@@ -53,7 +53,7 @@ func (s *ResponseTestSuite) TestNewResponse() {
 		"foo": "bar",
 	}
 
-	request, _ := acomm.NewRequest("unix://foo", nil)
+	request, _ := acomm.NewRequest("unix://foo", nil, nil, nil)
 	respErr := errors.New("foobar")
 
 	tests := []struct {
@@ -126,7 +126,7 @@ func (s *ResponseTestSuite) TestSend() {
 			s.NoError(err, "should not fail reading body")
 			s.NoError(json.Unmarshal(body, resp), "should not fail unmarshalling response")
 			s.Responses <- resp
-			conn.Close()
+			_ = conn.Close()
 		}
 	}()
 

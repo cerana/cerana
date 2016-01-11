@@ -38,7 +38,8 @@ func (s *TrackerTestSuite) SetupSuite() {
 
 func (s *TrackerTestSuite) SetupTest() {
 	var err error
-	s.Request, err = acomm.NewRequest(s.RespServer.URL, nil)
+
+	s.Request, err = acomm.NewRequest(s.RespServer.URL, nil, nil, nil)
 	s.Require().NoError(err, "request should be valid")
 
 	s.Tracker = acomm.NewTracker("")
@@ -130,7 +131,7 @@ func (s *TrackerTestSuite) TestProxyUnix() {
 	s.Equal(0, s.Tracker.NumRequests(), "should have removed the request from tracking")
 
 	// Should not proxy a request already using unix response hook
-	origUnixReq, err := acomm.NewRequest("unix://foo", struct{}{})
+	origUnixReq, err := acomm.NewRequest("unix://foo", struct{}{}, nil, nil)
 	if !s.NoError(err, "new request shoudl not error") {
 		return
 	}
