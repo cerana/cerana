@@ -20,6 +20,8 @@ func main() {
 	v := viper.New()
 	bindFlags(v)
 
+	v.SetDefault("service_name", "provider-simple")
+
 	config := simple.NewConfig(v)
 	dieOnError(config.LoadConfigFile())
 	dieOnError(config.SetupLogging())

@@ -3,6 +3,7 @@ package simple
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	logx "github.com/mistifyio/mistify-logrus-ext"
@@ -55,15 +56,42 @@ func (c *Config) TaskPriority(taskName string) int {
 	return c.viper.GetInt("default_priority")
 }
 
+// TaskTimeout determines the timeout for a task. If a timeout was not
+// explicitly configured for the task, it will return the default.
+func (c *Config) TaskTimeout(taskName string) time.Duration {
+	key := fmt.Sprintf("tasks.%s.timeout", taskName)
+	var seconds int
+	if c.viper.IsSet(key) {
+		seconds = c.viper.GetInt(key)
+	} else {
+		seconds = c.viper.GetInt("default_timeout")
+	}
+
+	return time.Duration(seconds) * time.Second
+}
+
 // SocketDir returns the base directory for task sockets.
 func (c *Config) SocketDir() string {
 	return c.viper.GetString("socket_dir")
+}
+
+// ServiceName returns the name the service should register as.
+func (c *Config) ServiceName() string {
+	return c.viper.GetString("service_name")
 }
 
 // Validate returns whether the config is valid, containing necessary values.
 func (c *Config) Validate() error {
 	if c.SocketDir() == "" {
 		err := errors.New("missing socket_dir")
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error("invalid config")
+		return err
+	}
+
+	if c.ServiceName() == "" {
+		err := errors.New("missing service_name")
 		log.WithFields(log.Fields{
 			"error": err,
 		}).Error("invalid config")
