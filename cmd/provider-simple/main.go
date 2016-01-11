@@ -25,6 +25,11 @@ func main() {
 	config := simple.NewConfig(v)
 	dieOnError(config.LoadConfigFile())
 	dieOnError(config.SetupLogging())
+
+	server := simple.NewServer(config)
+	dieOnError(server.Start())
+
+	server.StopOnSignal()
 }
 
 // Bind the command line flags to Viper so they will be merged into the config
