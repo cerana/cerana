@@ -19,6 +19,7 @@ type Request struct {
 	ErrorHandler   ResponseHandler `json:"-"`
 }
 
+// ResponseHandler is a function to run when a request receives a response.
 type ResponseHandler func(*Request, *Response)
 
 // NewRequest creates a new Request instance.
