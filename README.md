@@ -1,6 +1,6 @@
 # acomm
 
-[![acomm](https://godoc.org/github.com/mistifyio/async-comm?status.png)](https://godoc.org/github.com/mistifyio/async-comm)
+[![acomm](https://godoc.org/github.com/mistifyio/acomm?status.png)](https://godoc.org/github.com/mistifyio/acomm)
 
 Package acomm is a library for asynchronous communication between services.
 
@@ -10,22 +10,34 @@ Package acomm is a library for asynchronous communication between services.
 
 ```go
 type Request struct {
-	ID           string      `json:"id"`
-	ResponseHook *url.URL    `json:"responsehook"`
-	Args         interface{} `json:"args"`
+	ID             string          `json:"id"`
+	ResponseHook   *url.URL        `json:"responsehook"`
+	Args           interface{}     `json:"args"`
+	SuccessHandler ResponseHandler `json:"-"`
+	ErrorHandler   ResponseHandler `json:"-"`
 }
 ```
 
 Request is a request data structure for asynchronous requests. The ID is used to
 identify the request throught its life cycle. The ResponseHook is a URL where
-response data should be sent.
+response data should be sent. SuccessHandler and ErrorHandler will be called
+appropriately to handle a response.
 
 #### func  NewRequest
 
 ```go
-func NewRequest(responseHook string, args interface{}) (*Request, error)
+func NewRequest(responseHook string, args interface{}, sh ResponseHandler, eh ResponseHandler) (*Request, error)
 ```
 NewRequest creates a new Request instance.
+
+#### func (*Request) HandleResponse
+
+```go
+func (req *Request) HandleResponse(resp *Response)
+```
+HandleResponse determines whether a response indicates success or error and runs
+the appropriate handler. If the appropriate handler is not defined, it is
+assumed no handling is necessary and silently finishes.
 
 #### func (*Request) Respond
 
@@ -61,6 +73,14 @@ NewResponse creates a new Response instance based on a Request.
 func (resp *Response) Send(responseHook *url.URL) error
 ```
 Send attempts send the Response to the specified URL.
+
+#### type ResponseHandler
+
+```go
+type ResponseHandler func(*Request, *Response)
+```
+
+ResponseHandler is a function to run when a request receives a response.
 
 #### type Tracker
 

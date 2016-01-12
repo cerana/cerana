@@ -14,7 +14,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/mistifyio/async-comm"
+	"github.com/mistifyio/acomm"
 	"github.com/pborman/uuid"
 	"github.com/stretchr/testify/suite"
 )
