@@ -26,10 +26,16 @@ func main() {
 	dieOnError(config.LoadConfigFile())
 	dieOnError(config.SetupLogging())
 
+	s := &simple.Simple{}
 	server := simple.NewServer(config)
+	dieOnError(server.Register(s))
 	dieOnError(server.Start())
 
-	server.StopOnSignal()
+	if len(server.RegisteredTasks()) != 0 {
+		server.StopOnSignal()
+	} else {
+		log.Warn("no registered tasks, exiting")
+	}
 }
 
 // Bind the command line flags to Viper so they will be merged into the config

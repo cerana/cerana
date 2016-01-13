@@ -25,6 +25,11 @@ func NewServer(config *Config) *Server {
 	}
 }
 
+// Register registers the tasks of a receiver.
+func (s *Server) Register(receiver interface{}) error {
+	return nil
+}
+
 // RegisterTask registers a new task and its handler with the server.
 func (s *Server) RegisterTask(taskName string, handler TaskHandler) {
 	socketPath := filepath.Join(

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/mistifyio/async-comm"
+	"github.com/mistifyio/acomm"
 	logx "github.com/mistifyio/mistify-logrus-ext"
 )
 
