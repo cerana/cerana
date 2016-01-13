@@ -1,7 +1,6 @@
 package acomm
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -9,27 +8,57 @@ import (
 	"net/url"
 	"os"
 	"sync"
-	"time"
 
 	log "github.com/Sirupsen/logrus"
-	logx "github.com/mistifyio/mistify-logrus-ext"
+)
+
+const (
+	statusStarted = iota
+	statusStopping
+	statusStopped
 )
 
 // Tracker keeps track of requests waiting on a response.
 type Tracker struct {
-	socketDir        string
-	responseListener net.Listener
+	status           int
+	responseListener *UnixListener
 	requestsLock     sync.Mutex // Protects requests
 	requests         map[string]*Request
+	waitgroup        sync.WaitGroup
 }
 
 // NewTracker creates and initializes a new Tracker. If a socketDir is not
 // provided, the response socket will be created in a temporary directory.
-func NewTracker(socketDir string) *Tracker {
-	return &Tracker{
-		socketDir: socketDir,
-		requests:  make(map[string]*Request),
+func NewTracker(socketPath string) (*Tracker, error) {
+	if socketPath == "" {
+		var err error
+		socketPath, err = generateTempSocketPath()
+		if err != nil {
+			return nil, err
+		}
 	}
+
+	return &Tracker{
+		status:           statusStopped,
+		responseListener: NewUnixListener(socketPath),
+	}, nil
+}
+
+func generateTempSocketPath() (string, error) {
+	// Use TempFile to allocate a uniquely named file in either the specified
+	// dir or the default temp dir. It is then removed so that the unix socket
+	// can be created with that name.
+	f, err := ioutil.TempFile("", "acommTrackerResponses-")
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error("failed to create temp file for response socket")
+		return "", err
+	}
+	_ = f.Close()
+	_ = os.Remove(f.Name())
+
+	return fmt.Sprintf("%s.sock", f.Name()), nil
 }
 
 // NumRequests returns the number of tracked requests
@@ -40,47 +69,26 @@ func (t *Tracker) NumRequests() int {
 	return len(t.requests)
 }
 
-// StartListener activates the tracker and starts listening for responses.
-func (t *Tracker) StartListener() error {
-	// Already listening
-	if t.responseListener != nil {
+// Start activates the tracker. This allows tracking of requests as well as
+// listening for and handling responses.
+func (t *Tracker) Start() error {
+	if t.status == statusStarted {
 		return nil
 	}
+	if t.status == statusStopping {
+		return errors.New("can't start tracker while stopping")
+	}
 
-	if err := t.createListener(); err != nil {
+	t.requests = make(map[string]*Request)
+
+	// start the proxy response listener
+	if err := t.responseListener.Start(); err != nil {
 		return err
 	}
 
 	go t.listenForResponses()
-	return nil
-}
 
-// createListener creates a new listener for responses.
-func (t *Tracker) createListener() error {
-	// Use TempFile to allocate a uniquely named file in either the specified
-	// dir or the default temp dir. It is then removed so that the unix socket
-	// can be created with that name.
-	f, err := ioutil.TempFile(t.socketDir, "acommTracker-")
-	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-		}).Error("failed to create temp file for response socket")
-		return err
-	}
-	_ = f.Close()
-	_ = os.Remove(f.Name())
-
-	socketPath := fmt.Sprintf("%s.sock", f.Name())
-
-	listener, err := net.Listen("unix", socketPath)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"error":      err,
-			"socketPath": socketPath,
-		}).Error("failed to create response listener")
-		return err
-	}
-	t.responseListener = listener
+	t.status = statusStarted
 
 	return nil
 }
@@ -88,116 +96,106 @@ func (t *Tracker) createListener() error {
 // listenForResponse continually accepts new responses on the listener.
 func (t *Tracker) listenForResponses() {
 	for {
-		if t.responseListener == nil {
-			return
-		}
-		conn, err := t.responseListener.Accept()
-		if err != nil {
-			log.WithFields(log.Fields{
-				"error": err,
-			}).Error("failed to accept new connection")
+		conn := t.responseListener.NextConn()
+		if conn == nil {
 			return
 		}
 
-		// Handle connection in a goroutine that connections can be served
-		// concurrently.
 		go t.handleConn(conn)
 	}
 }
 
 // handleConn handles the response connection and parses the data.
 func (t *Tracker) handleConn(conn net.Conn) {
-	// Close the response connection
-	defer logx.LogReturnedErr(conn.Close, log.Fields{
-		"addr": conn.RemoteAddr(),
-	}, "failed to close connection")
+	defer t.responseListener.DoneConn(conn)
 
-	data, err := ioutil.ReadAll(conn)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-		}).Error("failed to read response body")
+	resp := &Response{}
+	if err := UnmarshalConnData(conn, resp); err != nil {
 		return
 	}
 
-	resp := &Response{}
-	if err := json.Unmarshal(data, resp); err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-			"data":  string(data),
-		}).Error("failed to unmarshal response data")
-	}
-
-	_ = t.handleResponse(resp)
+	go t.HandleResponse(resp)
 }
 
-// handleResponse associates a response with a request and forwards the
-// response.
-func (t *Tracker) handleResponse(resp *Response) error {
-	req := t.RetrieveRequest(resp.ID)
+// HandleResponse associates a response with a request and either forwards the
+// response or calls the request's handler.
+func (t *Tracker) HandleResponse(resp *Response) {
+	req := t.retrieveRequest(resp.ID)
 	if req == nil {
 		err := errors.New("response does not have tracked request")
 		log.WithFields(log.Fields{
 			"error":    err,
 			"response": resp,
 		}).Error(err)
-		return err
+		return
+	}
+	defer t.waitgroup.Done()
+
+	// If there are handlers, this is the final destination, so handle the
+	// response. Otherwise, forward the response along.
+	// Known issue: If this is the final destination and there are
+	// no handlers, there will be an extra redirects back here. Since the
+	// request has already been removed from the tracker, it will only happen
+	// once.
+	if !req.proxied {
+		req.HandleResponse(resp)
+		return
 	}
 
-	return req.Respond(resp)
-}
-
-// StopListener disallows new requests to be tracked and waits until either all active
-// requests are handled or a timeout occurs. The chan returned will be used to
-// notify when the Tracker is fully stopped.
-func (t *Tracker) StopListener(timeout time.Duration) error {
-	// Nothing to do if it's not listening.
-	if t.responseListener == nil {
-		return nil
-	}
-
-	// Close the response connection before returning
-	defer func() { t.responseListener = nil }()
-	defer logx.LogReturnedErr(t.responseListener.Close, log.Fields{
-		"addr": t.responseListener.Addr(),
-	}, "failed to close listener")
-
-	// Try to wait for all tracked requests to finish cleanly.
-	totalTime := 0 * time.Millisecond
-	sleepTime := 10 * time.Millisecond
-	for t.NumRequests() > 0 && totalTime < timeout {
-		time.Sleep(sleepTime)
-		totalTime += sleepTime
-	}
-
-	if t.NumRequests() > 0 {
-		err := errors.New("timeout")
-		log.WithFields(log.Fields{
-			"error":     err,
-			"remaining": t.NumRequests(),
-		}).Error("not all requests finished before stop timeout")
-		return err
-	}
-
-	return nil
-}
-
-// TrackRequest tracks a request. This should only be called directly when the
-// Tracker is being used by an original source of requests. Responses should
-// then be removed with RetrieveRequest.
-func (t *Tracker) TrackRequest(req *Request) {
-	t.requestsLock.Lock()
-	defer t.requestsLock.Unlock()
-
-	t.requests[req.ID] = req
-
+	// Forward the response along
+	_ = req.Respond(resp)
 	return
 }
 
-// RetrieveRequest returns a tracked Request based on ID and stops tracking it.
-// This should only be called directly when the Tracker is being used by an
-// original source of requests.
-func (t *Tracker) RetrieveRequest(id string) *Request {
+// Stop deactivates the tracker. It blocks until all active connections or tracked requests to finish.
+func (t *Tracker) Stop() {
+	// Nothing to do if it's not listening.
+	if t.responseListener == nil {
+		return
+	}
+
+	// Prevent new requests from being tracked
+	t.status = statusStopping
+
+	// Handle any requests that are expected
+	t.waitgroup.Wait()
+	// Stop listening for new requests
+	t.responseListener.Stop()
+	t.status = statusStopped
+	return
+}
+
+// TrackRequest tracks a request. This does not need to be called after using
+// ProxyUnix.
+func (t *Tracker) TrackRequest(req *Request) error {
+	t.requestsLock.Lock()
+	defer t.requestsLock.Unlock()
+
+	if t.status == statusStarted {
+		if _, ok := t.requests[req.ID]; ok {
+			err := errors.New("request id already traacked")
+			log.WithFields(log.Fields{
+				"request": req,
+				"error":   err,
+			}).Error(err)
+			return err
+		}
+		t.waitgroup.Add(1)
+		t.requests[req.ID] = req
+		return nil
+	}
+
+	err := errors.New("failed to track request in unstarted tracker")
+	log.WithFields(log.Fields{
+		"request":       req,
+		"trackerStatus": t.status,
+		"error":         err,
+	}).Error(err)
+	return err
+}
+
+// retrieveRequest returns a tracked Request based on ID and stops tracking it.
+func (t *Tracker) retrieveRequest(id string) *Request {
 	t.requestsLock.Lock()
 	defer t.requestsLock.Unlock()
 
@@ -227,7 +225,7 @@ func (t *Tracker) ProxyUnix(req *Request) (*Request, error) {
 	unixReq := req
 
 	if req.ResponseHook.Scheme != "unix" {
-		addr := t.responseListener.Addr().String()
+		addr := t.responseListener.Addr()
 		responseHook, err := url.ParseRequestURI(fmt.Sprintf("unix://%s", addr))
 		if err != nil {
 			log.WithFields(log.Fields{
@@ -245,8 +243,10 @@ func (t *Tracker) ProxyUnix(req *Request) (*Request, error) {
 			// Success and ErrorHandler are unnecessary here and intentionally
 			// omitted.
 		}
-
-		t.TrackRequest(req)
+		if err := t.TrackRequest(req); err != nil {
+			return nil, err
+		}
+		req.proxied = true
 	}
 
 	return unixReq, nil

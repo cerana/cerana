@@ -19,6 +19,7 @@ type Request struct {
 	Args           interface{}     `json:"args"`
 	SuccessHandler ResponseHandler `json:"-"`
 	ErrorHandler   ResponseHandler `json:"-"`
+	proxied        bool
 }
 
 // ResponseHandler is a function to run when a request receives a response.
