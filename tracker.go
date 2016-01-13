@@ -239,8 +239,11 @@ func (t *Tracker) ProxyUnix(req *Request) (*Request, error) {
 
 		unixReq = &Request{
 			ID:           req.ID,
+			Task:         req.Task,
 			ResponseHook: responseHook,
 			Args:         req.Args,
+			// Success and ErrorHandler are unnecessary here and intentionally
+			// omitted.
 		}
 
 		t.TrackRequest(req)

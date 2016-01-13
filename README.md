@@ -11,6 +11,7 @@ Package acomm is a library for asynchronous communication between services.
 ```go
 type Request struct {
 	ID             string          `json:"id"`
+	Task           string          `json:"task"`
 	ResponseHook   *url.URL        `json:"responsehook"`
 	Args           interface{}     `json:"args"`
 	SuccessHandler ResponseHandler `json:"-"`
@@ -26,7 +27,7 @@ appropriately to handle a response.
 #### func  NewRequest
 
 ```go
-func NewRequest(responseHook string, args interface{}, sh ResponseHandler, eh ResponseHandler) (*Request, error)
+func NewRequest(task, responseHook string, args interface{}, sh ResponseHandler, eh ResponseHandler) (*Request, error)
 ```
 NewRequest creates a new Request instance.
 

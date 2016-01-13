@@ -1,6 +1,7 @@
 package acomm
 
 import (
+	"errors"
 	"net/url"
 
 	log "github.com/Sirupsen/logrus"
@@ -13,6 +14,7 @@ import (
 // be called appropriately to handle a response.
 type Request struct {
 	ID             string          `json:"id"`
+	Task           string          `json:"task"`
 	ResponseHook   *url.URL        `json:"responsehook"`
 	Args           interface{}     `json:"args"`
 	SuccessHandler ResponseHandler `json:"-"`
@@ -23,7 +25,7 @@ type Request struct {
 type ResponseHandler func(*Request, *Response)
 
 // NewRequest creates a new Request instance.
-func NewRequest(responseHook string, args interface{}, sh ResponseHandler, eh ResponseHandler) (*Request, error) {
+func NewRequest(task, responseHook string, args interface{}, sh ResponseHandler, eh ResponseHandler) (*Request, error) {
 	hook, err := url.ParseRequestURI(responseHook)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -33,8 +35,13 @@ func NewRequest(responseHook string, args interface{}, sh ResponseHandler, eh Re
 		return nil, err
 	}
 
+	if task == "" {
+		return nil, errors.New("missing task")
+	}
+
 	return &Request{
 		ID:             uuid.New(),
+		Task:           task,
 		ResponseHook:   hook,
 		Args:           args,
 		SuccessHandler: sh,
