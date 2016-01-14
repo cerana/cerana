@@ -56,6 +56,13 @@ func NewResponse(req *Request, result interface{}, err error) (*Response, error)
 
 // Send attempts send the payload to the specified URL.
 func Send(addr *url.URL, payload interface{}) error {
+	if addr == nil {
+		err := errors.New("missing addr")
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error(err)
+		return err
+	}
 	switch addr.Scheme {
 	case "unix":
 		return sendUnix(addr, payload)

@@ -62,6 +62,13 @@ func (req *Request) Respond(resp *Response) error
 ```
 Respond sends a Response to a Request's ResponseHook.
 
+#### func (*Request) Validate
+
+```go
+func (req *Request) Validate() error
+```
+Validate validates the reqeust
+
 #### type Response
 
 ```go
