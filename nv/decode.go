@@ -61,10 +61,10 @@ func Decode(data []byte, target interface{}) (err error) {
 		return fmt.Errorf("cannot decode into nil")
 	}
 
-	return decodeListStruct(b, reflect.Indirect(targetV))
+	return decodeList(b, reflect.Indirect(targetV))
 }
 
-func decodeListStruct(r io.ReadSeeker, target reflect.Value) error {
+func decodeList(r io.ReadSeeker, target reflect.Value) error {
 	// Validate data header
 	var h header
 	if err := binary.Read(r, binary.BigEndian, &h); err != nil {
@@ -307,7 +307,7 @@ func decodeListStruct(r io.ReadSeeker, target reflect.Value) error {
 			} else {
 				val = reflect.Indirect(reflect.New(targetField.Type()))
 			}
-			err = decodeListStruct(r, val)
+			err = decodeList(r, val)
 			fieldSetFunc = func() {
 				targetField.Set(val)
 			}
@@ -328,7 +328,7 @@ func decodeListStruct(r io.ReadSeeker, target reflect.Value) error {
 			val = reflect.MakeSlice(sliceType, 0, int(dataPair.NElements))
 			for i := uint32(0); i < dataPair.NElements; i++ {
 				elem := reflect.Indirect(reflect.New(sliceType.Elem()))
-				err = decodeListStruct(r, elem)
+				err = decodeList(r, elem)
 				if err != nil {
 					break
 				}
