@@ -64,7 +64,7 @@ func (s *ResponseTestSuite) TestNewResponse() {
 		expectedErr bool
 	}{
 		{"missing request", nil, result, nil, true},
-		{"missing result and error", request, nil, nil, true},
+		{"missing result and error", request, nil, nil, false},
 		{"result and error", request, result, respErr, true},
 		{"result only", request, result, nil, false},
 		{"error only", request, nil, respErr, false},

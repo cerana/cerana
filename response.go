@@ -39,14 +39,6 @@ func NewResponse(req *Request, result interface{}, err error) (*Response, error)
 		return nil, err
 	}
 
-	if result == nil && err == nil {
-		err := errors.New("must set one of either result or err")
-		log.WithFields(log.Fields{
-			"errors": err,
-		}).Error(err)
-		return nil, err
-	}
-
 	return &Response{
 		ID:     req.ID,
 		Result: result,
