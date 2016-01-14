@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"net"
 	"net/url"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -69,14 +71,27 @@ func (ul *UnixListener) Start() error {
 
 // createListener creates a new net.UnixListener
 func (ul *UnixListener) createListener() error {
+	// create directory structure if it does not exist yet
+	directory := filepath.Dir(ul.Addr())
+	// TODO: Decide on permissions
+	if err := os.MkdirAll(directory, os.ModePerm); err != nil {
+		log.WithFields(log.Fields{
+			"directory": directory,
+			"perm":      os.ModePerm,
+			"error":     err,
+		}).Error("failed to create directory for socket")
+		return err
+	}
+
 	listener, err := net.ListenUnix("unix", ul.addr)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"addr":  ul.Addr,
+			"addr":  ul.Addr(),
 			"error": err,
 		}).Error("failed to create response listener")
 		return err
 	}
+
 	ul.listener = listener
 	return nil
 }
@@ -85,14 +100,14 @@ func (ul *UnixListener) createListener() error {
 func (ul *UnixListener) listen() {
 	defer ul.waitgroup.Done()
 	defer logx.LogReturnedErr(ul.listener.Close, log.Fields{
-		"addr": ul.Addr,
+		"addr": ul.Addr(),
 	}, "failed to close listener")
 
 	for {
 		select {
 		case <-ul.stopChan:
 			log.WithFields(log.Fields{
-				"addr": ul.Addr,
+				"addr": ul.Addr(),
 			}).Info("stop listening")
 			return
 		default:
@@ -100,7 +115,7 @@ func (ul *UnixListener) listen() {
 
 		if err := ul.listener.SetDeadline(time.Now().Add(time.Second)); err != nil {
 			log.WithFields(log.Fields{
-				"addr":  ul.Addr,
+				"addr":  ul.Addr(),
 				"error": err,
 			}).Error("failed to set listener deadline")
 		}
@@ -113,7 +128,7 @@ func (ul *UnixListener) listen() {
 			}
 
 			log.WithFields(log.Fields{
-				"addr":  ul.Addr,
+				"addr":  ul.Addr(),
 				"error": err,
 			}).Error("failed to accept new connection")
 			continue
