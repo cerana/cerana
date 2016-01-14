@@ -44,6 +44,10 @@ func (s *UnixListenerTestSuite) TestAddr() {
 	s.Equal(s.Socket, s.Listener.Addr(), "should be the same addr")
 }
 
+func (s *UnixListenerTestSuite) TestURL() {
+	s.Equal(fmt.Sprintf("unix://%s", s.Socket), s.Listener.URL().String(), "should be the same URL")
+}
+
 func (s *UnixListenerTestSuite) TestStartAndStop() {
 	s.NoError(s.Listener.Start(), "should start successfully")
 	s.NoError(s.Listener.Start(), "should not error calling start again")

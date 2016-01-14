@@ -215,5 +215,12 @@ func (ul *UnixListener) Stop()
 Stop stops listening for new connections. It blocks until existing connections
 are handled and the listener closed.
 
+#### func (*UnixListener) URL
+
+```go
+func (ul *UnixListener) URL() *url.URL
+```
+URL returns the URL representation of the unix address.
+
 --
 *Generated with [godocdown](https://github.com/robertkrimen/godocdown)*

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
-	"net/url"
 	"os"
 	"sync"
 
@@ -225,20 +224,10 @@ func (t *Tracker) ProxyUnix(req *Request) (*Request, error) {
 	unixReq := req
 
 	if req.ResponseHook.Scheme != "unix" {
-		addr := t.responseListener.Addr()
-		responseHook, err := url.ParseRequestURI(fmt.Sprintf("unix://%s", addr))
-		if err != nil {
-			log.WithFields(log.Fields{
-				"error":   err,
-				"address": addr,
-			}).Error("unable to parse tracker response address")
-			return nil, err
-		}
-
 		unixReq = &Request{
 			ID:           req.ID,
 			Task:         req.Task,
-			ResponseHook: responseHook,
+			ResponseHook: t.responseListener.URL(),
 			Args:         req.Args,
 			// Success and ErrorHandler are unnecessary here and intentionally
 			// omitted.

@@ -2,8 +2,10 @@ package acomm
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net"
+	"net/url"
 	"sync"
 	"time"
 
@@ -36,6 +38,12 @@ func NewUnixListener(socketPath string) *UnixListener {
 // Addr returns the string representation of the unix address.
 func (ul *UnixListener) Addr() string {
 	return ul.addr.String()
+}
+
+// URL returns the URL representation of the unix address.
+func (ul *UnixListener) URL() *url.URL {
+	u, _ := url.ParseRequestURI(fmt.Sprintf("unix://%s", ul.Addr()))
+	return u
 }
 
 // Start prepares the listener and starts listening for new connections.
