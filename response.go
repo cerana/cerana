@@ -21,6 +21,38 @@ type Response struct {
 	Error  error       `json:"error"`
 }
 
+func (r *Response) MarshalJSON() ([]byte, error) {
+	type Alias Response
+	respErr := r.Error
+	if respErr == nil {
+		respErr = errors.New("")
+	}
+	return json.Marshal(&struct {
+		Error string `json:"error"`
+		*Alias
+	}{
+		Error: respErr.Error(),
+		Alias: (*Alias)(r),
+	})
+}
+
+func (r *Response) UnmarshalJSON(data []byte) error {
+	type Alias Response
+	aux := &struct {
+		Error string `json:"error"`
+		*Alias
+	}{
+		Alias: (*Alias)(r),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	if aux.Error != "" {
+		r.Error = errors.New(aux.Error)
+	}
+	return nil
+}
+
 // NewResponse creates a new Response instance based on a Request.
 func NewResponse(req *Request, result interface{}, err error) (*Response, error) {
 	if req == nil {

@@ -90,6 +90,18 @@ func NewResponse(req *Request, result interface{}, err error) (*Response, error)
 ```
 NewResponse creates a new Response instance based on a Request.
 
+#### func (*Response) MarshalJSON
+
+```go
+func (r *Response) MarshalJSON() ([]byte, error)
+```
+
+#### func (*Response) UnmarshalJSON
+
+```go
+func (r *Response) UnmarshalJSON(data []byte) error
+```
+
 #### type ResponseHandler
 
 ```go
