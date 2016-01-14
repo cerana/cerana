@@ -59,6 +59,7 @@ func (ul *UnixListener) Start() error {
 		return err
 	}
 
+	ul.waitgroup.Add(1)
 	go ul.listen()
 
 	ul.alive = true
@@ -93,6 +94,7 @@ func (ul *UnixListener) listen() {
 			log.WithFields(log.Fields{
 				"addr": ul.Addr,
 			}).Info("stop listening")
+			return
 		default:
 		}
 
