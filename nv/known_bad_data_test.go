@@ -11,7 +11,7 @@ var decode_bad = []struct {
 }{
 	{"EOF", []byte{}},
 	{"unexpected EOF", []byte("\x00")},
-	{"EOF", []byte("\x00\x00\x00\x00")},
+	{"EOF", []byte("\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01")},
 	{"invalid encoding: 2", []byte("\x02\x00\x00\x00")},
 	{"invalid endianess: 2", []byte("\x01\x02\x00\x00")},
 	{"unexpected reserved1 value: 1", []byte("\x01\x01\x01\x00")},
