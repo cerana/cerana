@@ -3,11 +3,9 @@ package nv
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 	"reflect"
-	"runtime"
 	"time"
 
 	xdr "github.com/davecgh/go-xdr/xdr2"
@@ -18,20 +16,6 @@ import (
 // bytes/uint8s (and their array forms) can not be distinguished and will be
 // treated as uint8/[]uint8.
 func Decode(data []byte, target interface{}) (err error) {
-	// Catch any panics from reflection
-	defer func() {
-		if r := recover(); r != nil {
-			if _, ok := r.(runtime.Error); ok {
-				panic(r)
-			}
-			if rs, ok := r.(string); ok {
-				err = errors.New(rs)
-			} else {
-				err = r.(error)
-			}
-		}
-	}()
-
 	b := bytes.NewReader(data)
 
 	// Validate data encoding
