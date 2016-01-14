@@ -149,7 +149,7 @@ func (s *ResponseTestSuite) TestSend() {
 	for _, test := range tests {
 		msg := testMsgFunc(test.responseHook)
 		u, _ := url.ParseRequestURI(test.responseHook)
-		err := response.Send(u)
+		err := acomm.Send(u, response)
 		resp := s.NextResp()
 		if test.expectedErr {
 			s.Error(err, msg("send should fail"))

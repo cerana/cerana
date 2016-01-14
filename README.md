@@ -6,6 +6,13 @@ Package acomm is a library for asynchronous communication between services.
 
 ## Usage
 
+#### func  Send
+
+```go
+func Send(addr *url.URL, payload interface{}) error
+```
+Send attempts send the payload to the specified URL.
+
 #### func  UnmarshalConnData
 
 ```go
@@ -75,13 +82,6 @@ present and vice versa.
 func NewResponse(req *Request, result interface{}, err error) (*Response, error)
 ```
 NewResponse creates a new Response instance based on a Request.
-
-#### func (*Response) Send
-
-```go
-func (resp *Response) Send(responseHook *url.URL) error
-```
-Send attempts send the Response to the specified URL.
 
 #### type ResponseHandler
 

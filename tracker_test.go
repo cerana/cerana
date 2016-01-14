@@ -114,7 +114,7 @@ func (s *TrackerTestSuite) TestProxyUnix() {
 	if !s.NoError(err, "new response should not error") {
 		return
 	}
-	if !s.NoError(resp.Send(unixReq.ResponseHook), "response send should not error") {
+	if !s.NoError(acomm.Send(unixReq.ResponseHook, resp), "response send should not error") {
 		return
 	}
 

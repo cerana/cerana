@@ -52,7 +52,7 @@ func NewRequest(task, responseHook string, args interface{}, sh ResponseHandler,
 
 // Respond sends a Response to a Request's ResponseHook.
 func (req *Request) Respond(resp *Response) error {
-	return resp.Send(req.ResponseHook)
+	return Send(req.ResponseHook, resp)
 }
 
 // HandleResponse determines whether a response indicates success or error and

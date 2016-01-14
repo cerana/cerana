@@ -54,88 +54,88 @@ func NewResponse(req *Request, result interface{}, err error) (*Response, error)
 	}, nil
 }
 
-// Send attempts send the Response to the specified URL.
-func (resp *Response) Send(responseHook *url.URL) error {
-	switch responseHook.Scheme {
+// Send attempts send the payload to the specified URL.
+func Send(addr *url.URL, payload interface{}) error {
+	switch addr.Scheme {
 	case "unix":
-		return resp.sendUnix(responseHook)
+		return sendUnix(addr, payload)
 	case "http", "https":
-		return resp.sendHTTP(responseHook)
+		return sendHTTP(addr, payload)
 	default:
-		err := errors.New("unknown response hook type")
+		err := errors.New("unknown url type")
 		log.WithFields(log.Fields{
-			"error":        err,
-			"type":         responseHook.Scheme,
-			"responseHook": responseHook,
+			"error": err,
+			"type":  addr.Scheme,
+			"addr":  addr,
 		}).Error(err)
 		return err
 	}
 }
 
-// sendUnix sends the Response via a Unix socket.
-func (resp *Response) sendUnix(responseHook *url.URL) error {
-	respJSON, err := json.Marshal(resp)
+// sendUnix sends a request or response via a Unix socket.
+func sendUnix(addr *url.URL, payload interface{}) error {
+	payloadJSON, err := json.Marshal(payload)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"error":    err,
-			"response": resp,
-		}).Error("failed to marshal response json")
+			"error":   err,
+			"payload": payload,
+		}).Error("failed to marshal payload json")
 		return err
 	}
 
-	conn, err := net.Dial("unix", responseHook.RequestURI())
+	conn, err := net.Dial("unix", addr.RequestURI())
 	if err != nil {
 		log.WithFields(log.Fields{
-			"error":        err,
-			"responseHook": responseHook,
-			"resp":         resp,
+			"error":   err,
+			"addr":    addr,
+			"payload": payload,
 		}).Error("failed to connect to unix socket")
 		return err
 	}
 	defer logx.LogReturnedErr(conn.Close,
-		log.Fields{"responseHook": responseHook},
+		log.Fields{"addr": addr},
 		"failed to close unix connection",
 	)
 
-	if _, err := conn.Write(respJSON); err != nil {
+	if _, err := conn.Write(payloadJSON); err != nil {
 		log.WithFields(log.Fields{
-			"error":        err,
-			"responseHook": responseHook,
-			"resp":         resp,
-		}).Error("failed to connect to unix socket")
+			"error":   err,
+			"addr":    addr,
+			"payload": payload,
+		}).Error("failed to write payload to unix socket")
 		return err
 	}
 	return nil
 }
 
 // sendHTTP sends the Response via HTTP/HTTPS
-func (resp *Response) sendHTTP(responseHook *url.URL) error {
-	respJSON, err := json.Marshal(resp)
+func sendHTTP(addr *url.URL, payload interface{}) error {
+	payloadJSON, err := json.Marshal(payload)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"error":    err,
-			"response": resp,
-		}).Error("failed to marshal response json")
+			"error":   err,
+			"payload": payload,
+		}).Error("failed to marshal payload json")
 		return err
 	}
 
-	httpResp, err := http.Post(responseHook.String(), "application/json", bytes.NewReader(respJSON))
+	httpResp, err := http.Post(addr.String(), "application/json", bytes.NewReader(payloadJSON))
 	if err != nil {
 		log.WithFields(log.Fields{
-			"error":        err,
-			"responseHook": responseHook,
-			"resp":         resp,
-		}).Error("failed to respond to request")
+			"error":   err,
+			"addr":    addr,
+			"payload": payload,
+		}).Error("failed to send payload")
 		return err
 	}
 
 	if httpResp.StatusCode != http.StatusOK {
-		err := errors.New("unexpected http code for request response")
+		err := errors.New("unexpected http code for payload")
 		log.WithFields(log.Fields{
-			"error":        err,
-			"responseHook": responseHook,
-			"resp":         resp,
-			"code":         httpResp.StatusCode,
+			"error":   err,
+			"addr":    addr,
+			"payload": payload,
+			"code":    httpResp.StatusCode,
 		}).Error(err)
 		return err
 	}
