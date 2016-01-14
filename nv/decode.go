@@ -38,9 +38,13 @@ func Decode(data []byte, target interface{}) error {
 	b := bytes.NewReader(data)
 
 	// Validate data encoding
-	_, _, err := decodePreamble(b, binary.BigEndian)
+	codec, endianness, err := decodePreamble(b, binary.BigEndian)
 	if err != nil {
 		return err
+	} else if codec != xdrCodec {
+		return fmt.Errorf("invalid encoding: %v", codec)
+	} else if endianness != littleEndian {
+		return fmt.Errorf("invalid endianess: %v", endianness)
 	}
 
 	// Validate target
