@@ -135,6 +135,14 @@ request with a unix socket response hook. The purpose of this is so that there
 can be a single entry and exit point for external communication, while local
 services can reply directly to each other.
 
+#### func (*Tracker) RemoveRequest
+
+```go
+func (t *Tracker) RemoveRequest(req *Request) bool
+```
+RemoveRequest should be used to remove a tracked request. Use in cases such as
+sending failures, where there is no hope of a response being received.
+
 #### func (*Tracker) Start
 
 ```go

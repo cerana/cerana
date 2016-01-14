@@ -193,6 +193,16 @@ func (t *Tracker) TrackRequest(req *Request) error {
 	return err
 }
 
+// RemoveRequest should be used to remove a tracked request. Use in cases such
+// as sending failures, where there is no hope of a response being received.
+func (t *Tracker) RemoveRequest(req *Request) bool {
+	if r := t.retrieveRequest(req.ID); r != nil {
+		t.waitgroup.Done()
+		return true
+	}
+	return false
+}
+
 // retrieveRequest returns a tracked Request based on ID and stops tracking it.
 func (t *Tracker) retrieveRequest(id string) *Request {
 	t.requestsLock.Lock()

@@ -80,7 +80,7 @@ func (s *TrackerTestSuite) TestTrackRequest() {
 	s.NoError(s.Tracker.TrackRequest(s.Request), "should have successfully tracked request")
 	s.Error(s.Tracker.TrackRequest(s.Request), "duplicate ID should have failed to track request")
 	s.Equal(1, s.Tracker.NumRequests(), "should have one unique request tracked")
-	s.untrackResp(s.Request.ID)
+	s.True(s.Tracker.RemoveRequest(s.Request))
 }
 
 func (s *TrackerTestSuite) TestStartAndStopListener() {
@@ -90,7 +90,7 @@ func (s *TrackerTestSuite) TestStartAndStopListener() {
 
 	s.NoError(s.Tracker.TrackRequest(s.Request), "should have successfully tracked request")
 
-	go s.untrackResp(s.Request.ID)
+	go s.Tracker.RemoveRequest(s.Request)
 
 	s.Tracker.Stop()
 }
@@ -134,9 +134,4 @@ func (s *TrackerTestSuite) TestProxyUnix() {
 	s.NoError(err, "should not error with unix response hook")
 	s.Equal(origUnixReq, unixReq, "should not proxy unix response hook")
 	s.Equal(0, s.Tracker.NumRequests(), "should not response an unproxied request")
-}
-
-func (s *TrackerTestSuite) untrackResp(respID string) {
-	resp := &acomm.Response{ID: respID}
-	s.Tracker.HandleResponse(resp)
 }
