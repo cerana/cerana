@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
+	"net/url"
 	"os"
 	"sync"
 
@@ -66,6 +67,16 @@ func (t *Tracker) NumRequests() int {
 	defer t.requestsLock.Unlock()
 
 	return len(t.requests)
+}
+
+// Addr returns the string representation of the Tracker's response listener socket.
+func (t *Tracker) Addr() string {
+	return t.responseListener.Addr()
+}
+
+// URL returns the URL of the Tracker's response listener socket.
+func (t *Tracker) URL() *url.URL {
+	return t.responseListener.URL()
 }
 
 // Start activates the tracker. This allows tracking of requests as well as

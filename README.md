@@ -108,6 +108,14 @@ func NewTracker(socketPath string) (*Tracker, error)
 NewTracker creates and initializes a new Tracker. If a socketDir is not
 provided, the response socket will be created in a temporary directory.
 
+#### func (*Tracker) Addr
+
+```go
+func (t *Tracker) Addr() string
+```
+Addr returns the string representation of the Tracker's response listener
+socket.
+
 #### func (*Tracker) HandleResponse
 
 ```go
@@ -166,6 +174,13 @@ func (t *Tracker) TrackRequest(req *Request) error
 ```
 TrackRequest tracks a request. This does not need to be called after using
 ProxyUnix.
+
+#### func (*Tracker) URL
+
+```go
+func (t *Tracker) URL() *url.URL
+```
+URL returns the URL of the Tracker's response listener socket.
 
 #### type UnixListener
 
