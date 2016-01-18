@@ -125,6 +125,15 @@ func decodeList(r io.ReadSeeker, target reflect.Value) error {
 		// fieldSetFunc used to set if target is a struct field
 		var fieldSetFunc func()
 
+		var targetType reflect.Type
+		if isList {
+			targetType = target.Type()
+		} else if isMap {
+			targetType = target.Type().Elem()
+		} else {
+			targetType = targetField.Type()
+		}
+
 		var err error
 		var v interface{}
 		dec := newXDRDecoder(r)
@@ -284,37 +293,19 @@ func decodeList(r io.ReadSeeker, target reflect.Value) error {
 				}
 			}
 		case _NVLIST:
-			var t reflect.Type
-			if isList {
-				t = target.Type()
-			} else if isMap {
-				t = target.Type().Elem()
-			} else {
-				t = targetField.Type()
-			}
-
-			val = reflect.Indirect(reflect.New(t))
+			val = reflect.Indirect(reflect.New(targetType))
 			err = decodeList(r, val)
 			fieldSetFunc = func() {
 				targetField.Set(val)
 			}
 		case _NVLIST_ARRAY:
-			var t reflect.Type
-			if isList {
-				t = target.Type()
-			} else if isMap {
-				t = target.Type().Elem()
-			} else {
-				t = targetField.Type()
+			if targetType.Kind() == reflect.Interface {
+				targetType = reflect.TypeOf([]map[string]interface{}{})
 			}
 
-			if t.Kind() == reflect.Interface {
-				t = reflect.TypeOf([]map[string]interface{}{})
-			}
-
-			val = reflect.MakeSlice(t, 0, int(dataPair.NElements))
+			val = reflect.MakeSlice(targetType, 0, int(dataPair.NElements))
 			for i := uint32(0); i < dataPair.NElements; i++ {
-				elem := reflect.Indirect(reflect.New(t.Elem()))
+				elem := reflect.Indirect(reflect.New(targetType.Elem()))
 				err = decodeList(r, elem)
 				if err != nil {
 					break
