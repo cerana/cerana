@@ -284,34 +284,37 @@ func decodeList(r io.ReadSeeker, target reflect.Value) error {
 				}
 			}
 		case _NVLIST:
+			var t reflect.Type
 			if isList {
-				val = reflect.Indirect(reflect.New(target.Type()))
+				t = target.Type()
 			} else if isMap {
-				val = reflect.Indirect(reflect.New(target.Type().Elem()))
+				t = target.Type().Elem()
 			} else {
-				val = reflect.Indirect(reflect.New(targetField.Type()))
+				t = targetField.Type()
 			}
+
+			val = reflect.Indirect(reflect.New(t))
 			err = decodeList(r, val)
 			fieldSetFunc = func() {
 				targetField.Set(val)
 			}
 		case _NVLIST_ARRAY:
-			var sliceType reflect.Type
+			var t reflect.Type
 			if isList {
-				sliceType = target.Type()
+				t = target.Type()
 			} else if isMap {
-				sliceType = target.Type().Elem()
+				t = target.Type().Elem()
 			} else {
-				sliceType = targetField.Type()
+				t = targetField.Type()
 			}
 
-			if sliceType.Kind() == reflect.Interface {
-				sliceType = reflect.TypeOf([]map[string]interface{}{})
+			if t.Kind() == reflect.Interface {
+				t = reflect.TypeOf([]map[string]interface{}{})
 			}
 
-			val = reflect.MakeSlice(sliceType, 0, int(dataPair.NElements))
+			val = reflect.MakeSlice(t, 0, int(dataPair.NElements))
 			for i := uint32(0); i < dataPair.NElements; i++ {
-				elem := reflect.Indirect(reflect.New(sliceType.Elem()))
+				elem := reflect.Indirect(reflect.New(t.Elem()))
 				err = decodeList(r, elem)
 				if err != nil {
 					break
