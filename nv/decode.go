@@ -48,6 +48,10 @@ func Decode(data []byte, target interface{}) (err error) {
 	return decodeList(b, reflect.Indirect(targetV))
 }
 
+// fieldSetFunc is used to set the value if the target is a field within a
+// struct
+type fieldSetFunc func(reflect.Value, reflect.Value)
+
 func decodeList(r io.ReadSeeker, target reflect.Value) error {
 	// Validate data header
 	var h header
@@ -123,7 +127,7 @@ func decodeList(r io.ReadSeeker, target reflect.Value) error {
 		// val used to set if target is a map
 		var val reflect.Value
 		// fieldSetFunc used to set if target is a struct field
-		var fieldSetFunc func()
+		var fieldSetter fieldSetFunc
 
 		var targetType reflect.Type
 		if isList {
@@ -141,161 +145,161 @@ func decodeList(r io.ReadSeeker, target reflect.Value) error {
 		case _BOOLEAN:
 			v := Boolean(true)
 			val = reflect.ValueOf(v)
-			fieldSetFunc = func() {
+			fieldSetter = func(targetField reflect.Value, val reflect.Value) {
 				targetField.Set(val)
 			}
 		case _BOOLEAN_VALUE:
 			v, err = dec.decodeBool()
 			val = reflect.ValueOf(v)
-			fieldSetFunc = func() {
+			fieldSetter = func(targetField reflect.Value, val reflect.Value) {
 				targetField.SetBool(v.(bool))
 			}
 		case _BYTE:
 			v, err = dec.decodeByte()
 			val = reflect.ValueOf(v)
-			fieldSetFunc = func() {
+			fieldSetter = func(targetField reflect.Value, val reflect.Value) {
 				targetField.SetUint(uint64(v.(uint8)))
 			}
 		case _INT8:
 			v, err = dec.decodeInt8()
 			val = reflect.ValueOf(v)
-			fieldSetFunc = func() {
+			fieldSetter = func(targetField reflect.Value, val reflect.Value) {
 				targetField.SetInt(int64(v.(int8)))
 			}
 		case _INT16:
 			v, err = dec.decodeInt16()
 			val = reflect.ValueOf(v)
-			fieldSetFunc = func() {
+			fieldSetter = func(targetField reflect.Value, val reflect.Value) {
 				targetField.SetInt(int64(v.(int16)))
 			}
 		case _INT32:
 			v, err = dec.decodeInt32()
 			val = reflect.ValueOf(v)
-			fieldSetFunc = func() {
+			fieldSetter = func(targetField reflect.Value, val reflect.Value) {
 				targetField.SetInt(int64(v.(int32)))
 			}
 		case _INT64:
 			v, err = dec.decodeInt64()
 			val = reflect.ValueOf(v)
-			fieldSetFunc = func() {
+			fieldSetter = func(targetField reflect.Value, val reflect.Value) {
 				targetField.SetInt(v.(int64))
 			}
 		case _UINT8:
 			v, err = dec.decodeUint8()
 			val = reflect.ValueOf(v)
-			fieldSetFunc = func() {
+			fieldSetter = func(targetField reflect.Value, val reflect.Value) {
 				targetField.SetUint(uint64(v.(uint8)))
 			}
 		case _UINT16:
 			v, err = dec.decodeUint16()
 			val = reflect.ValueOf(v)
-			fieldSetFunc = func() {
+			fieldSetter = func(targetField reflect.Value, val reflect.Value) {
 				targetField.SetUint(uint64(v.(uint16)))
 			}
 		case _UINT32:
 			v, err = dec.decodeUint32()
 			val = reflect.ValueOf(v)
-			fieldSetFunc = func() {
+			fieldSetter = func(targetField reflect.Value, val reflect.Value) {
 				targetField.SetUint(uint64(v.(uint32)))
 			}
 		case _UINT64:
 			v, err = dec.decodeUint64()
 			val = reflect.ValueOf(v)
-			fieldSetFunc = func() {
+			fieldSetter = func(targetField reflect.Value, val reflect.Value) {
 				targetField.SetUint(uint64(v.(uint64)))
 			}
 		case _HRTIME:
 			v, err = dec.decodeHRTime()
 			val = reflect.ValueOf(v)
-			fieldSetFunc = func() {
+			fieldSetter = func(targetField reflect.Value, val reflect.Value) {
 				targetField.SetInt(int64(v.(time.Duration)))
 			}
 		case _DOUBLE:
 			v, err = dec.decodeFloat64()
 			val = reflect.ValueOf(v)
-			fieldSetFunc = func() {
+			fieldSetter = func(targetField reflect.Value, val reflect.Value) {
 				targetField.SetFloat(v.(float64))
 			}
 		case _BOOLEAN_ARRAY:
 			v, err = dec.decodeBoolArray()
 			val = reflect.ValueOf(v)
-			fieldSetFunc = func() {
+			fieldSetter = func(targetField reflect.Value, val reflect.Value) {
 				targetField.Set(val)
 			}
 		case _BYTE_ARRAY:
 			if _, err = r.Seek(-4, 1); err == nil {
 				v, err = dec.decodeByteArray()
 				val = reflect.ValueOf(v)
-				fieldSetFunc = func() {
+				fieldSetter = func(targetField reflect.Value, val reflect.Value) {
 					targetField.SetBytes(v.([]byte))
 				}
 			}
 		case _INT8_ARRAY:
 			v, err = dec.decodeInt8Array()
 			val = reflect.ValueOf(v)
-			fieldSetFunc = func() {
+			fieldSetter = func(targetField reflect.Value, val reflect.Value) {
 				targetField.Set(val)
 			}
 		case _INT16_ARRAY:
 			v, err = dec.decodeInt16Array()
 			val = reflect.ValueOf(v)
-			fieldSetFunc = func() {
+			fieldSetter = func(targetField reflect.Value, val reflect.Value) {
 				targetField.Set(val)
 			}
 		case _INT32_ARRAY:
 			v, err = dec.decodeInt32Array()
 			val = reflect.ValueOf(v)
-			fieldSetFunc = func() {
+			fieldSetter = func(targetField reflect.Value, val reflect.Value) {
 				targetField.Set(val)
 			}
 		case _INT64_ARRAY:
 			v, err = dec.decodeInt64Array()
 			val = reflect.ValueOf(v)
-			fieldSetFunc = func() {
+			fieldSetter = func(targetField reflect.Value, val reflect.Value) {
 				targetField.Set(val)
 			}
 		case _UINT8_ARRAY:
 			v, err = dec.decodeUint8Array()
 			val = reflect.ValueOf(v)
-			fieldSetFunc = func() {
+			fieldSetter = func(targetField reflect.Value, val reflect.Value) {
 				targetField.Set(val)
 			}
 		case _UINT16_ARRAY:
 			v, err = dec.decodeUint16Array()
 			val = reflect.ValueOf(v)
-			fieldSetFunc = func() {
+			fieldSetter = func(targetField reflect.Value, val reflect.Value) {
 				targetField.Set(val)
 			}
 		case _UINT32_ARRAY:
 			v, err = dec.decodeUint32Array()
 			val = reflect.ValueOf(v)
-			fieldSetFunc = func() {
+			fieldSetter = func(targetField reflect.Value, val reflect.Value) {
 				targetField.Set(val)
 			}
 		case _UINT64_ARRAY:
 			v, err = dec.decodeUint64Array()
 			val = reflect.ValueOf(v)
-			fieldSetFunc = func() {
+			fieldSetter = func(targetField reflect.Value, val reflect.Value) {
 				targetField.Set(val)
 			}
 		case _STRING:
 			v, err = dec.decodeString()
 			val = reflect.ValueOf(v)
-			fieldSetFunc = func() {
+			fieldSetter = func(targetField reflect.Value, val reflect.Value) {
 				targetField.SetString(v.(string))
 			}
 		case _STRING_ARRAY:
 			if _, err = r.Seek(-4, 1); err == nil {
 				v, err = dec.decodeStringArray()
 				val = reflect.ValueOf(v)
-				fieldSetFunc = func() {
+				fieldSetter = func(targetField reflect.Value, val reflect.Value) {
 					targetField.Set(val)
 				}
 			}
 		case _NVLIST:
 			val = reflect.Indirect(reflect.New(targetType))
 			err = decodeList(r, val)
-			fieldSetFunc = func() {
+			fieldSetter = func(targetField reflect.Value, val reflect.Value) {
 				targetField.Set(val)
 			}
 		case _NVLIST_ARRAY:
@@ -312,7 +316,7 @@ func decodeList(r io.ReadSeeker, target reflect.Value) error {
 				}
 				val = reflect.Append(val, elem)
 			}
-			fieldSetFunc = func() {
+			fieldSetter = func(targetField reflect.Value, val reflect.Value) {
 				targetField.Set(val)
 			}
 		default:
@@ -334,7 +338,7 @@ func decodeList(r io.ReadSeeker, target reflect.Value) error {
 			}
 			target.SetMapIndex(name, val)
 		} else {
-			fieldSetFunc()
+			fieldSetter(targetField, val)
 		}
 	}
 	return nil
