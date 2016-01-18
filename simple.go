@@ -7,52 +7,82 @@ import (
 	"github.com/mistifyio/acomm"
 )
 
-type Simple struct{}
+// Simple is a simple provider implementation.
+type Simple struct {
+	config  *Config
+	tracker *acomm.Tracker
+}
 
+// SystemStatusArgs are arguments for the SystemStatus handler.
 type SystemStatusArgs struct {
-	GuestID string
+	GuestID string `json:"guest_id"`
 }
+
+// SystemStatusResult is the result data for the SystemStatus handler.
 type SystemStatusResult struct {
-	CPU  []*CPUInfo
-	Disk []*DiskInfo
+	CPUs  []*CPUInfo  `json:"cpus"`
+	Disks []*DiskInfo `json:"disks"`
 }
 
+// CPUInfoArgs are arguments for the CPUInfo handler.
 type CPUInfoArgs struct {
-	GuestID string
-}
-type CPUInfoResult []*CPUInfo
-type CPUInfo struct {
-	Processor int
-	MHz       int
+	GuestID string `json:"guest_id"`
 }
 
-type DiskInfoArgs struct {
-	GuestID string
+// CPUInfoResult is the result data for the CPUInfo handler.
+type CPUInfoResult []*CPUInfo
+
+// CPUInfo is information on a particular CPU.
+type CPUInfo struct {
+	Processor int `json:"processor"`
+	MHz       int `json:"mhz"`
 }
+
+// DiskInfoArgs are arguments for the DiskInfo handler.
+type DiskInfoArgs struct {
+	GuestID string `json:"guest_id"`
+}
+
+// DiskInfoResult is the result data for the DiskInfo handler.
 type DiskInfoResult []*DiskInfo
+
+// DiskInfo is information on a particular disk.
 type DiskInfo struct {
 	Device string
 	Size   int64
 }
 
-func SendToController(req *acomm.Request) error {
-	return nil
+// NewSimple creates a new instance of Simple.
+func NewSimple(config *Config, tracker *acomm.Tracker) *Simple {
+	return &Simple{
+		config:  config,
+		tracker: tracker,
+	}
 }
 
-func (s *Simple) SystemStatus(argI interface{}) (interface{}, error) {
-	args, ok := argI.(SystemStatusArgs)
-	if !ok {
-		return nil, errors.New("invalid arguments")
+// RegisterTasks registers all of Simple's task handlers with the server.
+func (s *Simple) RegisterTasks(server *Server) {
+	server.RegisterTask("SystemStatus", s.SystemStatus)
+	server.RegisterTask("CPUInfo", s.CPUInfo)
+	server.RegisterTask("DiskInfo", s.DiskInfo)
+}
+
+// SystemStatus is a task handler to retrieve info look up and return system
+// information. It depends on and makes requests for several other tasks.
+func (s *Simple) SystemStatus(args map[string]interface{}) (interface{}, error) {
+	guestID, ok := args["guest_id"].(string)
+	if !ok || guestID == "" {
+		return nil, errors.New("missing guest_id")
 	}
 
 	// Prepare multiple requests
-	multiRequest := NewMultiRequest(nil)
+	multiRequest := NewMultiRequest(s.tracker)
 
-	cpuReq, err := acomm.NewRequest("CPUInfo", "", &CPUInfoArgs{GuestID: args.GuestID}, nil, nil)
+	cpuReq, err := acomm.NewRequest("CPUInfo", s.tracker.Addr(), &CPUInfoArgs{GuestID: guestID}, nil, nil)
 	if err != nil {
 		return nil, err
 	}
-	diskReq, err := acomm.NewRequest("DiskInfo", "", &DiskInfoArgs{GuestID: args.GuestID}, nil, nil)
+	diskReq, err := acomm.NewRequest("DiskInfo", s.tracker.URL().String(), &DiskInfoArgs{GuestID: guestID}, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -63,9 +93,12 @@ func (s *Simple) SystemStatus(argI interface{}) (interface{}, error) {
 	}
 
 	for name, req := range requests {
-		multiRequest.AddRequest(name, req)
-		if err := SendToController(req); err != nil {
-			multiRequest.RemoveRequest(req.ID)
+		if err := multiRequest.AddRequest(name, req); err != nil {
+			continue
+		}
+		if err := acomm.Send(s.config.CoordinatorURL(), req); err != nil {
+			multiRequest.RemoveRequest(req)
+			continue
 		}
 	}
 
@@ -81,20 +114,16 @@ func (s *Simple) SystemStatus(argI interface{}) (interface{}, error) {
 	}
 
 	result := &SystemStatusResult{
-		CPU:  results["CPUInfo"].(CPUInfoResult),
-		Disk: results["DiskInfo"].(DiskInfoResult),
+		CPUs:  results["CPUInfo"].(CPUInfoResult),
+		Disks: results["DiskInfo"].(DiskInfoResult),
 	}
 	return result, nil
 }
 
-func (s *Simple) CPUInfo(argI interface{}) (interface{}, error) {
-	args, ok := argI.(CPUInfoArgs)
-	if !ok {
-		return nil, errors.New("invalid arguments")
-	}
-
-	if args.GuestID == "" {
-		return nil, errors.New("missing guest id")
+// CPUInfo is a task handler to retrieve information about CPUs.
+func (s *Simple) CPUInfo(args map[string]interface{}) (interface{}, error) {
+	if id, ok := args["guest_id"].(string); !ok || id == "" {
+		return nil, errors.New("missing guest_id")
 	}
 
 	result := &CPUInfoResult{
@@ -110,14 +139,10 @@ func (s *Simple) CPUInfo(argI interface{}) (interface{}, error) {
 	return result, nil
 }
 
-func (s *Simple) DiskInfo(argI interface{}) (interface{}, error) {
-	args, ok := argI.(DiskInfoArgs)
-	if !ok {
-		return nil, errors.New("invalid arguments")
-	}
-
-	if args.GuestID == "" {
-		return nil, errors.New("missing guest id")
+// DiskInfo is a task handler to retrieve information about disks.
+func (s *Simple) DiskInfo(args map[string]interface{}) (interface{}, error) {
+	if id, ok := args["guest_id"].(string); !ok || id == "" {
+		return nil, errors.New("missing guest_id")
 	}
 
 	result := &DiskInfoResult{

@@ -3,6 +3,7 @@ package simple
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -80,6 +81,14 @@ func (c *Config) ServiceName() string {
 	return c.viper.GetString("service_name")
 }
 
+// CoordinatorURL returns the URL of the Coordinator for which the Provider is
+// registered.
+func (c *Config) CoordinatorURL() *url.URL {
+	// Error checking has been done during validation
+	u, _ := url.ParseRequestURI(c.viper.GetString("coordinator_url"))
+	return u
+}
+
 // Validate returns whether the config is valid, containing necessary values.
 func (c *Config) Validate() error {
 	if c.SocketDir() == "" {
@@ -94,6 +103,13 @@ func (c *Config) Validate() error {
 		err := errors.New("missing service_name")
 		log.WithFields(log.Fields{
 			"error": err,
+		}).Error("invalid config")
+		return err
+	}
+	if _, err := url.ParseRequestURI(c.viper.GetString("coordinator_url")); err != nil {
+		log.WithFields(log.Fields{
+			"coordinator_url": c.viper.GetString("coordinator_url"),
+			"error":           err,
 		}).Error("invalid config")
 		return err
 	}

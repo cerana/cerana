@@ -9,25 +9,43 @@ import (
 	"syscall"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/mistifyio/acomm"
 )
 
 // Server is the main server struct.
 type Server struct {
-	config *Config
-	tasks  map[string]*Task
+	config  *Config
+	tasks   map[string]*task
+	tracker *acomm.Tracker
+}
+
+// Provider is an interface to allow a provider to register its tasks with a
+// Server.
+type Provider interface {
+	RegisterTasks(Server)
 }
 
 // NewServer creates and initializes a new Server.
-func NewServer(config *Config) *Server {
-	return &Server{
-		config: config,
-		tasks:  make(map[string]*Task),
+func NewServer(config *Config) (*Server, error) {
+	responseSocket := filepath.Join(
+		config.SocketDir(),
+		"response",
+		config.ServiceName()+".sock")
+	tracker, err := acomm.NewTracker(responseSocket)
+	if err != nil {
+		return nil, err
 	}
+
+	return &Server{
+		config:  config,
+		tasks:   make(map[string]*task),
+		tracker: tracker,
+	}, nil
 }
 
-// Register registers the tasks of a receiver.
-func (s *Server) Register(receiver interface{}) error {
-	return nil
+// Tracker returns the request/response tracker of the Server.
+func (s *Server) Tracker() *acomm.Tracker {
+	return s.tracker
 }
 
 // RegisterTask registers a new task and its handler with the server.
@@ -35,11 +53,9 @@ func (s *Server) RegisterTask(taskName string, handler TaskHandler) {
 	socketPath := filepath.Join(
 		s.config.SocketDir(),
 		taskName,
-		strconv.Itoa(s.config.TaskPriority(taskName)),
-		s.config.ServiceName())
+		strconv.Itoa(s.config.TaskPriority(taskName))+"-"+s.config.ServiceName()+".sock")
 
-	task := newTask(taskName, socketPath, s.config.TaskTimeout(taskName), handler)
-	s.tasks[taskName] = task
+	s.tasks[taskName] = newTask(taskName, socketPath, s.config.TaskTimeout(taskName), handler)
 }
 
 // RegisteredTasks returns a list of registered task names.
@@ -51,27 +67,34 @@ func (s *Server) RegisteredTasks() []string {
 	return taskNames
 }
 
-// Start starts up all of the registered tasks.
+// Start starts up all of the registered tasks and response handling
 func (s *Server) Start() error {
-	for _, task := range s.tasks {
-		if err := task.start(); err != nil {
+	if err := s.tracker.Start(); err != nil {
+		return err
+	}
+
+	for _, t := range s.tasks {
+		if err := t.start(); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// Stop stops all of the registered tasks.
+// Stop stops all of the registered tasks and response handling. Blocks until complete.
 func (s *Server) Stop() {
-	var wg sync.WaitGroup
-	for _, task := range s.tasks {
-		wg.Add(1)
-		go func(t *Task) {
-			defer wg.Done()
+	// Stop all actively handled tasks
+	var taskWG sync.WaitGroup
+	for _, t := range s.tasks {
+		taskWG.Add(1)
+		go func(t *task) {
+			defer taskWG.Done()
 			t.stop()
-		}(task)
+		}(t)
 	}
-	wg.Wait()
+	taskWG.Wait()
+
+	s.tracker.Stop()
 	return
 }
 
@@ -80,7 +103,7 @@ func (s *Server) Stop() {
 // set.
 func (s *Server) StopOnSignal(signals ...os.Signal) {
 	if len(signals) == 0 {
-		signals = []os.Signal{syscall.SIGINT, syscall.SIGTERM}
+		signals = []os.Signal{os.Interrupt, os.Kill, syscall.SIGTERM}
 	}
 
 	sigChan := make(chan os.Signal)
@@ -88,7 +111,7 @@ func (s *Server) StopOnSignal(signals ...os.Signal) {
 	sig := <-sigChan
 	log.WithFields(log.Fields{
 		"signal": sig,
-	}).Info("signal recieved, stopping")
+	}).Info("signal received, stopping")
 
 	s.Stop()
 }

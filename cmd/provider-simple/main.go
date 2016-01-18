@@ -26,12 +26,13 @@ func main() {
 	dieOnError(config.LoadConfigFile())
 	dieOnError(config.SetupLogging())
 
-	s := &simple.Simple{}
-	server := simple.NewServer(config)
-	dieOnError(server.Register(s))
-	dieOnError(server.Start())
+	server, err := simple.NewServer(config)
+	dieOnError(err)
+	s := simple.NewSimple(config, server.Tracker())
+	s.RegisterTasks(server)
 
 	if len(server.RegisteredTasks()) != 0 {
+		dieOnError(server.Start())
 		server.StopOnSignal()
 	} else {
 		log.Warn("no registered tasks, exiting")

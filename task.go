@@ -2,178 +2,81 @@ package simple
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net"
 	"sync"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/mistifyio/acomm"
-	logx "github.com/mistifyio/mistify-logrus-ext"
 )
 
 // TaskHandler if the request handler function for a particular task. It should
 // return results or an error, but not both.
-type TaskHandler func(interface{}) (interface{}, error)
+type TaskHandler func(map[string]interface{}) (interface{}, error)
 
-// Task contains the request listener and handler for a task.
-type Task struct {
-	Name       string
-	Timeout    time.Duration
-	SocketPath string
-	Listener   *net.UnixListener
-	Handler    TaskHandler
-	waitgroup  sync.WaitGroup
-	stopChan   chan struct{}
+// task contains the request listener and handler for a task.
+type task struct {
+	name        string
+	handler     TaskHandler
+	reqTimeout  time.Duration
+	reqListener *acomm.UnixListener
+	waitgroup   sync.WaitGroup
 }
 
-// newTask creates and initializes a new Task.
-func newTask(name, socketPath string, timeout time.Duration, handler TaskHandler) *Task {
-	// TODO: Some basic validation
-	return &Task{
-		Name:       name,
-		Timeout:    timeout,
-		SocketPath: socketPath,
-		Handler:    handler,
-		stopChan:   make(chan struct{}),
+// newTask creates and initializes a new task.
+func newTask(name, socketPath string, reqTimeout time.Duration, handler TaskHandler) *task {
+	return &task{
+		name:        name,
+		handler:     handler,
+		reqTimeout:  reqTimeout,
+		reqListener: acomm.NewUnixListener(socketPath),
 	}
 }
 
-// start starts the task, listening and handling requests.
-func (t *Task) start() error {
-	if t.Listener != nil {
-		return nil
-	}
-
-	t.stopChan = make(chan struct{})
-
-	if err := t.createListener(); err != nil {
+// start starts the task handler.
+func (t *task) start() error {
+	if err := t.reqListener.Start(); err != nil {
 		return err
 	}
 
-	go t.listen()
+	go t.handleConns()
 	return nil
 }
 
-// stop shuts down and removes the listener after all requests have been handled.
-func (t *Task) stop() {
-	// check if listener exists. False->return
-	if t.Listener == nil {
-		return
-	}
+// stop shuts down the task handler.
+func (t *task) stop() {
+	// Stop request listener and handle all open connections
+	t.reqListener.Stop()
 
-	// wait until requests have been serviced
-	close(t.stopChan)
+	// Wait for all actively handled requests
 	t.waitgroup.Wait()
-
-	t.Listener = nil
-	return
 }
 
-// createListener creates a unix socket listener.
-func (t *Task) createListener() error {
-	addr, err := net.ResolveUnixAddr("unix", t.SocketPath)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"task":       t.Name,
-			"error":      err,
-			"socketPath": t.SocketPath,
-		}).Error("failed to resolve response listener unix addr")
-		return err
-	}
-
-	listener, err := net.ListenUnix("unix", addr)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"task":       t.Name,
-			"error":      err,
-			"socketPath": t.SocketPath,
-		}).Error("failed to create response listener")
-		return err
-	}
-	t.Listener = listener
-
-	return nil
-}
-
-func (t *Task) listen() {
-	// TODO: Defer server wg done?
-	defer logx.LogReturnedErr(t.Listener.Close, log.Fields{
-		"task":       t.Name,
-		"socketPath": t.SocketPath,
-	}, "failed to close listener")
-
+func (t *task) handleConns() {
 	for {
-		select {
-		case <-t.stopChan:
-			log.WithFields(log.Fields{
-				"task": t.Name,
-			}).Info("stop listening")
+		conn := t.reqListener.NextConn()
+		if conn == nil {
 			return
-		default:
 		}
-
-		if err := t.Listener.SetDeadline(time.Now().Add(t.Timeout)); err != nil {
-			log.WithFields(log.Fields{
-				"task":  t.Name,
-				"error": err,
-			}).Error("failed to set listener deadline")
-		}
-
-		conn, err := t.Listener.Accept()
-		if nil != err {
-			// Don't worry about a timeout
-			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
-				continue
-			}
-
-			log.WithFields(log.Fields{
-				"task":  t.Name,
-				"error": err,
-			}).Error("failed to accept new connection")
-			continue
-		}
-
-		t.waitgroup.Add(1)
 		go t.acceptRequest(conn)
 	}
 }
 
-func (t *Task) acceptRequest(conn net.Conn) {
-	defer t.waitgroup.Done()
-	defer logx.LogReturnedErr(conn.Close,
-		log.Fields{"task": t.Name},
-		"failed to close unix connection",
-	)
-	if err := conn.SetDeadline(time.Now().Add(t.Timeout)); err != nil {
-		log.WithFields(log.Fields{
-			"task":  t.Name,
-			"error": err,
-		}).Error("failed to set connection deadline")
-	}
-
-	data, err := ioutil.ReadAll(conn)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"task":  t.Name,
-			"error": err,
-		}).Error("failed to read request data")
-		return
-	}
+func (t *task) acceptRequest(conn net.Conn) {
+	defer t.reqListener.DoneConn(conn)
+	var respErr error
 
 	req := &acomm.Request{}
-	if err := json.Unmarshal(data, req); err != nil {
-		log.WithFields(log.Fields{
-			"task":  t.Name,
-			"error": err,
-			"data":  string(data),
-		}).Error("failed to unmarshal request data")
-		return
+	if err := acomm.UnmarshalConnData(conn, req); err != nil {
+		respErr = err
+	}
+
+	if err := req.Validate(); err != nil {
+		respErr = err
 	}
 
 	// Respond to the initial request
-	// TODO: What should the result be? Does it matter as long as err is nil?
-	resp, err := acomm.NewResponse(req, struct{}{}, nil)
+	resp, err := acomm.NewResponse(req, nil, respErr)
 	respJSON, err := json.Marshal(resp)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -193,6 +96,9 @@ func (t *Task) acceptRequest(conn net.Conn) {
 		return
 	}
 
+	if respErr != nil {
+		return
+	}
 	// Actually perform the task
 	t.waitgroup.Add(1)
 	go t.handleRequest(req)
@@ -200,18 +106,18 @@ func (t *Task) acceptRequest(conn net.Conn) {
 
 // handleRequest runs the task-specific handler and sends the results to the
 // request's response hook.
-func (t *Task) handleRequest(req *acomm.Request) {
+func (t *task) handleRequest(req *acomm.Request) {
 	defer t.waitgroup.Done()
 
 	// Run the task-specific request handler
-	result, taskErr := t.Handler(req.Args)
+	result, taskErr := t.handler(req.Args.(map[string]interface{}))
 
 	// Note: The acomm calls log the error already, but we want to have a log
 	// of the request and response data as well.
 	resp, err := acomm.NewResponse(req, result, taskErr)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"task":       t.Name,
+			"task":       t.name,
 			"req":        req,
 			"taskResult": result,
 			"taskErr":    taskErr,
@@ -222,7 +128,7 @@ func (t *Task) handleRequest(req *acomm.Request) {
 
 	if err := req.Respond(resp); err != nil {
 		log.WithFields(log.Fields{
-			"task":       t.Name,
+			"task":       t.name,
 			"req":        req,
 			"taskResult": result,
 			"taskErr":    taskErr,

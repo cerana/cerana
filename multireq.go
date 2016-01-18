@@ -25,20 +25,19 @@ func NewMultiRequest(tracker *acomm.Tracker) *MultiRequest {
 
 // AddRequest adds a request to the MultiRequest. Sending the request is still
 // the responsibility of the caller.
-func (m *MultiRequest) AddRequest(name string, req *acomm.Request) {
+func (m *MultiRequest) AddRequest(name string, req *acomm.Request) error {
 	m.idsToNames[req.ID] = name
 
 	req.SuccessHandler = m.responseHandler
 	req.ErrorHandler = m.responseHandler
 
 	m.respWG.Add(1)
-	m.tracker.TrackRequest(req)
+	return m.tracker.TrackRequest(req)
 }
 
-// RemoveRequest removes a request from the MultiRequest.
-func (m *MultiRequest) RemoveRequest(reqID string) {
-	req := m.tracker.RetrieveRequest(reqID)
-	if req != nil {
+// RemoveRequest removes a request from the MultiRequest. Useful if the send fails.
+func (m *MultiRequest) RemoveRequest(req *acomm.Request) {
+	if m.tracker.RemoveRequest(req) {
 		m.respWG.Done()
 	}
 }
