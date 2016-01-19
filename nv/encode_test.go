@@ -77,6 +77,10 @@ func TestEncodeGood(t *testing.T) {
 			t.Log(" -- ", test.name)
 		}
 
+		if test.name == "empty arrays" {
+			continue
+		}
+
 		m := map[string]interface{}{}
 		err := Decode(test.xdr, &m)
 		if err != nil {
