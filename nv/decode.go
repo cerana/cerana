@@ -136,148 +136,148 @@ func decodeList(r io.ReadSeeker, target reflect.Value) error {
 				targetField.Set(val)
 			}
 		case _BOOLEAN_VALUE:
-			v, err = dec.DecodeBool()
+			v, err = dec.decodeBool()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.SetBool(v.(bool))
 			}
 		case _BYTE:
-			v, err = dec.DecodeByte()
+			v, err = dec.decodeByte()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.SetUint(uint64(v.(uint8)))
 			}
 		case _INT8:
-			v, err = dec.DecodeInt8()
+			v, err = dec.decodeInt8()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.SetInt(int64(v.(int8)))
 			}
 		case _INT16:
-			v, err = dec.DecodeInt16()
+			v, err = dec.decodeInt16()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.SetInt(int64(v.(int16)))
 			}
 		case _INT32:
-			v, err = dec.DecodeInt32()
+			v, err = dec.decodeInt32()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.SetInt(int64(v.(int32)))
 			}
 		case _INT64:
-			v, err = dec.DecodeInt64()
+			v, err = dec.decodeInt64()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.SetInt(v.(int64))
 			}
 		case _UINT8:
-			v, err = dec.DecodeUint8()
+			v, err = dec.decodeUint8()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.SetUint(uint64(v.(uint8)))
 			}
 		case _UINT16:
-			v, err = dec.DecodeUint16()
+			v, err = dec.decodeUint16()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.SetUint(uint64(v.(uint16)))
 			}
 		case _UINT32:
-			v, err = dec.DecodeUint32()
+			v, err = dec.decodeUint32()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.SetUint(uint64(v.(uint32)))
 			}
 		case _UINT64:
-			v, err = dec.DecodeUint64()
+			v, err = dec.decodeUint64()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.SetUint(uint64(v.(uint64)))
 			}
 		case _HRTIME:
-			v, err = dec.DecodeHRTime()
+			v, err = dec.decodeHRTime()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.SetInt(int64(v.(time.Duration)))
 			}
 		case _DOUBLE:
-			v, err = dec.DecodeFloat64()
+			v, err = dec.decodeFloat64()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.SetFloat(v.(float64))
 			}
 		case _BOOLEAN_ARRAY:
-			v, err = dec.DecodeBoolArray()
+			v, err = dec.decodeBoolArray()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.Set(val)
 			}
 		case _BYTE_ARRAY:
 			if _, err = r.Seek(-4, 1); err == nil {
-				v, err = dec.DecodeByteArray()
+				v, err = dec.decodeByteArray()
 				val = reflect.ValueOf(v)
 				fieldSetFunc = func() {
 					targetField.SetBytes(v.([]byte))
 				}
 			}
 		case _INT8_ARRAY:
-			v, err = dec.DecodeInt8Array()
+			v, err = dec.decodeInt8Array()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.Set(val)
 			}
 		case _INT16_ARRAY:
-			v, err = dec.DecodeInt16Array()
+			v, err = dec.decodeInt16Array()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.Set(val)
 			}
 		case _INT32_ARRAY:
-			v, err = dec.DecodeInt32Array()
+			v, err = dec.decodeInt32Array()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.Set(val)
 			}
 		case _INT64_ARRAY:
-			v, err = dec.DecodeInt64Array()
+			v, err = dec.decodeInt64Array()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.Set(val)
 			}
 		case _UINT8_ARRAY:
-			v, err = dec.DecodeUint8Array()
+			v, err = dec.decodeUint8Array()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.Set(val)
 			}
 		case _UINT16_ARRAY:
-			v, err = dec.DecodeUint16Array()
+			v, err = dec.decodeUint16Array()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.Set(val)
 			}
 		case _UINT32_ARRAY:
-			v, err = dec.DecodeUint32Array()
+			v, err = dec.decodeUint32Array()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.Set(val)
 			}
 		case _UINT64_ARRAY:
-			v, err = dec.DecodeUint64Array()
+			v, err = dec.decodeUint64Array()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.Set(val)
 			}
 		case _STRING:
-			v, err = dec.DecodeString()
+			v, err = dec.decodeString()
 			val = reflect.ValueOf(v)
 			fieldSetFunc = func() {
 				targetField.SetString(v.(string))
 			}
 		case _STRING_ARRAY:
 			if _, err = r.Seek(-4, 1); err == nil {
-				v, err = dec.DecodeStringArray()
+				v, err = dec.decodeStringArray()
 				val = reflect.ValueOf(v)
 				fieldSetFunc = func() {
 					targetField.Set(val)
