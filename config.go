@@ -53,6 +53,11 @@ func (c *Config) ServiceName() string {
 	return c.viper.GetString("service_name")
 }
 
+// ExternalPort returns the port to listen on for external requests.
+func (c *Config) ExternalPort() int {
+	return c.viper.GetInt("external_port")
+}
+
 // Validate returns whether the config is valid, containing necessary values.
 func (c *Config) Validate() error {
 	if c.SocketDir() == "" {
@@ -65,6 +70,14 @@ func (c *Config) Validate() error {
 
 	if c.ServiceName() == "" {
 		err := errors.New("missing service_name")
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error("invalid config")
+		return err
+	}
+
+	if c.ExternalPort() == 0 {
+		err := errors.New("missing external_port")
 		log.WithFields(log.Fields{
 			"error": err,
 		}).Error("invalid config")
