@@ -63,7 +63,7 @@ func assertEqual(t *testing.T, name, typ string, payload []byte, put interface{}
 	if err != nil {
 		t.Fatalf("%s: failed to encode as %s: error:%s\n", name, typ, err)
 	}
-	if !reflect.DeepEqual(encoded, payload) {
+	if !reflect.DeepEqual(payload, encoded) {
 		want, got := diff(payload, encoded)
 		t.Fatalf("%s: %s: encoded does not match payload\nwant:|%s|\n got:|%s|\n",
 			name, typ, want, got)

@@ -50,19 +50,32 @@ var (
 	}
 )
 
+func validValue(v reflect.Value) error {
+	if !v.IsValid() {
+		return fmt.Errorf("type '%s' is invalid", v.Kind().String())
+	}
+
+	return nil
+}
+
+func encodePreamble(w io.Writer, codec codec, order endianness) error {
+	return binary.Write(w, binary.BigEndian, encoding{Encoding: codec, Endianess: order})
+}
+
 func Encode(i interface{}) ([]byte, error) {
 	if i == nil {
 		return nil, errors.New("can not encode a nil pointer")
 	}
 
 	v := reflect.ValueOf(i)
-	if !v.IsValid() {
-		return nil, fmt.Errorf("type '%s' is invalid", v.Kind().String())
+
+	if err := validValue(v); err != nil {
+		return nil, err
 	}
 
 	var err error
 	buff := bytes.NewBuffer(nil)
-	if err = binary.Write(buff, binary.BigEndian, encoding{Encoding: 1, Endianess: 1}); err != nil {
+	if err = encodePreamble(buff, xdrCodec, littleEndian); err != nil {
 		return nil, err
 	}
 
@@ -73,15 +86,23 @@ func Encode(i interface{}) ([]byte, error) {
 	return buff.Bytes(), nil
 }
 
+func encHeader(w io.Writer, h header) error {
+	return binary.Write(w, binary.BigEndian, h)
+}
+
+func encFooter(w io.Writer) error {
+	return binary.Write(w, binary.BigEndian, uint64(0))
+}
+
 func encodeList(w io.Writer, v reflect.Value) error {
-	if err := binary.Write(w, binary.BigEndian, header{Flag: _UNIQUE_NAME}); err != nil {
+	if err := encHeader(w, header{Flag: _UNIQUE_NAME}); err != nil {
 		return err
 	}
 
 	v = deref(v)
 	switch v.Kind() {
 	case reflect.Struct:
-		if err := encodeStruct(v, w); err != nil {
+		if err := encodeStruct(w, v); err != nil {
 			return err
 		}
 	case reflect.Map:
@@ -101,10 +122,10 @@ func encodeList(w io.Writer, v reflect.Value) error {
 		return fmt.Errorf("invalid type '%s', must be a struct", v.Kind().String())
 	}
 
-	return binary.Write(w, binary.BigEndian, uint64(0))
+	return encFooter(w)
 }
 
-func encodeStruct(v reflect.Value, w io.Writer) error {
+func encodeStruct(w io.Writer, v reflect.Value) error {
 	var err error
 
 	forEachField(v, func(i int, field reflect.Value) bool {
@@ -172,14 +193,17 @@ func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) er
 		return fmt.Errorf("unknown type: %v", field.Kind())
 	}
 
+	return xdrEncode(w, name, dtype, field.Interface())
+}
+
+func xdrEncode(w io.Writer, name string, dtype dataType, value interface{}) error {
 	p := pair{
 		Name:      name,
 		NElements: 1,
 		Type:      dtype,
-		data:      field.Interface(),
+		data:      value,
 	}
 
-	value := p.data
 	vbuf := &bytes.Buffer{}
 	switch p.Type {
 	case _BOOLEAN:
