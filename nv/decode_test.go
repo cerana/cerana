@@ -10,15 +10,26 @@ import (
 )
 
 func check_array(t *testing.T, field string, value interface{}, l int, fn func([]string)) {
+	empty := strings.HasPrefix(field, "empty ")
+
 	expecteds := strings.Split(field, ";")
-	if len(expecteds) < 2 {
-		t.Fatal("field does not seem to be a list of expected values:", field)
+	if !empty {
+		if len(expecteds) < 2 {
+			t.Fatal("field does not seem to be a list of expected values:", field)
+		}
+		if len(expecteds) != l {
+			t.Fatal("length mismatch between expected and decoded arrays, expected:",
+				len(expecteds), "decoded:", l)
+		}
+		fn(expecteds)
+	} else {
+		if len(expecteds) != 1 {
+			t.Fatal("field seems to be a list of expected values:", field)
+		}
+		if l != 0 {
+			t.Fatal("length mismatch between expected and decoded arrays, expected: 0 decoded:", l)
+		}
 	}
-	if len(expecteds) != l {
-		t.Fatal("length mismatch between expected and decoded arrays, expected:",
-			len(expecteds), "decoded:", l)
-	}
-	fn(expecteds)
 }
 
 func check_boolean(t *testing.T, field string, value interface{}) {
