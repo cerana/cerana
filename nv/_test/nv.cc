@@ -469,8 +469,17 @@ int main() {
 		fnvlist_add_boolean_value(ll, "false", B_FALSE);
 		fnvlist_add_boolean_value(ll, "true", B_TRUE);
 		fnvlist_add_nvlist(l, "2", ll);
+		fnvlist_free(ll);
+
+		ll = fnvlist_alloc();
+		fnvlist_add_uint8(ll, "0", 0);
+		fnvlist_add_uint8(ll, "1", 1);
+		fnvlist_add_boolean_value(ll, "false", B_FALSE);
+		fnvlist_add_boolean_value(ll, "true", B_TRUE);
+		fnvlist_add_nvlist(l, "4", ll);
 		pack(l, "nvlist");
 		fnvlist_free(ll);
+
 		fnvlist_free(l);
 	}
 	{
