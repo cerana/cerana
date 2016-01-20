@@ -33,7 +33,7 @@ func snapshot(zpool string, snapNames []string, props map[string]string) (map[st
 	if errno, ok := err.(syscall.Errno); ok && errno == syscall.EEXIST {
 		// Try to get errlist info, but ignore any errors in the attempt
 		errs := map[string]int32{}
-		if nv.Decode(bytes.NewReader(out), &errs) == nil {
+		if nv.NewXDRDecoder(bytes.NewReader(out)).Decode(&errs) == nil {
 			errlist = make(map[string]syscall.Errno, len(errs))
 			for snap, errno := range errs {
 				errlist[snap] = syscall.Errno(errno)

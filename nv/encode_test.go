@@ -83,7 +83,7 @@ func TestEncodeGood(t *testing.T) {
 		}
 
 		m := map[string]interface{}{}
-		err := Decode(bytes.NewReader(test.xdr), &m)
+		err := NewXDRDecoder(bytes.NewReader(test.xdr)).Decode(&m)
 		if err != nil {
 			t.Fatal(test.name, "failed to decode as map", err)
 		}
@@ -92,7 +92,7 @@ func TestEncodeGood(t *testing.T) {
 		}
 
 		s := test.ptr()
-		err = Decode(bytes.NewReader(test.xdr), s)
+		err = NewXDRDecoder(bytes.NewReader(test.xdr)).Decode(s)
 		if err != nil {
 			t.Fatal(test.name, "failed to decode as struct:", err)
 		}

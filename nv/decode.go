@@ -26,33 +26,6 @@ func decodePreamble(r io.Reader, byteOrder binary.ByteOrder) (codec, endianness,
 	return enc.Encoding, enc.Endianess, err
 }
 
-// Decode
-// Note: care should be taken when decoding into a `map[string]interface{}` as
-// bytes/uint8s (and their array forms) can not be distinguished and will be
-// treated as uint8/[]uint8.
-func Decode(r io.ReadSeeker, target interface{}) error {
-	// Validate data encoding
-	codec, endianness, err := decodePreamble(r, binary.BigEndian)
-	if err != nil {
-		return err
-	} else if codec != xdrCodec {
-		return fmt.Errorf("invalid encoding: %v", codec)
-	} else if endianness != littleEndian {
-		return fmt.Errorf("invalid endianess: %v", endianness)
-	}
-
-	// Validate target
-	targetV := reflect.ValueOf(target)
-	if targetV.Kind() != reflect.Ptr {
-		return fmt.Errorf("cannot decode into non-pointer: %v", reflect.TypeOf(targetV).String())
-	}
-	if targetV.IsNil() {
-		return fmt.Errorf("cannot decode into nil")
-	}
-
-	return decodeList(r, reflect.Indirect(targetV))
-}
-
 // fieldSetFunc is used to set the value if the target is a field within a
 // struct
 type fieldSetFunc func(reflect.Value, reflect.Value)

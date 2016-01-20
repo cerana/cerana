@@ -366,17 +366,23 @@ func assertFields(t *testing.T, name string, m map[string]interface{}) {
 	}
 }
 
-func decode(t *testing.T, name string, ptr interface{}, data []byte, fn func(io.ReadSeeker, interface{}) error) {
+type tDecoder struct {
+	r io.ReadSeeker
+	decoder
+}
+
+func decode(t *testing.T, name string, ptr interface{}, dec tDecoder) {
 	m := map[string]interface{}{}
-	err := fn(bytes.NewReader(data), &m)
-	if err != nil {
+
+	dec.r.Seek(0, 0)
+	if err := dec.Decode(&m); err != nil {
 		t.Fatal(name, "decode as map failed:", err)
 	}
 
 	assertFields(t, name, m)
 
-	err = fn(bytes.NewReader(data), ptr)
-	if err != nil {
+	dec.r.Seek(0, 0)
+	if err := dec.Decode(ptr); err != nil {
 		t.Fatal(name, "decode as struct failed:", err)
 	}
 
@@ -402,7 +408,12 @@ func TestDecodeGood(t *testing.T) {
 			continue
 		}
 
-		decode(t, test.name, test.ptr(), test.xdr, Decode)
+		r := bytes.NewReader(test.xdr)
+		dec := tDecoder{
+			r:       r,
+			decoder: NewXDRDecoder(r),
+		}
+		decode(t, test.name, test.ptr(), dec)
 	}
 }
 
@@ -415,7 +426,7 @@ func TestDecodeBad(t *testing.T) {
 		}
 
 		m := map[string]interface{}{}
-		err := Decode(bytes.NewReader(test.payload), &m)
+		err := NewXDRDecoder(bytes.NewReader(test.payload)).Decode(&m)
 		if err == nil {
 			t.Fatalf("expected an error, wanted:|%s| payload:|%v|\n",
 				test.err, test.payload)
@@ -438,7 +449,7 @@ func TestDecodeBadArgs(t *testing.T) {
 		},
 	}
 	for _, test := range bad_args {
-		err := Decode(bytes.NewReader([]byte(enc_dec_name_typ)), test.arg)
+		err := NewXDRDecoder(bytes.NewReader([]byte(enc_dec_name_typ))).Decode(test.arg)
 		if err == nil {
 			t.Fatalf("expected an error, wanted:|%s|\n", test.err)
 		}

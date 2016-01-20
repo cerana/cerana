@@ -29,7 +29,7 @@ func holds(name string) ([]string, error) {
 
 	m = map[string]interface{}{}
 
-	if err = nv.Decode(bytes.NewReader(out), &m); err != nil {
+	if err = nv.NewXDRDecoder(bytes.NewReader(out)).Decode(&m); err != nil {
 		return nil, err
 	}
 

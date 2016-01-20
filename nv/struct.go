@@ -46,7 +46,7 @@ type list map[string]interface{}
 func pretty(src []byte) (map[string]interface{}, error) {
 
 	l := list{}
-	err := Decode(bytes.NewReader(src), &l)
+	err := NewXDRDecoder(bytes.NewReader(src)).Decode(&l)
 	return l, err
 }
 

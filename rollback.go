@@ -22,7 +22,7 @@ func rollback(name string) (string, error) {
 	err = ioctl(zfs, name, encoded, out)
 	if err == nil {
 		var results map[string]string
-		if err := nv.Decode(bytes.NewReader(out), &results); err == nil {
+		if err := nv.NewXDRDecoder(bytes.NewReader(out)).Decode(&results); err == nil {
 			snapName = results["target"]
 		}
 	}
