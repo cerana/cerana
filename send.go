@@ -30,7 +30,7 @@ func send(name string, outputFD uintptr, fromSnap string, largeBlockOK, embedOK 
 	}
 
 	encoded := &bytes.Buffer{}
-	err := nv.Encode(encoded, m)
+	err := nv.NewXDREncoder(encoded).Encode(m)
 	if err != nil {
 		return err
 	}

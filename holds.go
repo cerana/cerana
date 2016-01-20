@@ -15,7 +15,7 @@ func holds(name string) ([]string, error) {
 	}
 
 	encoded := &bytes.Buffer{}
-	err := nv.Encode(encoded, m)
+	err := nv.NewXDREncoder(encoded).Encode(m)
 	if err != nil {
 		return nil, err
 	}

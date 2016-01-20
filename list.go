@@ -93,7 +93,7 @@ func list(name string, types map[string]bool, recurse bool, depth uint64) ([]map
 	}
 
 	encoded := &bytes.Buffer{}
-	err = nv.Encode(encoded, args)
+	err = nv.NewXDREncoder(encoded).Encode(args)
 	if err != nil {
 		return nil, err
 	}

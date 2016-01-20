@@ -61,7 +61,7 @@ func diff(want, got []byte) (string, string) {
 
 func assertEqual(t *testing.T, name, typ string, payload []byte, put interface{}) {
 	w := &bytes.Buffer{}
-	err := Encode(w, put)
+	err := NewXDREncoder(w).Encode(put)
 	if err != nil {
 		t.Fatalf("%s: failed to encode as %s: error:%s\n", name, typ, err)
 	}
@@ -111,7 +111,8 @@ func TestEncodeBad(t *testing.T) {
 			t.Log(" -- ", test.err)
 		}
 
-		err := Encode(ioutil.Discard, test.payload)
+		enc := NewXDREncoder(ioutil.Discard)
+		err := enc.Encode(test.payload)
 		if err == nil {
 			t.Fatalf("expected an error, wanted:|%s|, payload:|%v|\n",
 				test.err, test.payload)

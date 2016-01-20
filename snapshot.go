@@ -24,7 +24,7 @@ func snapshot(zpool string, snapNames []string, props map[string]string) (map[st
 	}
 
 	encoded := &bytes.Buffer{}
-	err := nv.Encode(encoded, m)
+	err := nv.NewXDREncoder(encoded).Encode(m)
 	if err != nil {
 		return nil, err
 	}

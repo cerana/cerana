@@ -2,7 +2,6 @@ package nv
 
 import (
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 	"reflect"
@@ -57,24 +56,6 @@ func validValue(v reflect.Value) error {
 
 func encodePreamble(w io.Writer, codec codec, order endianness) error {
 	return binary.Write(w, binary.BigEndian, encoding{Encoding: codec, Endianess: order})
-}
-
-func Encode(w io.Writer, i interface{}) error {
-	if i == nil {
-		return errors.New("can not encode a nil pointer")
-	}
-
-	v := reflect.ValueOf(i)
-
-	if err := validValue(v); err != nil {
-		return err
-	}
-
-	if err := encodePreamble(w, xdrCodec, littleEndian); err != nil {
-		return err
-	}
-
-	return encodeList(w, v)
 }
 
 func encodeList(w io.Writer, v reflect.Value) error {
