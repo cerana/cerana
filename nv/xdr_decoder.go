@@ -12,10 +12,43 @@ import (
 
 type xdrDecoder struct {
 	*xdr.Decoder
+	r    io.ReadSeeker
+	pair pair
 }
 
-func newXDRDecoder(r io.Reader) xdrDecoder {
-	return xdrDecoder{Decoder: xdr.NewDecoder(r)}
+func newXDRDecoder(r io.ReadSeeker) *xdrDecoder {
+	return &xdrDecoder{Decoder: xdr.NewDecoder(r), r: r}
+}
+
+// Decode
+// Note: care should be taken when decoding into a `map[string]interface{}` as
+// bytes/uint8s (and their array forms) can not be distinguished and will be
+// treated as uint8/[]uint8.
+func (d *xdrDecoder) Decode(target interface{}) error {
+	// Validate data encoding
+	codec, endianness, err := decodePreamble(d.r, binary.BigEndian)
+	if err != nil {
+		return err
+	} else if codec != xdrCodec {
+		return fmt.Errorf("invalid encoding: %v", codec)
+	} else if endianness != littleEndian {
+		return fmt.Errorf("invalid endianess: %v", endianness)
+	}
+
+	// Validate target
+	targetV := reflect.ValueOf(target)
+	if targetV.Kind() != reflect.Ptr {
+		return fmt.Errorf("cannot decode into non-pointer: %v", reflect.TypeOf(targetV).String())
+	}
+	if targetV.IsNil() {
+		return fmt.Errorf("cannot decode into nil")
+	}
+
+	return decodeList(d.r, reflect.Indirect(targetV))
+}
+
+func (d *xdrDecoder) header() (header, error) {
+	return decHeader(d.r)
 }
 
 func decHeader(r io.ReadSeeker) (header, error) {
@@ -24,14 +57,27 @@ func decHeader(r io.ReadSeeker) (header, error) {
 	return h, err
 }
 
+func (d *xdrDecoder) meta() (string, dataType, error) {
+	err := decMeta(d.r, &d.pair)
+	return d.pair.Name, d.pair.Type, err
+}
+
 func decMeta(r io.ReadSeeker, pair *pair) error {
 	_, err := xdr.Unmarshal(r, pair)
 	return err
 }
 
+func (d *xdrDecoder) skip() error {
+	return skip(d.r, d.pair)
+}
+
 func skip(r io.ReadSeeker, pair pair) error {
 	_, err := r.Seek(int64(pair.EncodedSize-uint32(pair.headerSize())), 1)
 	return err
+}
+
+func (d *xdrDecoder) isEnd() (bool, error) {
+	return isEnd(d.r)
 }
 
 func isEnd(r io.ReadSeeker) (bool, error) {
@@ -45,6 +91,10 @@ func isEnd(r io.ReadSeeker) (bool, error) {
 	}
 	_, err = r.Seek(-8, 1)
 	return false, err
+}
+
+func (d *xdrDecoder) value(targetType reflect.Type) (reflect.Value, fieldSetFunc, error) {
+	return decValue(d.r, d.pair, targetType)
 }
 
 func decValue(r io.ReadSeeker, pair pair, targetType reflect.Type) (reflect.Value, fieldSetFunc, error) {
