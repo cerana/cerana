@@ -116,13 +116,16 @@ func (s *Server) handleRequest(req *acomm.Request) error {
 		return errors.New("no providers available for task")
 	}
 
+	fmt.Println("req", req)
 	proxyReq, err := s.proxy.ProxyUnix(req)
+	fmt.Println("proxyReq", proxyReq)
 	if err != nil {
 		return err
 	}
 
 	// Cycle through available providers until one accepts the request
 	for _, providerSocket := range providerSockets {
+		fmt.Println("provider socket", providerSocket)
 		addr, _ := url.ParseRequestURI(fmt.Sprintf("unix://%s", providerSocket))
 		err = acomm.Send(addr, proxyReq)
 		if err == nil {
@@ -154,10 +157,11 @@ func (s *Server) getProviders(task string) ([]string, error) {
 		return nil, err
 	}
 
+	// Filter out any non-socket files
 	providerSockets := make([]string, 0, len(files))
 	for _, fi := range files {
-		if fi.Mode() == os.ModeSocket {
-			providerSockets = append(providerSockets, fi.Name())
+		if fi.Mode()&os.ModeSocket == os.ModeSocket {
+			providerSockets = append(providerSockets, filepath.Join(taskSocketDir, fi.Name()))
 		}
 	}
 
