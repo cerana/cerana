@@ -2,7 +2,6 @@ package acomm_test
 
 import (
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -39,15 +38,16 @@ func (s *TrackerTestSuite) SetupSuite() {
 func (s *TrackerTestSuite) SetupTest() {
 	var err error
 
-	s.Request, err = acomm.NewRequest(s.RespServer.URL, nil, nil, nil)
+	s.Request, err = acomm.NewRequest("foobar", s.RespServer.URL, nil, nil, nil)
 	s.Require().NoError(err, "request should be valid")
 
-	s.Tracker = acomm.NewTracker("")
+	s.Tracker, err = acomm.NewTracker("")
+	s.Require().NoError(err, "failed to create new Tracker")
 	s.Require().NotNil(s.Tracker, "failed to create new Tracker")
 }
 
 func (s *TrackerTestSuite) TearDownTest() {
-	s.NoError(s.Tracker.StopListener(0 * time.Second))
+	s.Tracker.Stop()
 }
 
 func (s *TrackerTestSuite) TearDownSuite() {
@@ -61,7 +61,7 @@ func TestTrackerTestSuite(t *testing.T) {
 func (s *TrackerTestSuite) NextResp() *acomm.Response {
 	timeout := make(chan struct{}, 1)
 	go func() {
-		time.Sleep(1 * time.Second)
+		time.Sleep(5 * time.Second)
 		timeout <- struct{}{}
 	}()
 
@@ -74,32 +74,25 @@ func (s *TrackerTestSuite) NextResp() *acomm.Response {
 }
 
 func (s *TrackerTestSuite) TestTrackRequest() {
-	s.Tracker.TrackRequest(s.Request)
-	s.Tracker.TrackRequest(s.Request)
+	if !s.NoError(s.Tracker.Start(), "should have started tracker") {
+		return
+	}
+	s.NoError(s.Tracker.TrackRequest(s.Request), "should have successfully tracked request")
+	s.Error(s.Tracker.TrackRequest(s.Request), "duplicate ID should have failed to track request")
 	s.Equal(1, s.Tracker.NumRequests(), "should have one unique request tracked")
-}
-
-func (s *TrackerTestSuite) TestRetrieveRequest() {
-	response, err := acomm.NewResponse(s.Request, struct{}{}, nil)
-	s.NoError(err, "response should be valid")
-
-	s.Nil(s.Tracker.RetrieveRequest(response.ID))
-	s.Tracker.TrackRequest(s.Request)
-	s.Equal(s.Request, s.Tracker.RetrieveRequest(response.ID), "should retrieve corresponding request")
-	s.Equal(0, s.Tracker.NumRequests(), "should have removed tracked request")
+	s.True(s.Tracker.RemoveRequest(s.Request))
 }
 
 func (s *TrackerTestSuite) TestStartAndStopListener() {
-	stopTimeout := 2 * time.Second
+	s.Tracker.Stop()
+	s.NoError(s.Tracker.Start(), "starting an unstarted should not error")
+	s.NoError(s.Tracker.Start(), "starting an started should not error")
 
-	s.NoError(s.Tracker.StopListener(stopTimeout), "stopping an unstarted should not error")
-	s.NoError(s.Tracker.StartListener(), "starting an unstarted should not error")
-	s.NoError(s.Tracker.StartListener(), "starting an started should not error")
+	s.NoError(s.Tracker.TrackRequest(s.Request), "should have successfully tracked request")
 
-	s.Tracker.TrackRequest(s.Request)
+	go s.Tracker.RemoveRequest(s.Request)
 
-	s.Equal(errors.New("timeout"), s.Tracker.StopListener(stopTimeout), "stopping a started with requests should error with timeout")
-	s.NoError(s.Tracker.StopListener(stopTimeout), "stopping a stopped should not error")
+	s.Tracker.Stop()
 }
 
 func (s *TrackerTestSuite) TestProxyUnix() {
@@ -107,7 +100,7 @@ func (s *TrackerTestSuite) TestProxyUnix() {
 	s.Error(err, "should fail to proxy when tracker is not listening")
 	s.Nil(unixReq, "should not return a request")
 
-	if !s.NoError(s.Tracker.StartListener(), "listner should start") {
+	if !s.NoError(s.Tracker.Start(), "listner should start") {
 		return
 	}
 
@@ -117,21 +110,23 @@ func (s *TrackerTestSuite) TestProxyUnix() {
 	s.Equal(s.Request.ID, unixReq.ID, "new request should share ID with original")
 	s.Equal("unix", unixReq.ResponseHook.Scheme, "new request should have a unix response hook")
 	s.Equal(1, s.Tracker.NumRequests(), "should have tracked the new request")
-
 	resp, err := acomm.NewResponse(unixReq, struct{}{}, nil)
 	if !s.NoError(err, "new response should not error") {
 		return
 	}
-	if !s.NoError(resp.Send(unixReq.ResponseHook), "response send should not error") {
+	if !s.NoError(acomm.Send(unixReq.ResponseHook, resp), "response send should not error") {
 		return
 	}
-	time.Sleep(100 * time.Millisecond)
+
 	lastResp := s.NextResp()
+	if !s.NotNil(lastResp, "response should have been proxied to original http response hook") {
+		return
+	}
 	s.Equal(resp.ID, lastResp.ID, "response should have been proxied to original http response hook")
 	s.Equal(0, s.Tracker.NumRequests(), "should have removed the request from tracking")
 
 	// Should not proxy a request already using unix response hook
-	origUnixReq, err := acomm.NewRequest("unix://foo", struct{}{}, nil, nil)
+	origUnixReq, err := acomm.NewRequest("foobar", "unix://foo", struct{}{}, nil, nil)
 	if !s.NoError(err, "new request shoudl not error") {
 		return
 	}

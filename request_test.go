@@ -24,6 +24,7 @@ func TestRequestTestSuite(t *testing.T) {
 }
 
 func (s *RequestTestSuite) TestNewRequest() {
+	task := "foobar"
 	args := map[string]string{
 		"foo": "bar",
 	}
@@ -32,26 +33,28 @@ func (s *RequestTestSuite) TestNewRequest() {
 
 	tests := []struct {
 		description  string
+		task         string
 		responseHook string
 		args         interface{}
 		sh           acomm.ResponseHandler
 		eh           acomm.ResponseHandler
 		expectedErr  bool
 	}{
-		{"missing response hook", "", args, sh, eh, true},
-		{"invalid response hook", "asdf", args, sh, eh, true},
-		{"missing args", "unix://asdf", nil, sh, eh, false},
-		{"unix hook and args", "unix://asdf", args, sh, eh, false},
-		{"http hook and args", "http://asdf", args, sh, eh, false},
-		{"https hook and args", "https://asdf", args, sh, eh, false},
-		{"unix hook, args, no handlers", "unix://asdf", args, nil, nil, false},
-		{"unix hook, args, sh handler", "unix://asdf", args, sh, nil, false},
-		{"unix hook, args, eh handler", "unix://asdf", args, nil, eh, false},
+		{"missing response hook", task, "", args, sh, eh, true},
+		{"invalid response hook", task, "asdf", args, sh, eh, true},
+		{"missing args", task, "unix://asdf", nil, sh, eh, false},
+		{"unix hook and args", task, "unix://asdf", args, sh, eh, false},
+		{"http hook and args", task, "http://asdf", args, sh, eh, false},
+		{"https hook and args", task, "https://asdf", args, sh, eh, false},
+		{"unix hook, args, no handlers", task, "unix://asdf", args, nil, nil, false},
+		{"unix hook, args, sh handler", task, "unix://asdf", args, sh, nil, false},
+		{"unix hook, args, eh handler", task, "unix://asdf", args, nil, eh, false},
+		{"missing task ", "", "unix://asdf", args, sh, eh, true},
 	}
 
 	for _, test := range tests {
 		msg := testMsgFunc(test.description)
-		req, err := acomm.NewRequest(test.responseHook, test.args, test.sh, test.eh)
+		req, err := acomm.NewRequest(test.task, test.responseHook, test.args, test.sh, test.eh)
 		if test.expectedErr {
 			s.Error(err, msg("should have failed"))
 			s.Nil(req, msg("should not have returned a request"))
@@ -64,6 +67,7 @@ func (s *RequestTestSuite) TestNewRequest() {
 				continue
 			}
 			s.NotEmpty(req.ID, msg("should have set an ID"))
+			s.Equal(test.task, req.Task, msg("should have set the task"))
 			s.Equal(test.responseHook, req.ResponseHook.String(), msg("should have set the response hook"))
 			s.Equal(test.args, req.Args, msg("should have set the arguments"))
 			s.Equal(reflect.ValueOf(test.sh).Pointer(), reflect.ValueOf(req.SuccessHandler).Pointer(), msg("should have set success handler"))
@@ -95,7 +99,7 @@ func (s *RequestTestSuite) TestHandleResponse() {
 		handled["success"] = 0
 		handled["error"] = 0
 		msg := testMsgFunc(test.description)
-		req, err := acomm.NewRequest("unix://foo", struct{}{}, test.sh, test.eh)
+		req, err := acomm.NewRequest("foobar", "unix://foo", struct{}{}, test.sh, test.eh)
 		if !s.NoError(err, msg("should not fail to build req")) {
 			continue
 		}

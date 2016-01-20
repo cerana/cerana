@@ -53,7 +53,7 @@ func (s *ResponseTestSuite) TestNewResponse() {
 		"foo": "bar",
 	}
 
-	request, _ := acomm.NewRequest("unix://foo", nil, nil, nil)
+	request, _ := acomm.NewRequest("foobar", "unix://foo", nil, nil, nil)
 	respErr := errors.New("foobar")
 
 	tests := []struct {
@@ -64,7 +64,7 @@ func (s *ResponseTestSuite) TestNewResponse() {
 		expectedErr bool
 	}{
 		{"missing request", nil, result, nil, true},
-		{"missing result and error", request, nil, nil, true},
+		{"missing result and error", request, nil, nil, false},
 		{"result and error", request, result, respErr, true},
 		{"result only", request, result, nil, false},
 		{"error only", request, nil, respErr, false},
@@ -149,7 +149,7 @@ func (s *ResponseTestSuite) TestSend() {
 	for _, test := range tests {
 		msg := testMsgFunc(test.responseHook)
 		u, _ := url.ParseRequestURI(test.responseHook)
-		err := response.Send(u)
+		err := acomm.Send(u, response)
 		resp := s.NextResp()
 		if test.expectedErr {
 			s.Error(err, msg("send should fail"))
