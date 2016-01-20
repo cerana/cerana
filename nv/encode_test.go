@@ -3,6 +3,7 @@ package nv
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"reflect"
 	"strings"
 	"testing"
@@ -59,10 +60,12 @@ func diff(want, got []byte) (string, string) {
 }
 
 func assertEqual(t *testing.T, name, typ string, payload []byte, put interface{}) {
-	encoded, err := Encode(put)
+	w := &bytes.Buffer{}
+	err := Encode(w, put)
 	if err != nil {
 		t.Fatalf("%s: failed to encode as %s: error:%s\n", name, typ, err)
 	}
+	encoded := w.Bytes()
 	if !reflect.DeepEqual(payload, encoded) {
 		want, got := diff(payload, encoded)
 		t.Fatalf("%s: %s: encoded does not match payload\nwant:|%s|\n got:|%s|\n",
@@ -108,7 +111,7 @@ func TestEncodeBad(t *testing.T) {
 			t.Log(" -- ", test.err)
 		}
 
-		_, err := Encode(test.payload)
+		err := Encode(ioutil.Discard, test.payload)
 		if err == nil {
 			t.Fatalf("expected an error, wanted:|%s|, payload:|%v|\n",
 				test.err, test.payload)

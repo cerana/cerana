@@ -16,14 +16,15 @@ func rename(name, newName string, recursive bool) (string, error) {
 		},
 	}
 
-	encoded, err := nv.Encode(m)
+	encoded := &bytes.Buffer{}
+	err := nv.Encode(encoded, m)
 	if err != nil {
 		return "", err
 	}
 
 	var failedName string
 	out := make([]byte, 1024)
-	err = ioctl(zfs, name, encoded, out)
+	err = ioctl(zfs, name, encoded.Bytes(), out)
 	if err != nil && recursive {
 		_ = nv.NewXDRDecoder(bytes.NewReader(out)).Decode(&failedName)
 	}

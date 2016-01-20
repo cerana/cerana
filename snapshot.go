@@ -22,14 +22,16 @@ func snapshot(zpool string, snapNames []string, props map[string]string) (map[st
 			"props": props,
 		},
 	}
-	encoded, err := nv.Encode(m)
+
+	encoded := &bytes.Buffer{}
+	err := nv.Encode(encoded, m)
 	if err != nil {
 		return nil, err
 	}
 
 	var errlist map[string]syscall.Errno
 	out := make([]byte, 1024)
-	err = ioctl(zfs, zpool, encoded, out)
+	err = ioctl(zfs, zpool, encoded.Bytes(), out)
 	if errno, ok := err.(syscall.Errno); ok && errno == syscall.EEXIST {
 		// Try to get errlist info, but ignore any errors in the attempt
 		errs := map[string]int32{}

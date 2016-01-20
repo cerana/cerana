@@ -1,6 +1,10 @@
 package main
 
-import "github.com/mistifyio/gozfs/nv"
+import (
+	"bytes"
+
+	"github.com/mistifyio/gozfs/nv"
+)
 
 func destroy(name string, deferFlag bool) error {
 	m := map[string]interface{}{
@@ -9,10 +13,11 @@ func destroy(name string, deferFlag bool) error {
 		"defer":   deferFlag,
 	}
 
-	encoded, err := nv.Encode(m)
+	encoded := &bytes.Buffer{}
+	err := nv.Encode(encoded, m)
 	if err != nil {
 		return err
 	}
 
-	return ioctl(zfs, name, encoded, nil)
+	return ioctl(zfs, name, encoded.Bytes(), nil)
 }

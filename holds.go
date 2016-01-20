@@ -14,7 +14,8 @@ func holds(name string) ([]string, error) {
 		"version": uint64(0),
 	}
 
-	encoded, err := nv.Encode(m)
+	encoded := &bytes.Buffer{}
+	err := nv.Encode(encoded, m)
 	if err != nil {
 		return nil, err
 	}
@@ -22,7 +23,7 @@ func holds(name string) ([]string, error) {
 	out := make([]byte, 1024)
 	copy(out, emptyList)
 
-	err = ioctl(zfs, name, encoded, out)
+	err = ioctl(zfs, name, encoded.Bytes(), out)
 	if err != nil {
 		return nil, err
 	}

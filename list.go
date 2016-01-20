@@ -92,12 +92,13 @@ func list(name string, types map[string]bool, recurse bool, depth uint64) ([]map
 		"version": uint64(0),
 	}
 
-	enc, err := nv.Encode(args)
+	encoded := &bytes.Buffer{}
+	err = nv.Encode(encoded, args)
 	if err != nil {
 		return nil, err
 	}
 
-	err = ioctl(zfs, name, enc, nil)
+	err = ioctl(zfs, name, encoded.Bytes(), nil)
 	if err != nil {
 		return nil, err
 	}

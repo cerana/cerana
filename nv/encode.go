@@ -62,28 +62,22 @@ func encodePreamble(w io.Writer, codec codec, order endianness) error {
 	return binary.Write(w, binary.BigEndian, encoding{Encoding: codec, Endianess: order})
 }
 
-func Encode(i interface{}) ([]byte, error) {
+func Encode(w io.Writer, i interface{}) error {
 	if i == nil {
-		return nil, errors.New("can not encode a nil pointer")
+		return errors.New("can not encode a nil pointer")
 	}
 
 	v := reflect.ValueOf(i)
 
 	if err := validValue(v); err != nil {
-		return nil, err
+		return err
 	}
 
-	var err error
-	buff := bytes.NewBuffer(nil)
-	if err = encodePreamble(buff, xdrCodec, littleEndian); err != nil {
-		return nil, err
+	if err := encodePreamble(w, xdrCodec, littleEndian); err != nil {
+		return err
 	}
 
-	if err = encodeList(buff, v); err != nil {
-		return nil, err
-	}
-
-	return buff.Bytes(), nil
+	return encodeList(w, v)
 }
 
 func encHeader(w io.Writer, h header) error {
