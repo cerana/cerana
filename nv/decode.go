@@ -282,15 +282,14 @@ func decodeList(r io.ReadSeeker, target reflect.Value) error {
 		return fmt.Errorf("unexpected Flag: %v", h.Flag)
 	}
 
-	// Make sure the target is not a pointer. If it is, initilize and
-	// dereference.
+	// If the target is a pointer, initialize and dereference.
 	if target.Kind() == reflect.Ptr {
 		target.Set(reflect.New(target.Type().Elem()))
 		target = reflect.Indirect(target)
 	}
 
-	// Maps and structs have slightly different handling
-	// Interface types will be handled as maps
+	// maps and structs have slightly different handling
+	// interface types will be handled as maps
 	isMap := (target.Kind() == reflect.Map || target.Kind() == reflect.Interface)
 
 	if isMap {
@@ -314,14 +313,14 @@ func decodeList(r io.ReadSeeker, target reflect.Value) error {
 
 	// Start decoding data
 	for {
-		// Done when there's no more data or an error has occured
+		// Done when there's no more data or an error has occurred
 		if end, err := isEnd(r); end || err != nil {
 			return err
 		}
 
 		// Get next encoded data pair
-		// Note: This just gets the data pair metadata. The actual value data
-		// is left on the reader, to be pulled off by the decoder.
+		// Note: This just gets the data pair metadata. The actual value
+		// data is left on the reader, to be pulled off by the decoder.
 		dataPair := pair{}
 		if err := decMeta(r, &dataPair); err != nil {
 			return err
