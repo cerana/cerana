@@ -30,9 +30,9 @@ func decodePreamble(r io.Reader, byteOrder binary.ByteOrder) (codec, endianness,
 // struct
 type fieldSetFunc func(reflect.Value, reflect.Value)
 
-func decodeList(r io.ReadSeeker, target reflect.Value) error {
+func decodeList(dec decoder, target reflect.Value) error {
 	// Validate data header
-	h, err := decHeader(r)
+	h, err := dec.header()
 	if err != nil {
 		return err
 	}
@@ -75,26 +75,26 @@ func decodeList(r io.ReadSeeker, target reflect.Value) error {
 	// Start decoding data
 	for {
 		// Done when there's no more data or an error has occurred
-		if end, err := isEnd(r); end || err != nil {
+		if end, err := dec.isEnd(); end || err != nil {
 			return err
 		}
 
 		// Get next encoded data pair
 		// Note: This just gets the data pair metadata. The actual value
 		// data is left on the reader, to be pulled off by the decoder.
-		dataPair := pair{}
-		if err := decMeta(r, &dataPair); err != nil {
+		pName, pType, err := dec.meta()
+		if err != nil {
 			return err
 		}
 
 		// If not dealing with a map, look up the corresponding struct field
 		var targetField reflect.Value
 		if !isMap {
-			targetFieldIndex, ok := targetFieldIndexMap[dataPair.Name]
+			targetFieldIndex, ok := targetFieldIndexMap[pName]
 			// If there's no corresponding struct field, skip the data and move
 			// on to the next data pair
 			if !ok {
-				if err := skip(r, dataPair); err != nil {
+				if err := dec.skip(); err != nil {
 					return err
 				}
 				continue
@@ -114,17 +114,17 @@ func decodeList(r io.ReadSeeker, target reflect.Value) error {
 		// value can be used directly if target is a map, if it is a
 		// struct we need to use fieldSetter since the struct needs to
 		// be set with a non-interface type
-		value, fieldSetter, err := decValue(r, dataPair, targetType)
+		value, fieldSetter, err := dec.value(targetType)
 		if err != nil {
 			return err
 		}
 
 		// Set the value appropriately
 		if isMap {
-			name := reflect.ValueOf(dataPair.Name)
+			name := reflect.ValueOf(pName)
 			if isList {
 				value = reflect.ValueOf(map[string]interface{}{
-					"type":  dataPair.Type.String(),
+					"type":  pType.String(),
 					"value": value.Interface(),
 				})
 			}

@@ -44,7 +44,7 @@ func (d *XDRDecoder) Decode(target interface{}) error {
 		return fmt.Errorf("cannot decode into nil")
 	}
 
-	return decodeList(d.r, reflect.Indirect(targetV))
+	return decodeList(d, reflect.Indirect(targetV))
 }
 
 func (d *XDRDecoder) header() (header, error) {
@@ -94,17 +94,12 @@ func isEnd(r io.ReadSeeker) (bool, error) {
 }
 
 func (d *XDRDecoder) value(targetType reflect.Type) (reflect.Value, fieldSetFunc, error) {
-	return decValue(d.r, d.pair, targetType)
-}
-
-func decValue(r io.ReadSeeker, pair pair, targetType reflect.Type) (reflect.Value, fieldSetFunc, error) {
 	var val reflect.Value
 	var fsf fieldSetFunc
-	err := fmt.Errorf("unknown type: %v", pair.Type)
+	err := fmt.Errorf("unknown type: %v", d.pair.Type)
 
 	var v interface{}
-	dec := NewXDRDecoder(r)
-	switch pair.Type {
+	switch d.pair.Type {
 	case _BOOLEAN:
 		err = nil
 		v := Boolean(true)
@@ -113,148 +108,148 @@ func decValue(r io.ReadSeeker, pair pair, targetType reflect.Type) (reflect.Valu
 			field.Set(val)
 		}
 	case _BOOLEAN_VALUE:
-		v, err = dec.decodeBool()
+		v, err = d.decodeBool()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetBool(v.(bool))
 		}
 	case _BYTE:
-		v, err = dec.decodeByte()
+		v, err = d.decodeByte()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetUint(uint64(v.(uint8)))
 		}
 	case _INT8:
-		v, err = dec.decodeInt8()
+		v, err = d.decodeInt8()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetInt(int64(v.(int8)))
 		}
 	case _INT16:
-		v, err = dec.decodeInt16()
+		v, err = d.decodeInt16()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetInt(int64(v.(int16)))
 		}
 	case _INT32:
-		v, err = dec.decodeInt32()
+		v, err = d.decodeInt32()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetInt(int64(v.(int32)))
 		}
 	case _INT64:
-		v, err = dec.decodeInt64()
+		v, err = d.decodeInt64()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetInt(v.(int64))
 		}
 	case _UINT8:
-		v, err = dec.decodeUint8()
+		v, err = d.decodeUint8()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetUint(uint64(v.(uint8)))
 		}
 	case _UINT16:
-		v, err = dec.decodeUint16()
+		v, err = d.decodeUint16()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetUint(uint64(v.(uint16)))
 		}
 	case _UINT32:
-		v, err = dec.decodeUint32()
+		v, err = d.decodeUint32()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetUint(uint64(v.(uint32)))
 		}
 	case _UINT64:
-		v, err = dec.decodeUint64()
+		v, err = d.decodeUint64()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetUint(uint64(v.(uint64)))
 		}
 	case _HRTIME:
-		v, err = dec.decodeHRTime()
+		v, err = d.decodeHRTime()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetInt(int64(v.(time.Duration)))
 		}
 	case _DOUBLE:
-		v, err = dec.decodeFloat64()
+		v, err = d.decodeFloat64()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetFloat(v.(float64))
 		}
 	case _BOOLEAN_ARRAY:
-		v, err = dec.decodeBoolArray()
+		v, err = d.decodeBoolArray()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
 	case _BYTE_ARRAY:
-		if _, err = r.Seek(-4, 1); err == nil {
-			v, err = dec.decodeByteArray()
+		if _, err = d.r.Seek(-4, 1); err == nil {
+			v, err = d.decodeByteArray()
 			val = reflect.ValueOf(v)
 			fsf = func(field reflect.Value, val reflect.Value) {
 				field.SetBytes(v.([]byte))
 			}
 		}
 	case _INT8_ARRAY:
-		v, err = dec.decodeInt8Array()
+		v, err = d.decodeInt8Array()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
 	case _INT16_ARRAY:
-		v, err = dec.decodeInt16Array()
+		v, err = d.decodeInt16Array()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
 	case _INT32_ARRAY:
-		v, err = dec.decodeInt32Array()
+		v, err = d.decodeInt32Array()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
 	case _INT64_ARRAY:
-		v, err = dec.decodeInt64Array()
+		v, err = d.decodeInt64Array()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
 	case _UINT8_ARRAY:
-		v, err = dec.decodeUint8Array()
+		v, err = d.decodeUint8Array()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
 	case _UINT16_ARRAY:
-		v, err = dec.decodeUint16Array()
+		v, err = d.decodeUint16Array()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
 	case _UINT32_ARRAY:
-		v, err = dec.decodeUint32Array()
+		v, err = d.decodeUint32Array()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
 	case _UINT64_ARRAY:
-		v, err = dec.decodeUint64Array()
+		v, err = d.decodeUint64Array()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
 	case _STRING:
-		v, err = dec.decodeString()
+		v, err = d.decodeString()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetString(v.(string))
 		}
 	case _STRING_ARRAY:
-		if _, err = r.Seek(-4, 1); err == nil {
-			v, err = dec.decodeStringArray()
+		if _, err = d.r.Seek(-4, 1); err == nil {
+			v, err = d.decodeStringArray()
 			val = reflect.ValueOf(v)
 			fsf = func(field reflect.Value, val reflect.Value) {
 				field.Set(val)
@@ -262,7 +257,7 @@ func decValue(r io.ReadSeeker, pair pair, targetType reflect.Type) (reflect.Valu
 		}
 	case _NVLIST:
 		val = reflect.Indirect(reflect.New(targetType))
-		err = decodeList(r, val)
+		err = decodeList(d, val)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
@@ -271,11 +266,11 @@ func decValue(r io.ReadSeeker, pair pair, targetType reflect.Type) (reflect.Valu
 			targetType = reflect.TypeOf([]map[string]interface{}{})
 		}
 
-		nelems := int(pair.NElements)
+		nelems := int(d.pair.NElements)
 		val = reflect.MakeSlice(targetType, 0, nelems)
 		for i := 0; i < nelems; i++ {
 			elem := reflect.Indirect(reflect.New(targetType.Elem()))
-			err = decodeList(r, elem)
+			err = decodeList(d, elem)
 			if err != nil {
 				break
 			}
