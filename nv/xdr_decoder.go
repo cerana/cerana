@@ -48,48 +48,31 @@ func (d *XDRDecoder) Decode(target interface{}) error {
 }
 
 func (d *XDRDecoder) header() (header, error) {
-	return decHeader(d.r)
-}
-
-func decHeader(r io.ReadSeeker) (header, error) {
 	var h header
-	err := binary.Read(r, binary.BigEndian, &h)
+	err := binary.Read(d.r, binary.BigEndian, &h)
 	return h, err
 }
 
 func (d *XDRDecoder) meta() (string, dataType, error) {
-	err := decMeta(d.r, &d.pair)
+	_, err := xdr.Unmarshal(d.r, &d.pair)
 	return d.pair.Name, d.pair.Type, err
 }
 
-func decMeta(r io.ReadSeeker, pair *pair) error {
-	_, err := xdr.Unmarshal(r, pair)
-	return err
-}
-
 func (d *XDRDecoder) skip() error {
-	return skip(d.r, d.pair)
-}
-
-func skip(r io.ReadSeeker, pair pair) error {
-	_, err := r.Seek(int64(pair.EncodedSize-uint32(pair.headerSize())), 1)
+	_, err := d.r.Seek(int64(d.pair.EncodedSize-uint32(d.pair.headerSize())), 1)
 	return err
 }
 
 func (d *XDRDecoder) isEnd() (bool, error) {
-	return isEnd(d.r)
-}
-
-func isEnd(r io.ReadSeeker) (bool, error) {
 	var end uint64
-	err := binary.Read(r, binary.BigEndian, &end)
+	err := binary.Read(d.r, binary.BigEndian, &end)
 	if err != nil {
 		return false, err
 	}
 	if end == 0 {
 		return true, nil
 	}
-	_, err = r.Seek(-8, 1)
+	_, err = d.r.Seek(-8, 1)
 	return false, err
 }
 
