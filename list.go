@@ -134,7 +134,7 @@ func list(name string, types map[string]bool, recurse bool, depth uint64) ([]map
 		}
 
 		m := map[string]interface{}{}
-		err = nv.Decode(buf, &m)
+		err = nv.Decode(bytes.NewReader(buf), &m)
 		if err != nil {
 			break
 		}

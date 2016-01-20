@@ -1,7 +1,9 @@
 package nv
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"reflect"
 	"strconv"
 	"strings"
@@ -364,16 +366,16 @@ func assertFields(t *testing.T, name string, m map[string]interface{}) {
 	}
 }
 
-func decode(t *testing.T, name string, ptr interface{}, data []byte, fn func([]byte, interface{}) error) {
+func decode(t *testing.T, name string, ptr interface{}, data []byte, fn func(io.ReadSeeker, interface{}) error) {
 	m := map[string]interface{}{}
-	err := fn(data, &m)
+	err := fn(bytes.NewReader(data), &m)
 	if err != nil {
 		t.Fatal(name, "decode as map failed:", err)
 	}
 
 	assertFields(t, name, m)
 
-	err = fn(data, ptr)
+	err = fn(bytes.NewReader(data), ptr)
 	if err != nil {
 		t.Fatal(name, "decode as struct failed:", err)
 	}
@@ -413,7 +415,7 @@ func TestDecodeBad(t *testing.T) {
 		}
 
 		m := map[string]interface{}{}
-		err := Decode(test.payload, &m)
+		err := Decode(bytes.NewReader(test.payload), &m)
 		if err == nil {
 			t.Fatalf("expected an error, wanted:|%s| payload:|%v|\n",
 				test.err, test.payload)
@@ -436,7 +438,7 @@ func TestDecodeBadArgs(t *testing.T) {
 		},
 	}
 	for _, test := range bad_args {
-		err := Decode([]byte(enc_dec_name_typ), test.arg)
+		err := Decode(bytes.NewReader([]byte(enc_dec_name_typ)), test.arg)
 		if err == nil {
 			t.Fatalf("expected an error, wanted:|%s|\n", test.err)
 		}

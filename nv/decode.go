@@ -1,7 +1,6 @@
 package nv
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -34,11 +33,9 @@ func decodePreamble(r io.Reader, byteOrder binary.ByteOrder) (codec, endianness,
 // Note: care should be taken when decoding into a `map[string]interface{}` as
 // bytes/uint8s (and their array forms) can not be distinguished and will be
 // treated as uint8/[]uint8.
-func Decode(data []byte, target interface{}) error {
-	b := bytes.NewReader(data)
-
+func Decode(r io.ReadSeeker, target interface{}) error {
 	// Validate data encoding
-	codec, endianness, err := decodePreamble(b, binary.BigEndian)
+	codec, endianness, err := decodePreamble(r, binary.BigEndian)
 	if err != nil {
 		return err
 	} else if codec != xdrCodec {
@@ -56,7 +53,7 @@ func Decode(data []byte, target interface{}) error {
 		return fmt.Errorf("cannot decode into nil")
 	}
 
-	return decodeList(b, reflect.Indirect(targetV))
+	return decodeList(r, reflect.Indirect(targetV))
 }
 
 // fieldSetFunc is used to set the value if the target is a field within a

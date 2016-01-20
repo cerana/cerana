@@ -1,6 +1,10 @@
 package main
 
-import "github.com/mistifyio/gozfs/nv"
+import (
+	"bytes"
+
+	"github.com/mistifyio/gozfs/nv"
+)
 
 const emptyList = "\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00"
 
@@ -25,7 +29,7 @@ func holds(name string) ([]string, error) {
 
 	m = map[string]interface{}{}
 
-	if err = nv.Decode(out, &m); err != nil {
+	if err = nv.Decode(bytes.NewReader(out), &m); err != nil {
 		return nil, err
 	}
 

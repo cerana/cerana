@@ -1,6 +1,10 @@
 package main
 
-import "github.com/mistifyio/gozfs/nv"
+import (
+	"bytes"
+
+	"github.com/mistifyio/gozfs/nv"
+)
 
 func rename(name, newName string, recursive bool) (string, error) {
 	m := map[string]interface{}{
@@ -21,7 +25,7 @@ func rename(name, newName string, recursive bool) (string, error) {
 	out := make([]byte, 1024)
 	err = ioctl(zfs, name, encoded, out)
 	if err != nil && recursive {
-		_ = nv.Decode(out, &failedName)
+		_ = nv.Decode(bytes.NewReader(out), &failedName)
 	}
 	return failedName, err
 }

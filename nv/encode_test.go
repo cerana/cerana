@@ -1,6 +1,7 @@
 package nv
 
 import (
+	"bytes"
 	"fmt"
 	"reflect"
 	"strings"
@@ -82,7 +83,7 @@ func TestEncodeGood(t *testing.T) {
 		}
 
 		m := map[string]interface{}{}
-		err := Decode(test.xdr, &m)
+		err := Decode(bytes.NewReader(test.xdr), &m)
 		if err != nil {
 			t.Fatal(test.name, "failed to decode as map", err)
 		}
@@ -91,7 +92,7 @@ func TestEncodeGood(t *testing.T) {
 		}
 
 		s := test.ptr()
-		err = Decode(test.xdr, s)
+		err = Decode(bytes.NewReader(test.xdr), s)
 		if err != nil {
 			t.Fatal(test.name, "failed to decode as struct:", err)
 		}
