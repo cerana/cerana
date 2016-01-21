@@ -404,12 +404,19 @@ func TestDecodeGood(t *testing.T) {
 			t.Log(" -- ", test.name)
 		}
 
+		r := bytes.NewReader(test.native)
+		dec := tDecoder{
+			r:       r,
+			decoder: NewNativeDecoder(r),
+		}
+		decode(t, test.name, test.ptr(), dec)
+
 		if test.name == "empty arrays" {
 			continue
 		}
 
-		r := bytes.NewReader(test.xdr)
-		dec := tDecoder{
+		r = bytes.NewReader(test.xdr)
+		dec = tDecoder{
 			r:       r,
 			decoder: NewXDRDecoder(r),
 		}
