@@ -33,7 +33,7 @@ func (e XDREncoder) Encode(i interface{}) error {
 		return err
 	}
 
-	return encodeList(e.w, v)
+	return encodeList(e, v)
 }
 
 func (e XDREncoder) header(h header) error {
@@ -53,10 +53,6 @@ func encFooter(w io.Writer) error {
 }
 
 func (e XDREncoder) item(name string, dtype dataType, value interface{}) error {
-	return xdrEncode(e.w, name, dtype, value)
-}
-
-func xdrEncode(w io.Writer, name string, dtype dataType, value interface{}) error {
 	p := pair{
 		Name:      name,
 		NElements: 1,
@@ -117,14 +113,16 @@ func xdrEncode(w io.Writer, name string, dtype dataType, value interface{}) erro
 		}
 		value = arr.Interface()
 	case _NVLIST:
-		if err := encodeList(vbuf, reflect.ValueOf(value)); err != nil {
+		enc := NewXDREncoder(vbuf)
+		if err := encodeList(enc, reflect.ValueOf(value)); err != nil {
 			return err
 		}
 		p.data = vbuf.Bytes()
 	case _NVLIST_ARRAY:
 		p.NElements = uint32(len(value.([]map[string]interface{})))
 		for _, l := range value.([]map[string]interface{}) {
-			if err := encodeList(vbuf, reflect.ValueOf(l)); err != nil {
+			enc := NewXDREncoder(vbuf)
+			if err := encodeList(enc, reflect.ValueOf(l)); err != nil {
 				return err
 			}
 		}
@@ -147,11 +145,11 @@ func xdrEncode(w io.Writer, name string, dtype dataType, value interface{}) erro
 		return err
 	}
 
-	_, err = pbuf.WriteTo(w)
+	_, err = pbuf.WriteTo(e.w)
 	if err != nil {
 		return err
 	}
-	_, err = vbuf.WriteTo(w)
+	_, err = vbuf.WriteTo(e.w)
 	if err != nil {
 		return err
 	}

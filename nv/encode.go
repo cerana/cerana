@@ -58,15 +58,15 @@ func encodePreamble(w io.Writer, codec codec, order endianness) error {
 	return binary.Write(w, binary.BigEndian, encoding{Encoding: codec, Endianess: order})
 }
 
-func encodeList(w io.Writer, v reflect.Value) error {
-	if err := encHeader(w, header{Flag: _UNIQUE_NAME}); err != nil {
+func encodeList(enc encoder, v reflect.Value) error {
+	if err := enc.header(header{Flag: _UNIQUE_NAME}); err != nil {
 		return err
 	}
 
 	v = deref(v)
 	switch v.Kind() {
 	case reflect.Struct:
-		if err := encodeStruct(w, v); err != nil {
+		if err := encodeStruct(enc, v); err != nil {
 			return err
 		}
 	case reflect.Map:
@@ -78,7 +78,7 @@ func encodeList(w io.Writer, v reflect.Value) error {
 
 		for _, name := range keys {
 			v := v.MapIndex(reflect.ValueOf(name))
-			if err := encodeItem(w, name, nil, v); err != nil {
+			if err := encodeItem(enc, name, nil, v); err != nil {
 				return err
 			}
 		}
@@ -86,10 +86,10 @@ func encodeList(w io.Writer, v reflect.Value) error {
 		return fmt.Errorf("invalid type '%s', must be a struct", v.Kind().String())
 	}
 
-	return encFooter(w)
+	return enc.footer()
 }
 
-func encodeStruct(w io.Writer, v reflect.Value) error {
+func encodeStruct(enc encoder, v reflect.Value) error {
 	var err error
 
 	forEachField(v, func(i int, field reflect.Value) bool {
@@ -103,7 +103,7 @@ func encodeStruct(w io.Writer, v reflect.Value) error {
 			name = tags[0]
 		}
 
-		if err = encodeItem(w, name, tags, field); err != nil {
+		if err = encodeItem(enc, name, tags, field); err != nil {
 			return false
 		}
 		return true
@@ -112,7 +112,7 @@ func encodeStruct(w io.Writer, v reflect.Value) error {
 	return err
 }
 
-func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) error {
+func encodeItem(enc encoder, name string, tags []string, field reflect.Value) error {
 	var tagType dataType
 	if len(tags) > 1 {
 		if tags[1] == "byte" {
@@ -131,7 +131,7 @@ func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) er
 			dtype = _BOOLEAN
 		}
 	case reflect.Interface:
-		return encodeItem(w, name, tags, reflect.ValueOf(field.Interface()))
+		return encodeItem(enc, name, tags, reflect.ValueOf(field.Interface()))
 	case reflect.Slice, reflect.Array:
 		dtype, ok = sliceTypes[field.Type().Elem().Kind()]
 		switch tagType {
@@ -157,5 +157,5 @@ func encodeItem(w io.Writer, name string, tags []string, field reflect.Value) er
 		return fmt.Errorf("unknown type: %v", field.Kind())
 	}
 
-	return xdrEncode(w, name, dtype, field.Interface())
+	return enc.item(name, dtype, field.Interface())
 }
