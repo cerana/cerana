@@ -107,17 +107,29 @@ func TestEncodeGood(t *testing.T) {
 			t.Log(" -- ", test.name)
 		}
 
+		r := bytes.NewReader(test.native)
+		dec := tDecoder{
+			r:       r,
+			decoder: NewNativeDecoder(r),
+		}
+		w := &bytes.Buffer{}
+		enc := tEncoder{
+			w:       w,
+			encoder: NewNativeEncoder(w),
+		}
+		encode(t, test.name, test.native, test.ptr(), dec, enc)
+
 		if test.name == "empty arrays" {
 			continue
 		}
 
-		r := bytes.NewReader(test.xdr)
-		dec := tDecoder{
+		r = bytes.NewReader(test.xdr)
+		dec = tDecoder{
 			r:       r,
 			decoder: NewXDRDecoder(r),
 		}
-		w := &bytes.Buffer{}
-		enc := tEncoder{
+		w = &bytes.Buffer{}
+		enc = tEncoder{
 			w:       w,
 			encoder: NewXDREncoder(w),
 		}
