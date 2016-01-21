@@ -59,18 +59,44 @@ func diff(want, got []byte) (string, string) {
 	return strings.Join(w, " "), strings.Join(g, " ")
 }
 
-func assertEqual(t *testing.T, name, typ string, payload []byte, put interface{}) {
-	w := &bytes.Buffer{}
-	err := NewXDREncoder(w).Encode(put)
+func assertEqual(t *testing.T, name, typ string, payload []byte, enc tEncoder, i interface{}) {
+	err := enc.Encode(i)
 	if err != nil {
 		t.Fatalf("%s: failed to encode as %s: error:%s\n", name, typ, err)
 	}
-	encoded := w.Bytes()
+	encoded := enc.w.Bytes()
 	if !reflect.DeepEqual(payload, encoded) {
 		want, got := diff(payload, encoded)
 		t.Fatalf("%s: %s: encoded does not match payload\nwant:|%s|\n got:|%s|\n",
 			name, typ, want, got)
 	}
+}
+
+type tEncoder struct {
+	w *bytes.Buffer
+	encoder
+}
+
+func encode(t *testing.T, name string, data []byte, ptr interface{}, dec tDecoder, enc tEncoder) {
+	m := map[string]interface{}{}
+
+	dec.r.Seek(0, 0)
+	if err := dec.Decode(&m); err != nil {
+		t.Fatal(name, "decode as map failed:", err)
+	}
+
+	if !strings.Contains(name, "byte") {
+		assertEqual(t, name, "map", data, enc, m)
+	}
+	enc.w.Reset()
+
+	dec.r.Seek(0, 0)
+	if err := dec.Decode(ptr); err != nil {
+		t.Fatal(name, "decode as struct failed:", err)
+	}
+
+	assertEqual(t, name, "struct", data, enc, ptr)
+	enc.w.Reset()
 }
 
 func TestEncodeGood(t *testing.T) {
@@ -85,21 +111,17 @@ func TestEncodeGood(t *testing.T) {
 			continue
 		}
 
-		m := map[string]interface{}{}
-		err := NewXDRDecoder(bytes.NewReader(test.xdr)).Decode(&m)
-		if err != nil {
-			t.Fatal(test.name, "failed to decode as map", err)
+		r := bytes.NewReader(test.xdr)
+		dec := tDecoder{
+			r:       r,
+			decoder: NewXDRDecoder(r),
 		}
-		if !strings.Contains(test.name, "byte") {
-			assertEqual(t, test.name, "map", test.xdr, m)
+		w := &bytes.Buffer{}
+		enc := tEncoder{
+			w:       w,
+			encoder: NewXDREncoder(w),
 		}
-
-		s := test.ptr()
-		err = NewXDRDecoder(bytes.NewReader(test.xdr)).Decode(s)
-		if err != nil {
-			t.Fatal(test.name, "failed to decode as struct:", err)
-		}
-		assertEqual(t, test.name, "struct", test.xdr, s)
+		encode(t, test.name, test.xdr, test.ptr(), dec, enc)
 	}
 }
 
