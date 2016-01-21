@@ -1,6 +1,7 @@
 #include <array>
 #include <map>
 #include <sstream>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -570,16 +571,27 @@ int main(int argc, char** argv) {
 		fnvlist_free(l);
 	}
 	{
-		nvlist_t *ll = fnvlist_alloc();
-		fnvlist_add_boolean_value(ll, "false", B_FALSE);
-		fnvlist_add_boolean_value(ll, "true", B_TRUE);
-		nvlist_t *larr[] = {ll, ll};
+		std::string name;
+		nvlist_t *l1 = fnvlist_alloc();
+		fnvlist_add_boolean_value(l1, "false", B_FALSE);
+		fnvlist_add_boolean_value(l1, "true", B_TRUE);
+		name += std::to_string(fnvlist_num_pairs(l1));
+		name += ";";
+
+		nvlist_t *l2 = fnvlist_alloc();
+		fnvlist_add_uint8(l2, "1", 1);
+		fnvlist_add_uint8(l2, "2", 2);
+		fnvlist_add_uint8(l2, "3", 3);
+		name += std::to_string(fnvlist_num_pairs(l2));
+
+		nvlist_t *larr[] = {l1, l2};
 		size_t nelems = arrlen(larr);
 
 		l = fnvlist_alloc();
-		fnvlist_add_nvlist_array(l, stra(stru(nelems), nelems), larr, nelems);
+		fnvlist_add_nvlist_array(l, name.c_str(), larr, nelems);
 		pack(l, "nvlist array");
-		fnvlist_free(ll);
+		fnvlist_free(l2);
+		fnvlist_free(l1);
 		fnvlist_free(l);
 	}
 
