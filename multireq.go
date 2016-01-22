@@ -18,7 +18,7 @@ type MultiRequest struct {
 func NewMultiRequest(tracker *acomm.Tracker) *MultiRequest {
 	return &MultiRequest{
 		idsToNames: make(map[string]string),
-		responses:  make(chan *acomm.Response),
+		responses:  make(chan *acomm.Response, 100),
 		tracker:    tracker,
 	}
 }

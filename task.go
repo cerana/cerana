@@ -1,7 +1,6 @@
 package simple
 
 import (
-	"encoding/json"
 	"net"
 	"sync"
 	"time"
@@ -77,22 +76,16 @@ func (t *task) acceptRequest(conn net.Conn) {
 
 	// Respond to the initial request
 	resp, err := acomm.NewResponse(req, nil, respErr)
-	respJSON, err := json.Marshal(resp)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"error":    err,
-			"req":      req,
-			"response": resp,
-		}).Error("failed to marshal initial response")
+			"error":   err,
+			"req":     req,
+			"respErr": respErr,
+		}).Error("failed to create initial response")
 		return
 	}
 
-	if _, err := conn.Write(respJSON); err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-			"req":   req,
-			"resp":  resp,
-		}).Error("failed to send initial response")
+	if acomm.SendConnData(conn, resp); err != nil {
 		return
 	}
 

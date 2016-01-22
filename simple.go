@@ -78,7 +78,7 @@ func (s *Simple) SystemStatus(args map[string]interface{}) (interface{}, error) 
 	// Prepare multiple requests
 	multiRequest := NewMultiRequest(s.tracker)
 
-	cpuReq, err := acomm.NewRequest("CPUInfo", s.tracker.Addr(), &CPUInfoArgs{GuestID: guestID}, nil, nil)
+	cpuReq, err := acomm.NewRequest("CPUInfo", s.tracker.URL().String(), &CPUInfoArgs{GuestID: guestID}, nil, nil)
 	if err != nil {
 		return nil, err
 	}
