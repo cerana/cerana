@@ -1,9 +1,7 @@
 package acomm
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/url"
 	"os"
@@ -179,26 +177,4 @@ func (ul *UnixListener) DoneConn(conn net.Conn) {
 			"addr": ul.addr,
 		}, "failed to close unix connection",
 	)
-}
-
-// UnmarshalConnData reads and unmarshals JSON data from the connection into
-// the destination object.
-func UnmarshalConnData(conn net.Conn, dest interface{}) error {
-	data, err := ioutil.ReadAll(conn)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-		}).Error("failed to read data")
-		return err
-	}
-
-	if err := json.Unmarshal(data, dest); err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-			"data":  string(data),
-		}).Error("failed to unmarshal data")
-		return err
-	}
-
-	return nil
 }

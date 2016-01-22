@@ -106,15 +106,6 @@ func Send(addr *url.URL, payload interface{}) error {
 
 // sendUnix sends a request or response via a Unix socket.
 func sendUnix(addr *url.URL, payload interface{}) error {
-	payloadJSON, err := json.Marshal(payload)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"error":   err,
-			"payload": payload,
-		}).Error("failed to marshal payload json")
-		return err
-	}
-
 	conn, err := net.Dial("unix", addr.RequestURI())
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -129,15 +120,16 @@ func sendUnix(addr *url.URL, payload interface{}) error {
 		"failed to close unix connection",
 	)
 
-	if _, err := conn.Write(payloadJSON); err != nil {
-		log.WithFields(log.Fields{
-			"error":   err,
-			"addr":    addr,
-			"payload": payload,
-		}).Error("failed to write payload to unix socket")
+	if err := SendConnData(conn, payload); err != nil {
 		return err
 	}
-	return nil
+
+	resp := &Response{}
+	if err := UnmarshalConnData(conn, resp); err != nil {
+		return err
+	}
+
+	return resp.Error
 }
 
 // sendHTTP sends the Response via HTTP/HTTPS

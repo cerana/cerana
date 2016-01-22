@@ -13,6 +13,14 @@ func Send(addr *url.URL, payload interface{}) error
 ```
 Send attempts send the payload to the specified URL.
 
+#### func  SendConnData
+
+```go
+func SendConnData(conn net.Conn, payload interface{}) error
+```
+SendConnData marshals and writes payload JSON data to the Conn with appropriate
+headers.
+
 #### func  UnmarshalConnData
 
 ```go

@@ -124,6 +124,8 @@ func (t *Tracker) handleConn(conn net.Conn) {
 		return
 	}
 
+	_ = SendConnData(conn, &Response{})
+
 	go t.HandleResponse(resp)
 }
 
