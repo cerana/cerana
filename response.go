@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -159,16 +160,17 @@ func sendHTTP(addr *url.URL, payload interface{}) error {
 		}).Error("failed to send payload")
 		return err
 	}
+	defer httpResp.Body.Close()
 
-	if httpResp.StatusCode != http.StatusOK {
-		err := errors.New("unexpected http code for payload")
+	body, _ := ioutil.ReadAll(httpResp.Body)
+	resp := &Response{}
+	if err := json.Unmarshal(body, resp); err != nil {
 		log.WithFields(log.Fields{
-			"error":   err,
-			"addr":    addr,
-			"payload": payload,
-			"code":    httpResp.StatusCode,
+			"error": err,
+			"body":  string(body),
 		}).Error(err)
 		return err
 	}
-	return nil
+
+	return resp.Error
 }
