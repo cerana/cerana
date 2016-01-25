@@ -98,6 +98,8 @@ func (s *ResponseTestSuite) TestSend() {
 		body, err := ioutil.ReadAll(r.Body)
 		s.NoError(err, "should not fail reading body")
 		s.NoError(json.Unmarshal(body, resp), "should not fail unmarshalling response")
+		ack, _ := json.Marshal(&acomm.Response{})
+		_, _ = w.Write(ack)
 		s.Responses <- resp
 	}))
 	defer ts.Close()
@@ -122,9 +124,8 @@ func (s *ResponseTestSuite) TestSend() {
 				return
 			}
 			resp := &acomm.Response{}
-			body, err := ioutil.ReadAll(conn)
-			s.NoError(err, "should not fail reading body")
-			s.NoError(json.Unmarshal(body, resp), "should not fail unmarshalling response")
+			s.NoError(acomm.UnmarshalConnData(conn, resp), "should not fail unmarshalling conn data")
+			_ = acomm.SendConnData(conn, &acomm.Response{})
 			s.Responses <- resp
 			_ = conn.Close()
 		}

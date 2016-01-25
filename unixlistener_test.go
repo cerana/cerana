@@ -1,7 +1,6 @@
 package acomm_test
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -86,7 +85,7 @@ func (s *UnixListenerTestSuite) TestNextAndDoneConn() {
 
 }
 
-func (s *UnixListenerTestSuite) TestUnmarshalConnData() {
+func (s *UnixListenerTestSuite) TestSendAndUnmarshalConnData() {
 	if !s.NoError(s.Listener.Start(), "should start successfully") {
 		return
 	}
@@ -94,14 +93,13 @@ func (s *UnixListenerTestSuite) TestUnmarshalConnData() {
 	in := map[string]string{
 		"foo": "bar",
 	}
-	j, _ := json.Marshal(in)
 
 	addr, _ := net.ResolveUnixAddr("unix", s.Listener.Addr())
 	conn, err := net.DialUnix("unix", nil, addr)
 	if !s.NoError(err, "failed to dial listener") {
 		return
 	}
-	_, _ = conn.Write(j)
+	_ = acomm.SendConnData(conn, in)
 	_ = conn.Close()
 
 	lConn := s.Listener.NextConn()
