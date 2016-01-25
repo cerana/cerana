@@ -1,6 +1,7 @@
 package acomm
 
 import (
+	"encoding/json"
 	"errors"
 	"net/url"
 
@@ -13,12 +14,12 @@ import (
 // URL where response data should be sent. SuccessHandler and ErrorHandler will
 // be called appropriately to handle a response.
 type Request struct {
-	ID             string          `json:"id"`
-	Task           string          `json:"task"`
-	ResponseHook   *url.URL        `json:"responsehook"`
-	Args           interface{}     `json:"args"`
-	SuccessHandler ResponseHandler `json:"-"`
-	ErrorHandler   ResponseHandler `json:"-"`
+	ID             string           `json:"id"`
+	Task           string           `json:"task"`
+	ResponseHook   *url.URL         `json:"responsehook"`
+	Args           *json.RawMessage `json:"args"`
+	SuccessHandler ResponseHandler  `json:"-"`
+	ErrorHandler   ResponseHandler  `json:"-"`
 	proxied        bool
 }
 
@@ -40,14 +41,35 @@ func NewRequest(task, responseHook string, args interface{}, sh ResponseHandler,
 		return nil, errors.New("missing task")
 	}
 
+	argsJSON, err := json.Marshal(args)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Request{
 		ID:             uuid.New(),
 		Task:           task,
 		ResponseHook:   hook,
-		Args:           args,
+		Args:           (*json.RawMessage)(&argsJSON),
 		SuccessHandler: sh,
 		ErrorHandler:   eh,
 	}, nil
+}
+
+// UnmarshalArgs unmarshals the request args into the destination object.
+func (req *Request) UnmarshalArgs(dest interface{}) error {
+	if req.Args == nil {
+		return nil
+	}
+
+	err := json.Unmarshal(*req.Args, dest)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+			"req":   req,
+		}).Error("failed to unmarshal request args")
+	}
+	return err
 }
 
 // Validate validates the reqeust

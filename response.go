@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -16,9 +17,9 @@ import (
 // should be the same as the Request it corresponds to. Result should be nil if
 // Error is present and vice versa.
 type Response struct {
-	ID     string      `json:"id"`
-	Result interface{} `json:"result"`
-	Error  error       `json:"error"`
+	ID     string           `json:"id"`
+	Result *json.RawMessage `json:"result"`
+	Error  error            `json:"error"`
 }
 
 func (r *Response) MarshalJSON() ([]byte, error) {
@@ -66,16 +67,44 @@ func NewResponse(req *Request, result interface{}, err error) (*Response, error)
 	if result != nil && err != nil {
 		err := errors.New("cannot set both result and err")
 		log.WithFields(log.Fields{
-			"errors": err,
+			"error": err,
 		}).Error(err)
 		return nil, err
 	}
 
+	var resultRaw *json.RawMessage
+	if result != nil {
+		resultJSON, err := json.Marshal(result)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"error":  err,
+				"result": result,
+			}).Error("failed to marshal response result")
+		}
+		resultRaw = (*json.RawMessage)(&resultJSON)
+	}
+
 	return &Response{
 		ID:     req.ID,
-		Result: result,
+		Result: resultRaw,
 		Error:  err,
 	}, nil
+}
+
+// UnmarshalResult unmarshals the response result into the destination object.
+func (resp *Response) UnmarshalResult(dest interface{}) error {
+	if resp.Result == nil {
+		return nil
+	}
+
+	err := json.Unmarshal(*resp.Result, dest)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+			"resp":  resp,
+		}).Error("failed to unmarshal response result")
+	}
+	return err
 }
 
 // Send attempts send the payload to the specified URL.
@@ -105,15 +134,6 @@ func Send(addr *url.URL, payload interface{}) error {
 
 // sendUnix sends a request or response via a Unix socket.
 func sendUnix(addr *url.URL, payload interface{}) error {
-	payloadJSON, err := json.Marshal(payload)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"error":   err,
-			"payload": payload,
-		}).Error("failed to marshal payload json")
-		return err
-	}
-
 	conn, err := net.Dial("unix", addr.RequestURI())
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -128,15 +148,16 @@ func sendUnix(addr *url.URL, payload interface{}) error {
 		"failed to close unix connection",
 	)
 
-	if _, err := conn.Write(payloadJSON); err != nil {
-		log.WithFields(log.Fields{
-			"error":   err,
-			"addr":    addr,
-			"payload": payload,
-		}).Error("failed to write payload to unix socket")
+	if err := SendConnData(conn, payload); err != nil {
 		return err
 	}
-	return nil
+
+	resp := &Response{}
+	if err := UnmarshalConnData(conn, resp); err != nil {
+		return err
+	}
+
+	return resp.Error
 }
 
 // sendHTTP sends the Response via HTTP/HTTPS
@@ -159,16 +180,17 @@ func sendHTTP(addr *url.URL, payload interface{}) error {
 		}).Error("failed to send payload")
 		return err
 	}
+	defer httpResp.Body.Close()
 
-	if httpResp.StatusCode != http.StatusOK {
-		err := errors.New("unexpected http code for payload")
+	body, _ := ioutil.ReadAll(httpResp.Body)
+	resp := &Response{}
+	if err := json.Unmarshal(body, resp); err != nil {
 		log.WithFields(log.Fields{
-			"error":   err,
-			"addr":    addr,
-			"payload": payload,
-			"code":    httpResp.StatusCode,
+			"error": err,
+			"body":  string(body),
 		}).Error(err)
 		return err
 	}
-	return nil
+
+	return resp.Error
 }
