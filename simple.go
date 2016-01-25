@@ -69,20 +69,23 @@ func (s *Simple) RegisterTasks(server *Server) {
 
 // SystemStatus is a task handler to retrieve info look up and return system
 // information. It depends on and makes requests for several other tasks.
-func (s *Simple) SystemStatus(args map[string]interface{}) (interface{}, error) {
-	guestID, ok := args["guest_id"].(string)
-	if !ok || guestID == "" {
+func (s *Simple) SystemStatus(req *acomm.Request) (interface{}, error) {
+	var args SystemStatusArgs
+	if err := req.UnmarshalArgs(&args); err != nil {
+		return nil, err
+	}
+	if args.GuestID == "" {
 		return nil, errors.New("missing guest_id")
 	}
 
 	// Prepare multiple requests
 	multiRequest := NewMultiRequest(s.tracker)
 
-	cpuReq, err := acomm.NewRequest("CPUInfo", s.tracker.Addr(), &CPUInfoArgs{GuestID: guestID}, nil, nil)
+	cpuReq, err := acomm.NewRequest("CPUInfo", s.tracker.URL().String(), &CPUInfoArgs{GuestID: args.GuestID}, nil, nil)
 	if err != nil {
 		return nil, err
 	}
-	diskReq, err := acomm.NewRequest("DiskInfo", s.tracker.URL().String(), &DiskInfoArgs{GuestID: guestID}, nil, nil)
+	diskReq, err := acomm.NewRequest("DiskInfo", s.tracker.URL().String(), &DiskInfoArgs{GuestID: args.GuestID}, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -103,26 +106,39 @@ func (s *Simple) SystemStatus(args map[string]interface{}) (interface{}, error) 
 	}
 
 	// Wait for the results
-	results, errs := multiRequest.Results()
-	if errs != nil {
-		err := errors.New("one or more status requests failed")
-		log.WithFields(log.Fields{
-			"requests": requests,
-			"errors":   errs,
-		}).Error(err)
-		return nil, err
+	responses := multiRequest.Responses()
+	result := &SystemStatusResult{}
+
+	if resp, ok := responses["CPUInfo"]; ok {
+		if err := resp.UnmarshalResult(&(result.CPUs)); err != nil {
+			log.WithFields(log.Fields{
+				"name":  "CPUInfo",
+				"resp":  resp,
+				"error": err,
+			}).Error("failed to unarshal result")
+		}
 	}
 
-	result := &SystemStatusResult{
-		CPUs:  results["CPUInfo"].(CPUInfoResult),
-		Disks: results["DiskInfo"].(DiskInfoResult),
+	if resp, ok := responses["DiskInfo"]; ok {
+		if err := resp.UnmarshalResult(&(result.Disks)); err != nil {
+			log.WithFields(log.Fields{
+				"name":  "DiskInfo",
+				"resp":  resp,
+				"error": err,
+			}).Error("failed to unarshal result")
+		}
 	}
+
 	return result, nil
 }
 
 // CPUInfo is a task handler to retrieve information about CPUs.
-func (s *Simple) CPUInfo(args map[string]interface{}) (interface{}, error) {
-	if id, ok := args["guest_id"].(string); !ok || id == "" {
+func (s *Simple) CPUInfo(req *acomm.Request) (interface{}, error) {
+	var args CPUInfoArgs
+	if err := req.UnmarshalArgs(&args); err != nil {
+		return nil, err
+	}
+	if args.GuestID == "" {
 		return nil, errors.New("missing guest_id")
 	}
 
@@ -140,8 +156,12 @@ func (s *Simple) CPUInfo(args map[string]interface{}) (interface{}, error) {
 }
 
 // DiskInfo is a task handler to retrieve information about disks.
-func (s *Simple) DiskInfo(args map[string]interface{}) (interface{}, error) {
-	if id, ok := args["guest_id"].(string); !ok || id == "" {
+func (s *Simple) DiskInfo(req *acomm.Request) (interface{}, error) {
+	var args CPUInfoArgs
+	if err := req.UnmarshalArgs(&args); err != nil {
+		return nil, err
+	}
+	if args.GuestID == "" {
 		return nil, errors.New("missing guest_id")
 	}
 
