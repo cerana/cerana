@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -60,6 +61,12 @@ func NewServer(config *Config) (*Server, error) {
 		NoSignalHandling: true,
 	}
 
+	log.WithFields(log.Fields{
+		"response": responseSocket,
+		"internal": internalSocket,
+		"external": fmt.Sprintf(":%d", config.ExternalPort()),
+	}).Info("server addresses")
+
 	return s, nil
 }
 
@@ -104,6 +111,60 @@ func (s *Server) externalHandler(w http.ResponseWriter, r *http.Request) {
 	respErr = s.handleRequest(req)
 }
 
+func (s *Server) internalHandler() {
+	for {
+		conn := s.internal.NextConn()
+		if conn == nil {
+			return
+		}
+		go s.acceptInternalRequest(conn)
+	}
+}
+
+func (s *Server) acceptInternalRequest(conn net.Conn) {
+	defer s.internal.DoneConn(conn)
+	var respErr error
+	req := &acomm.Request{}
+	defer func() {
+		// Respond to the initial request
+		resp, err := acomm.NewResponse(req, nil, respErr)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"error":   err,
+				"req":     req,
+				"respErr": respErr,
+			}).Error("failed to create initial response")
+			return
+		}
+
+		if acomm.SendConnData(conn, resp); err != nil {
+			log.WithFields(log.Fields{
+				"error":   err,
+				"req":     req,
+				"respErr": respErr,
+			}).Error("failed to create initial response")
+			return
+		}
+	}()
+
+	if err := acomm.UnmarshalConnData(conn, req); err != nil {
+		respErr = err
+		return
+	}
+
+	if err := req.Validate(); err != nil {
+		respErr = err
+		return
+	}
+
+	if err := s.handleRequest(req); err != nil {
+		respErr = err
+		return
+	}
+
+	return
+}
+
 // handleRequest handles proxying and forwarding a request to a provider for
 // the specified task.
 func (s *Server) handleRequest(req *acomm.Request) error {
@@ -116,16 +177,13 @@ func (s *Server) handleRequest(req *acomm.Request) error {
 		return errors.New("no providers available for task")
 	}
 
-	fmt.Println("req", req)
 	proxyReq, err := s.proxy.ProxyUnix(req)
-	fmt.Println("proxyReq", proxyReq)
 	if err != nil {
 		return err
 	}
 
 	// Cycle through available providers until one accepts the request
 	for _, providerSocket := range providerSockets {
-		fmt.Println("provider socket", providerSocket)
 		addr, _ := url.ParseRequestURI(fmt.Sprintf("unix://%s", providerSocket))
 		err = acomm.Send(addr, proxyReq)
 		if err == nil {
@@ -133,6 +191,7 @@ func (s *Server) handleRequest(req *acomm.Request) error {
 			break
 		}
 	}
+
 	return err
 }
 
@@ -193,6 +252,7 @@ func (s *Server) Start() error {
 	if err := s.internal.Start(); err != nil {
 		return err
 	}
+	go s.internalHandler()
 
 	// Start up the external request handler
 	go s.externalListenAndServe()
