@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	l := acomm.NewUnixListener("foo")
+	l := acomm.NewUnixListener("/tmp/mistify/output.sock")
 	fmt.Println("URL:", l.URL())
 	if err := l.Start(); err != nil {
 		fmt.Println(err)

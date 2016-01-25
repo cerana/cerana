@@ -11,7 +11,7 @@ import (
 
 // TaskHandler if the request handler function for a particular task. It should
 // return results or an error, but not both.
-type TaskHandler func(map[string]interface{}) (interface{}, error)
+type TaskHandler func(*acomm.Request) (interface{}, error)
 
 // task contains the request listener and handler for a task.
 type task struct {
@@ -103,7 +103,7 @@ func (t *task) handleRequest(req *acomm.Request) {
 	defer t.waitgroup.Done()
 
 	// Run the task-specific request handler
-	result, taskErr := t.handler(req.Args.(map[string]interface{}))
+	result, taskErr := t.handler(req)
 
 	// Note: The acomm calls log the error already, but we want to have a log
 	// of the request and response data as well.

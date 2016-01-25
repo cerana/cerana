@@ -50,30 +50,18 @@ func (m *MultiRequest) responseHandler(req *acomm.Request, resp *acomm.Response)
 	m.responses <- resp
 }
 
-// Results returns result and error values for all of the requests, keyed on the request name
+// Results returns responses for all of the requests, keyed on the request name
 // (as opposed to request id). Blocks until all requests are accounted for.
-func (m *MultiRequest) Results() (map[string]interface{}, map[string]error) {
-	results := make(map[string]interface{})
-	errs := make(map[string]error)
+func (m *MultiRequest) Responses() map[string]*acomm.Response {
+	results := make(map[string]*acomm.Response)
 
 	m.respWG.Wait()
 
 	close(m.responses)
 	for resp := range m.responses {
 		name := m.idsToNames[resp.ID]
-		if resp.Error != nil {
-			errs[name] = resp.Error
-		} else {
-			results[name] = resp.Result
-		}
+		results[name] = resp
 	}
 
-	if len(results) == 0 {
-		results = nil
-	}
-	if len(errs) == 0 {
-		errs = nil
-	}
-
-	return results, errs
+	return results
 }

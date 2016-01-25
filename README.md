@@ -171,14 +171,13 @@ func (m *MultiRequest) RemoveRequest(req *acomm.Request)
 ```
 RemoveRequest removes a request from the MultiRequest. Useful if the send fails.
 
-#### func (*MultiRequest) Results
+#### func (*MultiRequest) Responses
 
 ```go
-func (m *MultiRequest) Results() (map[string]interface{}, map[string]error)
+func (m *MultiRequest) Responses() map[string]*acomm.Response
 ```
-Results returns result and error values for all of the requests, keyed on the
-request name (as opposed to request id). Blocks until all requests are accounted
-for.
+Results returns responses for all of the requests, keyed on the request name (as
+opposed to request id). Blocks until all requests are accounted for.
 
 #### type Provider
 
@@ -270,14 +269,14 @@ NewSimple creates a new instance of Simple.
 #### func (*Simple) CPUInfo
 
 ```go
-func (s *Simple) CPUInfo(args map[string]interface{}) (interface{}, error)
+func (s *Simple) CPUInfo(req *acomm.Request) (interface{}, error)
 ```
 CPUInfo is a task handler to retrieve information about CPUs.
 
 #### func (*Simple) DiskInfo
 
 ```go
-func (s *Simple) DiskInfo(args map[string]interface{}) (interface{}, error)
+func (s *Simple) DiskInfo(req *acomm.Request) (interface{}, error)
 ```
 DiskInfo is a task handler to retrieve information about disks.
 
@@ -291,7 +290,7 @@ RegisterTasks registers all of Simple's task handlers with the server.
 #### func (*Simple) SystemStatus
 
 ```go
-func (s *Simple) SystemStatus(args map[string]interface{}) (interface{}, error)
+func (s *Simple) SystemStatus(req *acomm.Request) (interface{}, error)
 ```
 SystemStatus is a task handler to retrieve info look up and return system
 information. It depends on and makes requests for several other tasks.
@@ -320,7 +319,7 @@ SystemStatusResult is the result data for the SystemStatus handler.
 #### type TaskHandler
 
 ```go
-type TaskHandler func(map[string]interface{}) (interface{}, error)
+type TaskHandler func(*acomm.Request) (interface{}, error)
 ```
 
 TaskHandler if the request handler function for a particular task. It should
