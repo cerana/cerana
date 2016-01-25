@@ -17,9 +17,9 @@ import (
 // should be the same as the Request it corresponds to. Result should be nil if
 // Error is present and vice versa.
 type Response struct {
-	ID     string      `json:"id"`
-	Result interface{} `json:"result"`
-	Error  error       `json:"error"`
+	ID     string           `json:"id"`
+	Result *json.RawMessage `json:"result"`
+	Error  error            `json:"error"`
 }
 
 func (r *Response) MarshalJSON() ([]byte, error) {
@@ -67,16 +67,44 @@ func NewResponse(req *Request, result interface{}, err error) (*Response, error)
 	if result != nil && err != nil {
 		err := errors.New("cannot set both result and err")
 		log.WithFields(log.Fields{
-			"errors": err,
+			"error": err,
 		}).Error(err)
 		return nil, err
 	}
 
+	var resultRaw *json.RawMessage
+	if result != nil {
+		resultJSON, err := json.Marshal(result)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"error":  err,
+				"result": result,
+			}).Error("failed to marshal response result")
+		}
+		resultRaw = (*json.RawMessage)(&resultJSON)
+	}
+
 	return &Response{
 		ID:     req.ID,
-		Result: result,
+		Result: resultRaw,
 		Error:  err,
 	}, nil
+}
+
+// UnmarshalResult unmarshals the response result into the destination object.
+func (resp *Response) UnmarshalResult(dest interface{}) error {
+	if resp.Result == nil {
+		return nil
+	}
+
+	err := json.Unmarshal(*resp.Result, dest)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+			"resp":  resp,
+		}).Error("failed to unmarshal response result")
+	}
+	return err
 }
 
 // Send attempts send the payload to the specified URL.

@@ -85,7 +85,13 @@ func (s *ResponseTestSuite) TestNewResponse() {
 				continue
 			}
 			s.Equal(test.request.ID, resp.ID, msg("should have set an ID"))
-			s.Equal(test.result, resp.Result, msg("should have set the result"))
+			var result map[string]string
+			s.NoError(resp.UnmarshalResult(&result))
+			if test.result == nil {
+				s.Nil(result, msg("should have nil result"))
+			} else {
+				s.Equal(test.result, result, msg("should have set the result"))
+			}
 			s.Equal(test.err, resp.Error, msg("should have set the error"))
 		}
 	}
@@ -131,9 +137,10 @@ func (s *ResponseTestSuite) TestSend() {
 		}
 	}()
 
+	resultJ, _ := json.Marshal(map[string]string{"foo": "bar"})
 	response := &acomm.Response{
 		ID:     uuid.New(),
-		Result: map[string]string{"foo": "bar"},
+		Result: (*json.RawMessage)(&resultJ),
 	}
 
 	tests := []struct {

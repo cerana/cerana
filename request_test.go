@@ -66,10 +66,17 @@ func (s *RequestTestSuite) TestNewRequest() {
 			if !s.NotNil(req, msg("should have returned a request")) {
 				continue
 			}
+
 			s.NotEmpty(req.ID, msg("should have set an ID"))
 			s.Equal(test.task, req.Task, msg("should have set the task"))
 			s.Equal(test.responseHook, req.ResponseHook.String(), msg("should have set the response hook"))
-			s.Equal(test.args, req.Args, msg("should have set the arguments"))
+			var args map[string]string
+			s.NoError(req.UnmarshalArgs(&args))
+			if test.args == nil {
+				s.Nil(args, msg("should have nil arguments"))
+			} else {
+				s.Equal(test.args, args, msg("should have set the arguments"))
+			}
 			s.Equal(reflect.ValueOf(test.sh).Pointer(), reflect.ValueOf(req.SuccessHandler).Pointer(), msg("should have set success handler"))
 			s.Equal(reflect.ValueOf(test.eh).Pointer(), reflect.ValueOf(req.ErrorHandler).Pointer(), msg("should have set error handler"))
 		}

@@ -33,12 +33,12 @@ destination object.
 
 ```go
 type Request struct {
-	ID             string          `json:"id"`
-	Task           string          `json:"task"`
-	ResponseHook   *url.URL        `json:"responsehook"`
-	Args           interface{}     `json:"args"`
-	SuccessHandler ResponseHandler `json:"-"`
-	ErrorHandler   ResponseHandler `json:"-"`
+	ID             string           `json:"id"`
+	Task           string           `json:"task"`
+	ResponseHook   *url.URL         `json:"responsehook"`
+	Args           *json.RawMessage `json:"args"`
+	SuccessHandler ResponseHandler  `json:"-"`
+	ErrorHandler   ResponseHandler  `json:"-"`
 }
 ```
 
@@ -70,6 +70,13 @@ func (req *Request) Respond(resp *Response) error
 ```
 Respond sends a Response to a Request's ResponseHook.
 
+#### func (*Request) UnmarshalArgs
+
+```go
+func (req *Request) UnmarshalArgs(dest interface{}) error
+```
+UnmarshalArgs unmarshals the request args into the destination object.
+
 #### func (*Request) Validate
 
 ```go
@@ -81,9 +88,9 @@ Validate validates the reqeust
 
 ```go
 type Response struct {
-	ID     string      `json:"id"`
-	Result interface{} `json:"result"`
-	Error  error       `json:"error"`
+	ID     string           `json:"id"`
+	Result *json.RawMessage `json:"result"`
+	Error  error            `json:"error"`
 }
 ```
 
@@ -109,6 +116,13 @@ func (r *Response) MarshalJSON() ([]byte, error)
 ```go
 func (r *Response) UnmarshalJSON(data []byte) error
 ```
+
+#### func (*Response) UnmarshalResult
+
+```go
+func (resp *Response) UnmarshalResult(dest interface{}) error
+```
+UnmarshalResult unmarshals the response result into the destination object.
 
 #### type ResponseHandler
 
