@@ -23,6 +23,7 @@ type Response struct {
 	Error     error            `json:"error"`
 }
 
+// MarshalJSON marshals a Response into JSON.
 func (r *Response) MarshalJSON() ([]byte, error) {
 	type Alias Response
 	respErr := r.Error
@@ -38,6 +39,7 @@ func (r *Response) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// UnmarshalJSON unmarshals JSON data into a Response.
 func (r *Response) UnmarshalJSON(data []byte) error {
 	type Alias Response
 	aux := &struct {
@@ -94,16 +96,16 @@ func NewResponse(req *Request, result interface{}, streamURL *url.URL, err error
 }
 
 // UnmarshalResult unmarshals the response result into the destination object.
-func (resp *Response) UnmarshalResult(dest interface{}) error {
-	if resp.Result == nil {
+func (r *Response) UnmarshalResult(dest interface{}) error {
+	if r.Result == nil {
 		return nil
 	}
 
-	err := json.Unmarshal(*resp.Result, dest)
+	err := json.Unmarshal(*r.Result, dest)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
-			"resp":  resp,
+			"resp":  r,
 		}).Error("failed to unmarshal response result")
 	}
 	return err
@@ -182,7 +184,7 @@ func sendHTTP(addr *url.URL, payload interface{}) error {
 		}).Error("failed to send payload")
 		return err
 	}
-	defer httpResp.Body.Close()
+	defer logx.LogReturnedErr(httpResp.Body.Close, nil, "failed to close http body")
 
 	body, _ := ioutil.ReadAll(httpResp.Body)
 	resp := &Response{}

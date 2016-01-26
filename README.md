@@ -111,17 +111,19 @@ NewResponse creates a new Response instance based on a Request.
 ```go
 func (r *Response) MarshalJSON() ([]byte, error)
 ```
+MarshalJSON marshals a Response into JSON.
 
 #### func (*Response) UnmarshalJSON
 
 ```go
 func (r *Response) UnmarshalJSON(data []byte) error
 ```
+UnmarshalJSON unmarshals JSON data into a Response.
 
 #### func (*Response) UnmarshalResult
 
 ```go
-func (resp *Response) UnmarshalResult(dest interface{}) error
+func (r *Response) UnmarshalResult(dest interface{}) error
 ```
 UnmarshalResult unmarshals the response result into the destination object.
 
