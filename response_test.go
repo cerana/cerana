@@ -72,7 +72,7 @@ func (s *ResponseTestSuite) TestNewResponse() {
 
 	for _, test := range tests {
 		msg := testMsgFunc(test.description)
-		resp, err := acomm.NewResponse(test.request, test.result, test.err)
+		resp, err := acomm.NewResponse(test.request, test.result, nil, test.err)
 		if test.expectedErr {
 			s.Error(err, msg("should have failed"))
 			s.Nil(resp, msg("should not have returned a response"))

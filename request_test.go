@@ -110,7 +110,7 @@ func (s *RequestTestSuite) TestHandleResponse() {
 		if !s.NoError(err, msg("should not fail to build req")) {
 			continue
 		}
-		resp, err := acomm.NewResponse(req, test.respResult, test.respErr)
+		resp, err := acomm.NewResponse(req, test.respResult, nil, test.respErr)
 		if !s.NoError(err, msg("should not fail to build resp")) {
 			continue
 		}

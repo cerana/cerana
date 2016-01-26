@@ -17,9 +17,10 @@ import (
 // should be the same as the Request it corresponds to. Result should be nil if
 // Error is present and vice versa.
 type Response struct {
-	ID     string           `json:"id"`
-	Result *json.RawMessage `json:"result"`
-	Error  error            `json:"error"`
+	ID        string           `json:"id"`
+	Result    *json.RawMessage `json:"result"`
+	StreamURL *url.URL         `json:"stream_url"`
+	Error     error            `json:"error"`
 }
 
 func (r *Response) MarshalJSON() ([]byte, error) {
@@ -55,7 +56,7 @@ func (r *Response) UnmarshalJSON(data []byte) error {
 }
 
 // NewResponse creates a new Response instance based on a Request.
-func NewResponse(req *Request, result interface{}, err error) (*Response, error) {
+func NewResponse(req *Request, result interface{}, streamURL *url.URL, err error) (*Response, error) {
 	if req == nil {
 		err := errors.New("cannot create response without request")
 		log.WithFields(log.Fields{
@@ -85,9 +86,10 @@ func NewResponse(req *Request, result interface{}, err error) (*Response, error)
 	}
 
 	return &Response{
-		ID:     req.ID,
-		Result: resultRaw,
-		Error:  err,
+		ID:        req.ID,
+		Result:    resultRaw,
+		Error:     err,
+		StreamURL: streamURL,
 	}, nil
 }
 

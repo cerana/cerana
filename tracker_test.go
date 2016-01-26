@@ -110,7 +110,7 @@ func (s *TrackerTestSuite) TestProxyUnix() {
 	s.Equal(s.Request.ID, unixReq.ID, "new request should share ID with original")
 	s.Equal("unix", unixReq.ResponseHook.Scheme, "new request should have a unix response hook")
 	s.Equal(1, s.Tracker.NumRequests(), "should have tracked the new request")
-	resp, err := acomm.NewResponse(unixReq, struct{}{}, nil)
+	resp, err := acomm.NewResponse(unixReq, struct{}{}, nil, nil)
 	if !s.NoError(err, "new response should not error") {
 		return
 	}
