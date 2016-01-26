@@ -41,7 +41,7 @@ func (s *TrackerTestSuite) SetupTest() {
 	s.Request, err = acomm.NewRequest("foobar", s.RespServer.URL, nil, nil, nil)
 	s.Require().NoError(err, "request should be valid")
 
-	s.Tracker, err = acomm.NewTracker("")
+	s.Tracker, err = acomm.NewTracker("", "")
 	s.Require().NoError(err, "failed to create new Tracker")
 	s.Require().NotNil(s.Tracker, "failed to create new Tracker")
 }

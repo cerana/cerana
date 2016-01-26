@@ -147,9 +147,9 @@ Tracker keeps track of requests waiting on a response.
 #### func  NewTracker
 
 ```go
-func NewTracker(socketPath string) (*Tracker, error)
+func NewTracker(socketPath, httpStreamURLFormat string) (*Tracker, error)
 ```
-NewTracker creates and initializes a new Tracker. If a socketDir is not
+NewTracker creates and initializes a new Tracker. If a socketPath is not
 provided, the response socket will be created in a temporary directory.
 
 #### func (*Tracker) Addr
@@ -171,7 +171,7 @@ response or calls the request's handler.
 #### func (*Tracker) NewStreamUnix
 
 ```go
-func (t *Tracker) NewStreamUnix(id string, src io.ReadCloser) (*url.URL, error)
+func (t *Tracker) NewStreamUnix(src io.ReadCloser) (*url.URL, error)
 ```
 NewStreamUnix sets up an ad-hoc unix listner to stream data.
 
@@ -181,6 +181,29 @@ NewStreamUnix sets up an ad-hoc unix listner to stream data.
 func (t *Tracker) NumRequests() int
 ```
 NumRequests returns the number of tracked requests
+
+#### func (*Tracker) ProxyStream
+
+```go
+func (t *Tracker) ProxyStream(dest io.Writer, socketPath string) error
+```
+ProxyStream streams data from a unix socket to a destination writer, e.g. an
+http.ResponseWriter. If nothing
+
+#### func (*Tracker) ProxyStreamHTTPURL
+
+```go
+func (t *Tracker) ProxyStreamHTTPURL(socketPath string) (*url.URL, error)
+```
+ProxyStreamHTTPURL generates the url for proxying streaming data from a unix
+socket.
+
+#### func (*Tracker) ProxyStreamHandler
+
+```go
+func (t *Tracker) ProxyStreamHandler(w http.ResponseWriter, r *http.Request)
+```
+ProxyStreamHandler is an HTTP HandlerFunc for simple proxy streaming.
 
 #### func (*Tracker) ProxyUnix
 

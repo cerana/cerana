@@ -20,18 +20,19 @@ const (
 
 // Tracker keeps track of requests waiting on a response.
 type Tracker struct {
-	status           int
-	responseListener *UnixListener
-	requestsLock     sync.Mutex // Protects requests
-	requests         map[string]*Request
-	dsLock           sync.Mutex // Protects dataStreams
-	dataStreams      map[string]stopper
-	waitgroup        sync.WaitGroup
+	status              int
+	responseListener    *UnixListener
+	httpStreamURLFormat string
+	requestsLock        sync.Mutex // Protects requests
+	requests            map[string]*Request
+	dsLock              sync.Mutex // Protects dataStreams
+	dataStreams         map[string]stopper
+	waitgroup           sync.WaitGroup
 }
 
-// NewTracker creates and initializes a new Tracker. If a socketDir is not
+// NewTracker creates and initializes a new Tracker. If a socketPath is not
 // provided, the response socket will be created in a temporary directory.
-func NewTracker(socketPath string) (*Tracker, error) {
+func NewTracker(socketPath, httpStreamURLFormat string) (*Tracker, error) {
 	if socketPath == "" {
 		var err error
 		socketPath, err = generateTempSocketPath()
@@ -41,8 +42,9 @@ func NewTracker(socketPath string) (*Tracker, error) {
 	}
 
 	return &Tracker{
-		status:           statusStopped,
-		responseListener: NewUnixListener(socketPath),
+		status:              statusStopped,
+		responseListener:    NewUnixListener(socketPath),
+		httpStreamURLFormat: httpStreamURLFormat,
 	}, nil
 }
 
@@ -154,6 +156,14 @@ func (t *Tracker) HandleResponse(resp *Response) {
 	if !req.proxied {
 		req.HandleResponse(resp)
 		return
+	}
+
+	if resp.StreamURL != nil {
+		streamURL, err := t.ProxyStreamHTTPURL(resp.StreamURL.Path) // Replace the StreamURL with a proxy stream url
+		if err != nil {
+			streamURL = nil
+		}
+		resp.StreamURL = streamURL
 	}
 
 	// Forward the response along
