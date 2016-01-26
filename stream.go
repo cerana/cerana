@@ -12,10 +12,6 @@ import (
 	logx "github.com/mistifyio/mistify-logrus-ext"
 )
 
-type stopper interface {
-	Stop(time.Duration)
-}
-
 // NewStreamUnix sets up an ad-hoc unix listner to stream data.
 func (t *Tracker) NewStreamUnix(src io.ReadCloser) (*url.URL, error) {
 	socketPath, err := generateTempSocketPath()
