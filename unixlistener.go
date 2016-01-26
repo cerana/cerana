@@ -139,7 +139,7 @@ func (ul *UnixListener) listen() {
 
 // Stop stops listening for new connections. It blocks until existing
 // connections are handled and the listener closed.
-func (ul *UnixListener) Stop() {
+func (ul *UnixListener) Stop(timeout time.Duration) {
 	if !ul.alive {
 		return
 	}

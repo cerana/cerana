@@ -168,6 +168,13 @@ func (t *Tracker) HandleResponse(resp *Response)
 HandleResponse associates a response with a request and either forwards the
 response or calls the request's handler.
 
+#### func (*Tracker) NewStreamUnix
+
+```go
+func (t *Tracker) NewStreamUnix(id string, src io.ReadCloser) (*url.URL, error)
+```
+NewStreamUnix sets up an ad-hoc unix listner to stream data.
+
 #### func (*Tracker) NumRequests
 
 ```go
@@ -277,7 +284,7 @@ Start prepares the listener and starts listening for new connections.
 #### func (*UnixListener) Stop
 
 ```go
-func (ul *UnixListener) Stop()
+func (ul *UnixListener) Stop(timeout time.Duration)
 ```
 Stop stops listening for new connections. It blocks until existing connections
 are handled and the listener closed.

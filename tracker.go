@@ -24,6 +24,8 @@ type Tracker struct {
 	responseListener *UnixListener
 	requestsLock     sync.Mutex // Protects requests
 	requests         map[string]*Request
+	dsLock           sync.Mutex // Protects dataStreams
+	dataStreams      map[string]stopper
 	waitgroup        sync.WaitGroup
 }
 
@@ -171,8 +173,23 @@ func (t *Tracker) Stop() {
 
 	// Handle any requests that are expected
 	t.waitgroup.Wait()
-	// Stop listening for new requests
-	t.responseListener.Stop()
+
+	// Stop listening for responses
+	t.responseListener.Stop(0)
+
+	// Stop any data streamers
+	var dsWG sync.WaitGroup
+	t.dsLock.Lock()
+	for _, ds := range t.dataStreams {
+		dsWG.Add(1)
+		go func(ds stopper) {
+			defer dsWG.Done()
+			ds.Stop(0)
+		}(ds)
+	}
+	t.dsLock.Unlock()
+	dsWG.Wait()
+
 	t.status = statusStopped
 	return
 }

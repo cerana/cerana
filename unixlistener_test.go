@@ -28,7 +28,7 @@ func (s *UnixListenerTestSuite) SetupTest() {
 }
 
 func (s *UnixListenerTestSuite) TearDownTest() {
-	s.Listener.Stop()
+	s.Listener.Stop(0)
 }
 
 func TestUnixListenerTestSuite(t *testing.T) {
@@ -55,8 +55,8 @@ func (s *UnixListenerTestSuite) TestStartAndStop() {
 	s.Error(bad.Start(), "should not be able to start on a used socket")
 
 	// Should work fine, not crash
-	s.Listener.Stop()
-	s.Listener.Stop()
+	s.Listener.Stop(0)
+	s.Listener.Stop(0)
 }
 
 func (s *UnixListenerTestSuite) TestNextAndDoneConn() {
@@ -79,7 +79,7 @@ func (s *UnixListenerTestSuite) TestNextAndDoneConn() {
 
 	s.Listener.DoneConn(lConn)
 
-	s.Listener.Stop()
+	s.Listener.Stop(0)
 	sConn := s.Listener.NextConn()
 	s.Nil(sConn)
 
