@@ -21,6 +21,13 @@ func SendConnData(conn net.Conn, payload interface{}) error
 SendConnData marshals and writes payload JSON data to the Conn with appropriate
 headers.
 
+#### func  Stream
+
+```go
+func Stream(dest io.Writer, addr *url.URL) error
+```
+Stream streams data from a URL to a destination writer.
+
 #### func  UnmarshalConnData
 
 ```go
@@ -181,14 +188,6 @@ NewStreamUnix sets up an ad-hoc unix listner to stream data.
 func (t *Tracker) NumRequests() int
 ```
 NumRequests returns the number of tracked requests
-
-#### func (*Tracker) ProxyStream
-
-```go
-func (t *Tracker) ProxyStream(dest io.Writer, socketPath string) error
-```
-ProxyStream streams data from a unix socket to a destination writer, e.g. an
-http.ResponseWriter. If nothing
 
 #### func (*Tracker) ProxyStreamHTTPURL
 
