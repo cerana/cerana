@@ -34,7 +34,7 @@ func main() {
 	args, err := parseTaskArgs(taskArgs)
 	dieOnError(err)
 
-	result, respErr, err := startResponseServer(responseAddr)
+	result, stream, respErr, err := startResponseServer(responseAddr)
 	dieOnError(err)
 
 	dieOnError(makeRequest(coordinator, taskName, responseAddr, args))
@@ -45,6 +45,8 @@ func main() {
 	case result := <-result:
 		j, _ := json.Marshal(result)
 		fmt.Println(string(j))
+	case stream := <-stream:
+		dieOnError(acomm.Stream(os.Stdout, stream))
 	}
 }
 
@@ -67,9 +69,10 @@ func parseTaskArgs(taskArgs []string) (map[string]string, error) {
 	return out, nil
 }
 
-func startResponseServer(addr string) (chan interface{}, chan error, error) {
+func startResponseServer(addr string) (chan interface{}, chan *url.URL, chan error, error) {
 	result := make(chan interface{}, 1)
 	errChan := make(chan error, 1)
+	stream := make(chan *url.URL, 1)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		body, err := ioutil.ReadAll(r.Body)
@@ -92,7 +95,11 @@ func startResponseServer(addr string) (chan interface{}, chan error, error) {
 			return
 		}
 
-		result <- resp.Result
+		if resp.StreamURL != nil {
+			stream <- resp.StreamURL
+		} else {
+			result <- resp.Result
+		}
 	})
 
 	runErr := make(chan error)
@@ -109,7 +116,7 @@ func startResponseServer(addr string) (chan interface{}, chan error, error) {
 	case err = <-runErr:
 	}
 
-	return result, errChan, err
+	return result, stream, errChan, err
 }
 
 func makeRequest(coordinator, taskName, responseAddr string, taskArgs map[string]string) error {
