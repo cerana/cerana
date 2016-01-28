@@ -35,7 +35,7 @@ type Tracker struct {
 func NewTracker(socketPath string, httpStreamURL *url.URL) (*Tracker, error) {
 	if socketPath == "" {
 		var err error
-		socketPath, err = generateTempSocketPath()
+		socketPath, err = generateTempSocketPath("", "acommTrackerResponses-")
 		if err != nil {
 			return nil, err
 		}
@@ -49,11 +49,23 @@ func NewTracker(socketPath string, httpStreamURL *url.URL) (*Tracker, error) {
 	}, nil
 }
 
-func generateTempSocketPath() (string, error) {
+func generateTempSocketPath(dir, prefix string) (string, error) {
 	// Use TempFile to allocate a uniquely named file in either the specified
 	// dir or the default temp dir. It is then removed so that the unix socket
 	// can be created with that name.
-	f, err := ioutil.TempFile("", "acommTrackerResponses-")
+	// TODO: Decide on permissions
+	if dir != "" {
+		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+			log.WithFields(log.Fields{
+				"directory": dir,
+				"perm":      os.ModePerm,
+				"error":     err,
+			}).Error("failed to create directory for socket")
+			return "", err
+		}
+	}
+
+	f, err := ioutil.TempFile(dir, prefix)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,

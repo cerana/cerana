@@ -13,7 +13,7 @@ import (
 )
 
 // NewStreamUnix sets up an ad-hoc unix listner to stream data.
-func (t *Tracker) NewStreamUnix(src io.ReadCloser) (*url.URL, error) {
+func (t *Tracker) NewStreamUnix(dir string, src io.ReadCloser) (*url.URL, error) {
 	if src == nil {
 		err := errors.New("missing stream src")
 		log.WithFields(log.Fields{
@@ -22,7 +22,7 @@ func (t *Tracker) NewStreamUnix(src io.ReadCloser) (*url.URL, error) {
 		return nil, err
 	}
 
-	socketPath, err := generateTempSocketPath()
+	socketPath, err := generateTempSocketPath(dir, "")
 	if err != nil {
 		return nil, err
 	}

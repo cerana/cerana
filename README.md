@@ -185,7 +185,7 @@ response or calls the request's handler.
 #### func (*Tracker) NewStreamUnix
 
 ```go
-func (t *Tracker) NewStreamUnix(src io.ReadCloser) (*url.URL, error)
+func (t *Tracker) NewStreamUnix(dir string, src io.ReadCloser) (*url.URL, error)
 ```
 NewStreamUnix sets up an ad-hoc unix listner to stream data.
 

@@ -14,11 +14,11 @@ func (s *TrackerTestSuite) TestNewStreamUnix() {
 	data := []byte("foobar")
 	src := ioutil.NopCloser(bytes.NewReader(data))
 
-	addr, err := s.Tracker.NewStreamUnix(nil)
+	addr, err := s.Tracker.NewStreamUnix("", nil)
 	s.Nil(addr, "shouldn't be able to create stream without src")
 	s.Error(err, "shouldn't be able to create stream without src")
 
-	addr, err = s.Tracker.NewStreamUnix(src)
+	addr, err = s.Tracker.NewStreamUnix("", src)
 	s.NotNil(addr, "should create streqm with src")
 	s.NoError(err, "should create stream with src")
 }
@@ -29,7 +29,7 @@ func (s *TrackerTestSuite) TestStreamUnix() {
 	}
 	data := []byte("foobar")
 	src := ioutil.NopCloser(bytes.NewReader(data))
-	addr, err := s.Tracker.NewStreamUnix(src)
+	addr, err := s.Tracker.NewStreamUnix("", src)
 	if !s.NoError(err) {
 		return
 	}
@@ -56,7 +56,7 @@ func (s *TrackerTestSuite) TestStreamHTTP() {
 	}
 	data := []byte("foobar")
 	src := ioutil.NopCloser(bytes.NewReader(data))
-	addr, err := s.Tracker.NewStreamUnix(src)
+	addr, err := s.Tracker.NewStreamUnix("", src)
 	if !s.NoError(err) {
 		return
 	}
