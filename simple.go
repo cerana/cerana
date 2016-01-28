@@ -1,7 +1,11 @@
 package simple
 
 import (
+	"bytes"
 	"errors"
+	"io/ioutil"
+	"net/url"
+	"path/filepath"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/mistifyio/acomm"
@@ -65,17 +69,18 @@ func (s *Simple) RegisterTasks(server *Server) {
 	server.RegisterTask("SystemStatus", s.SystemStatus)
 	server.RegisterTask("CPUInfo", s.CPUInfo)
 	server.RegisterTask("DiskInfo", s.DiskInfo)
+	server.RegisterTask("StreamEcho", s.StreamEcho)
 }
 
 // SystemStatus is a task handler to retrieve info look up and return system
 // information. It depends on and makes requests for several other tasks.
-func (s *Simple) SystemStatus(req *acomm.Request) (interface{}, error) {
+func (s *Simple) SystemStatus(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args SystemStatusArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if args.GuestID == "" {
-		return nil, errors.New("missing guest_id")
+		return nil, nil, errors.New("missing guest_id")
 	}
 
 	// Prepare multiple requests
@@ -83,11 +88,11 @@ func (s *Simple) SystemStatus(req *acomm.Request) (interface{}, error) {
 
 	cpuReq, err := acomm.NewRequest("CPUInfo", s.tracker.URL().String(), &CPUInfoArgs{GuestID: args.GuestID}, nil, nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	diskReq, err := acomm.NewRequest("DiskInfo", s.tracker.URL().String(), &DiskInfoArgs{GuestID: args.GuestID}, nil, nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	requests := map[string]*acomm.Request{
@@ -129,17 +134,17 @@ func (s *Simple) SystemStatus(req *acomm.Request) (interface{}, error) {
 		}
 	}
 
-	return result, nil
+	return result, nil, nil
 }
 
 // CPUInfo is a task handler to retrieve information about CPUs.
-func (s *Simple) CPUInfo(req *acomm.Request) (interface{}, error) {
+func (s *Simple) CPUInfo(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args CPUInfoArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if args.GuestID == "" {
-		return nil, errors.New("missing guest_id")
+		return nil, nil, errors.New("missing guest_id")
 	}
 
 	result := &CPUInfoResult{
@@ -152,17 +157,17 @@ func (s *Simple) CPUInfo(req *acomm.Request) (interface{}, error) {
 			MHz:       2600,
 		},
 	}
-	return result, nil
+	return result, nil, nil
 }
 
 // DiskInfo is a task handler to retrieve information about disks.
-func (s *Simple) DiskInfo(req *acomm.Request) (interface{}, error) {
+func (s *Simple) DiskInfo(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args CPUInfoArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if args.GuestID == "" {
-		return nil, errors.New("missing guest_id")
+		return nil, nil, errors.New("missing guest_id")
 	}
 
 	result := &DiskInfoResult{
@@ -172,5 +177,18 @@ func (s *Simple) DiskInfo(req *acomm.Request) (interface{}, error) {
 		},
 	}
 
-	return result, nil
+	return result, nil, nil
+}
+
+// StreamEcho is a task handler to echo input back via streaming data
+func (s *Simple) StreamEcho(req *acomm.Request) (interface{}, *url.URL, error) {
+	src := ioutil.NopCloser(bytes.NewReader(*req.Args))
+	socketDir := filepath.Join(
+		s.config.SocketDir(),
+		"streams",
+		"StreamEcho",
+		s.config.ServiceName())
+	addr, err := s.tracker.NewStreamUnix(socketDir, src)
+
+	return nil, addr, err
 }

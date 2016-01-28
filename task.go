@@ -2,6 +2,7 @@ package simple
 
 import (
 	"net"
+	"net/url"
 	"sync"
 	"time"
 
@@ -11,7 +12,7 @@ import (
 
 // TaskHandler if the request handler function for a particular task. It should
 // return results or an error, but not both.
-type TaskHandler func(*acomm.Request) (interface{}, error)
+type TaskHandler func(*acomm.Request) (interface{}, *url.URL, error)
 
 // task contains the request listener and handler for a task.
 type task struct {
@@ -103,11 +104,11 @@ func (t *task) handleRequest(req *acomm.Request) {
 	defer t.waitgroup.Done()
 
 	// Run the task-specific request handler
-	result, taskErr := t.handler(req)
+	result, streamAddr, taskErr := t.handler(req)
 
 	// Note: The acomm calls log the error already, but we want to have a log
 	// of the request and response data as well.
-	resp, err := acomm.NewResponse(req, result, nil, taskErr)
+	resp, err := acomm.NewResponse(req, result, streamAddr, taskErr)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"task":       t.name,

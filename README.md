@@ -269,14 +269,14 @@ NewSimple creates a new instance of Simple.
 #### func (*Simple) CPUInfo
 
 ```go
-func (s *Simple) CPUInfo(req *acomm.Request) (interface{}, error)
+func (s *Simple) CPUInfo(req *acomm.Request) (interface{}, *url.URL, error)
 ```
 CPUInfo is a task handler to retrieve information about CPUs.
 
 #### func (*Simple) DiskInfo
 
 ```go
-func (s *Simple) DiskInfo(req *acomm.Request) (interface{}, error)
+func (s *Simple) DiskInfo(req *acomm.Request) (interface{}, *url.URL, error)
 ```
 DiskInfo is a task handler to retrieve information about disks.
 
@@ -287,10 +287,17 @@ func (s *Simple) RegisterTasks(server *Server)
 ```
 RegisterTasks registers all of Simple's task handlers with the server.
 
+#### func (*Simple) StreamEcho
+
+```go
+func (s *Simple) StreamEcho(req *acomm.Request) (interface{}, *url.URL, error)
+```
+StreamEcho is a task handler to echo input back via streaming data
+
 #### func (*Simple) SystemStatus
 
 ```go
-func (s *Simple) SystemStatus(req *acomm.Request) (interface{}, error)
+func (s *Simple) SystemStatus(req *acomm.Request) (interface{}, *url.URL, error)
 ```
 SystemStatus is a task handler to retrieve info look up and return system
 information. It depends on and makes requests for several other tasks.
@@ -319,7 +326,7 @@ SystemStatusResult is the result data for the SystemStatus handler.
 #### type TaskHandler
 
 ```go
-type TaskHandler func(*acomm.Request) (interface{}, error)
+type TaskHandler func(*acomm.Request) (interface{}, *url.URL, error)
 ```
 
 TaskHandler if the request handler function for a particular task. It should
