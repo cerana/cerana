@@ -6,6 +6,13 @@ Package acomm is a library for asynchronous communication between services.
 
 ## Usage
 
+#### func  ProxyStreamHandler
+
+```go
+func ProxyStreamHandler(w http.ResponseWriter, r *http.Request)
+```
+ProxyStreamHandler is an HTTP HandlerFunc for simple proxy streaming.
+
 #### func  Send
 
 ```go
@@ -154,7 +161,7 @@ Tracker keeps track of requests waiting on a response.
 #### func  NewTracker
 
 ```go
-func NewTracker(socketPath, httpStreamURLFormat string) (*Tracker, error)
+func NewTracker(socketPath string, httpStreamURL *url.URL) (*Tracker, error)
 ```
 NewTracker creates and initializes a new Tracker. If a socketPath is not
 provided, the response socket will be created in a temporary directory.
@@ -192,17 +199,10 @@ NumRequests returns the number of tracked requests
 #### func (*Tracker) ProxyStreamHTTPURL
 
 ```go
-func (t *Tracker) ProxyStreamHTTPURL(socketPath string) (*url.URL, error)
+func (t *Tracker) ProxyStreamHTTPURL(addr *url.URL) (*url.URL, error)
 ```
 ProxyStreamHTTPURL generates the url for proxying streaming data from a unix
 socket.
-
-#### func (*Tracker) ProxyStreamHandler
-
-```go
-func (t *Tracker) ProxyStreamHandler(w http.ResponseWriter, r *http.Request)
-```
-ProxyStreamHandler is an HTTP HandlerFunc for simple proxy streaming.
 
 #### func (*Tracker) ProxyUnix
 
@@ -268,9 +268,11 @@ for new connections, as well as graceful shutdown.
 #### func  NewUnixListener
 
 ```go
-func NewUnixListener(socketPath string) *UnixListener
+func NewUnixListener(socketPath string, acceptLimit int) *UnixListener
 ```
-NewUnixListener creates and initializes a new UnixListener.
+NewUnixListener creates and initializes a new UnixListener. AcceptLimit controls
+how many connections it will listen for before stopping; 0 and below is
+unlimited.
 
 #### func (*UnixListener) Addr
 

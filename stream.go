@@ -7,7 +7,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"time"
 
 	log "github.com/Sirupsen/logrus"
 	logx "github.com/mistifyio/mistify-logrus-ext"
@@ -15,12 +14,20 @@ import (
 
 // NewStreamUnix sets up an ad-hoc unix listner to stream data.
 func (t *Tracker) NewStreamUnix(src io.ReadCloser) (*url.URL, error) {
+	if src == nil {
+		err := errors.New("missing stream src")
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error(err)
+		return nil, err
+	}
+
 	socketPath, err := generateTempSocketPath()
 	if err != nil {
 		return nil, err
 	}
 
-	ul := NewUnixListener(socketPath)
+	ul := NewUnixListener(socketPath, 1)
 	if err := ul.Start(); err != nil {
 		return nil, err
 	}
@@ -42,7 +49,6 @@ func (t *Tracker) NewStreamUnix(src io.ReadCloser) (*url.URL, error) {
 		if conn == nil {
 			return
 		}
-		defer ul.Stop(time.Millisecond)
 		defer ul.DoneConn(conn)
 
 		if _, err := io.Copy(conn, src); err != nil {
@@ -59,12 +65,40 @@ func (t *Tracker) NewStreamUnix(src io.ReadCloser) (*url.URL, error) {
 
 // ProxyStreamHTTPURL generates the url for proxying streaming data from a unix
 // socket.
-func (t *Tracker) ProxyStreamHTTPURL(socketPath string) (*url.URL, error) {
-	return url.ParseRequestURI(fmt.Sprintf(t.httpStreamURLFormat, socketPath))
+func (t *Tracker) ProxyStreamHTTPURL(addr *url.URL) (*url.URL, error) {
+	if t.httpStreamURL == nil {
+		err := errors.New("tracker missing http stream url")
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error(err)
+		return nil, err
+	}
+
+	if addr == nil {
+		err := errors.New("missing addr")
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error(err)
+		return nil, err
+	}
+	streamAddr := &url.URL{}
+	*streamAddr = *t.httpStreamURL
+	q := streamAddr.Query()
+	q.Set("addr", addr.String())
+	streamAddr.RawQuery = q.Encode()
+
+	return streamAddr, nil
 }
 
 // Stream streams data from a URL to a destination writer.
 func Stream(dest io.Writer, addr *url.URL) error {
+	if dest == nil {
+		err := errors.New("missing dest")
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error(err)
+		return err
+	}
 	if addr == nil {
 		err := errors.New("missing addr")
 		log.WithFields(log.Fields{
@@ -140,7 +174,7 @@ func streamHTTP(dest io.Writer, addr *url.URL) error {
 }
 
 // ProxyStreamHandler is an HTTP HandlerFunc for simple proxy streaming.
-func (t *Tracker) ProxyStreamHandler(w http.ResponseWriter, r *http.Request) {
+func ProxyStreamHandler(w http.ResponseWriter, r *http.Request) {
 	addr, err := url.ParseRequestURI(r.URL.Query().Get("addr"))
 	if err != nil {
 		http.Error(w, "invalid addr", http.StatusBadRequest)
