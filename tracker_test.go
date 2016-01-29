@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
@@ -15,10 +16,11 @@ import (
 
 type TrackerTestSuite struct {
 	suite.Suite
-	Tracker    *acomm.Tracker
-	RespServer *httptest.Server
-	Responses  chan *acomm.Response
-	Request    *acomm.Request
+	Tracker      *acomm.Tracker
+	RespServer   *httptest.Server
+	StreamServer *httptest.Server
+	Responses    chan *acomm.Response
+	Request      *acomm.Request
 }
 
 func (s *TrackerTestSuite) SetupSuite() {
@@ -33,6 +35,9 @@ func (s *TrackerTestSuite) SetupSuite() {
 		s.NoError(json.Unmarshal(body, resp), "should not fail unmarshalling response")
 		s.Responses <- resp
 	}))
+
+	// Mock HTTP Stream server
+	s.StreamServer = httptest.NewServer(http.HandlerFunc(acomm.ProxyStreamHandler))
 }
 
 func (s *TrackerTestSuite) SetupTest() {
@@ -41,7 +46,8 @@ func (s *TrackerTestSuite) SetupTest() {
 	s.Request, err = acomm.NewRequest("foobar", s.RespServer.URL, nil, nil, nil)
 	s.Require().NoError(err, "request should be valid")
 
-	s.Tracker, err = acomm.NewTracker("")
+	streamAddr, _ := url.ParseRequestURI(s.StreamServer.URL)
+	s.Tracker, err = acomm.NewTracker("", streamAddr)
 	s.Require().NoError(err, "failed to create new Tracker")
 	s.Require().NotNil(s.Tracker, "failed to create new Tracker")
 }
@@ -52,6 +58,7 @@ func (s *TrackerTestSuite) TearDownTest() {
 
 func (s *TrackerTestSuite) TearDownSuite() {
 	s.RespServer.Close()
+	s.StreamServer.Close()
 }
 
 func TestTrackerTestSuite(t *testing.T) {
@@ -83,16 +90,13 @@ func (s *TrackerTestSuite) TestTrackRequest() {
 	s.True(s.Tracker.RemoveRequest(s.Request))
 }
 
-func (s *TrackerTestSuite) TestStartAndStopListener() {
-	s.Tracker.Stop()
+func (s *TrackerTestSuite) TestStartListener() {
 	s.NoError(s.Tracker.Start(), "starting an unstarted should not error")
 	s.NoError(s.Tracker.Start(), "starting an started should not error")
 
 	s.NoError(s.Tracker.TrackRequest(s.Request), "should have successfully tracked request")
 
 	go s.Tracker.RemoveRequest(s.Request)
-
-	s.Tracker.Stop()
 }
 
 func (s *TrackerTestSuite) TestProxyUnix() {
@@ -110,7 +114,7 @@ func (s *TrackerTestSuite) TestProxyUnix() {
 	s.Equal(s.Request.ID, unixReq.ID, "new request should share ID with original")
 	s.Equal("unix", unixReq.ResponseHook.Scheme, "new request should have a unix response hook")
 	s.Equal(1, s.Tracker.NumRequests(), "should have tracked the new request")
-	resp, err := acomm.NewResponse(unixReq, struct{}{}, nil)
+	resp, err := acomm.NewResponse(unixReq, struct{}{}, nil, nil)
 	if !s.NoError(err, "new response should not error") {
 		return
 	}

@@ -6,6 +6,13 @@ Package acomm is a library for asynchronous communication between services.
 
 ## Usage
 
+#### func  ProxyStreamHandler
+
+```go
+func ProxyStreamHandler(w http.ResponseWriter, r *http.Request)
+```
+ProxyStreamHandler is an HTTP HandlerFunc for simple proxy streaming.
+
 #### func  Send
 
 ```go
@@ -20,6 +27,13 @@ func SendConnData(conn net.Conn, payload interface{}) error
 ```
 SendConnData marshals and writes payload JSON data to the Conn with appropriate
 headers.
+
+#### func  Stream
+
+```go
+func Stream(dest io.Writer, addr *url.URL) error
+```
+Stream streams data from a URL to a destination writer.
 
 #### func  UnmarshalConnData
 
@@ -88,9 +102,10 @@ Validate validates the reqeust
 
 ```go
 type Response struct {
-	ID     string           `json:"id"`
-	Result *json.RawMessage `json:"result"`
-	Error  error            `json:"error"`
+	ID        string           `json:"id"`
+	Result    *json.RawMessage `json:"result"`
+	StreamURL *url.URL         `json:"stream_url"`
+	Error     error            `json:"error"`
 }
 ```
 
@@ -101,7 +116,7 @@ present and vice versa.
 #### func  NewResponse
 
 ```go
-func NewResponse(req *Request, result interface{}, err error) (*Response, error)
+func NewResponse(req *Request, result interface{}, streamURL *url.URL, err error) (*Response, error)
 ```
 NewResponse creates a new Response instance based on a Request.
 
@@ -110,17 +125,19 @@ NewResponse creates a new Response instance based on a Request.
 ```go
 func (r *Response) MarshalJSON() ([]byte, error)
 ```
+MarshalJSON marshals a Response into JSON.
 
 #### func (*Response) UnmarshalJSON
 
 ```go
 func (r *Response) UnmarshalJSON(data []byte) error
 ```
+UnmarshalJSON unmarshals JSON data into a Response.
 
 #### func (*Response) UnmarshalResult
 
 ```go
-func (resp *Response) UnmarshalResult(dest interface{}) error
+func (r *Response) UnmarshalResult(dest interface{}) error
 ```
 UnmarshalResult unmarshals the response result into the destination object.
 
@@ -144,9 +161,9 @@ Tracker keeps track of requests waiting on a response.
 #### func  NewTracker
 
 ```go
-func NewTracker(socketPath string) (*Tracker, error)
+func NewTracker(socketPath string, httpStreamURL *url.URL) (*Tracker, error)
 ```
-NewTracker creates and initializes a new Tracker. If a socketDir is not
+NewTracker creates and initializes a new Tracker. If a socketPath is not
 provided, the response socket will be created in a temporary directory.
 
 #### func (*Tracker) Addr
@@ -165,12 +182,27 @@ func (t *Tracker) HandleResponse(resp *Response)
 HandleResponse associates a response with a request and either forwards the
 response or calls the request's handler.
 
+#### func (*Tracker) NewStreamUnix
+
+```go
+func (t *Tracker) NewStreamUnix(dir string, src io.ReadCloser) (*url.URL, error)
+```
+NewStreamUnix sets up an ad-hoc unix listner to stream data.
+
 #### func (*Tracker) NumRequests
 
 ```go
 func (t *Tracker) NumRequests() int
 ```
 NumRequests returns the number of tracked requests
+
+#### func (*Tracker) ProxyStreamHTTPURL
+
+```go
+func (t *Tracker) ProxyStreamHTTPURL(addr *url.URL) (*url.URL, error)
+```
+ProxyStreamHTTPURL generates the url for proxying streaming data from a unix
+socket.
 
 #### func (*Tracker) ProxyUnix
 
@@ -236,9 +268,11 @@ for new connections, as well as graceful shutdown.
 #### func  NewUnixListener
 
 ```go
-func NewUnixListener(socketPath string) *UnixListener
+func NewUnixListener(socketPath string, acceptLimit int) *UnixListener
 ```
-NewUnixListener creates and initializes a new UnixListener.
+NewUnixListener creates and initializes a new UnixListener. AcceptLimit controls
+how many connections it will listen for before stopping; 0 and below is
+unlimited.
 
 #### func (*UnixListener) Addr
 
@@ -274,7 +308,7 @@ Start prepares the listener and starts listening for new connections.
 #### func (*UnixListener) Stop
 
 ```go
-func (ul *UnixListener) Stop()
+func (ul *UnixListener) Stop(timeout time.Duration)
 ```
 Stop stops listening for new connections. It blocks until existing connections
 are handled and the listener closed.

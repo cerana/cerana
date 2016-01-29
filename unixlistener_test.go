@@ -24,11 +24,13 @@ func (s *UnixListenerTestSuite) SetupTest() {
 	s.Require().NoError(os.Remove(f.Name()), "failed to remove temp socket file")
 
 	s.Socket = fmt.Sprintf("%s.sock", f.Name())
-	s.Listener = acomm.NewUnixListener(s.Socket)
+	s.Listener = acomm.NewUnixListener(s.Socket, 0)
 }
 
 func (s *UnixListenerTestSuite) TearDownTest() {
-	s.Listener.Stop()
+	s.Listener.Stop(0)
+	sConn := s.Listener.NextConn()
+	s.Nil(sConn)
 }
 
 func TestUnixListenerTestSuite(t *testing.T) {
@@ -36,27 +38,26 @@ func TestUnixListenerTestSuite(t *testing.T) {
 }
 
 func (s *UnixListenerTestSuite) TestNewUnixListener() {
-	s.NotNil(acomm.NewUnixListener("foobar"), "should have returned a new UnixListener")
+	s.NotNil(acomm.NewUnixListener("foobar", 0), "should have returned a new UnixListener")
+	_ = s.Listener.Start()
 }
 
 func (s *UnixListenerTestSuite) TestAddr() {
 	s.Equal(s.Socket, s.Listener.Addr(), "should be the same addr")
+	_ = s.Listener.Start()
 }
 
 func (s *UnixListenerTestSuite) TestURL() {
 	s.Equal(fmt.Sprintf("unix://%s", s.Socket), s.Listener.URL().String(), "should be the same URL")
+	_ = s.Listener.Start()
 }
 
-func (s *UnixListenerTestSuite) TestStartAndStop() {
+func (s *UnixListenerTestSuite) TestStart() {
 	s.NoError(s.Listener.Start(), "should start successfully")
-	s.NoError(s.Listener.Start(), "should not error calling start again")
+	s.Error(s.Listener.Start(), "should error calling start again")
 
-	bad := acomm.NewUnixListener(s.Listener.Addr())
+	bad := acomm.NewUnixListener(s.Listener.Addr(), 0)
 	s.Error(bad.Start(), "should not be able to start on a used socket")
-
-	// Should work fine, not crash
-	s.Listener.Stop()
-	s.Listener.Stop()
 }
 
 func (s *UnixListenerTestSuite) TestNextAndDoneConn() {
@@ -78,11 +79,6 @@ func (s *UnixListenerTestSuite) TestNextAndDoneConn() {
 	}
 
 	s.Listener.DoneConn(lConn)
-
-	s.Listener.Stop()
-	sConn := s.Listener.NextConn()
-	s.Nil(sConn)
-
 }
 
 func (s *UnixListenerTestSuite) TestSendAndUnmarshalConnData() {

@@ -22,17 +22,20 @@ const (
 type Tracker struct {
 	status           int
 	responseListener *UnixListener
+	httpStreamURL    *url.URL
 	requestsLock     sync.Mutex // Protects requests
 	requests         map[string]*Request
+	dsLock           sync.Mutex // Protects dataStreams
+	dataStreams      map[string]*UnixListener
 	waitgroup        sync.WaitGroup
 }
 
-// NewTracker creates and initializes a new Tracker. If a socketDir is not
+// NewTracker creates and initializes a new Tracker. If a socketPath is not
 // provided, the response socket will be created in a temporary directory.
-func NewTracker(socketPath string) (*Tracker, error) {
+func NewTracker(socketPath string, httpStreamURL *url.URL) (*Tracker, error) {
 	if socketPath == "" {
 		var err error
-		socketPath, err = generateTempSocketPath()
+		socketPath, err = generateTempSocketPath("", "acommTrackerResponses-")
 		if err != nil {
 			return nil, err
 		}
@@ -40,15 +43,29 @@ func NewTracker(socketPath string) (*Tracker, error) {
 
 	return &Tracker{
 		status:           statusStopped,
-		responseListener: NewUnixListener(socketPath),
+		responseListener: NewUnixListener(socketPath, 0),
+		httpStreamURL:    httpStreamURL,
+		dataStreams:      make(map[string]*UnixListener),
 	}, nil
 }
 
-func generateTempSocketPath() (string, error) {
+func generateTempSocketPath(dir, prefix string) (string, error) {
 	// Use TempFile to allocate a uniquely named file in either the specified
 	// dir or the default temp dir. It is then removed so that the unix socket
 	// can be created with that name.
-	f, err := ioutil.TempFile("", "acommTrackerResponses-")
+	// TODO: Decide on permissions
+	if dir != "" {
+		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+			log.WithFields(log.Fields{
+				"directory": dir,
+				"perm":      os.ModePerm,
+				"error":     err,
+			}).Error("failed to create directory for socket")
+			return "", err
+		}
+	}
+
+	f, err := ioutil.TempFile(dir, prefix)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
@@ -154,6 +171,14 @@ func (t *Tracker) HandleResponse(resp *Response) {
 		return
 	}
 
+	if resp.StreamURL != nil {
+		streamURL, err := t.ProxyStreamHTTPURL(resp.StreamURL) // Replace the StreamURL with a proxy stream url
+		if err != nil {
+			streamURL = nil
+		}
+		resp.StreamURL = streamURL
+	}
+
 	// Forward the response along
 	_ = req.Respond(resp)
 	return
@@ -171,8 +196,23 @@ func (t *Tracker) Stop() {
 
 	// Handle any requests that are expected
 	t.waitgroup.Wait()
-	// Stop listening for new requests
-	t.responseListener.Stop()
+
+	// Stop listening for responses
+	t.responseListener.Stop(0)
+
+	// Stop any data streamers
+	var dsWG sync.WaitGroup
+	t.dsLock.Lock()
+	for _, ds := range t.dataStreams {
+		dsWG.Add(1)
+		go func(ds *UnixListener) {
+			defer dsWG.Done()
+			ds.Stop(0)
+		}(ds)
+	}
+	t.dsLock.Unlock()
+	dsWG.Wait()
+
 	t.status = statusStopped
 	return
 }
