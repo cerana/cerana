@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"sync"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -23,6 +24,7 @@ type Tracker struct {
 	status           int
 	responseListener *UnixListener
 	httpStreamURL    *url.URL
+	defaultTimeout   time.Duration
 	requestsLock     sync.Mutex // Protects requests
 	requests         map[string]*Request
 	dsLock           sync.Mutex // Protects dataStreams
@@ -32,7 +34,7 @@ type Tracker struct {
 
 // NewTracker creates and initializes a new Tracker. If a socketPath is not
 // provided, the response socket will be created in a temporary directory.
-func NewTracker(socketPath string, httpStreamURL *url.URL) (*Tracker, error) {
+func NewTracker(socketPath string, httpStreamURL *url.URL, defaultTimeout time.Duration) (*Tracker, error) {
 	if socketPath == "" {
 		var err error
 		socketPath, err = generateTempSocketPath("", "acommTrackerResponses-")
@@ -46,6 +48,7 @@ func NewTracker(socketPath string, httpStreamURL *url.URL) (*Tracker, error) {
 		responseListener: NewUnixListener(socketPath, 0),
 		httpStreamURL:    httpStreamURL,
 		dataStreams:      make(map[string]*UnixListener),
+		defaultTimeout:   defaultTimeout,
 	}, nil
 }
 
@@ -160,6 +163,11 @@ func (t *Tracker) HandleResponse(resp *Response) {
 	}
 	defer t.waitgroup.Done()
 
+	// Stop the request timeout. The result doesn't matter.
+	if req.timeout != nil {
+		_ = req.timeout.Stop()
+	}
+
 	// If there are handlers, this is the final destination, so handle the
 	// response. Otherwise, forward the response along.
 	// Known issue: If this is the final destination and there are
@@ -219,7 +227,7 @@ func (t *Tracker) Stop() {
 
 // TrackRequest tracks a request. This does not need to be called after using
 // ProxyUnix.
-func (t *Tracker) TrackRequest(req *Request) error {
+func (t *Tracker) TrackRequest(req *Request, timeout time.Duration) error {
 	t.requestsLock.Lock()
 	defer t.requestsLock.Unlock()
 
@@ -234,6 +242,8 @@ func (t *Tracker) TrackRequest(req *Request) error {
 		}
 		t.waitgroup.Add(1)
 		t.requests[req.ID] = req
+
+		t.setRequestTimeout(req, timeout)
 		return nil
 	}
 
@@ -269,13 +279,34 @@ func (t *Tracker) retrieveRequest(id string) *Request {
 	return nil
 }
 
+func (t *Tracker) setRequestTimeout(req *Request, timeout time.Duration) {
+	// Fallback to default timeout
+	if timeout == 0 {
+		timeout = t.defaultTimeout
+	}
+	// Timeout of nil is no timeout
+	if timeout == 0 {
+		return
+	}
+
+	resp, err := NewResponse(req, nil, nil, errors.New("response timeout"))
+	if err != nil {
+		return
+	}
+
+	req.timeout = time.AfterFunc(timeout, func() {
+		t.HandleResponse(resp)
+	})
+	return
+}
+
 // ProxyUnix proxies requests that have response hooks of non-unix sockets
 // through one that does. If the response hook is already a unix socket, it
 // returns the original request. If not, it tracks the original request and
 // returns a new request with a unix socket response hook. The purpose of this
 // is so that there can be a single entry and exit point for external
 // communication, while local services can reply directly to each other.
-func (t *Tracker) ProxyUnix(req *Request) (*Request, error) {
+func (t *Tracker) ProxyUnix(req *Request, timeout time.Duration) (*Request, error) {
 	if t.responseListener == nil {
 		err := errors.New("request tracker's response listener not active")
 		log.WithFields(log.Fields{
@@ -295,7 +326,7 @@ func (t *Tracker) ProxyUnix(req *Request) (*Request, error) {
 			// Success and ErrorHandler are unnecessary here and intentionally
 			// omitted.
 		}
-		if err := t.TrackRequest(req); err != nil {
+		if err := t.TrackRequest(req, timeout); err != nil {
 			return nil, err
 		}
 		req.proxied = true

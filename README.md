@@ -161,7 +161,7 @@ Tracker keeps track of requests waiting on a response.
 #### func  NewTracker
 
 ```go
-func NewTracker(socketPath string, httpStreamURL *url.URL) (*Tracker, error)
+func NewTracker(socketPath string, httpStreamURL *url.URL, defaultTimeout time.Duration) (*Tracker, error)
 ```
 NewTracker creates and initializes a new Tracker. If a socketPath is not
 provided, the response socket will be created in a temporary directory.
@@ -207,7 +207,7 @@ socket.
 #### func (*Tracker) ProxyUnix
 
 ```go
-func (t *Tracker) ProxyUnix(req *Request) (*Request, error)
+func (t *Tracker) ProxyUnix(req *Request, timeout time.Duration) (*Request, error)
 ```
 ProxyUnix proxies requests that have response hooks of non-unix sockets through
 one that does. If the response hook is already a unix socket, it returns the
@@ -243,7 +243,7 @@ requests to finish.
 #### func (*Tracker) TrackRequest
 
 ```go
-func (t *Tracker) TrackRequest(req *Request) error
+func (t *Tracker) TrackRequest(req *Request, timeout time.Duration) error
 ```
 TrackRequest tracks a request. This does not need to be called after using
 ProxyUnix.
