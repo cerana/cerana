@@ -10,21 +10,21 @@ import (
 	xdr "github.com/davecgh/go-xdr/xdr2"
 )
 
-type xdrDecoder struct {
+type XDRDecoder struct {
 	*xdr.Decoder
 	r    io.ReadSeeker
 	pair pair
 }
 
-func newXDRDecoder(r io.ReadSeeker) *xdrDecoder {
-	return &xdrDecoder{Decoder: xdr.NewDecoder(r), r: r}
+func NewXDRDecoder(r io.ReadSeeker) *XDRDecoder {
+	return &XDRDecoder{Decoder: xdr.NewDecoder(r), r: r}
 }
 
 // Decode
 // Note: care should be taken when decoding into a `map[string]interface{}` as
 // bytes/uint8s (and their array forms) can not be distinguished and will be
 // treated as uint8/[]uint8.
-func (d *xdrDecoder) Decode(target interface{}) error {
+func (d *XDRDecoder) Decode(target interface{}) error {
 	// Validate data encoding
 	codec, endianness, err := decodePreamble(d.r, binary.BigEndian)
 	if err != nil {
@@ -47,7 +47,7 @@ func (d *xdrDecoder) Decode(target interface{}) error {
 	return decodeList(d.r, reflect.Indirect(targetV))
 }
 
-func (d *xdrDecoder) header() (header, error) {
+func (d *XDRDecoder) header() (header, error) {
 	return decHeader(d.r)
 }
 
@@ -57,7 +57,7 @@ func decHeader(r io.ReadSeeker) (header, error) {
 	return h, err
 }
 
-func (d *xdrDecoder) meta() (string, dataType, error) {
+func (d *XDRDecoder) meta() (string, dataType, error) {
 	err := decMeta(d.r, &d.pair)
 	return d.pair.Name, d.pair.Type, err
 }
@@ -67,7 +67,7 @@ func decMeta(r io.ReadSeeker, pair *pair) error {
 	return err
 }
 
-func (d *xdrDecoder) skip() error {
+func (d *XDRDecoder) skip() error {
 	return skip(d.r, d.pair)
 }
 
@@ -76,7 +76,7 @@ func skip(r io.ReadSeeker, pair pair) error {
 	return err
 }
 
-func (d *xdrDecoder) isEnd() (bool, error) {
+func (d *XDRDecoder) isEnd() (bool, error) {
 	return isEnd(d.r)
 }
 
@@ -93,7 +93,7 @@ func isEnd(r io.ReadSeeker) (bool, error) {
 	return false, err
 }
 
-func (d *xdrDecoder) value(targetType reflect.Type) (reflect.Value, fieldSetFunc, error) {
+func (d *XDRDecoder) value(targetType reflect.Type) (reflect.Value, fieldSetFunc, error) {
 	return decValue(d.r, d.pair, targetType)
 }
 
@@ -103,7 +103,7 @@ func decValue(r io.ReadSeeker, pair pair, targetType reflect.Type) (reflect.Valu
 	err := fmt.Errorf("unknown type: %v", pair.Type)
 
 	var v interface{}
-	dec := newXDRDecoder(r)
+	dec := NewXDRDecoder(r)
 	switch pair.Type {
 	case _BOOLEAN:
 		err = nil
