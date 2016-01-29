@@ -35,34 +35,45 @@ func NewServer(config *Config) (*Server, error) {
 		config: config,
 	}
 
-	// Response socket for proxied requests
-	responseSocket := filepath.Join(
-		config.SocketDir(),
-		"response",
-		config.ServiceName()+".sock")
-	s.proxy, err = acomm.NewTracker(responseSocket)
-	if err != nil {
-		return nil, err
-	}
-
 	// Internal socket for requests from providers
 	internalSocket := filepath.Join(
 		config.SocketDir(),
 		"coordinator",
 		config.ServiceName()+".sock")
-	s.internal = acomm.NewUnixListener(internalSocket)
+	s.internal = acomm.NewUnixListener(internalSocket, 0)
 
-	// External socket for requests from outside
+	// External server for requests from outside
+	mux := http.NewServeMux()
+	mux.HandleFunc("/stream", acomm.ProxyStreamHandler)
+	mux.HandleFunc("/", s.externalHandler)
 	s.external = &graceful.Server{
 		Server: &http.Server{
 			Addr:    fmt.Sprintf(":%d", config.ExternalPort()),
-			Handler: http.HandlerFunc(s.externalHandler),
+			Handler: mux,
 		},
 		NoSignalHandling: true,
 	}
 
+	// Response socket for proxied requests
+	responseSocket := filepath.Join(
+		config.SocketDir(),
+		"response",
+		config.ServiceName()+".sock")
+
+	streamURL, err := url.ParseRequestURI(
+		fmt.Sprintf("http://%s:%d/stream", getLocalIP(), config.ExternalPort()))
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error("failed to generate stream url")
+	}
+	s.proxy, err = acomm.NewTracker(responseSocket, streamURL)
+	if err != nil {
+		return nil, err
+	}
 	log.WithFields(log.Fields{
 		"response": responseSocket,
+		"stream":   streamURL.String(),
 		"internal": internalSocket,
 		"external": fmt.Sprintf(":%d", config.ExternalPort()),
 	}).Info("server addresses")
@@ -77,7 +88,7 @@ func (s *Server) externalHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Send the immediate response
 	defer func() {
-		resp, err := acomm.NewResponse(req, nil, respErr)
+		resp, err := acomm.NewResponse(req, nil, nil, respErr)
 		respJSON, err := json.Marshal(resp)
 		if err != nil {
 			log.WithFields(log.Fields{
@@ -127,7 +138,7 @@ func (s *Server) acceptInternalRequest(conn net.Conn) {
 	req := &acomm.Request{}
 	defer func() {
 		// Respond to the initial request
-		resp, err := acomm.NewResponse(req, nil, respErr)
+		resp, err := acomm.NewResponse(req, nil, nil, respErr)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"error":   err,
@@ -137,7 +148,7 @@ func (s *Server) acceptInternalRequest(conn net.Conn) {
 			return
 		}
 
-		if acomm.SendConnData(conn, resp); err != nil {
+		if err := acomm.SendConnData(conn, resp); err != nil {
 			log.WithFields(log.Fields{
 				"error":   err,
 				"req":     req,
@@ -268,7 +279,7 @@ func (s *Server) Stop() {
 	<-stopChan
 
 	// Stop accepting new internal requests
-	s.internal.Stop()
+	s.internal.Stop(0)
 
 	// Stop the proxy tracker
 	s.proxy.Stop()
@@ -290,4 +301,24 @@ func (s *Server) StopOnSignal(signals ...os.Signal) {
 	}).Info("signal received, stopping")
 
 	s.Stop()
+}
+
+func getLocalIP() string {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error("failed to list interface addrs")
+		return ""
+	}
+
+	for _, address := range addrs {
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				return ipnet.IP.String()
+			}
+		}
+	}
+
+	return ""
 }
