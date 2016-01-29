@@ -2,6 +2,7 @@ package simple
 
 import (
 	"sync"
+	"time"
 
 	"github.com/mistifyio/acomm"
 )
@@ -12,14 +13,16 @@ type MultiRequest struct {
 	respWG     sync.WaitGroup
 	responses  chan *acomm.Response
 	tracker    *acomm.Tracker
+	timeout    time.Duration
 }
 
 // NewMultiRequest creates and initializes a new MultiRequest.
-func NewMultiRequest(tracker *acomm.Tracker) *MultiRequest {
+func NewMultiRequest(tracker *acomm.Tracker, timeout time.Duration) *MultiRequest {
 	return &MultiRequest{
 		idsToNames: make(map[string]string),
 		responses:  make(chan *acomm.Response, 100),
 		tracker:    tracker,
+		timeout:    timeout,
 	}
 }
 
@@ -32,7 +35,7 @@ func (m *MultiRequest) AddRequest(name string, req *acomm.Request) error {
 	req.ErrorHandler = m.responseHandler
 
 	m.respWG.Add(1)
-	return m.tracker.TrackRequest(req)
+	return m.tracker.TrackRequest(req, m.timeout)
 }
 
 // RemoveRequest removes a request from the MultiRequest. Useful if the send fails.
@@ -50,7 +53,7 @@ func (m *MultiRequest) responseHandler(req *acomm.Request, resp *acomm.Response)
 	m.responses <- resp
 }
 
-// Results returns responses for all of the requests, keyed on the request name
+// Responses returns responses for all of the requests, keyed on the request name
 // (as opposed to request id). Blocks until all requests are accounted for.
 func (m *MultiRequest) Responses() map[string]*acomm.Response {
 	results := make(map[string]*acomm.Response)

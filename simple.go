@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/url"
 	"path/filepath"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/mistifyio/acomm"
@@ -56,6 +57,17 @@ type DiskInfo struct {
 	Size   int64
 }
 
+// DelayedRespArgs are arguments for the DelayedResp handler.
+type DelayedRespArgs struct {
+	Delay time.Duration `json:"delay"`
+}
+
+type DelayedRespResult struct {
+	Delay       time.Duration `json:"delay"`
+	ReceivedAt  time.Time     `json:"received_at"`
+	RespondedAt time.Time     `json:"responded_at"`
+}
+
 // NewSimple creates a new instance of Simple.
 func NewSimple(config *Config, tracker *acomm.Tracker) *Simple {
 	return &Simple{
@@ -70,6 +82,7 @@ func (s *Simple) RegisterTasks(server *Server) {
 	server.RegisterTask("CPUInfo", s.CPUInfo)
 	server.RegisterTask("DiskInfo", s.DiskInfo)
 	server.RegisterTask("StreamEcho", s.StreamEcho)
+	server.RegisterTask("DelayedResp", s.DelayedResp)
 }
 
 // SystemStatus is a task handler to retrieve info look up and return system
@@ -84,7 +97,7 @@ func (s *Simple) SystemStatus(req *acomm.Request) (interface{}, *url.URL, error)
 	}
 
 	// Prepare multiple requests
-	multiRequest := NewMultiRequest(s.tracker)
+	multiRequest := NewMultiRequest(s.tracker, 0)
 
 	cpuReq, err := acomm.NewRequest("CPUInfo", s.tracker.URL().String(), &CPUInfoArgs{GuestID: args.GuestID}, nil, nil)
 	if err != nil {
@@ -191,4 +204,25 @@ func (s *Simple) StreamEcho(req *acomm.Request) (interface{}, *url.URL, error) {
 	addr, err := s.tracker.NewStreamUnix(socketDir, src)
 
 	return nil, addr, err
+}
+
+func (s *Simple) DelayedResp(req *acomm.Request) (interface{}, *url.URL, error) {
+	var args DelayedRespArgs
+	if err := req.UnmarshalArgs(&args); err != nil {
+		return nil, nil, err
+	}
+	if args.Delay <= 0 {
+		return nil, nil, errors.New("delay must be positive")
+	}
+
+	start := time.Now()
+	time.Sleep(time.Second * args.Delay)
+
+	result := &DelayedRespResult{
+		Delay:       args.Delay,
+		ReceivedAt:  start,
+		RespondedAt: time.Now(),
+	}
+
+	return result, nil, nil
 }
