@@ -89,6 +89,11 @@ func (c *Config) CoordinatorURL() *url.URL {
 	return u
 }
 
+// RequestTimeout returns the duration of the default request timeout.
+func (c *Config) RequestTimeout() time.Duration {
+	return time.Second * time.Duration(c.viper.GetInt("request_timeout"))
+}
+
 // Validate returns whether the config is valid, containing necessary values.
 func (c *Config) Validate() error {
 	if c.SocketDir() == "" {

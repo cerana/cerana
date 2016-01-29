@@ -67,6 +67,13 @@ func (c *Config) LoadConfigFile() error
 ```
 LoadConfigFile attempts to load a config file.
 
+#### func (*Config) RequestTimeout
+
+```go
+func (c *Config) RequestTimeout() time.Duration
+```
+RequestTimeout returns the duration of the default request timeout.
+
 #### func (*Config) ServiceName
 
 ```go
@@ -111,6 +118,27 @@ func (c *Config) Validate() error
 ```
 Validate returns whether the config is valid, containing necessary values.
 
+#### type DelayedRespArgs
+
+```go
+type DelayedRespArgs struct {
+	Delay time.Duration `json:"delay"`
+}
+```
+
+DelayedRespArgs are arguments for the DelayedResp handler.
+
+#### type DelayedRespResult
+
+```go
+type DelayedRespResult struct {
+	Delay       time.Duration `json:"delay"`
+	ReceivedAt  time.Time     `json:"received_at"`
+	RespondedAt time.Time     `json:"responded_at"`
+}
+```
+
+
 #### type DiskInfo
 
 ```go
@@ -152,7 +180,7 @@ MultiRequest provides a way to manage multiple parallel requests
 #### func  NewMultiRequest
 
 ```go
-func NewMultiRequest(tracker *acomm.Tracker) *MultiRequest
+func NewMultiRequest(tracker *acomm.Tracker, timeout time.Duration) *MultiRequest
 ```
 NewMultiRequest creates and initializes a new MultiRequest.
 
@@ -272,6 +300,12 @@ NewSimple creates a new instance of Simple.
 func (s *Simple) CPUInfo(req *acomm.Request) (interface{}, *url.URL, error)
 ```
 CPUInfo is a task handler to retrieve information about CPUs.
+
+#### func (*Simple) DelayedResp
+
+```go
+func (s *Simple) DelayedResp(req *acomm.Request) (interface{}, *url.URL, error)
+```
 
 #### func (*Simple) DiskInfo
 
