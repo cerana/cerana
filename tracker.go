@@ -43,6 +43,10 @@ func NewTracker(socketPath string, httpStreamURL *url.URL, defaultTimeout time.D
 		}
 	}
 
+	if defaultTimeout <= 0 {
+		defaultTimeout = time.Minute
+	}
+
 	return &Tracker{
 		status:           statusStopped,
 		responseListener: NewUnixListener(socketPath, 0),
@@ -284,12 +288,8 @@ func (t *Tracker) retrieveRequest(id string) *Request {
 
 func (t *Tracker) setRequestTimeout(req *Request, timeout time.Duration) {
 	// Fallback to default timeout
-	if timeout == 0 {
+	if timeout <= 0 {
 		timeout = t.defaultTimeout
-	}
-	// Timeout of nil is no timeout
-	if timeout == 0 {
-		return
 	}
 
 	resp, err := NewResponse(req, nil, nil, errors.New("response timeout"))
