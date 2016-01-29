@@ -176,8 +176,8 @@ RemoveRequest removes a request from the MultiRequest. Useful if the send fails.
 ```go
 func (m *MultiRequest) Responses() map[string]*acomm.Response
 ```
-Results returns responses for all of the requests, keyed on the request name (as
-opposed to request id). Blocks until all requests are accounted for.
+Responses returns responses for all of the requests, keyed on the request name
+(as opposed to request id). Blocks until all requests are accounted for.
 
 #### type Provider
 

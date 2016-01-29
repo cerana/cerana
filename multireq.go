@@ -50,7 +50,7 @@ func (m *MultiRequest) responseHandler(req *acomm.Request, resp *acomm.Response)
 	m.responses <- resp
 }
 
-// Results returns responses for all of the requests, keyed on the request name
+// Responses returns responses for all of the requests, keyed on the request name
 // (as opposed to request id). Blocks until all requests are accounted for.
 func (m *MultiRequest) Responses() map[string]*acomm.Response {
 	results := make(map[string]*acomm.Response)
