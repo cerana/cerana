@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -57,12 +58,24 @@ func dieOnError(err error) {
 	}
 }
 
-func parseTaskArgs(taskArgs []string) (map[string]string, error) {
-	out := make(map[string]string)
+func parseTaskArgs(taskArgs []string) (map[string]interface{}, error) {
+	out := make(map[string]interface{})
 	for _, in := range taskArgs {
 		parts := strings.Split(in, argSep)
 		if len(parts) != 2 {
 			return nil, fmt.Errorf("invalid request arg: '%s'", in)
+		}
+		if arg, err := strconv.ParseInt(parts[1], 10, 64); err == nil {
+			out[parts[0]] = arg
+			continue
+		}
+		if arg, err := strconv.ParseBool(parts[1]); err == nil {
+			out[parts[0]] = arg
+			continue
+		}
+		if arg, err := strconv.ParseFloat(parts[1], 64); err == nil {
+			out[parts[0]] = arg
+			continue
 		}
 		out[parts[0]] = parts[1]
 	}
@@ -119,7 +132,7 @@ func startResponseServer(addr string) (chan interface{}, chan *url.URL, chan err
 	return result, stream, errChan, err
 }
 
-func makeRequest(coordinator, taskName, responseAddr string, taskArgs map[string]string) error {
+func makeRequest(coordinator, taskName, responseAddr string, taskArgs map[string]interface{}) error {
 	coordinatorURL, err := url.ParseRequestURI(coordinator)
 	if err != nil {
 		return errors.New("invalid coordinator url")

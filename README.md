@@ -37,6 +37,13 @@ func (c *Config) LoadConfigFile() error
 ```
 LoadConfigFile attempts to load a config file.
 
+#### func (*Config) RequestTimeout
+
+```go
+func (c *Config) RequestTimeout() time.Duration
+```
+RequestTimeout returns the duration of the default request timeout.
+
 #### func (*Config) ServiceName
 
 ```go

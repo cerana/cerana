@@ -16,6 +16,7 @@ func main() {
 	flag.StringP("socket_dir", "s", "/tmp/mistify", "base directory in which to create task sockets")
 	flag.IntP("external_port", "p", 8080, "port for the http external request server to listen")
 	flag.StringP("log_level", "l", "warning", "log level: debug/info/warn/error/fatal/panic")
+	flag.Uint64P("request_timeout", "t", 0, "default timeout for requests in seconds")
 	flag.Parse()
 
 	v := viper.New()
