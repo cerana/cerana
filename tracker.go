@@ -260,6 +260,9 @@ func (t *Tracker) TrackRequest(req *Request, timeout time.Duration) error {
 // as sending failures, where there is no hope of a response being received.
 func (t *Tracker) RemoveRequest(req *Request) bool {
 	if r := t.retrieveRequest(req.ID); r != nil {
+		if r.timeout != nil {
+			_ = r.timeout.Stop()
+		}
 		t.waitgroup.Done()
 		return true
 	}
