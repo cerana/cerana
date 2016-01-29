@@ -67,7 +67,7 @@ func NewServer(config *Config) (*Server, error) {
 			"error": err,
 		}).Error("failed to generate stream url")
 	}
-	s.proxy, err = acomm.NewTracker(responseSocket, streamURL)
+	s.proxy, err = acomm.NewTracker(responseSocket, streamURL, config.RequestTimeout())
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +188,7 @@ func (s *Server) handleRequest(req *acomm.Request) error {
 		return errors.New("no providers available for task")
 	}
 
-	proxyReq, err := s.proxy.ProxyUnix(req)
+	proxyReq, err := s.proxy.ProxyUnix(req, 0)
 	if err != nil {
 		return err
 	}

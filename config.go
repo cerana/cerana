@@ -2,6 +2,7 @@ package coordinator
 
 import (
 	"errors"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	logx "github.com/mistifyio/mistify-logrus-ext"
@@ -56,6 +57,11 @@ func (c *Config) ServiceName() string {
 // ExternalPort returns the port to listen on for external requests.
 func (c *Config) ExternalPort() int {
 	return c.viper.GetInt("external_port")
+}
+
+// RequestTimeout returns the duration of the default request timeout.
+func (c *Config) RequestTimeout() time.Duration {
+	return time.Second * time.Duration(c.viper.GetInt("request_timeout"))
 }
 
 // Validate returns whether the config is valid, containing necessary values.
