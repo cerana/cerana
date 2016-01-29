@@ -47,7 +47,7 @@ func (s *TrackerTestSuite) SetupTest() {
 	s.Require().NoError(err, "request should be valid")
 
 	streamAddr, _ := url.ParseRequestURI(s.StreamServer.URL)
-	s.Tracker, err = acomm.NewTracker("", streamAddr)
+	s.Tracker, err = acomm.NewTracker("", streamAddr, 0)
 	s.Require().NoError(err, "failed to create new Tracker")
 	s.Require().NotNil(s.Tracker, "failed to create new Tracker")
 }
@@ -84,23 +84,29 @@ func (s *TrackerTestSuite) TestTrackRequest() {
 	if !s.NoError(s.Tracker.Start(), "should have started tracker") {
 		return
 	}
-	s.NoError(s.Tracker.TrackRequest(s.Request), "should have successfully tracked request")
-	s.Error(s.Tracker.TrackRequest(s.Request), "duplicate ID should have failed to track request")
+	s.NoError(s.Tracker.TrackRequest(s.Request, 0), "should have successfully tracked request")
+	s.Error(s.Tracker.TrackRequest(s.Request, 0), "duplicate ID should have failed to track request")
 	s.Equal(1, s.Tracker.NumRequests(), "should have one unique request tracked")
 	s.True(s.Tracker.RemoveRequest(s.Request))
+	s.Equal(0, s.Tracker.NumRequests(), "should have one request tracked")
+
+	s.NoError(s.Tracker.TrackRequest(s.Request, 500*time.Millisecond), "should have successfully tracked request with timeout")
+	s.Equal(1, s.Tracker.NumRequests(), "should have one request tracked")
+	time.Sleep(time.Second)
+	s.Equal(0, s.Tracker.NumRequests(), "timeout should have removed request")
 }
 
 func (s *TrackerTestSuite) TestStartListener() {
 	s.NoError(s.Tracker.Start(), "starting an unstarted should not error")
 	s.NoError(s.Tracker.Start(), "starting an started should not error")
 
-	s.NoError(s.Tracker.TrackRequest(s.Request), "should have successfully tracked request")
+	s.NoError(s.Tracker.TrackRequest(s.Request, 0), "should have successfully tracked request")
 
 	go s.Tracker.RemoveRequest(s.Request)
 }
 
 func (s *TrackerTestSuite) TestProxyUnix() {
-	unixReq, err := s.Tracker.ProxyUnix(s.Request)
+	unixReq, err := s.Tracker.ProxyUnix(s.Request, 0)
 	s.Error(err, "should fail to proxy when tracker is not listening")
 	s.Nil(unixReq, "should not return a request")
 
@@ -108,7 +114,7 @@ func (s *TrackerTestSuite) TestProxyUnix() {
 		return
 	}
 
-	unixReq, err = s.Tracker.ProxyUnix(s.Request)
+	unixReq, err = s.Tracker.ProxyUnix(s.Request, 0)
 	s.NoError(err, "should not fail proxying when tracker is listening")
 	s.NotNil(unixReq, "should return a request")
 	s.Equal(s.Request.ID, unixReq.ID, "new request should share ID with original")
@@ -134,7 +140,7 @@ func (s *TrackerTestSuite) TestProxyUnix() {
 	if !s.NoError(err, "new request shoudl not error") {
 		return
 	}
-	unixReq, err = s.Tracker.ProxyUnix(origUnixReq)
+	unixReq, err = s.Tracker.ProxyUnix(origUnixReq, 0)
 	s.NoError(err, "should not error with unix response hook")
 	s.Equal(origUnixReq, unixReq, "should not proxy unix response hook")
 	s.Equal(0, s.Tracker.NumRequests(), "should not response an unproxied request")

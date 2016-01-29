@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/url"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/pborman/uuid"
@@ -20,6 +21,7 @@ type Request struct {
 	Args           *json.RawMessage `json:"args"`
 	SuccessHandler ResponseHandler  `json:"-"`
 	ErrorHandler   ResponseHandler  `json:"-"`
+	timeout        *time.Timer
 	proxied        bool
 }
 
