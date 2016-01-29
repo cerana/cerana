@@ -2,6 +2,7 @@ package simple
 
 import (
 	"net"
+	"net/url"
 	"sync"
 	"time"
 
@@ -11,7 +12,7 @@ import (
 
 // TaskHandler if the request handler function for a particular task. It should
 // return results or an error, but not both.
-type TaskHandler func(*acomm.Request) (interface{}, error)
+type TaskHandler func(*acomm.Request) (interface{}, *url.URL, error)
 
 // task contains the request listener and handler for a task.
 type task struct {
@@ -28,7 +29,7 @@ func newTask(name, socketPath string, reqTimeout time.Duration, handler TaskHand
 		name:        name,
 		handler:     handler,
 		reqTimeout:  reqTimeout,
-		reqListener: acomm.NewUnixListener(socketPath),
+		reqListener: acomm.NewUnixListener(socketPath, 0),
 	}
 }
 
@@ -45,7 +46,7 @@ func (t *task) start() error {
 // stop shuts down the task handler.
 func (t *task) stop() {
 	// Stop request listener and handle all open connections
-	t.reqListener.Stop()
+	t.reqListener.Stop(0)
 
 	// Wait for all actively handled requests
 	t.waitgroup.Wait()
@@ -75,7 +76,7 @@ func (t *task) acceptRequest(conn net.Conn) {
 	}
 
 	// Respond to the initial request
-	resp, err := acomm.NewResponse(req, nil, respErr)
+	resp, err := acomm.NewResponse(req, nil, nil, respErr)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error":   err,
@@ -85,7 +86,7 @@ func (t *task) acceptRequest(conn net.Conn) {
 		return
 	}
 
-	if acomm.SendConnData(conn, resp); err != nil {
+	if err := acomm.SendConnData(conn, resp); err != nil {
 		return
 	}
 
@@ -103,11 +104,11 @@ func (t *task) handleRequest(req *acomm.Request) {
 	defer t.waitgroup.Done()
 
 	// Run the task-specific request handler
-	result, taskErr := t.handler(req)
+	result, streamAddr, taskErr := t.handler(req)
 
 	// Note: The acomm calls log the error already, but we want to have a log
 	// of the request and response data as well.
-	resp, err := acomm.NewResponse(req, result, taskErr)
+	resp, err := acomm.NewResponse(req, result, streamAddr, taskErr)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"task":       t.name,

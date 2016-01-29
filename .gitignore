@@ -1,4 +1,3 @@
 .*~
 .*.swp
 cmd/provider-simple/provider-simple
-cmd/test-server/test-server
