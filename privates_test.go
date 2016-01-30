@@ -60,10 +60,9 @@ func (s *internal) create(pool string) {
 
 	script := []byte(`
 	set -e
-	pool=$1
-	shift
+	pool=` + s.pool + `
 	zpool list $pool &>/dev/null && zpool destroy $pool
-	files=($@)
+	files=(` + strings.Join(files, " ") + `)
 	for f in ${files[*]}; do
 		truncate -s1G $f
 	done
@@ -103,12 +102,7 @@ func (s *internal) create(pool string) {
 	exit 0
 	`)
 
-	args := make([]string, 3, 3+len(files))
-	args[0] = "bash"
-	args[1] = "/dev/stdin"
-	args[2] = s.pool
-	args = append(args, files...)
-	cmd := command("sudo", args...)
+	cmd := command("sudo", "bash", "-c", string(script))
 
 	stdin, err := cmd.StdinPipe()
 	s.Require().NoError(err)
