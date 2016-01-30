@@ -1,8 +1,10 @@
-#include <sys/types.h>
+#include <limits.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <stdint.h>
-#include <limits.h>
+#include <sys/ioctl.h>
+#include <sys/types.h>
 
 #define ZFS_IOC_LIBZFS_CORE (('Z' << 8) + 0x100 + 1)
 struct zfs_cmd_new {
