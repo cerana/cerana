@@ -12,7 +12,7 @@ import (
 	"github.com/mistifyio/gozfs/nv"
 )
 
-type header struct {
+type pipeHeader struct {
 	Size     uint32
 	ExtSpace uint8
 	Error    uint8
@@ -28,7 +28,7 @@ func getSize(r io.Reader) (int64, error) {
 		return 0, err
 	}
 
-	h := header{}
+	h := pipeHeader{}
 	err = binary.Read(bytes.NewReader(buf), binary.LittleEndian, &h)
 	if err != nil {
 		return 0, err
