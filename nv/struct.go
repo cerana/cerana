@@ -106,6 +106,7 @@ const (
 	_DOUBLE
 )
 
+//go:generate stringer -type=codec
 type codec uint8
 
 const (
@@ -114,6 +115,7 @@ const (
 	maxCodec = xdrCodec
 )
 
+//go:generate stringer -type=endianness
 type endianness uint8
 
 const (
