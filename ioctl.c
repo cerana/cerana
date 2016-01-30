@@ -23,7 +23,7 @@ typedef struct zfs_cmd {
 	char _legacy_zfs_cmd_fields[(14 * 1024) - sizeof(struct zfs_cmd_stable)];
 } zfs_cmd_t;
 
-int do_ioctl(int fd, char *name, int len, void *innvl, int insize, void *outnvl, int outsize) {
+int zfs_ioctl(int fd, char *name, int len, void *innvl, int insize, void *outnvl, int outsize) {
 	zfs_cmd_t cmd;
 	memset(&cmd, 0, sizeof(cmd));
 	memcpy(cmd.zc_name, name, len);

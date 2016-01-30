@@ -1,7 +1,7 @@
 package main
 
 // #cgo CFLAGS: -fms-extensions -Wno-microsoft
-// int do_ioctl(int, char *, int, void *, int, void *, int);
+// int zfs_ioctl(int, char *, int, void *, int, void *, int);
 import "C"
 import (
 	"errors"
@@ -20,7 +20,7 @@ func ioctl(f *os.File, name string, input, output []byte) error {
 		out = unsafe.Pointer(&output[0])
 	}
 
-	_, err := C.do_ioctl(C.int(f.Fd()),
+	_, err := C.zfs_ioctl(C.int(f.Fd()),
 		C.CString(name), C.int(len(name)),
 		unsafe.Pointer(in), C.int(len(input)),
 		unsafe.Pointer(out), C.int(len(output)))
