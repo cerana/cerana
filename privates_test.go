@@ -151,6 +151,8 @@ func (s *internal) TestCreateFS() {
 
 func (s *internal) TestCreateVOL() {
 	type p map[string]interface{}
+	u0 := uint64(0)
+	u1 := uint64(1)
 	u1024 := uint64(1024)
 	u8192 := u1024 * 8
 
@@ -163,29 +165,13 @@ func (s *internal) TestCreateVOL() {
 		{s.pool + "/" + longName, nil, einval}, // WANTE(ENAMETOOLONG)
 		{s.pool + "/~1", nil, einval},
 		{s.pool + "/1", p{"bad-prop": true}, einval},
-		{s.pool + "/2", p{"volsize": 0}, einval},
-		{s.pool + "/3", p{"volsize": 1}, einval},
-		{s.pool + "/4", p{"volsize": 8*1024 + 1}, einval},
-		{s.pool + "/5", p{"volsize": 8 * 1024}, einval},
-		{s.pool + "/6", p{"volsize": uint64(0)}, einval},
-		{s.pool + "/7", p{"volsize": uint64(1)}, einval},
+		{s.pool + "/6", p{"volsize": u0}, einval},
+		{s.pool + "/7", p{"volsize": u1}, einval},
 		{s.pool + "/8", p{"volsize": u8192 + 1}, einval},
 		{s.pool + "/9", p{"volsize": u8192}, ""},
 		{s.pool + "/9", p{"volsize": u8192}, eexist},
-		{s.pool + "/10", p{"volsize": 0, "volblocksize": 1024}, einval},
-		{s.pool + "/11", p{"volsize": 1, "volblocksize": 1024}, einval},
-		{s.pool + "/12", p{"volsize": 1024 + 1, "volblocksize": 1024}, einval},
-		{s.pool + "/13", p{"volsize": 1024, "volblocksize": 1024}, einval},
-		{s.pool + "/14", p{"volsize": uint64(0), "volblocksize": 1024}, einval},
-		{s.pool + "/15", p{"volsize": uint64(1), "volblocksize": 1024}, einval},
-		{s.pool + "/16", p{"volsize": u1024 + 1, "volblocksize": 1024}, einval},
-		{s.pool + "/17", p{"volsize": u1024, "volblocksize": 1024}, einval},
-		{s.pool + "/18", p{"volsize": 0, "volblocksize": u1024}, einval},
-		{s.pool + "/19", p{"volsize": 1, "volblocksize": u1024}, einval},
-		{s.pool + "/20", p{"volsize": 1024 + 1, "volblocksize": u1024}, einval},
-		{s.pool + "/21", p{"volsize": 1024, "volblocksize": u1024}, einval},
-		{s.pool + "/22", p{"volsize": uint64(0), "volblocksize": u1024}, einval},
-		{s.pool + "/23", p{"volsize": uint64(1), "volblocksize": u1024}, einval},
+		{s.pool + "/22", p{"volsize": u0, "volblocksize": u1024}, einval},
+		{s.pool + "/23", p{"volsize": u1, "volblocksize": u1024}, einval},
 		{s.pool + "/24", p{"volsize": u1024 + 1, "volblocksize": u1024}, einval},
 		{s.pool + "/25", p{"volsize": u1024, "volblocksize": u1024}, ""},
 		{s.pool + "/25", p{"volsize": u1024, "volblocksize": u1024}, eexist},
