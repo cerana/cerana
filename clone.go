@@ -17,7 +17,7 @@ func clone(name, origin string, props map[string]interface{}) error {
 	}
 
 	encoded := &bytes.Buffer{}
-	err := nv.NewXDREncoder(encoded).Encode(m)
+	err := nv.NewNativeEncoder(encoded).Encode(m)
 	if err != nil {
 		return err
 	}

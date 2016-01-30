@@ -13,17 +13,18 @@ func rollback(name string) (string, error) {
 	}
 
 	encoded := &bytes.Buffer{}
-	err := nv.NewXDREncoder(encoded).Encode(m)
+	err := nv.NewNativeEncoder(encoded).Encode(m)
 	if err != nil {
 		return "", err
 	}
 
-	var snapName string
 	out := make([]byte, 1024)
 	err = ioctl(zfs, name, encoded.Bytes(), out)
+
+	var snapName string
 	if err == nil {
 		var results map[string]string
-		if err := nv.NewXDRDecoder(bytes.NewReader(out)).Decode(&results); err == nil {
+		if err = nv.NewNativeDecoder(bytes.NewReader(out)).Decode(&results); err == nil {
 			snapName = results["target"]
 		}
 	}

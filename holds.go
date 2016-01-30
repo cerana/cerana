@@ -6,7 +6,7 @@ import (
 	"github.com/mistifyio/gozfs/nv"
 )
 
-const emptyList = "\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00"
+const emptyList = "\x00\x01\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 
 func holds(name string) ([]string, error) {
 	m := map[string]interface{}{
@@ -15,7 +15,7 @@ func holds(name string) ([]string, error) {
 	}
 
 	encoded := &bytes.Buffer{}
-	err := nv.NewXDREncoder(encoded).Encode(m)
+	err := nv.NewNativeEncoder(encoded).Encode(m)
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +30,7 @@ func holds(name string) ([]string, error) {
 
 	m = map[string]interface{}{}
 
-	if err = nv.NewXDRDecoder(bytes.NewReader(out)).Decode(&m); err != nil {
+	if err = nv.NewNativeDecoder(bytes.NewReader(out)).Decode(&m); err != nil {
 		return nil, err
 	}
 

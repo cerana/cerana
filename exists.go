@@ -13,7 +13,7 @@ func exists(name string) error {
 	}
 
 	encoded := &bytes.Buffer{}
-	err := nv.NewXDREncoder(encoded).Encode(m)
+	err := nv.NewNativeEncoder(encoded).Encode(m)
 	if err != nil {
 		return err
 	}
