@@ -201,10 +201,9 @@ func unhold(tag, snapshot string) error {
 func destroyKids(ds string) error {
 	script := `
 		ds=` + ds + `
-		for fs in $(zfs list -H -t all $ds | sort -r | tail -n +2 | awk '{print $1}'); do
+		for fs in $(zfs list -H -t all -r $ds | sort -r | tail -n +2 | awk '{print $1}'); do
 			zfs destroy -r $fs
 		done
-		zfs list -t all $ds;
 		`
 	return command("sudo", "bash", "-c", script).Run()
 }
