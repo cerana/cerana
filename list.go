@@ -20,17 +20,22 @@ type header struct {
 	Reserved uint8
 }
 
-func getSize(b []byte) (int64, error) {
+func getSize(r io.Reader) (int64, error) {
+	buf := make([]byte, 8)
+
+	_, err := io.ReadFull(r, buf)
+	if err != nil {
+		return 0, err
+	}
+
 	h := header{}
-	buf := bytes.NewBuffer(b)
-	err := binary.Read(buf, binary.LittleEndian, &h)
+	err = binary.Read(bytes.NewReader(buf), binary.LittleEndian, &h)
 	if err != nil {
 		return 0, err
 	}
 
 	if h.Endian != 1 {
-		buf := bytes.NewBuffer(b)
-		err := binary.Read(buf, binary.BigEndian, &h)
+		err := binary.Read(bytes.NewReader(buf), binary.BigEndian, &h)
 		if err != nil {
 			return 0, err
 		}
@@ -108,14 +113,8 @@ func list(name string, types map[string]bool, recurse bool, depth uint64) ([]map
 
 	ret := []map[string]interface{}{}
 	for {
-		header := make([]byte, 8)
-		_, err = io.ReadFull(reader, header)
-		if err != nil {
-			break
-		}
-
 		var size int64
-		size, err = getSize(header)
+		size, err = getSize(reader)
 		if err != nil {
 			break
 		}
