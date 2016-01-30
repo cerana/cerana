@@ -1,6 +1,5 @@
 package main
 
-// #cgo pkg-config: libzfs_core
 // #cgo CFLAGS: -fms-extensions -Wno-microsoft
 // int do_ioctl(int, char *, int, void *, int, void *, int);
 import "C"
