@@ -11,7 +11,9 @@ import (
 func main() {
 	log.SetFormatter(&logx.MistifyFormatter{})
 
-	config := provider.NewConfig(flag.CommandLine)
+	config := provider.NewConfig(nil, nil)
+
+	flag.StringP("foobar", "f", "", "path to config file")
 
 	flag.Parse()
 

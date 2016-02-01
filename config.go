@@ -21,9 +21,13 @@ type Config struct {
 
 // NewConfig creates a new instance of Config. If a viper instance is not
 // provided, a new one will be created.
-func NewConfig(flagSet *flag.FlagSet) *Config {
+func NewConfig(flagSet *flag.FlagSet, v *viper.Viper) *Config {
 	if flagSet == nil {
-		flagSet = flag.NewFlagSet("provider", flag.ExitOnError)
+		flagSet = flag.CommandLine
+	}
+
+	if v == nil {
+		v = viper.New()
 	}
 
 	flagSet.StringP("config_file", "c", "", "path to config file")
@@ -38,7 +42,7 @@ func NewConfig(flagSet *flag.FlagSet) *Config {
 	}
 }
 
-// LoadConfigFile attempts to load a config file.
+// LoadConfig attempts to load the config. Flags should be parsed first.
 func (c *Config) LoadConfig() error {
 	if err := c.viper.BindPFlags(c.flagSet); err != nil {
 		log.WithFields(log.Fields{
@@ -94,6 +98,7 @@ func (c *Config) SocketDir() string {
 	return c.viper.GetString("socket_dir")
 }
 
+// StreamDir returns the directory for ad-hoc data stream sockets.
 func (c *Config) StreamDir() string {
 	return filepath.Join(
 		c.SocketDir(),
@@ -146,6 +151,16 @@ func (c *Config) Validate() error {
 	}
 
 	return nil
+}
+
+// Unmarshal unmarshals the config into a struct.
+func (c *Config) Unmarshal(rawVal interface{}) error {
+	return c.viper.Unmarshal(rawVal)
+}
+
+// UnmarshalKey unmarshals a single config key into a struct.
+func (c *Config) UnmarshalKey(key string, rawVal interface{}) error {
+	return c.viper.UnmarshalKey(key, rawVal)
 }
 
 // SetupLogging sets the log level and formatting.

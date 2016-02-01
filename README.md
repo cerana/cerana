@@ -18,7 +18,7 @@ Config holds all configuration for the provider.
 #### func  NewConfig
 
 ```go
-func NewConfig(v *viper.Viper) *Config
+func NewConfig(flagSet *flag.FlagSet, v *viper.Viper) *Config
 ```
 NewConfig creates a new instance of Config. If a viper instance is not provided,
 a new one will be created.
@@ -31,12 +31,12 @@ func (c *Config) CoordinatorURL() *url.URL
 CoordinatorURL returns the URL of the Coordinator for which the Provider is
 registered.
 
-#### func (*Config) LoadConfigFile
+#### func (*Config) LoadConfig
 
 ```go
-func (c *Config) LoadConfigFile() error
+func (c *Config) LoadConfig() error
 ```
-LoadConfigFile attempts to load a config file.
+LoadConfig attempts to load the config. Flags should be parsed first.
 
 #### func (*Config) RequestTimeout
 
@@ -66,6 +66,13 @@ func (c *Config) SocketDir() string
 ```
 SocketDir returns the base directory for task sockets.
 
+#### func (*Config) StreamDir
+
+```go
+func (c *Config) StreamDir() string
+```
+StreamDir returns the directory for ad-hoc data stream sockets.
+
 #### func (*Config) TaskPriority
 
 ```go
@@ -81,6 +88,20 @@ func (c *Config) TaskTimeout(taskName string) time.Duration
 ```
 TaskTimeout determines the timeout for a task. If a timeout was not explicitly
 configured for the task, it will return the default.
+
+#### func (*Config) Unmarshal
+
+```go
+func (c *Config) Unmarshal(rawVal interface{}) error
+```
+Unmarshal unmarshals the config into a struct.
+
+#### func (*Config) UnmarshalKey
+
+```go
+func (c *Config) UnmarshalKey(key string, rawVal interface{}) error
+```
+UnmarshalKey unmarshals a single config key into a struct.
 
 #### func (*Config) Validate
 
