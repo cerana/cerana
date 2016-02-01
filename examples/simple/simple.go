@@ -5,16 +5,16 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/url"
-	"path/filepath"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/mistifyio/acomm"
+	"github.com/mistifyio/provider"
 )
 
 // Simple is a simple provider implementation.
 type Simple struct {
-	config  *Config
+	config  *provider.Config
 	tracker *acomm.Tracker
 }
 
@@ -62,6 +62,7 @@ type DelayedRespArgs struct {
 	Delay time.Duration `json:"delay"`
 }
 
+// DelayedRespResult is the result data for the DelayedResp handler.
 type DelayedRespResult struct {
 	Delay       time.Duration `json:"delay"`
 	ReceivedAt  time.Time     `json:"received_at"`
@@ -69,7 +70,7 @@ type DelayedRespResult struct {
 }
 
 // NewSimple creates a new instance of Simple.
-func NewSimple(config *Config, tracker *acomm.Tracker) *Simple {
+func NewSimple(config *provider.Config, tracker *acomm.Tracker) *Simple {
 	return &Simple{
 		config:  config,
 		tracker: tracker,
@@ -77,7 +78,7 @@ func NewSimple(config *Config, tracker *acomm.Tracker) *Simple {
 }
 
 // RegisterTasks registers all of Simple's task handlers with the server.
-func (s *Simple) RegisterTasks(server *Server) {
+func (s *Simple) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("SystemStatus", s.SystemStatus)
 	server.RegisterTask("CPUInfo", s.CPUInfo)
 	server.RegisterTask("DiskInfo", s.DiskInfo)
@@ -97,7 +98,7 @@ func (s *Simple) SystemStatus(req *acomm.Request) (interface{}, *url.URL, error)
 	}
 
 	// Prepare multiple requests
-	multiRequest := NewMultiRequest(s.tracker, 0)
+	multiRequest := acomm.NewMultiRequest(s.tracker, 0)
 
 	cpuReq, err := acomm.NewRequest("CPUInfo", s.tracker.URL().String(), &CPUInfoArgs{GuestID: args.GuestID}, nil, nil)
 	if err != nil {
@@ -193,19 +194,15 @@ func (s *Simple) DiskInfo(req *acomm.Request) (interface{}, *url.URL, error) {
 	return result, nil, nil
 }
 
-// StreamEcho is a task handler to echo input back via streaming data
+// StreamEcho is a task handler to echo input back via streaming data.
 func (s *Simple) StreamEcho(req *acomm.Request) (interface{}, *url.URL, error) {
 	src := ioutil.NopCloser(bytes.NewReader(*req.Args))
-	socketDir := filepath.Join(
-		s.config.SocketDir(),
-		"streams",
-		"StreamEcho",
-		s.config.ServiceName())
-	addr, err := s.tracker.NewStreamUnix(socketDir, src)
+	addr, err := s.tracker.NewStreamUnix(s.config.StreamDir(), src)
 
 	return nil, addr, err
 }
 
+// DelayedResp is a task handler that waits a specified time before returning.
 func (s *Simple) DelayedResp(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args DelayedRespArgs
 	if err := req.UnmarshalArgs(&args); err != nil {

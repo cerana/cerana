@@ -1,39 +1,10 @@
-# simple
+# provider
 
-[![simple](https://godoc.org/github.com/mistifyio/provider-simple?status.png)](https://godoc.org/github.com/mistifyio/provider-simple)
+[![provider](https://godoc.org/github.com/mistifyio/provider?status.png)](https://godoc.org/github.com/mistifyio/provider)
 
-Package simple is a simple task provider proof of concept.
+
 
 ## Usage
-
-#### type CPUInfo
-
-```go
-type CPUInfo struct {
-	Processor int `json:"processor"`
-	MHz       int `json:"mhz"`
-}
-```
-
-CPUInfo is information on a particular CPU.
-
-#### type CPUInfoArgs
-
-```go
-type CPUInfoArgs struct {
-	GuestID string `json:"guest_id"`
-}
-```
-
-CPUInfoArgs are arguments for the CPUInfo handler.
-
-#### type CPUInfoResult
-
-```go
-type CPUInfoResult []*CPUInfo
-```
-
-CPUInfoResult is the result data for the CPUInfo handler.
 
 #### type Config
 
@@ -47,7 +18,7 @@ Config holds all configuration for the provider.
 #### func  NewConfig
 
 ```go
-func NewConfig(v *viper.Viper) *Config
+func NewConfig(flagSet *flag.FlagSet, v *viper.Viper) *Config
 ```
 NewConfig creates a new instance of Config. If a viper instance is not provided,
 a new one will be created.
@@ -60,12 +31,12 @@ func (c *Config) CoordinatorURL() *url.URL
 CoordinatorURL returns the URL of the Coordinator for which the Provider is
 registered.
 
-#### func (*Config) LoadConfigFile
+#### func (*Config) LoadConfig
 
 ```go
-func (c *Config) LoadConfigFile() error
+func (c *Config) LoadConfig() error
 ```
-LoadConfigFile attempts to load a config file.
+LoadConfig attempts to load the config. Flags should be parsed first.
 
 #### func (*Config) RequestTimeout
 
@@ -95,6 +66,13 @@ func (c *Config) SocketDir() string
 ```
 SocketDir returns the base directory for task sockets.
 
+#### func (*Config) StreamDir
+
+```go
+func (c *Config) StreamDir() string
+```
+StreamDir returns the directory for ad-hoc data stream sockets.
+
 #### func (*Config) TaskPriority
 
 ```go
@@ -111,101 +89,26 @@ func (c *Config) TaskTimeout(taskName string) time.Duration
 TaskTimeout determines the timeout for a task. If a timeout was not explicitly
 configured for the task, it will return the default.
 
+#### func (*Config) Unmarshal
+
+```go
+func (c *Config) Unmarshal(rawVal interface{}) error
+```
+Unmarshal unmarshals the config into a struct.
+
+#### func (*Config) UnmarshalKey
+
+```go
+func (c *Config) UnmarshalKey(key string, rawVal interface{}) error
+```
+UnmarshalKey unmarshals a single config key into a struct.
+
 #### func (*Config) Validate
 
 ```go
 func (c *Config) Validate() error
 ```
 Validate returns whether the config is valid, containing necessary values.
-
-#### type DelayedRespArgs
-
-```go
-type DelayedRespArgs struct {
-	Delay time.Duration `json:"delay"`
-}
-```
-
-DelayedRespArgs are arguments for the DelayedResp handler.
-
-#### type DelayedRespResult
-
-```go
-type DelayedRespResult struct {
-	Delay       time.Duration `json:"delay"`
-	ReceivedAt  time.Time     `json:"received_at"`
-	RespondedAt time.Time     `json:"responded_at"`
-}
-```
-
-
-#### type DiskInfo
-
-```go
-type DiskInfo struct {
-	Device string
-	Size   int64
-}
-```
-
-DiskInfo is information on a particular disk.
-
-#### type DiskInfoArgs
-
-```go
-type DiskInfoArgs struct {
-	GuestID string `json:"guest_id"`
-}
-```
-
-DiskInfoArgs are arguments for the DiskInfo handler.
-
-#### type DiskInfoResult
-
-```go
-type DiskInfoResult []*DiskInfo
-```
-
-DiskInfoResult is the result data for the DiskInfo handler.
-
-#### type MultiRequest
-
-```go
-type MultiRequest struct {
-}
-```
-
-MultiRequest provides a way to manage multiple parallel requests
-
-#### func  NewMultiRequest
-
-```go
-func NewMultiRequest(tracker *acomm.Tracker, timeout time.Duration) *MultiRequest
-```
-NewMultiRequest creates and initializes a new MultiRequest.
-
-#### func (*MultiRequest) AddRequest
-
-```go
-func (m *MultiRequest) AddRequest(name string, req *acomm.Request) error
-```
-AddRequest adds a request to the MultiRequest. Sending the request is still the
-responsibility of the caller.
-
-#### func (*MultiRequest) RemoveRequest
-
-```go
-func (m *MultiRequest) RemoveRequest(req *acomm.Request)
-```
-RemoveRequest removes a request from the MultiRequest. Useful if the send fails.
-
-#### func (*MultiRequest) Responses
-
-```go
-func (m *MultiRequest) Responses() map[string]*acomm.Response
-```
-Responses returns responses for all of the requests, keyed on the request name
-(as opposed to request id). Blocks until all requests are accounted for.
 
 #### type Provider
 
@@ -277,85 +180,6 @@ stop the server. If no signals are specified, it will use a default set.
 func (s *Server) Tracker() *acomm.Tracker
 ```
 Tracker returns the request/response tracker of the Server.
-
-#### type Simple
-
-```go
-type Simple struct {
-}
-```
-
-Simple is a simple provider implementation.
-
-#### func  NewSimple
-
-```go
-func NewSimple(config *Config, tracker *acomm.Tracker) *Simple
-```
-NewSimple creates a new instance of Simple.
-
-#### func (*Simple) CPUInfo
-
-```go
-func (s *Simple) CPUInfo(req *acomm.Request) (interface{}, *url.URL, error)
-```
-CPUInfo is a task handler to retrieve information about CPUs.
-
-#### func (*Simple) DelayedResp
-
-```go
-func (s *Simple) DelayedResp(req *acomm.Request) (interface{}, *url.URL, error)
-```
-
-#### func (*Simple) DiskInfo
-
-```go
-func (s *Simple) DiskInfo(req *acomm.Request) (interface{}, *url.URL, error)
-```
-DiskInfo is a task handler to retrieve information about disks.
-
-#### func (*Simple) RegisterTasks
-
-```go
-func (s *Simple) RegisterTasks(server *Server)
-```
-RegisterTasks registers all of Simple's task handlers with the server.
-
-#### func (*Simple) StreamEcho
-
-```go
-func (s *Simple) StreamEcho(req *acomm.Request) (interface{}, *url.URL, error)
-```
-StreamEcho is a task handler to echo input back via streaming data
-
-#### func (*Simple) SystemStatus
-
-```go
-func (s *Simple) SystemStatus(req *acomm.Request) (interface{}, *url.URL, error)
-```
-SystemStatus is a task handler to retrieve info look up and return system
-information. It depends on and makes requests for several other tasks.
-
-#### type SystemStatusArgs
-
-```go
-type SystemStatusArgs struct {
-	GuestID string `json:"guest_id"`
-}
-```
-
-SystemStatusArgs are arguments for the SystemStatus handler.
-
-#### type SystemStatusResult
-
-```go
-type SystemStatusResult struct {
-	CPUs  []*CPUInfo  `json:"cpus"`
-	Disks []*DiskInfo `json:"disks"`
-}
-```
-
-SystemStatusResult is the result data for the SystemStatus handler.
 
 #### type TaskHandler
 

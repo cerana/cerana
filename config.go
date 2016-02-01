@@ -1,34 +1,56 @@
-package simple
+package provider
 
 import (
 	"errors"
 	"fmt"
 	"net/url"
+	"path/filepath"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
 	logx "github.com/mistifyio/mistify-logrus-ext"
+	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 
 // Config holds all configuration for the provider.
 type Config struct {
-	viper *viper.Viper
+	viper   *viper.Viper
+	flagSet *flag.FlagSet
 }
 
 // NewConfig creates a new instance of Config. If a viper instance is not
 // provided, a new one will be created.
-func NewConfig(v *viper.Viper) *Config {
+func NewConfig(flagSet *flag.FlagSet, v *viper.Viper) *Config {
+	if flagSet == nil {
+		flagSet = flag.CommandLine
+	}
+
 	if v == nil {
 		v = viper.New()
 	}
+
+	flagSet.StringP("config_file", "c", "", "path to config file")
+	flagSet.StringP("socket_dir", "s", "/tmp/mistify", "base directory in which to create task sockets")
+	flagSet.UintP("default_priority", "p", 50, "default task priority")
+	flagSet.StringP("log_level", "l", "warning", "log level: debug/info/warn/error/fatal/panic")
+	flagSet.Uint64P("request_timeout", "t", 0, "default timeout for requests made by this provider in seconds")
+
 	return &Config{
-		viper: v,
+		viper:   viper.New(),
+		flagSet: flagSet,
 	}
 }
 
-// LoadConfigFile attempts to load a config file.
-func (c *Config) LoadConfigFile() error {
+// LoadConfig attempts to load the config. Flags should be parsed first.
+func (c *Config) LoadConfig() error {
+	if err := c.viper.BindPFlags(c.flagSet); err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error("failed to bind flags")
+		return err
+	}
+
 	filePath := c.viper.GetString("config_file")
 	if filePath == "" {
 		return c.Validate()
@@ -76,6 +98,15 @@ func (c *Config) SocketDir() string {
 	return c.viper.GetString("socket_dir")
 }
 
+// StreamDir returns the directory for ad-hoc data stream sockets.
+func (c *Config) StreamDir() string {
+	return filepath.Join(
+		c.SocketDir(),
+		"streams",
+		"StreamEcho",
+		c.ServiceName())
+}
+
 // ServiceName returns the name the service should register as.
 func (c *Config) ServiceName() string {
 	return c.viper.GetString("service_name")
@@ -120,6 +151,16 @@ func (c *Config) Validate() error {
 	}
 
 	return nil
+}
+
+// Unmarshal unmarshals the config into a struct.
+func (c *Config) Unmarshal(rawVal interface{}) error {
+	return c.viper.Unmarshal(rawVal)
+}
+
+// UnmarshalKey unmarshals a single config key into a struct.
+func (c *Config) UnmarshalKey(key string, rawVal interface{}) error {
+	return c.viper.UnmarshalKey(key, rawVal)
 }
 
 // SetupLogging sets the log level and formatting.
