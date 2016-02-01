@@ -1,6 +1,6 @@
 # provider
 
-[![provider](https://godoc.org/github.com/mistifyio/provider-simple?status.png)](https://godoc.org/github.com/mistifyio/provider-simple)
+[![provider](https://godoc.org/github.com/mistifyio/provider?status.png)](https://godoc.org/github.com/mistifyio/provider)
 
 
 

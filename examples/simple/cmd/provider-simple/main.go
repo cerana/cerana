@@ -3,8 +3,8 @@ package main
 import (
 	log "github.com/Sirupsen/logrus"
 	logx "github.com/mistifyio/mistify-logrus-ext"
-	"github.com/mistifyio/provider-simple"
-	"github.com/mistifyio/provider-simple/examples/simple"
+	"github.com/mistifyio/provider"
+	"github.com/mistifyio/provider/examples/simple"
 	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )

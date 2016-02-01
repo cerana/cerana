@@ -10,7 +10,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/mistifyio/acomm"
-	"github.com/mistifyio/provider-simple"
+	"github.com/mistifyio/provider"
 )
 
 // Simple is a simple provider implementation.

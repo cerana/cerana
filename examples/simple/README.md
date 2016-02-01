@@ -1,6 +1,6 @@
 # simple
 
-[![simple](https://godoc.org/github.com/mistifyio/provider-simple/examples/simple?status.png)](https://godoc.org/github.com/mistifyio/provider-simple/examples/simple)
+[![simple](https://godoc.org/github.com/mistifyio/provider/examples/simple?status.png)](https://godoc.org/github.com/mistifyio/provider/examples/simple)
 
 Package simple is a simple task provider proof of concept.
 
