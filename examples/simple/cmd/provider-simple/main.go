@@ -4,6 +4,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	logx "github.com/mistifyio/mistify-logrus-ext"
 	"github.com/mistifyio/provider-simple"
+	"github.com/mistifyio/provider-simple/examples/simple"
 	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -23,11 +24,11 @@ func main() {
 
 	v.SetDefault("service_name", "provider-simple")
 
-	config := simple.NewConfig(v)
+	config := provider.NewConfig(v)
 	dieOnError(config.LoadConfigFile())
 	dieOnError(config.SetupLogging())
 
-	server, err := simple.NewServer(config)
+	server, err := provider.NewServer(config)
 	dieOnError(err)
 	s := simple.NewSimple(config, server.Tracker())
 	s.RegisterTasks(server)

@@ -10,11 +10,12 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/mistifyio/acomm"
+	"github.com/mistifyio/provider-simple"
 )
 
 // Simple is a simple provider implementation.
 type Simple struct {
-	config  *Config
+	config  *provider.Config
 	tracker *acomm.Tracker
 }
 
@@ -70,7 +71,7 @@ type DelayedRespResult struct {
 }
 
 // NewSimple creates a new instance of Simple.
-func NewSimple(config *Config, tracker *acomm.Tracker) *Simple {
+func NewSimple(config *provider.Config, tracker *acomm.Tracker) *Simple {
 	return &Simple{
 		config:  config,
 		tracker: tracker,
@@ -78,7 +79,7 @@ func NewSimple(config *Config, tracker *acomm.Tracker) *Simple {
 }
 
 // RegisterTasks registers all of Simple's task handlers with the server.
-func (s *Simple) RegisterTasks(server *Server) {
+func (s *Simple) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("SystemStatus", s.SystemStatus)
 	server.RegisterTask("CPUInfo", s.CPUInfo)
 	server.RegisterTask("DiskInfo", s.DiskInfo)
