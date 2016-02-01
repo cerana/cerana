@@ -1,23 +1,37 @@
 package nv
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 )
 
 func check_array(t *testing.T, field string, value interface{}, l int, fn func([]string)) {
+	empty := strings.HasPrefix(field, "empty ")
+
 	expecteds := strings.Split(field, ";")
-	if len(expecteds) < 2 {
-		t.Fatal("field does not seem to be a list of expected values:", field)
+	if !empty {
+		if len(expecteds) < 2 {
+			t.Fatal("field does not seem to be a list of expected values:", field)
+		}
+		if len(expecteds) != l {
+			t.Fatal("length mismatch between expected and decoded arrays, expected:",
+				len(expecteds), "decoded:", l)
+		}
+		fn(expecteds)
+	} else {
+		if len(expecteds) != 1 {
+			t.Fatal("field seems to be a list of expected values:", field)
+		}
+		if l != 0 {
+			t.Fatal("length mismatch between expected and decoded arrays, expected: 0 decoded:", l)
+		}
 	}
-	if len(expecteds) != l {
-		t.Fatal("length mismatch between expected and decoded arrays, expected:",
-			len(expecteds), "decoded:", l)
-	}
-	fn(expecteds)
 }
 
 func check_boolean(t *testing.T, field string, value interface{}) {
@@ -260,7 +274,15 @@ func check_uint64_array(t *testing.T, field string, value interface{}) {
 }
 
 func check_nvlist(t *testing.T, field string, value interface{}) {
+	num, err := strconv.Atoi(field)
+	if err != nil {
+		t.Fatal(err)
+	}
 	list := value.(map[string]interface{})
+	if num != len(list) {
+		t.Fatal("length mismatch between expected and decoded lists",
+			"expected:", num, "got:", len(list))
+	}
 	for f, v := range list {
 		checkers[reflect.TypeOf(v).String()](t, f, v)
 	}
@@ -344,40 +366,74 @@ func assertFields(t *testing.T, name string, m map[string]interface{}) {
 	}
 }
 
-//go:generate make -C _test ../known_good_data_test.go
+type tDecoder struct {
+	r io.ReadSeeker
+	decoder
+}
+
+func decode(t *testing.T, name string, ptr interface{}, dec tDecoder) {
+	m := map[string]interface{}{}
+
+	dec.r.Seek(0, 0)
+	if err := dec.Decode(&m); err != nil {
+		t.Fatal(name, "decode as map failed:", err)
+	}
+
+	assertFields(t, name, m)
+
+	dec.r.Seek(0, 0)
+	if err := dec.Decode(ptr); err != nil {
+		t.Fatal(name, "decode as struct failed:", err)
+	}
+
+	m = struct2map(ptr)
+	if len(m) != reflect.ValueOf(ptr).Elem().NumField() {
+		t.Fatalf("incorrect number of fields, got: %d %+v want: %d %+v\n",
+			len(m), m, reflect.ValueOf(ptr).Elem().NumField(), ptr)
+	}
+
+	assertFields(t, name, m)
+}
+
+//go:generate make -s -C _test ../known_good_data_test.go
 func TestDecodeGood(t *testing.T) {
 	for _, test := range good {
-		t.Log(test.name)
-
-		m := map[string]interface{}{}
-		err := Decode(test.payload, &m)
-		if err != nil {
-			t.Fatal(test.name, "decode as map failed:", err)
+		if testing.Verbose() {
+			fmt.Println(" -- ", test.name)
+		} else {
+			t.Log(" -- ", test.name)
 		}
 
-		assertFields(t, test.name, m)
+		r := bytes.NewReader(test.native)
+		dec := tDecoder{
+			r:       r,
+			decoder: NewNativeDecoder(r),
+		}
+		decode(t, test.name, test.ptr(), dec)
 
-		s := test.ptr()
-		err = Decode(test.payload, s)
-		if err != nil {
-			t.Fatal(test.name, "decode as struct failed:", err)
+		if test.name == "empty arrays" {
+			continue
 		}
 
-		m = struct2map(s)
-		if len(m) != reflect.ValueOf(s).Elem().NumField() {
-			t.Fatalf("incorrect number of fields, got: %d %+v want: %d %+v\n",
-				len(m), m, reflect.ValueOf(s).Elem().NumField(), s)
+		r = bytes.NewReader(test.xdr)
+		dec = tDecoder{
+			r:       r,
+			decoder: NewXDRDecoder(r),
 		}
-		assertFields(t, test.name, m)
+		decode(t, test.name, test.ptr(), dec)
 	}
 }
 
 func TestDecodeBad(t *testing.T) {
 	for _, test := range decode_bad {
-		t.Log(test.err)
+		if testing.Verbose() {
+			fmt.Println(" -- ", test.err)
+		} else {
+			t.Log(" -- ", test.err)
+		}
 
 		m := map[string]interface{}{}
-		err := Decode(test.payload, &m)
+		err := NewXDRDecoder(bytes.NewReader(test.payload)).Decode(&m)
 		if err == nil {
 			t.Fatalf("expected an error, wanted:|%s| payload:|%v|\n",
 				test.err, test.payload)
@@ -400,7 +456,7 @@ func TestDecodeBadArgs(t *testing.T) {
 		},
 	}
 	for _, test := range bad_args {
-		err := Decode([]byte(enc_dec_name_typ), test.arg)
+		err := NewXDRDecoder(bytes.NewReader([]byte(enc_dec_name_typ))).Decode(test.arg)
 		if err == nil {
 			t.Fatalf("expected an error, wanted:|%s|\n", test.err)
 		}

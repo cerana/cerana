@@ -12,7 +12,7 @@ import (
 	"github.com/mistifyio/gozfs/nv"
 )
 
-type header struct {
+type pipeHeader struct {
 	Size     uint32
 	ExtSpace uint8
 	Error    uint8
@@ -20,17 +20,22 @@ type header struct {
 	Reserved uint8
 }
 
-func getSize(b []byte) (int64, error) {
-	h := header{}
-	buf := bytes.NewBuffer(b)
-	err := binary.Read(buf, binary.LittleEndian, &h)
+func getSize(r io.Reader) (int64, error) {
+	buf := make([]byte, 8)
+
+	_, err := io.ReadFull(r, buf)
+	if err != nil {
+		return 0, err
+	}
+
+	h := pipeHeader{}
+	err = binary.Read(bytes.NewReader(buf), binary.LittleEndian, &h)
 	if err != nil {
 		return 0, err
 	}
 
 	if h.Endian != 1 {
-		buf := bytes.NewBuffer(b)
-		err := binary.Read(buf, binary.BigEndian, &h)
+		err := binary.Read(bytes.NewReader(buf), binary.BigEndian, &h)
 		if err != nil {
 			return 0, err
 		}
@@ -92,12 +97,13 @@ func list(name string, types map[string]bool, recurse bool, depth uint64) ([]map
 		"version": uint64(0),
 	}
 
-	enc, err := nv.Encode(args)
+	encoded := &bytes.Buffer{}
+	err = nv.NewNativeEncoder(encoded).Encode(args)
 	if err != nil {
 		return nil, err
 	}
 
-	err = ioctl(zfs, name, enc, nil)
+	err = ioctl(zfs, name, encoded.Bytes(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -107,14 +113,8 @@ func list(name string, types map[string]bool, recurse bool, depth uint64) ([]map
 
 	ret := []map[string]interface{}{}
 	for {
-		header := make([]byte, 8)
-		_, err = io.ReadFull(reader, header)
-		if err != nil {
-			break
-		}
-
 		var size int64
-		size, err = getSize(header)
+		size, err = getSize(reader)
 		if err != nil {
 			break
 		}
@@ -134,7 +134,7 @@ func list(name string, types map[string]bool, recurse bool, depth uint64) ([]map
 		}
 
 		m := map[string]interface{}{}
-		err = nv.Decode(buf, &m)
+		err = nv.NewXDRDecoder(bytes.NewReader(buf)).Decode(&m)
 		if err != nil {
 			break
 		}

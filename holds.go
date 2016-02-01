@@ -1,8 +1,12 @@
 package main
 
-import "github.com/mistifyio/gozfs/nv"
+import (
+	"bytes"
 
-const emptyList = "\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00"
+	"github.com/mistifyio/gozfs/nv"
+)
+
+const emptyList = "\x00\x01\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 
 func holds(name string) ([]string, error) {
 	m := map[string]interface{}{
@@ -10,7 +14,8 @@ func holds(name string) ([]string, error) {
 		"version": uint64(0),
 	}
 
-	encoded, err := nv.Encode(m)
+	encoded := &bytes.Buffer{}
+	err := nv.NewNativeEncoder(encoded).Encode(m)
 	if err != nil {
 		return nil, err
 	}
@@ -18,14 +23,14 @@ func holds(name string) ([]string, error) {
 	out := make([]byte, 1024)
 	copy(out, emptyList)
 
-	err = ioctl(zfs, name, encoded, out)
+	err = ioctl(zfs, name, encoded.Bytes(), out)
 	if err != nil {
 		return nil, err
 	}
 
 	m = map[string]interface{}{}
 
-	if err = nv.Decode(out, &m); err != nil {
+	if err = nv.NewNativeDecoder(bytes.NewReader(out)).Decode(&m); err != nil {
 		return nil, err
 	}
 

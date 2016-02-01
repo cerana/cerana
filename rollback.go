@@ -1,6 +1,10 @@
 package main
 
-import "github.com/mistifyio/gozfs/nv"
+import (
+	"bytes"
+
+	"github.com/mistifyio/gozfs/nv"
+)
 
 func rollback(name string) (string, error) {
 	m := map[string]interface{}{
@@ -8,17 +12,19 @@ func rollback(name string) (string, error) {
 		"version": uint64(0),
 	}
 
-	encoded, err := nv.Encode(m)
+	encoded := &bytes.Buffer{}
+	err := nv.NewNativeEncoder(encoded).Encode(m)
 	if err != nil {
 		return "", err
 	}
 
-	var snapName string
 	out := make([]byte, 1024)
-	err = ioctl(zfs, name, encoded, out)
+	err = ioctl(zfs, name, encoded.Bytes(), out)
+
+	var snapName string
 	if err == nil {
 		var results map[string]string
-		if err := nv.Decode(out, &results); err == nil {
+		if err = nv.NewNativeDecoder(bytes.NewReader(out)).Decode(&results); err == nil {
 			snapName = results["target"]
 		}
 	}

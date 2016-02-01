@@ -1,6 +1,10 @@
 package main
 
-import "github.com/mistifyio/gozfs/nv"
+import (
+	"bytes"
+
+	"github.com/mistifyio/gozfs/nv"
+)
 
 func send(name string, outputFD uintptr, fromSnap string, largeBlockOK, embedOK bool) error {
 	innvl := map[string]interface{}{
@@ -25,10 +29,11 @@ func send(name string, outputFD uintptr, fromSnap string, largeBlockOK, embedOK 
 		"innvl":   innvl,
 	}
 
-	encoded, err := nv.Encode(m)
+	encoded := &bytes.Buffer{}
+	err := nv.NewNativeEncoder(encoded).Encode(m)
 	if err != nil {
 		return err
 	}
 
-	return ioctl(zfs, name, encoded, nil)
+	return ioctl(zfs, name, encoded.Bytes(), nil)
 }

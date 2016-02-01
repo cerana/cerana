@@ -46,7 +46,7 @@ type list map[string]interface{}
 func pretty(src []byte) (map[string]interface{}, error) {
 
 	l := list{}
-	err := Decode(src, &l)
+	err := NewXDRDecoder(bytes.NewReader(src)).Decode(&l)
 	return l, err
 }
 
@@ -106,9 +106,27 @@ const (
 	_DOUBLE
 )
 
+//go:generate stringer -type=codec
+type codec uint8
+
+const (
+	nativeCodec codec = iota
+	xdrCodec
+	maxCodec = xdrCodec
+)
+
+//go:generate stringer -type=endianness
+type endianness uint8
+
+const (
+	bigEndian endianness = iota
+	littleEndian
+	maxEndian = littleEndian
+)
+
 type encoding struct {
-	Encoding  uint8
-	Endianess uint8
+	Encoding  codec
+	Endianess endianness
 	Reserved1 uint8
 	Reserved2 uint8
 }
