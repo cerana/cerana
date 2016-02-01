@@ -138,6 +138,7 @@ type DelayedRespResult struct {
 }
 ```
 
+DelayedRespResult is the result data for the DelayedResp handler.
 
 #### type DiskInfo
 
@@ -267,6 +268,7 @@ CPUInfo is a task handler to retrieve information about CPUs.
 ```go
 func (s *Simple) DelayedResp(req *acomm.Request) (interface{}, *url.URL, error)
 ```
+DelayedResp is a task handler that waits a specified time before returning.
 
 #### func (*Simple) DiskInfo
 
@@ -287,7 +289,7 @@ RegisterTasks registers all of Simple's task handlers with the server.
 ```go
 func (s *Simple) StreamEcho(req *acomm.Request) (interface{}, *url.URL, error)
 ```
-StreamEcho is a task handler to echo input back via streaming data
+StreamEcho is a task handler to echo input back via streaming data.
 
 #### func (*Simple) SystemStatus
 

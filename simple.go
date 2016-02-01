@@ -62,6 +62,7 @@ type DelayedRespArgs struct {
 	Delay time.Duration `json:"delay"`
 }
 
+// DelayedRespResult is the result data for the DelayedResp handler.
 type DelayedRespResult struct {
 	Delay       time.Duration `json:"delay"`
 	ReceivedAt  time.Time     `json:"received_at"`
@@ -193,7 +194,7 @@ func (s *Simple) DiskInfo(req *acomm.Request) (interface{}, *url.URL, error) {
 	return result, nil, nil
 }
 
-// StreamEcho is a task handler to echo input back via streaming data
+// StreamEcho is a task handler to echo input back via streaming data.
 func (s *Simple) StreamEcho(req *acomm.Request) (interface{}, *url.URL, error) {
 	src := ioutil.NopCloser(bytes.NewReader(*req.Args))
 	socketDir := filepath.Join(
@@ -206,6 +207,7 @@ func (s *Simple) StreamEcho(req *acomm.Request) (interface{}, *url.URL, error) {
 	return nil, addr, err
 }
 
+// DelayedResp is a task handler that waits a specified time before returning.
 func (s *Simple) DelayedResp(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args DelayedRespArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
