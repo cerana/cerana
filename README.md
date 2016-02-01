@@ -168,45 +168,6 @@ type DiskInfoResult []*DiskInfo
 
 DiskInfoResult is the result data for the DiskInfo handler.
 
-#### type MultiRequest
-
-```go
-type MultiRequest struct {
-}
-```
-
-MultiRequest provides a way to manage multiple parallel requests
-
-#### func  NewMultiRequest
-
-```go
-func NewMultiRequest(tracker *acomm.Tracker, timeout time.Duration) *MultiRequest
-```
-NewMultiRequest creates and initializes a new MultiRequest.
-
-#### func (*MultiRequest) AddRequest
-
-```go
-func (m *MultiRequest) AddRequest(name string, req *acomm.Request) error
-```
-AddRequest adds a request to the MultiRequest. Sending the request is still the
-responsibility of the caller.
-
-#### func (*MultiRequest) RemoveRequest
-
-```go
-func (m *MultiRequest) RemoveRequest(req *acomm.Request)
-```
-RemoveRequest removes a request from the MultiRequest. Useful if the send fails.
-
-#### func (*MultiRequest) Responses
-
-```go
-func (m *MultiRequest) Responses() map[string]*acomm.Response
-```
-Responses returns responses for all of the requests, keyed on the request name
-(as opposed to request id). Blocks until all requests are accounted for.
-
 #### type Provider
 
 ```go
