@@ -1,3 +1,4 @@
 {
+    "service_name": "provider-simple",
     "coordinator_url": "unix:///tmp/mistify/coordinator/coordinator.sock"
 }

@@ -9,27 +9,44 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	logx "github.com/mistifyio/mistify-logrus-ext"
+	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 
 // Config holds all configuration for the provider.
 type Config struct {
-	viper *viper.Viper
+	viper   *viper.Viper
+	flagSet *flag.FlagSet
 }
 
 // NewConfig creates a new instance of Config. If a viper instance is not
 // provided, a new one will be created.
-func NewConfig(v *viper.Viper) *Config {
-	if v == nil {
-		v = viper.New()
+func NewConfig(flagSet *flag.FlagSet) *Config {
+	if flagSet == nil {
+		flagSet = flag.NewFlagSet("provider", flag.ExitOnError)
 	}
+
+	flagSet.StringP("config_file", "c", "", "path to config file")
+	flagSet.StringP("socket_dir", "s", "/tmp/mistify", "base directory in which to create task sockets")
+	flagSet.UintP("default_priority", "p", 50, "default task priority")
+	flagSet.StringP("log_level", "l", "warning", "log level: debug/info/warn/error/fatal/panic")
+	flagSet.Uint64P("request_timeout", "t", 0, "default timeout for requests made by this provider in seconds")
+
 	return &Config{
-		viper: v,
+		viper:   viper.New(),
+		flagSet: flagSet,
 	}
 }
 
 // LoadConfigFile attempts to load a config file.
-func (c *Config) LoadConfigFile() error {
+func (c *Config) LoadConfig() error {
+	if err := c.viper.BindPFlags(c.flagSet); err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error("failed to bind flags")
+		return err
+	}
+
 	filePath := c.viper.GetString("config_file")
 	if filePath == "" {
 		return c.Validate()
