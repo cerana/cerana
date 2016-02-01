@@ -3,11 +3,13 @@ package acomm_test
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"reflect"
 	"testing"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/mistifyio/acomm"
+	"github.com/pborman/uuid"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -130,6 +132,37 @@ func (s *RequestTestSuite) TestHandleResponse() {
 				s.Equal(0, handled["success"], msg("should not have called success handler"))
 			}
 			s.Equal(0, handled["error"], msg("should not have called error handler"))
+		}
+	}
+}
+
+func (s *RequestTestSuite) TestValidate() {
+	rh, _ := url.ParseRequestURI("unix:///tmp")
+
+	tests := []struct {
+		description  string
+		id           string
+		task         string
+		responseHook *url.URL
+		expectedErr  bool
+	}{
+		{"missing ID", "", "foo", rh, true},
+		{"missing Task", uuid.New(), "", rh, true},
+		{"missing ResponseHook", uuid.New(), "foo", nil, true},
+		{"valid", uuid.New(), "foo", rh, false},
+	}
+
+	for _, test := range tests {
+		msg := testMsgFunc(test.description)
+		req := &acomm.Request{
+			ID:           test.id,
+			Task:         test.task,
+			ResponseHook: test.responseHook,
+		}
+		if test.expectedErr {
+			s.Error(req.Validate(), msg("should not be valid"))
+		} else {
+			s.NoError(req.Validate(), msg("should be valid"))
 		}
 	}
 }
