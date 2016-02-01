@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"path/filepath"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -74,6 +75,14 @@ func (c *Config) TaskTimeout(taskName string) time.Duration {
 // SocketDir returns the base directory for task sockets.
 func (c *Config) SocketDir() string {
 	return c.viper.GetString("socket_dir")
+}
+
+func (c *Config) StreamDir() string {
+	return filepath.Join(
+		c.SocketDir(),
+		"streams",
+		"StreamEcho",
+		c.ServiceName())
 }
 
 // ServiceName returns the name the service should register as.

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/url"
-	"path/filepath"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -198,12 +197,7 @@ func (s *Simple) DiskInfo(req *acomm.Request) (interface{}, *url.URL, error) {
 // StreamEcho is a task handler to echo input back via streaming data.
 func (s *Simple) StreamEcho(req *acomm.Request) (interface{}, *url.URL, error) {
 	src := ioutil.NopCloser(bytes.NewReader(*req.Args))
-	socketDir := filepath.Join(
-		s.config.SocketDir(),
-		"streams",
-		"StreamEcho",
-		s.config.ServiceName())
-	addr, err := s.tracker.NewStreamUnix(socketDir, src)
+	addr, err := s.tracker.NewStreamUnix(s.config.StreamDir(), src)
 
 	return nil, addr, err
 }
