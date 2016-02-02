@@ -15,11 +15,11 @@ heartbeats and deregistration, Providers utilize the filesystem. For
 registration of each task, a unix socket is created in a known directory
 structure based on the task name. A Coordinator can check a task directory for
 the socket when routing requests. When a Provider is shut down, the unix socket
-will be automatically removed, acting as the de-registration in the eyes of the
-Coordinator. In order to handle multiple Providers capable of handling the same
-task, socket filenames are prefixed with a priority value.
+will be automatically removed, effectively de-registering from the Coordinator.
+In order to handle multiple Providers capable of handling the same task, socket
+filenames are prefixed with a priority value.
 
-Task socket path: /[socket_dir]/[task_name]/[priority]-[provider-name].sock
+Task socket path: `/[socket_dir]/[task_name]/[priority]-[provider-name].sock`
 
 
 ### Communication
