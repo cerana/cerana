@@ -63,6 +63,27 @@ appropriately.
 An example provider can be found in the examples directory.
 
 
+### Config
+
+There are a number of values required in the config for a provider to operate
+successfully. The Config struct will add a number of the config options as flags
+(including `config_file`). Tasks without explicit config for priority will use
+default value.
+
+    {
+    	"config_file": "/path/to/config/file.json",
+    	"socket_dir": "/base/path/for/sockets",
+    	"default_priority": 50,
+    	"log_level": "warning",
+    	"request_timeout": 0,
+    	"tasks":{
+    		"ATaskNameFoo":{
+    			"priority": 60,
+    		}
+    	}
+    }
+
+
 ### Suggestions
 
 Task handlers should be kept focused and self-contained as possible, doing one
