@@ -12,7 +12,7 @@ Tasks are the basic building block of this entire system. Tasks are designed to 
 Tasks are designed to provide success or failure after what they attempt to do, and all tasks should have procedures to follow in the event of both.
 
 ## The Code
-There are two types of software involved in the system: The Task Coordinator (only one), and Task Providers (one or more). All pieces of code run conceptually as containers, but with a specially bind mounted socket directory where they can interact locally through sockets **(/task-sockets/$provider_$priority_$taskname.socket)**. The running task-coordinator and task-providers are treated like every other process on the system, and as such the management is subject to [process management](../process-management)
+There are two types of software involved in the system: The Task Coordinator (only one), and Task Providers (one or more). All pieces of code run conceptually as containers, but with a specially bind mounted socket directory where they can interact locally through sockets **(/task-sockets/$provider_$priority_$taskname.socket)**. The running task-coordinator and task-providers are treated like every other process on the system and are subject to [process management](../process-management).
 
 ### Task Coodinator
 The task coordinator's simple job is to allow anything to request a task, and get data from the outcome. The task coordinator listens two ways:
