@@ -26,6 +26,7 @@ type ConfigData struct {
 	CoordinatorURL  string                     `json:"coordinator_url"`
 	DefaultPriority uint                       `json:"default_priority"`
 	LogLevel        string                     `json:"log_level"`
+	DefaultTimeout  uint64                     `json:"default_timeout"`
 	RequestTimeout  uint64                     `json:"request_timeout"`
 	Tasks           map[string]*TaskConfigData `json:"tasks"`
 }
