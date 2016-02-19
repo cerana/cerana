@@ -19,6 +19,23 @@ type Config struct {
 	flagSet *flag.FlagSet
 }
 
+// ConfigData defines the structure of the config data (e.g. in the config file)
+type ConfigData struct {
+	SocketDir       string                     `json:"socket_dir"`
+	ServiceName     string                     `json:"service_name"`
+	CoordinatorURL  string                     `json:"coordinator_url"`
+	DefaultPriority uint                       `json:"default_priority"`
+	LogLevel        string                     `json:"log_level"`
+	RequestTimeout  uint64                     `json:"request_timeout"`
+	Tasks           map[string]*TaskConfigData `json:"tasks"`
+}
+
+// TaskConfigData defines the structure of the task config data (e.g. in the config file)
+type TaskConfigData struct {
+	Priority uint   `json:"priority"`
+	Timeout  uint64 `json:"timeout"`
+}
+
 // NewConfig creates a new instance of Config. If a viper instance is not
 // provided, a new one will be created.
 func NewConfig(flagSet *flag.FlagSet, v *viper.Viper) *Config {
@@ -31,8 +48,10 @@ func NewConfig(flagSet *flag.FlagSet, v *viper.Viper) *Config {
 	}
 
 	flagSet.StringP("config_file", "c", "", "path to config file")
+	flagSet.StringP("service_name", "n", "", "provider service name")
 	flagSet.StringP("socket_dir", "s", "/tmp/mistify", "base directory in which to create task sockets")
 	flagSet.UintP("default_priority", "p", 50, "default task priority")
+	flagSet.StringP("coordinator_url", "u", "", "url of coordinator for making requests")
 	flagSet.StringP("log_level", "l", "warning", "log level: debug/info/warn/error/fatal/panic")
 	flagSet.Uint64P("request_timeout", "t", 0, "default timeout for requests made by this provider in seconds")
 

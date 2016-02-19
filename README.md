@@ -199,6 +199,22 @@ func (c *Config) Validate() error
 ```
 Validate returns whether the config is valid, containing necessary values.
 
+#### type ConfigData
+
+```go
+type ConfigData struct {
+	SocketDir       string                     `json:"socket_dir"`
+	ServiceName     string                     `json:"service_name"`
+	CoordinatorURL  string                     `json:"coordinator_url"`
+	DefaultPriority uint                       `json:"default_priority"`
+	LogLevel        string                     `json:"log_level"`
+	RequestTimeout  uint64                     `json:"request_timeout"`
+	Tasks           map[string]*TaskConfigData `json:"tasks"`
+}
+```
+
+ConfigData defines the structure of the config data (e.g. in the config file)
+
 #### type Provider
 
 ```go
@@ -269,6 +285,18 @@ stop the server. If no signals are specified, it will use a default set.
 func (s *Server) Tracker() *acomm.Tracker
 ```
 Tracker returns the request/response tracker of the Server.
+
+#### type TaskConfigData
+
+```go
+type TaskConfigData struct {
+	Priority uint   `json:"priority"`
+	Timeout  uint64 `json:"timeout"`
+}
+```
+
+TaskConfigData defines the structure of the task config data (e.g. in the config
+file)
 
 #### type TaskHandler
 
