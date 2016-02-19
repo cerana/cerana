@@ -189,7 +189,15 @@ func (c *Config) Unmarshal(rawVal interface{}) error {
 
 // UnmarshalKey unmarshals a single config key into a struct.
 func (c *Config) UnmarshalKey(key string, rawVal interface{}) error {
-	return c.viper.UnmarshalKey(key, rawVal)
+	config := &mapstructure.DecoderConfig{
+		Result:  rawVal,
+		TagName: "json",
+	}
+	decoder, err := mapstructure.NewDecoder(config)
+	if err != nil {
+		return err
+	}
+	return decoder.Decode(c.viper.Get(key))
 }
 
 // SetupLogging sets the log level and formatting.
