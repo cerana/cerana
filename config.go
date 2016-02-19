@@ -37,7 +37,7 @@ func NewConfig(flagSet *flag.FlagSet, v *viper.Viper) *Config {
 	flagSet.Uint64P("request_timeout", "t", 0, "default timeout for requests made by this provider in seconds")
 
 	return &Config{
-		viper:   viper.New(),
+		viper:   v,
 		flagSet: flagSet,
 	}
 }
