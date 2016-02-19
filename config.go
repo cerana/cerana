@@ -118,11 +118,11 @@ func (c *Config) SocketDir() string {
 }
 
 // StreamDir returns the directory for ad-hoc data stream sockets.
-func (c *Config) StreamDir() string {
+func (c *Config) StreamDir(taskName string) string {
 	return filepath.Join(
 		c.SocketDir(),
 		"streams",
-		"StreamEcho",
+		taskName,
 		c.ServiceName())
 }
 

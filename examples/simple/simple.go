@@ -197,7 +197,7 @@ func (s *Simple) DiskInfo(req *acomm.Request) (interface{}, *url.URL, error) {
 // StreamEcho is a task handler to echo input back via streaming data.
 func (s *Simple) StreamEcho(req *acomm.Request) (interface{}, *url.URL, error) {
 	src := ioutil.NopCloser(bytes.NewReader(*req.Args))
-	addr, err := s.tracker.NewStreamUnix(s.config.StreamDir(), src)
+	addr, err := s.tracker.NewStreamUnix(s.config.StreamDir("StreamEcho"), src)
 
 	return nil, addr, err
 }
