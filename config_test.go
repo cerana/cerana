@@ -2,10 +2,12 @@ package provider_test
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/mistifyio/provider"
@@ -17,10 +19,38 @@ import (
 
 type ConfigSuite struct {
 	suite.Suite
+	config     *provider.Config
+	configData *provider.ConfigData
+	configFile *os.File
 }
 
 func (s *ConfigSuite) SetupTest() {
 	log.SetLevel(log.FatalLevel)
+
+	s.configData = &provider.ConfigData{
+		SocketDir:       os.TempDir(),
+		ServiceName:     uuid.New(),
+		CoordinatorURL:  "http://localhost:8080/",
+		DefaultPriority: 43,
+		LogLevel:        "fatal",
+		DefaultTimeout:  100,
+		RequestTimeout:  10,
+		Tasks: map[string]*provider.TaskConfigData{
+			"foobar": &provider.TaskConfigData{
+				Priority: 56,
+				Timeout:  64,
+			},
+		},
+	}
+
+	var err error
+	s.config, _, _, s.configFile, err = newConfig(false, true, s.configData)
+	s.Require().NoError(err, "failed to create config")
+	s.Require().NoError(s.config.LoadConfig(), "failed to load config")
+}
+
+func (s *ConfigSuite) TearDownTest() {
+	_ = os.Remove(s.configFile.Name())
 }
 
 func TestConfigSuite(t *testing.T) {
@@ -48,23 +78,10 @@ func (s *ConfigSuite) TestNewConfig() {
 }
 
 func (s *ConfigSuite) TestLoadConfig() {
-	data := struct {
-		SocketDir      string `json:"socket_dir"`
-		ServiceName    string `json:"service_name"`
-		CoordinatorURL string `json:"coordinator_url"`
-	}{
-		os.TempDir(),
-		uuid.New(),
-		"http://localhost.com:8080/",
-	}
-
-	dataJSON, _ := json.Marshal(data)
-	fmt.Println(string(dataJSON))
-
 	tests := []struct {
 		description string
-		flagSet     bool
-		configFile  bool
+		setFlags    bool
+		writeConfig bool
 		expectedErr bool
 	}{
 		{"nothing set", false, false, true},
@@ -76,44 +93,13 @@ func (s *ConfigSuite) TestLoadConfig() {
 	for _, test := range tests {
 		msg := testMsgFunc(test.description)
 
-		fs := flag.NewFlagSet(uuid.New(), flag.ExitOnError)
-		v := viper.New()
-		v.SetConfigType("json")
-		config := provider.NewConfig(fs, v)
-		if !s.NotNil(config, msg("failed to return a config")) {
+		config, _, _, configFile, err := newConfig(test.setFlags, test.writeConfig, s.configData)
+		if configFile != nil {
+			defer func() { _ = os.Remove(configFile.Name()) }()
+		}
+		if !s.NoError(err, msg("failed to create and load config")) {
 			continue
 		}
-
-		configFileName := ""
-		if test.configFile {
-			configFile, err := ioutil.TempFile("", "providerTest-")
-			if !s.NoError(err, msg("failed to create conf file")) {
-				continue
-			}
-			configFileName = configFile.Name()
-			defer os.Remove(configFileName)
-			defer configFile.Close()
-
-			if _, err := configFile.Write(dataJSON); !s.NoError(err, msg("failed to write config data")) {
-				continue
-			}
-
-			fs.Set("config_file", configFileName)
-		}
-
-		if test.flagSet {
-			fs.Set("socket_dir", data.SocketDir)
-			fs.Set("service_name", data.ServiceName)
-			fs.Set("coordinator_url", data.CoordinatorURL)
-		}
-
-		sn, err := fs.GetString("service_name")
-		fmt.Println(msg("should be '%s', sn '%s', err %s", data.ServiceName, sn, err))
-		/*
-			if !s.NoError(fs.Parse(), msg("failed to parse flags")) {
-				continue
-			}
-		*/
 
 		if test.expectedErr {
 			s.Error(config.LoadConfig(), msg("should not load valid config"))
@@ -124,36 +110,96 @@ func (s *ConfigSuite) TestLoadConfig() {
 }
 
 func (s *ConfigSuite) TestTaskPriority() {
+	s.EqualValues(s.configData.DefaultPriority, s.config.TaskPriority(uuid.New()))
+	s.EqualValues(s.configData.Tasks["foobar"].Priority, s.config.TaskPriority("foobar"))
 }
 
 func (s *ConfigSuite) TestTaskTimeout() {
+	s.EqualValues(s.configData.DefaultTimeout, s.config.TaskTimeout(uuid.New())/time.Second)
+	s.EqualValues(s.configData.Tasks["foobar"].Timeout, s.config.TaskTimeout("foobar")/time.Second)
 }
 
 func (s *ConfigSuite) TestSocketDir() {
+	s.Equal(s.configData.SocketDir, s.config.SocketDir())
 }
 
 func (s *ConfigSuite) TestStreamDir() {
+	dir := s.config.StreamDir("foobar")
+	s.Contains(dir, s.config.SocketDir(), "missing socket dir")
+	s.Contains(dir, "foobar", "missing task name")
+	s.Contains(dir, s.config.ServiceName(), "missing service name")
 }
 
 func (s *ConfigSuite) TestServiceName() {
+	s.Equal(s.configData.ServiceName, s.config.ServiceName())
 }
 
 func (s *ConfigSuite) TestCoordinatorURL() {
+	s.Equal(s.configData.CoordinatorURL, s.config.CoordinatorURL().String())
 }
 
 func (s *ConfigSuite) TestRequestTimeout() {
+	s.EqualValues(s.configData.RequestTimeout, s.config.RequestTimeout()/time.Second)
 }
 
 func (s *ConfigSuite) TestValidate() {
+	tests := []struct {
+		description    string
+		socketDir      string
+		serviceName    string
+		coordinatorURL string
+		expectedError  bool
+	}{
+		{"valid", "/tmp", "foobar", "http://localhost:8080/", false},
+		{"missing socket dir", "", "foobar", "http://localhost:8080/", true},
+		{"missing service name", "/tmp", "", "http://localhost:8080/", true},
+		{"missing coordinator url", "/tmp", "foobar", "", true},
+		{"bad coordinator url", "/tmp", "foobar", "=aer=0./", true},
+	}
+
+	for _, test := range tests {
+		msg := testMsgFunc(test.description)
+
+		configData := &provider.ConfigData{
+			SocketDir:      test.socketDir,
+			ServiceName:    test.serviceName,
+			CoordinatorURL: test.coordinatorURL,
+		}
+
+		config, fs, v, _, err := newConfig(true, false, configData)
+		if !s.NoError(err, msg("failed to create config")) {
+			continue
+		}
+		// Bind here to avoid the need for Load
+		_ = v.BindPFlags(fs)
+
+		if test.expectedError {
+			s.Error(config.Validate(), msg("should not be valid"))
+		} else {
+			s.NoError(config.Validate(), msg("should be valid"))
+		}
+	}
 }
 
 func (s *ConfigSuite) TestUnmarshal() {
+	config := &provider.ConfigData{}
+	if !s.NoError(s.config.Unmarshal(config)) {
+		return
+	}
+	s.Equal(s.configData, config)
 }
 
 func (s *ConfigSuite) TestUnmarshalKey() {
+	taskConfig := &provider.TaskConfigData{}
+	if !s.NoError(s.config.UnmarshalKey("tasks.foobar", taskConfig)) {
+		return
+	}
+	s.Equal(s.configData.Tasks["foobar"], taskConfig)
 }
 
 func (s *ConfigSuite) TestSetupLogging() {
+	s.config.SetupLogging()
+	s.Equal(s.configData.LogLevel, log.GetLevel().String())
 }
 
 func testMsgFunc(prefix string) func(...interface{}) string {
@@ -168,4 +214,47 @@ func testMsgFunc(prefix string) func(...interface{}) string {
 			return msgPrefix + fmt.Sprintf(val[0].(string), val[1:]...)
 		}
 	}
+}
+
+func newConfig(setFlags, writeConfig bool, configData *provider.ConfigData) (*provider.Config, *flag.FlagSet, *viper.Viper, *os.File, error) {
+	fs := flag.NewFlagSet(uuid.New(), flag.ExitOnError)
+	v := viper.New()
+	v.SetConfigType("json")
+	config := provider.NewConfig(fs, v)
+	if config == nil {
+		return nil, nil, nil, nil, errors.New("failed to return a config")
+	}
+
+	var configFile *os.File
+	if writeConfig {
+		var err error
+		configFile, err = ioutil.TempFile("", "providerTest-")
+		if err != nil {
+			return nil, nil, nil, nil, err
+		}
+		defer func() { _ = configFile.Close() }()
+
+		configJSON, _ := json.Marshal(configData)
+		if _, err := configFile.Write(configJSON); err != nil {
+			return nil, nil, nil, configFile, err
+		}
+
+		if err := fs.Set("config_file", configFile.Name()); err != nil {
+			return nil, nil, nil, configFile, err
+		}
+	}
+
+	if setFlags {
+		if err := fs.Set("socket_dir", configData.SocketDir); err != nil {
+			return nil, nil, nil, configFile, err
+		}
+		if err := fs.Set("service_name", configData.ServiceName); err != nil {
+			return nil, nil, nil, configFile, err
+		}
+		if err := fs.Set("coordinator_url", configData.CoordinatorURL); err != nil {
+			return nil, nil, nil, configFile, err
+		}
+	}
+
+	return config, fs, v, configFile, nil
 }
