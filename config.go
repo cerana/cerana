@@ -9,6 +9,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	logx "github.com/mistifyio/mistify-logrus-ext"
+	"github.com/mitchellh/mapstructure"
 	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -175,7 +176,15 @@ func (c *Config) Validate() error {
 
 // Unmarshal unmarshals the config into a struct.
 func (c *Config) Unmarshal(rawVal interface{}) error {
-	return c.viper.Unmarshal(rawVal)
+	config := &mapstructure.DecoderConfig{
+		Result:  rawVal,
+		TagName: "json",
+	}
+	decoder, err := mapstructure.NewDecoder(config)
+	if err != nil {
+		return err
+	}
+	return decoder.Decode(c.viper.AllSettings())
 }
 
 // UnmarshalKey unmarshals a single config key into a struct.
