@@ -158,7 +158,7 @@ SocketDir returns the base directory for task sockets.
 #### func (*Config) StreamDir
 
 ```go
-func (c *Config) StreamDir() string
+func (c *Config) StreamDir(taskName string) string
 ```
 StreamDir returns the directory for ad-hoc data stream sockets.
 
@@ -208,6 +208,7 @@ type ConfigData struct {
 	CoordinatorURL  string                     `json:"coordinator_url"`
 	DefaultPriority uint                       `json:"default_priority"`
 	LogLevel        string                     `json:"log_level"`
+	DefaultTimeout  uint64                     `json:"default_timeout"`
 	RequestTimeout  uint64                     `json:"request_timeout"`
 	Tasks           map[string]*TaskConfigData `json:"tasks"`
 }
