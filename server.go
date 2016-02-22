@@ -27,6 +27,10 @@ type Provider interface {
 
 // NewServer creates and initializes a new Server.
 func NewServer(config *Config) (*Server, error) {
+	if err := config.Validate(); err != nil {
+		return nil, err
+	}
+
 	responseSocket := filepath.Join(
 		config.SocketDir(),
 		"response",
