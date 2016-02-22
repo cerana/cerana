@@ -14,6 +14,15 @@ type Config struct {
 	viper *viper.Viper
 }
 
+// ConfigData defines the structure of the config data (e.g. in the config file)
+type ConfigData struct {
+	SocketDir      string `json:"socket_dir"`
+	ServiceName    string `json:"service_name"`
+	ExternalPort   int    `json:"external_port"`
+	RequestTimeout uint64 `json:"request_timeout"`
+	LogLevel       string `json:"log_level"`
+}
+
 // NewConfig creates a new instance of Config. If a viper instance is not
 // provided, a new one will be created.
 func NewConfig(v *viper.Viper) *Config {

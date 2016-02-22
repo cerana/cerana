@@ -105,6 +105,20 @@ func (c *Config) Validate() error
 ```
 Validate returns whether the config is valid, containing necessary values.
 
+#### type ConfigData
+
+```go
+type ConfigData struct {
+	SocketDir      string `json:"socket_dir"`
+	ServiceName    string `json:"service_name"`
+	ExternalPort   int    `json:"external_port"`
+	RequestTimeout uint64 `json:"request_timeout"`
+	LogLevel       string `json:"log_level"`
+}
+```
+
+ConfigData defines the structure of the config data (e.g. in the config file)
+
 #### type Server
 
 ```go
