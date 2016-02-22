@@ -198,7 +198,7 @@ func (s *ConfigSuite) TestUnmarshalKey() {
 }
 
 func (s *ConfigSuite) TestSetupLogging() {
-	s.config.SetupLogging()
+	s.NoError(s.config.SetupLogging(), "failed to setup logging")
 	s.Equal(s.configData.LogLevel, log.GetLevel().String())
 }
 

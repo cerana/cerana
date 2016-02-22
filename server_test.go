@@ -112,7 +112,9 @@ func (s *ServerSuite) TestStartHandleStop() {
 	}
 	req, _ := acomm.NewRequest("foobar", tracker.URL().String(), struct{}{}, respHandler, respHandler)
 	providerSocket, _ := url.ParseRequestURI("unix://" + s.server.TaskSocketPath("foobar"))
-	s.server.Tracker().TrackRequest(req, 5*time.Second)
+	if !s.NoError(s.server.Tracker().TrackRequest(req, 5*time.Second)) {
+		return
+	}
 	if !s.NoError(acomm.Send(providerSocket, req)) {
 		return
 	}
