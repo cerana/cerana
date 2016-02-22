@@ -280,6 +280,13 @@ func (s *Server) StopOnSignal(signals ...os.Signal)
 StopOnSignal will wait until one of the specified signals is received and then
 stop the server. If no signals are specified, it will use a default set.
 
+#### func (*Server) TaskSocketPath
+
+```go
+func (s *Server) TaskSocketPath(taskName string) string
+```
+TaskSocketPath returns the unix socket path for a task
+
 #### func (*Server) Tracker
 
 ```go
