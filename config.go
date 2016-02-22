@@ -6,36 +6,58 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	logx "github.com/mistifyio/mistify-logrus-ext"
+	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 
 // Config holds all configuration for the provider.
 type Config struct {
-	viper *viper.Viper
+	viper   *viper.Viper
+	flagSet *flag.FlagSet
 }
 
 // ConfigData defines the structure of the config data (e.g. in the config file)
 type ConfigData struct {
 	SocketDir      string `json:"socket_dir"`
 	ServiceName    string `json:"service_name"`
-	ExternalPort   int    `json:"external_port"`
-	RequestTimeout uint64 `json:"request_timeout"`
+	ExternalPort   uint   `json:"external_port"`
+	RequestTimeout uint   `json:"request_timeout"`
 	LogLevel       string `json:"log_level"`
 }
 
 // NewConfig creates a new instance of Config. If a viper instance is not
 // provided, a new one will be created.
-func NewConfig(v *viper.Viper) *Config {
+func NewConfig(flagSet *flag.FlagSet, v *viper.Viper) *Config {
+	if flagSet == nil {
+		flagSet = flag.CommandLine
+	}
+
 	if v == nil {
 		v = viper.New()
 	}
+
+	flagSet.StringP("config_file", "c", "", "path to config file")
+	flagSet.StringP("service_name", "n", "", "name of the coordinator")
+	flagSet.StringP("socket_dir", "s", "/tmp/mistify", "base directory in which to create task sockets")
+	flagSet.UintP("external_port", "p", 8080, "port for the http external request server to listen")
+	flagSet.StringP("log_level", "l", "warning", "log level: debug/info/warn/error/fatal/panic")
+	flagSet.UintP("request_timeout", "t", 0, "default timeout for requests in seconds")
+
 	return &Config{
-		viper: v,
+		viper:   v,
+		flagSet: flagSet,
 	}
 }
 
-// LoadConfigFile attempts to load a config file.
-func (c *Config) LoadConfigFile() error {
+// LoadConfig attempts to load the config. Flags should be parsed first.
+func (c *Config) LoadConfig() error {
+	if err := c.viper.BindPFlags(c.flagSet); err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error("failed to bind flags")
+		return err
+	}
+
 	filePath := c.viper.GetString("config_file")
 	if filePath == "" {
 		return c.Validate()

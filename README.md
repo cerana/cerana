@@ -51,7 +51,7 @@ Config holds all configuration for the provider.
 #### func  NewConfig
 
 ```go
-func NewConfig(v *viper.Viper) *Config
+func NewConfig(flagSet *flag.FlagSet, v *viper.Viper) *Config
 ```
 NewConfig creates a new instance of Config. If a viper instance is not provided,
 a new one will be created.
@@ -63,12 +63,12 @@ func (c *Config) ExternalPort() int
 ```
 ExternalPort returns the port to listen on for external requests.
 
-#### func (*Config) LoadConfigFile
+#### func (*Config) LoadConfig
 
 ```go
-func (c *Config) LoadConfigFile() error
+func (c *Config) LoadConfig() error
 ```
-LoadConfigFile attempts to load a config file.
+LoadConfig attempts to load the config. Flags should be parsed first.
 
 #### func (*Config) RequestTimeout
 
@@ -111,8 +111,8 @@ Validate returns whether the config is valid, containing necessary values.
 type ConfigData struct {
 	SocketDir      string `json:"socket_dir"`
 	ServiceName    string `json:"service_name"`
-	ExternalPort   int    `json:"external_port"`
-	RequestTimeout uint64 `json:"request_timeout"`
+	ExternalPort   uint   `json:"external_port"`
+	RequestTimeout uint   `json:"request_timeout"`
 	LogLevel       string `json:"log_level"`
 }
 ```
