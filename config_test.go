@@ -17,6 +17,10 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+func TestConfig(t *testing.T) {
+	suite.Run(t, new(ConfigSuite))
+}
+
 type ConfigSuite struct {
 	suite.Suite
 	config     *provider.Config
@@ -51,10 +55,6 @@ func (s *ConfigSuite) SetupTest() {
 
 func (s *ConfigSuite) TearDownTest() {
 	_ = os.Remove(s.configFile.Name())
-}
-
-func TestConfigSuite(t *testing.T) {
-	suite.Run(t, new(ConfigSuite))
 }
 
 func (s *ConfigSuite) TestNewConfig() {

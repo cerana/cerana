@@ -15,6 +15,10 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+func TestServer(t *testing.T) {
+	suite.Run(t, new(ServerSuite))
+}
+
 type ServerSuite struct {
 	suite.Suite
 	config     *provider.Config
@@ -58,10 +62,6 @@ func (s *ServerSuite) SetupTest() {
 
 func (s *ServerSuite) TearDownSuite() {
 	_ = os.RemoveAll(s.configData.SocketDir)
-}
-
-func TestServerSuite(t *testing.T) {
-	suite.Run(t, new(ServerSuite))
 }
 
 func (s *ServerSuite) TestNewServer() {
