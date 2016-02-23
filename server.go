@@ -30,6 +30,10 @@ type Server struct {
 
 // NewServer creates and initializes a new instance of Server.
 func NewServer(config *Config) (*Server, error) {
+	if err := config.Validate(); err != nil {
+		return nil, err
+	}
+
 	var err error
 	s := &Server{
 		config: config,
