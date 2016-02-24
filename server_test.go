@@ -1,6 +1,7 @@
 package coordinator_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -28,6 +29,10 @@ type ServerSuite struct {
 	config     *coordinator.Config
 	configData *coordinator.ConfigData
 	server     *coordinator.Server
+}
+
+type params struct {
+	ID string
 }
 
 func (s *ServerSuite) SetupSuite() {
@@ -68,96 +73,86 @@ func (s *ServerSuite) TestNewServer() {
 	s.Error(err, "should error with invalid config")
 }
 
-func (s *ServerSuite) TestStartHandleHTTPStop() {
+func (s *ServerSuite) TestReqRespHandle() {
 	// Start
 	if !s.NoError(s.server.Start(), "failed to start server") {
 		return
 	}
 	time.Sleep(time.Second)
-
 	// Stop
 	defer s.server.Stop()
 
-	// Handle request
-	failed := make(chan struct{})
-	handled := make(chan struct{})
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		close(handled)
-	}))
-	defer ts.Close()
+	// Set up handlers
+	result := make(chan *params, 10)
 
-	taskListener := s.createTaskListener(failed)
+	// Task handler
+	taskName := "foobar"
+	taskListener := s.createTaskListener(taskName, result)
 	if taskListener == nil {
 		return
 	}
 	defer taskListener.Stop(0)
 
-	req, _ := acomm.NewRequest("foobar", ts.URL, struct{}{}, nil, nil)
-	coordinatorURL, _ := url.ParseRequestURI(fmt.Sprintf("http://localhost:%v", s.configData.ExternalPort))
-	if !s.NoError(acomm.Send(coordinatorURL, req)) {
+	// Response handlers
+	responseServer, responseListener := s.createResponseHandlers(result)
+	if responseServer != nil {
+		defer responseServer.Close()
+	}
+	if responseListener != nil {
+		defer responseListener.Stop(0)
+	}
+	if responseServer == nil || responseListener == nil {
 		return
 	}
 
-	success := false
-	select {
-	case <-handled:
-		success = true
-	case <-failed:
+	// Coordinator URLs
+	internalURL, _ := url.ParseRequestURI("unix://" + filepath.Join(
+		s.config.SocketDir(),
+		"coordinator",
+		s.config.ServiceName()+".sock"),
+	)
+	externalURL, _ := url.ParseRequestURI(fmt.Sprintf(
+		"http://localhost:%v",
+		s.configData.ExternalPort),
+	)
+
+	// Test cases
+	tests := []struct {
+		description  string
+		taskName     string
+		internal     bool
+		params       *params
+		expectFailed bool
+	}{
+		{"valid http", taskName, false, &params{uuid.New()}, false},
+		{"valid unix", taskName, true, &params{uuid.New()}, false},
+		{"bad task http", "asdf", false, &params{uuid.New()}, true},
+		{"bad task unix", "asdf", true, &params{uuid.New()}, true},
 	}
 
-	s.True(success)
-}
-
-func (s *ServerSuite) TestStartHandleUnixStop() {
-	// Start
-	if !s.NoError(s.server.Start(), "failed to start server") {
-		return
-	}
-	time.Sleep(time.Second)
-
-	// Stop
-	defer s.server.Stop()
-
-	// Handle request
-	failed := make(chan struct{})
-	handled := make(chan struct{})
-
-	responseListener := acomm.NewUnixListener(filepath.Join(s.configData.SocketDir, "testResponse.sock"), 0)
-	if !s.NoError(responseListener.Start(), "failed to start task listener") {
-		return
-	}
-	defer responseListener.Stop(0)
-	go func() {
-		conn := responseListener.NextConn()
-		if conn == nil {
-			return
+	for _, test := range tests {
+		msg := testMsgFunc(test.description)
+		hookURL := responseServer.URL
+		coordinatorURL := externalURL
+		if test.internal {
+			hookURL = responseListener.URL().String()
+			coordinatorURL = internalURL
 		}
-		defer responseListener.DoneConn(conn)
 
-		close(handled)
-		time.Sleep(100 * time.Millisecond)
-	}()
+		req, _ := acomm.NewRequest(test.taskName, hookURL, test.params, nil, nil)
+		if err := acomm.Send(coordinatorURL, req); err != nil {
+			result <- nil
+		}
 
-	taskListener := s.createTaskListener(failed)
-	if taskListener == nil {
-		return
+		respData := <-result
+		if test.expectFailed {
+			s.Nil(respData, msg("should have failed"))
+		} else {
+			s.Equal(test.params, respData, msg("should have gotten the correct response data"))
+		}
+
+		drainChan(result)
 	}
-	defer taskListener.Stop(0)
-
-	req, _ := acomm.NewRequest("foobar", responseListener.URL().String(), struct{}{}, nil, nil)
-	coordinatorURL, _ := url.ParseRequestURI("unix://" + filepath.Join(s.config.SocketDir(), "coordinator", s.config.ServiceName()+".sock"))
-	if !s.NoError(acomm.Send(coordinatorURL, req)) {
-		return
-	}
-
-	success := false
-	select {
-	case <-handled:
-		success = true
-	case <-failed:
-	}
-
-	s.True(success)
 }
 
 func (s *ServerSuite) TestStopOnSignal() {
@@ -184,40 +179,90 @@ func (s *ServerSuite) TestStopOnSignal() {
 	<-done
 }
 
-func (s *ServerSuite) createTaskListener(failed chan struct{}) *acomm.UnixListener {
-	taskListener := acomm.NewUnixListener(filepath.Join(s.configData.SocketDir, "foobar", "test.sock"), 0)
+func (s *ServerSuite) createTaskListener(taskName string, result chan *params) *acomm.UnixListener {
+	taskListener := acomm.NewUnixListener(filepath.Join(s.configData.SocketDir, taskName, "test.sock"), 0)
 	if !s.NoError(taskListener.Start(), "failed to start task listener") {
 		return nil
 	}
 
 	go func() {
-		conn := taskListener.NextConn()
-		if conn == nil {
-			return
-		}
-		defer taskListener.DoneConn(conn)
+		for {
+			conn := taskListener.NextConn()
+			if conn == nil {
+				break
+			}
+			defer taskListener.DoneConn(conn)
+			req := &acomm.Request{}
+			if err := acomm.UnmarshalConnData(conn, req); err != nil {
+				result <- nil
+				continue
+			}
 
-		req := &acomm.Request{}
-		if err := acomm.UnmarshalConnData(conn, req); err != nil {
-			close(failed)
-			return
-		}
+			params := &params{}
+			_ = req.UnmarshalArgs(params)
 
-		// Respond to the initial request
-		resp, _ := acomm.NewResponse(req, nil, nil, nil)
-		if err := acomm.SendConnData(conn, resp); err != nil {
-			close(failed)
-			return
-		}
+			// Respond to the initial request
+			resp, _ := acomm.NewResponse(req, nil, nil, nil)
+			if err := acomm.SendConnData(conn, resp); err != nil {
+				result <- nil
+				continue
+			}
 
-		// Response to hook
-		resp, _ = acomm.NewResponse(req, nil, nil, nil)
-		if err := req.Respond(resp); err != nil {
-			close(failed)
-			return
+			// Response to hook
+			resp, _ = acomm.NewResponse(req, req.Args, nil, nil)
+			if err := req.Respond(resp); err != nil {
+				result <- nil
+				continue
+			}
 		}
 	}()
 
 	time.Sleep(time.Second)
 	return taskListener
+}
+
+func (s *ServerSuite) createResponseHandlers(result chan *params) (*httptest.Server, *acomm.UnixListener) {
+	// HTTP response
+	responseServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := &acomm.Response{}
+		decoder := json.NewDecoder(r.Body)
+		_ = decoder.Decode(resp)
+
+		p := &params{}
+		_ = resp.UnmarshalResult(p)
+		result <- p
+	}))
+
+	// Unix response
+	responseListener := acomm.NewUnixListener(filepath.Join(s.configData.SocketDir, "testResponse.sock"), 0)
+	if !s.NoError(responseListener.Start(), "failed to start task listener") {
+		return responseServer, nil
+	}
+
+	go func() {
+		conn := responseListener.NextConn()
+		if conn == nil {
+			return
+		}
+		defer responseListener.DoneConn(conn)
+
+		resp := &acomm.Response{}
+		_ = acomm.UnmarshalConnData(conn, resp)
+		p := &params{}
+		_ = resp.UnmarshalResult(p)
+		result <- p
+	}()
+
+	return responseServer, responseListener
+}
+
+// drainChan is a helper function to drain a channel, such as between test cases
+func drainChan(ch chan *params) {
+	for {
+		select {
+		case <-ch:
+		default:
+			return
+		}
+	}
 }
