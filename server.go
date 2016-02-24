@@ -27,6 +27,10 @@ type Provider interface {
 
 // NewServer creates and initializes a new Server.
 func NewServer(config *Config) (*Server, error) {
+	if err := config.Validate(); err != nil {
+		return nil, err
+	}
+
 	responseSocket := filepath.Join(
 		config.SocketDir(),
 		"response",
@@ -50,12 +54,15 @@ func (s *Server) Tracker() *acomm.Tracker {
 
 // RegisterTask registers a new task and its handler with the server.
 func (s *Server) RegisterTask(taskName string, handler TaskHandler) {
-	socketPath := filepath.Join(
+	s.tasks[taskName] = newTask(taskName, s.TaskSocketPath(taskName), s.config.TaskTimeout(taskName), handler)
+}
+
+// TaskSocketPath returns the unix socket path for a task
+func (s *Server) TaskSocketPath(taskName string) string {
+	return filepath.Join(
 		s.config.SocketDir(),
 		taskName,
 		strconv.Itoa(s.config.TaskPriority(taskName))+"-"+s.config.ServiceName()+".sock")
-
-	s.tasks[taskName] = newTask(taskName, socketPath, s.config.TaskTimeout(taskName), handler)
 }
 
 // RegisteredTasks returns a list of registered task names.

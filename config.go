@@ -9,6 +9,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	logx "github.com/mistifyio/mistify-logrus-ext"
+	"github.com/mitchellh/mapstructure"
 	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -17,6 +18,24 @@ import (
 type Config struct {
 	viper   *viper.Viper
 	flagSet *flag.FlagSet
+}
+
+// ConfigData defines the structure of the config data (e.g. in the config file)
+type ConfigData struct {
+	SocketDir       string                     `json:"socket_dir"`
+	ServiceName     string                     `json:"service_name"`
+	CoordinatorURL  string                     `json:"coordinator_url"`
+	DefaultPriority uint                       `json:"default_priority"`
+	LogLevel        string                     `json:"log_level"`
+	DefaultTimeout  uint64                     `json:"default_timeout"`
+	RequestTimeout  uint64                     `json:"request_timeout"`
+	Tasks           map[string]*TaskConfigData `json:"tasks"`
+}
+
+// TaskConfigData defines the structure of the task config data (e.g. in the config file)
+type TaskConfigData struct {
+	Priority uint   `json:"priority"`
+	Timeout  uint64 `json:"timeout"`
 }
 
 // NewConfig creates a new instance of Config. If a viper instance is not
@@ -31,13 +50,15 @@ func NewConfig(flagSet *flag.FlagSet, v *viper.Viper) *Config {
 	}
 
 	flagSet.StringP("config_file", "c", "", "path to config file")
+	flagSet.StringP("service_name", "n", "", "provider service name")
 	flagSet.StringP("socket_dir", "s", "/tmp/mistify", "base directory in which to create task sockets")
 	flagSet.UintP("default_priority", "p", 50, "default task priority")
+	flagSet.StringP("coordinator_url", "u", "", "url of coordinator for making requests")
 	flagSet.StringP("log_level", "l", "warning", "log level: debug/info/warn/error/fatal/panic")
 	flagSet.Uint64P("request_timeout", "t", 0, "default timeout for requests made by this provider in seconds")
 
 	return &Config{
-		viper:   viper.New(),
+		viper:   v,
 		flagSet: flagSet,
 	}
 }
@@ -99,11 +120,11 @@ func (c *Config) SocketDir() string {
 }
 
 // StreamDir returns the directory for ad-hoc data stream sockets.
-func (c *Config) StreamDir() string {
+func (c *Config) StreamDir(taskName string) string {
 	return filepath.Join(
 		c.SocketDir(),
 		"streams",
-		"StreamEcho",
+		taskName,
 		c.ServiceName())
 }
 
@@ -155,12 +176,28 @@ func (c *Config) Validate() error {
 
 // Unmarshal unmarshals the config into a struct.
 func (c *Config) Unmarshal(rawVal interface{}) error {
-	return c.viper.Unmarshal(rawVal)
+	config := &mapstructure.DecoderConfig{
+		Result:  rawVal,
+		TagName: "json",
+	}
+	decoder, err := mapstructure.NewDecoder(config)
+	if err != nil {
+		return err
+	}
+	return decoder.Decode(c.viper.AllSettings())
 }
 
 // UnmarshalKey unmarshals a single config key into a struct.
 func (c *Config) UnmarshalKey(key string, rawVal interface{}) error {
-	return c.viper.UnmarshalKey(key, rawVal)
+	config := &mapstructure.DecoderConfig{
+		Result:  rawVal,
+		TagName: "json",
+	}
+	decoder, err := mapstructure.NewDecoder(config)
+	if err != nil {
+		return err
+	}
+	return decoder.Decode(c.viper.Get(key))
 }
 
 // SetupLogging sets the log level and formatting.
