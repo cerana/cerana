@@ -2,6 +2,7 @@ language: go
 dist: trusty
 
 go:
+  - 1.6
   - 1.5
   - tip
 
@@ -13,10 +14,11 @@ install:
   - go get -t -v ./...
 
 script:
+  - gometalinter --disable-all --enable=goimports --enable=errcheck --enable=vet --enable=gofmt --enable=golint --enable=vetshadow --deadline=30s ./...
   - go test -v ./...
 
 after_success:
-  - gometalinter --enable=goimports ./...
+  - gometalinter --disable=errcheck --disable=vet --disable=gofmt --disable=golint --disable=vetshadow --deadline=30s ./...
 
 notifications:
   email: false
