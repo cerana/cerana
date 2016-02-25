@@ -60,16 +60,20 @@ func NewRequest(task, responseHook string, args interface{}, sh ResponseHandler,
 
 // UnmarshalArgs unmarshals the request args into the destination object.
 func (req *Request) UnmarshalArgs(dest interface{}) error {
-	if req.Args == nil {
+	return unmarshalFromRaw(req.Args, dest)
+}
+
+func unmarshalFromRaw(src *json.RawMessage, dest interface{}) error {
+	if src == nil {
 		return nil
 	}
 
-	err := json.Unmarshal(*req.Args, dest)
+	err := json.Unmarshal(*src, dest)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
-			"req":   req,
-		}).Error("failed to unmarshal request args")
+			"data":  src,
+		}).Error("failed to unmarshal data")
 	}
 	return err
 }

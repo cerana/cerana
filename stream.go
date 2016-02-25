@@ -118,7 +118,7 @@ func Stream(dest io.Writer, addr *url.URL) error {
 			"error": err,
 			"type":  addr.Scheme,
 			"addr":  addr,
-		}).Error(err)
+		}).Error("cannot stream from url")
 		return err
 	}
 }

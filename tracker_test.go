@@ -66,6 +66,10 @@ func TestTrackerTestSuite(t *testing.T) {
 }
 
 func (s *TrackerTestSuite) NextResp() *acomm.Response {
+	return nextResp(s.Responses)
+}
+
+func nextResp(respChan chan *acomm.Response) *acomm.Response {
 	timeout := make(chan struct{}, 1)
 	go func() {
 		time.Sleep(5 * time.Second)
@@ -74,7 +78,7 @@ func (s *TrackerTestSuite) NextResp() *acomm.Response {
 
 	var resp *acomm.Response
 	select {
-	case resp = <-s.Responses:
+	case resp = <-respChan:
 	case <-timeout:
 	}
 	return resp
