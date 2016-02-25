@@ -11,7 +11,6 @@ import (
 	"net/url"
 	"os"
 	"testing"
-	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/mistifyio/acomm"
@@ -34,18 +33,7 @@ func TestResponseTestSuite(t *testing.T) {
 }
 
 func (s *ResponseTestSuite) NextResp() *acomm.Response {
-	timeout := make(chan struct{}, 1)
-	go func() {
-		time.Sleep(1 * time.Second)
-		timeout <- struct{}{}
-	}()
-
-	var resp *acomm.Response
-	select {
-	case resp = <-s.Responses:
-	case <-timeout:
-	}
-	return resp
+	return nextResp(s.Responses)
 }
 
 func (s *ResponseTestSuite) TestNewResponse() {

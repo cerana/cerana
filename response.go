@@ -58,7 +58,7 @@ func (r *Response) UnmarshalJSON(data []byte) error {
 }
 
 // NewResponse creates a new Response instance based on a Request.
-func NewResponse(req *Request, result interface{}, streamURL *url.URL, err error) (*Response, error) {
+func NewResponse(req *Request, result interface{}, streamURL *url.URL, respErr error) (*Response, error) {
 	if req == nil {
 		err := errors.New("cannot create response without request")
 		log.WithFields(log.Fields{
@@ -67,7 +67,7 @@ func NewResponse(req *Request, result interface{}, streamURL *url.URL, err error
 		return nil, err
 	}
 
-	if result != nil && err != nil {
+	if result != nil && respErr != nil {
 		err := errors.New("cannot set both result and err")
 		log.WithFields(log.Fields{
 			"error": err,
@@ -90,25 +90,14 @@ func NewResponse(req *Request, result interface{}, streamURL *url.URL, err error
 	return &Response{
 		ID:        req.ID,
 		Result:    resultRaw,
-		Error:     err,
+		Error:     respErr,
 		StreamURL: streamURL,
 	}, nil
 }
 
 // UnmarshalResult unmarshals the response result into the destination object.
 func (r *Response) UnmarshalResult(dest interface{}) error {
-	if r.Result == nil {
-		return nil
-	}
-
-	err := json.Unmarshal(*r.Result, dest)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-			"resp":  r,
-		}).Error("failed to unmarshal response result")
-	}
-	return err
+	return unmarshalFromRaw(r.Result, dest)
 }
 
 // Send attempts send the payload to the specified URL.
@@ -131,7 +120,7 @@ func Send(addr *url.URL, payload interface{}) error {
 			"error": err,
 			"type":  addr.Scheme,
 			"addr":  addr,
-		}).Error(err)
+		}).Error("cannot not send to url")
 		return err
 	}
 }
