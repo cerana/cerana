@@ -41,7 +41,7 @@ func (s *ServerSuite) SetupSuite() {
 		DefaultTimeout:  100,
 		RequestTimeout:  10,
 		Tasks: map[string]*provider.TaskConfigData{
-			"foobar": &provider.TaskConfigData{
+			"foobar": {
 				Priority: 56,
 				Timeout:  64,
 			},
