@@ -1,0 +1,24 @@
+language: go
+dist: trusty
+
+go:
+  - 1.5
+  - tip
+
+before_install:
+  - go get github.com/alecthomas/gometalinter
+  - gometalinter --install --update
+
+install:
+  - go get -t -v ./...
+
+script:
+  - go test -v ./...
+
+after_success:
+  - gometalinter --enable=goimports ./...
+
+notifications:
+  email: false
+  slack:
+    secure: "10GJJ/f8hlaMJACeuDLDLVqq/NdOPgKFKLnYLUsqyEURb63vQF6iz5B9cuyaV802FmDnBMPa5dj7IcSkGASuwl35Ie/tSRDgmLSEEPRHMhlEO1n81wNwqegHM8NcDvx9z1meFs09wLcUkcZdsFpPDoKSqTQ05WA7crjmN165G57FZ6ThC6ygzBzx7KijDqM9LNKH5mkgN36qhEJFeeAHeAhVhri5HQBORq69nmxi87De37NRB6I3rWRyQyoQbFiFa6wEdkOaApKZCKck+RLMcjGjNqXtkJLPz5fxLeW03rhW8aTbnNwSsoPyVT+e7+GBM0irC+45ev7IjoKqzzLiy+dcQvN5BjXiLK7b4n800t9Wsbio0b5XijYe8qsUfmp3XTZKCXoR3sNVQV9Z8ajJKc7n9mDqZvKwB4tqE73qxeK3b/wnZut0II2w+p33BWesE+mO63CrUh20Wgz6fXStmaToCJoHIpKuRGLeE+ioTRgclwf9H4FLsbv45qLGC6fZHkyhveOdmcO1Vq6BjlzXUAwOt1/ZoYUYsIPVhpfq7rZzbVPajdTwpVAdBYCjZIj7In7qdfOM6ZiQH9Y5AibDevqXfgT0l8XlG/TEnEB5c1f81n03+tuWXjkt+LqI2+UO3tDCXT9sTs1fcMDQkwV6CQWoDwR0L0Eh42EpeOyXp0c="
