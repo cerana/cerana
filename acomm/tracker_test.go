@@ -10,7 +10,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/mistifyio/acomm"
+	"github.com/mistifyio/mistify/acomm"
 	"github.com/stretchr/testify/suite"
 )
 

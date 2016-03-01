@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"io/ioutil"
 
-	"github.com/mistifyio/acomm"
+	"github.com/mistifyio/mistify/acomm"
 )
 
 func (s *TrackerTestSuite) TestNewStreamUnix() {
