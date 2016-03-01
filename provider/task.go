@@ -7,7 +7,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/mistifyio/acomm"
+	"github.com/mistifyio/mistify/acomm"
 )
 
 // TaskHandler if the request handler function for a particular task. It should

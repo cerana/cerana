@@ -9,7 +9,7 @@ import (
 	"syscall"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/mistifyio/acomm"
+	"github.com/mistifyio/mistify/acomm"
 )
 
 // Server is the main server struct.
