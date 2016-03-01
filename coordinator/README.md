@@ -1,6 +1,6 @@
 # coordinator
 
-[![coordinator](https://godoc.org/github.com/mistifyio/coordinator?status.png)](https://godoc.org/github.com/mistifyio/coordinator)
+[![coordinator](https://godoc.org/github.com/mistifyio/mistify/coordinator?status.png)](https://godoc.org/github.com/mistifyio/mistify/coordinator)
 
 Package coordinator is a request router and proxy, to be used with Providers. It
 is the entry point for all task requests and separates local providers from
