@@ -1,6 +1,6 @@
 # acomm
 
-[![acomm](https://godoc.org/github.com/mistifyio/acomm?status.png)](https://godoc.org/github.com/mistifyio/acomm)
+[![acomm](https://godoc.org/github.com/mistifyio/mistify/acomm?status.png)](https://godoc.org/github.com/mistifyio/mistify/acomm)
 
 Package acomm is a library for asynchronous JSON-RPC-like communication between
 services.
@@ -184,7 +184,7 @@ present and vice versa.
 #### func  NewResponse
 
 ```go
-func NewResponse(req *Request, result interface{}, streamURL *url.URL, err error) (*Response, error)
+func NewResponse(req *Request, result interface{}, streamURL *url.URL, respErr error) (*Response, error)
 ```
 NewResponse creates a new Response instance based on a Request.
 
