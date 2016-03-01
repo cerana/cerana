@@ -11,7 +11,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/mistifyio/coordinator"
+	"github.com/mistifyio/mistify/coordinator"
 	"github.com/pborman/uuid"
 	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"

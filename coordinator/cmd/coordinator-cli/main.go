@@ -13,7 +13,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/mistifyio/acomm"
+	"github.com/mistifyio/mistify/acomm"
 	flags "github.com/spf13/pflag"
 )
 

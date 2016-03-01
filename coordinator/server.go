@@ -15,7 +15,7 @@ import (
 	"syscall"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/mistifyio/acomm"
+	"github.com/mistifyio/mistify/acomm"
 	"github.com/tylerb/graceful"
 )
 
