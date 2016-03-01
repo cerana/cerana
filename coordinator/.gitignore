@@ -1,0 +1,4 @@
+.*~
+.*.swp
+cmd/coordinator/coordinator
+cmd/coordinator-cli/coordinator-cli
