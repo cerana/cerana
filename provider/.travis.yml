@@ -1,0 +1,26 @@
+language: go
+dist: trusty
+
+go:
+  - 1.6
+  - 1.5
+  - tip
+
+before_install:
+  - go get github.com/alecthomas/gometalinter
+  - gometalinter --install --update
+
+install:
+  - go get -t -v ./...
+
+script:
+  - gometalinter --disable-all --enable=goimports --enable=errcheck --enable=vet --enable=gofmt --enable=golint --enable=vetshadow --deadline=30s ./...
+  - go test -v ./...
+
+after_success:
+  - gometalinter --disable=errcheck --disable=vet --disable=gofmt --disable=golint --disable=vetshadow --deadline=30s ./...
+
+notifications:
+  email: false
+  slack:
+    secure: "IyUurKOckz7VmDHQ7OO8CMFU7P/d4uIPF03YukWplUxQ1hXCmeZQrpjhx8J2UpaNZoaSumaFG3Qyc0MDpXNVv7k191FvFqOjz+PH+f+Ll52vf2j8XCK7VChet2W29PZ4gsmnrQTDU3BpncZfyNx7kKWPSlywqygtUkm7L2DQZlnCr1s/ggbitjYYXyOAbU4dSCIcD/0z8MrdHD1oNJJM9GjXsZu+X9jZJKpK6BIZuA3I9l0Jc46zm//5aUCcm7/SPgVoORGJ1B2Ras9j7uVSe4HIRq8fIFiKGXDu+l0hGmtLBnjdLAhZuxaWqG/5BKbO/5a8iJf/uOUpgQcixzfMj1Ohl+adlp+pM8t3vNtbGCwoA+x/vHhMGPJXYPQez0Scn6/T/KCnbX6gDq3AX4WaFqoC9FA5sQXyvOivNfGL4oAIkf5Ggk2LXFAUfaagnICE0LyuADWbbvygtXlJKGXPYEjzARTGr7cv1RpEECnuMvKbmAa7ksS557GGctqOLJqnlUiDK3xuhG6sIT8cN0k9mR0mpbLzlihkTRRwCF8J3X9t5ZoCuE/Q9qjughWheZlDZLT/cJ7S+MiSKqwLPrCTwBecD6Ix6s5XAmGa5PzFXXwTHSNDyJYRvXuC1YTTPYFc35fVExyPBmImlyuz254q4xlQnk7rS9aNF6pmhFoZvwI="
