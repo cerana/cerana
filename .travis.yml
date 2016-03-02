@@ -1,0 +1,28 @@
+language: go
+dist: trusty
+
+# Versions of Go and deps in the build matrix should test the current in use by
+# mistify-os and the latest release.
+
+go:
+  - 1.5.2
+  - 1.6
+
+before_install:
+  - go get github.com/alecthomas/gometalinter
+  - gometalinter --install --update
+
+install:
+  - go get -t -v ./...
+
+script:
+  - gometalinter --disable-all --enable=goimports --enable=errcheck --enable=vet --enable=gofmt --enable=golint --enable=vetshadow --deadline=30s ./...
+  - go test -v ./...
+
+after_success:
+  - gometalinter --disable=errcheck --disable=vet --disable=gofmt --disable=golint --disable=vetshadow --deadline=30s ./...
+
+notifications:
+  email: false
+  slack:
+    secure: "XjyWq5wFfjdt21rajPWSrS8xq0MKFbdxZhb/UsJAhnbAIl2wwb/ftxRxu923languwZdJtMIOmDProZQ7hIzwWr1CZu0Luk/FHgJazgrE4j2XvNLCeYOYrIpdh5ZfCQ+oRchyTXAxmSwgK1z5/xqlOa+qSDJm11yA/AXPCHzaRM="
