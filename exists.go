@@ -1,7 +1,8 @@
-package main
+package gozfs
 
 import (
 	"bytes"
+	"syscall"
 
 	"github.com/mistifyio/gozfs/nv"
 )
@@ -19,4 +20,15 @@ func exists(name string) error {
 	}
 
 	return ioctl(zfs, name, encoded.Bytes(), nil)
+}
+
+// Exists determines whether a dataset exists or not.
+func Exists(name string) (bool, error) {
+	if err := exists(name); err != nil {
+		if err.Error() == syscall.ENOENT.Error() {
+			err = nil
+		}
+		return false, err
+	}
+	return true, nil
 }

@@ -1,4 +1,4 @@
-package main
+package gozfs
 
 import (
 	"errors"
@@ -19,7 +19,7 @@ const (
 	DatasetVolume     = "volume"
 )
 
-// Dataset is a ZFS dataset containing a simplified set of information
+// Dataset is a ZFS dataset containing a simplified set of information.
 type Dataset struct {
 	Name          string
 	Origin        string
@@ -233,27 +233,27 @@ func getDatasets(name, dsType string, recurse bool, depth uint64) ([]*Dataset, e
 	return datasets, nil
 }
 
-// Datasets retrieves a list of all datasets, regardless of type
+// Datasets retrieves a list of all datasets, regardless of type.
 func Datasets(name string) ([]*Dataset, error) {
 	return getDatasets(name, "all", true, 0)
 }
 
-// Filesystems retrieves a list of all filesystems
+// Filesystems retrieves a list of all filesystems.
 func Filesystems(name string) ([]*Dataset, error) {
 	return getDatasets(name, DatasetFilesystem, true, 0)
 }
 
-// Snapshots retrieves a list of all snapshots
+// Snapshots retrieves a list of all snapshots.
 func Snapshots(name string) ([]*Dataset, error) {
 	return getDatasets(name, DatasetSnapshot, true, 0)
 }
 
-// Volumes retrieves a list of all volumes
+// Volumes retrieves a list of all volumes.
 func Volumes(name string) ([]*Dataset, error) {
 	return getDatasets(name, DatasetVolume, true, 0)
 }
 
-// GetDataset retrieves a single dataset
+// GetDataset retrieves a single dataset.
 func GetDataset(name string) (*Dataset, error) {
 	datasets, err := getDatasets(name, "all", false, 0)
 	if err != nil {
@@ -273,12 +273,12 @@ func createDataset(name string, createType dmuType, properties map[string]interf
 	return GetDataset(name)
 }
 
-// CreateFilesystem creates a new filesystem
+// CreateFilesystem creates a new filesystem.
 func CreateFilesystem(name string, properties map[string]interface{}) (*Dataset, error) {
 	return createDataset(name, dmuZFS, properties)
 }
 
-// CreateVolume creates a new volume
+// CreateVolume creates a new volume.
 func CreateVolume(name string, size uint64, properties map[string]interface{}) (*Dataset, error) {
 	if size != 0 {
 		if properties == nil {
@@ -295,7 +295,7 @@ func ReceiveSnapshot(input io.Reader, name string) (*Dataset, error) {
 	return nil, errors.New("zfs receive not yet implemented")
 }
 
-// Children returns a list of children of the dataset
+// Children returns a list of children of the dataset.
 func (d *Dataset) Children(depth uint64) ([]*Dataset, error) {
 	datasets, err := getDatasets(d.Name, "all", true, depth)
 	if err != nil {
@@ -304,7 +304,7 @@ func (d *Dataset) Children(depth uint64) ([]*Dataset, error) {
 	return datasets[1:], nil
 }
 
-// Clone clones a snapshot and returns a clone dataset
+// Clone clones a snapshot and returns a clone dataset.
 func (d *Dataset) Clone(name string, properties map[string]interface{}) (*Dataset, error) {
 	if err := clone(name, d.Name, properties); err != nil {
 		return nil, err
@@ -312,7 +312,7 @@ func (d *Dataset) Clone(name string, properties map[string]interface{}) (*Datase
 	return GetDataset(name)
 }
 
-// DestroyOptions are used to determine the behavior when destroying a dataset
+// DestroyOptions are used to determine the behavior when destroying a dataset.
 type DestroyOptions struct {
 	Recursive       bool
 	RecursiveClones bool
@@ -361,7 +361,7 @@ func (d *Dataset) Diff(name string) {
 	// TODO: Implement when we have a zfs_diff
 }
 
-// GetProperty returns the current value of a property from the dataset
+// GetProperty returns the current value of a property from the dataset.
 func (d *Dataset) GetProperty(name string) (interface{}, error) {
 	dV := reflect.ValueOf(d.ds.Properties)
 	propertyIndex, ok := dsPropertyIndexes[strings.ToLower(name)]
@@ -378,7 +378,7 @@ func (d *Dataset) SetProperty(name string, value interface{}) error {
 	return errors.New("zfs set property not implemented yet")
 }
 
-// Rollback rolls back a dataset to a previous snapshot
+// Rollback rolls back a dataset to a previous snapshot.
 func (d *Dataset) Rollback(destroyMoreRecent bool) error {
 	// Name of dataset the snapshot belongs to
 	dsName := strings.Split(d.Name, "@")[0]
@@ -433,7 +433,7 @@ type fdCloser interface {
 	Close() error
 }
 
-// Send sends a stream of a snapshot to the writer
+// Send sends a stream of a snapshot to the writer.
 func (d *Dataset) Send(output io.Writer) error {
 	done := make(chan error, 1)
 
@@ -467,7 +467,7 @@ func (d *Dataset) Send(output io.Writer) error {
 	return <-done
 }
 
-// Snapshot creates a new snapshot of the dataset
+// Snapshot creates a new snapshot of the dataset.
 func (d *Dataset) Snapshot(name string, recursive bool) error {
 	snapNames := []string{fmt.Sprintf("%s@%s", d.Name, name)}
 	props := map[string]string{}
@@ -492,14 +492,29 @@ func (d *Dataset) Snapshot(name string, recursive bool) error {
 	return nil
 }
 
-// Snapshots returns a list of snapshots of the dataset
+// Snapshots returns a list of snapshots of the dataset.
 func (d *Dataset) Snapshots() ([]*Dataset, error) {
 	return Snapshots(d.Name)
 }
 
-// Zpool returns the zpool of the dataset
+// Zpool returns the zpool of the dataset.
 func (d *Dataset) Zpool() string {
 	return strings.Split(d.Name, "/")[0]
+}
+
+// Holds returns a list of user holds on the dataset.
+func (d *Dataset) Holds() ([]string, error) {
+	return holds(d.Name)
+}
+
+// Rename renames the dataset, returning the failed name on error.
+func (d *Dataset) Rename(newName string, recursive bool) (string, error) {
+	if failedName, err := rename(d.Name, newName, recursive); err != nil {
+		return failedName, err
+	}
+
+	d.Name = newName
+	return "", nil
 }
 
 func init() {

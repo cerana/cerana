@@ -2,11 +2,13 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/mistifyio/gozfs"
 	cobra "github.com/spf13/cobra"
 )
 
@@ -54,7 +56,14 @@ func main() {
 	cmdExists := genCommand("exists", "Test for dataset existence.",
 		func(cmd *cobra.Command, args []string) error {
 			name, _ := cmd.Flags().GetString("name")
-			return exists(name)
+			ok, err := gozfs.Exists(name)
+			if err != nil {
+				return err
+			}
+			if !ok {
+				return errors.New("does not exist")
+			}
+			return nil
 		})
 
 	cmdDestroy := genCommand("destroy", "Destroys a dataset or volume.",
@@ -65,18 +74,18 @@ func main() {
 			forceUnmount, _ := cmd.Flags().GetBool("forceunmount")
 			deferDestroy, _ := cmd.Flags().GetBool("defer")
 
-			d, err := GetDataset(name)
+			ds, err := gozfs.GetDataset(name)
 			if err != nil {
 				return err
 			}
 
-			opts := &DestroyOptions{
+			opts := &gozfs.DestroyOptions{
 				Recursive:       recursive,
 				RecursiveClones: recursiveClones,
 				ForceUnmount:    forceUnmount,
 				Defer:           deferDestroy,
 			}
-			return d.Destroy(opts)
+			return ds.Destroy(opts)
 		})
 	cmdDestroy.Flags().BoolP("defer", "d", false, "defer destroy")
 	cmdDestroy.Flags().BoolP("recursive", "r", false, "recursively destroy datasets")
@@ -86,7 +95,11 @@ func main() {
 	cmdHolds := genCommand("holds", "Retrieve list of user holds on the specified snapshot.",
 		func(cmd *cobra.Command, args []string) error {
 			name, _ := cmd.Flags().GetString("name")
-			holds, err := holds(name)
+			ds, err := gozfs.GetDataset(name)
+			if err != nil {
+				return err
+			}
+			holds, err := ds.Holds()
 			if err == nil {
 				fmt.Println(holds)
 			}
@@ -108,12 +121,12 @@ func main() {
 				log.Fatal("bad prop json")
 			}
 
-			d, err := GetDataset(nameParts[0])
+			ds, err := gozfs.GetDataset(nameParts[0])
 			if err != nil {
 				return err
 			}
 
-			return d.Snapshot(nameParts[1], recursive)
+			return ds.Snapshot(nameParts[1], recursive)
 		},
 	)
 	cmdSnapshot.Flags().StringP("props", "p", "{}", "snapshot properties")
@@ -124,12 +137,12 @@ func main() {
 			destroyMoreRecent, _ := cmd.Flags().GetBool("destroyrecent")
 			name, _ := cmd.Flags().GetString("name")
 
-			d, err := GetDataset(name)
+			ds, err := gozfs.GetDataset(name)
 			if err != nil {
 				return err
 			}
 
-			return d.Rollback(destroyMoreRecent)
+			return ds.Rollback(destroyMoreRecent)
 		},
 	)
 	cmdRollback.Flags().BoolP("destroyrecent", "r", false, "destroy more recent snapshots and their clones")
@@ -153,10 +166,10 @@ func main() {
 					}
 				}
 
-				_, err := CreateVolume(name, volsize, props)
+				_, err := gozfs.CreateVolume(name, volsize, props)
 				return err
 			}
-			_, err := CreateFilesystem(name, props)
+			_, err := gozfs.CreateFilesystem(name, props)
 			return err
 		},
 	)
@@ -184,12 +197,12 @@ func main() {
 				log.SetLevel(log.ErrorLevel)
 			}
 
-			d, err := GetDataset(name)
+			ds, err := gozfs.GetDataset(name)
 			if err != nil {
 				return err
 			}
 
-			return d.Send(outputWriter)
+			return ds.Send(outputWriter)
 		},
 	)
 	cmdSend.Flags().StringP("output", "o", "/dev/stdout", "output file")
@@ -208,11 +221,11 @@ func main() {
 				log.Fatal("bad prop json")
 			}
 
-			d, err := GetDataset(origin)
+			ds, err := gozfs.GetDataset(origin)
 			if err != nil {
 				return err
 			}
-			_, err = d.Clone(name, props)
+			_, err = ds.Clone(name, props)
 			return err
 		},
 	)
@@ -225,7 +238,12 @@ func main() {
 			newName, _ := cmd.Flags().GetString("newname")
 			recursive, _ := cmd.Flags().GetBool("recursive")
 
-			failedName, err := rename(name, newName, recursive)
+			ds, err := gozfs.GetDataset(name)
+			if err != nil {
+				return err
+			}
+
+			failedName, err := ds.Rename(newName, recursive)
 			if failedName != "" {
 				log.Error(failedName)
 			}
@@ -243,17 +261,17 @@ func main() {
 				dsType = "all"
 			}
 
-			var datasets []*Dataset
+			var datasets []*gozfs.Dataset
 			var err error
 			switch dsType {
 			case "all":
-				datasets, err = Datasets(name)
-			case DatasetFilesystem:
-				datasets, err = Filesystems(name)
-			case DatasetSnapshot:
-				datasets, err = Snapshots(name)
-			case DatasetVolume:
-				datasets, err = Volumes(name)
+				datasets, err = gozfs.Datasets(name)
+			case gozfs.DatasetFilesystem:
+				datasets, err = gozfs.Filesystems(name)
+			case gozfs.DatasetSnapshot:
+				datasets, err = gozfs.Snapshots(name)
+			case gozfs.DatasetVolume:
+				datasets, err = gozfs.Volumes(name)
 			}
 			if err != nil {
 				return err
@@ -266,13 +284,13 @@ func main() {
 			return nil
 		})
 	cmdList.PersistentPreRun = dummyPersistentPreRun
-	cmdList.Flags().StringP("type", "t", "all", strings.Join([]string{"all", DatasetFilesystem, DatasetVolume, DatasetSnapshot}, ","))
+	cmdList.Flags().StringP("type", "t", "all", strings.Join([]string{"all", gozfs.DatasetFilesystem, gozfs.DatasetVolume, gozfs.DatasetSnapshot}, ","))
 
 	cmdGet := genCommand("get", "Get dataset properties",
 		func(cmd *cobra.Command, args []string) error {
 			name, _ := cmd.Flags().GetString("name")
 
-			ds, err := GetDataset(name)
+			ds, err := gozfs.GetDataset(name)
 			if err != nil {
 				return err
 			}
