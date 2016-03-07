@@ -461,9 +461,6 @@ func (d *Dataset) Send(output io.Writer) error {
 	if err := send(d.Name, outputFdCloser.Fd(), "", false, false); err != nil {
 		return err
 	}
-	if !isFdCloser {
-		outputFdCloser.Close()
-	}
 	return <-done
 }
 
