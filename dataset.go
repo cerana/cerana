@@ -320,7 +320,7 @@ type DestroyOptions struct {
 	Defer           bool
 }
 
-// Destroy destroys a zfs dataset, optionally recursive for descendants and
+// Destroy destroys a zfs dataset, optionally recursive for descendants and clones
 // clones. Note that recursive destroys are not an atomic operation.
 func (d *Dataset) Destroy(opts *DestroyOptions) error {
 	// Recurse
@@ -363,8 +363,8 @@ func (d *Dataset) Diff(name string) {
 
 // GetProperty returns the current value of a property from the dataset.
 func (d *Dataset) GetProperty(name string) (interface{}, error) {
-	dV := reflect.ValueOf(d.ds.Properties)
 	propertyIndex, ok := dsPropertyIndexes[strings.ToLower(name)]
+	dV := reflect.ValueOf(d.ds.Properties)
 	if !ok {
 		return nil, errors.New("not a valid property name")
 	}
