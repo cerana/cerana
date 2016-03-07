@@ -471,7 +471,7 @@ func (d *Dataset) Send(output io.Writer) error {
 func (d *Dataset) Snapshot(name string, recursive bool) error {
 	snapNames := []string{fmt.Sprintf("%s@%s", d.Name, name)}
 	props := map[string]string{}
-	if _, err := snapshot(d.Zpool(), snapNames, props); err != nil {
+	if _, err := snapshot(d.Pool(), snapNames, props); err != nil {
 		return err
 	}
 	if recursive {
@@ -497,8 +497,8 @@ func (d *Dataset) Snapshots() ([]*Dataset, error) {
 	return Snapshots(d.Name)
 }
 
-// Zpool returns the zpool of the dataset.
-func (d *Dataset) Zpool() string {
+// Pool returns the zfs pool of the dataset.
+func (d *Dataset) Pool() string {
 	return strings.Split(d.Name, "/")[0]
 }
 

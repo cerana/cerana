@@ -7,7 +7,7 @@ import (
 	"github.com/mistifyio/gozfs/nv"
 )
 
-func snapshot(zpool string, snapNames []string, props map[string]string) (map[string]syscall.Errno, error) {
+func snapshot(pool string, snapNames []string, props map[string]string) (map[string]syscall.Errno, error) {
 	// snaps needs to be a map with the snap name as the key and an arbitrary value
 	snaps := make(map[string]string)
 	for _, snapName := range snapNames {
@@ -30,7 +30,7 @@ func snapshot(zpool string, snapNames []string, props map[string]string) (map[st
 	}
 
 	out := make([]byte, 1024)
-	err = ioctl(zfs, zpool, encoded.Bytes(), out)
+	err = ioctl(zfs, pool, encoded.Bytes(), out)
 
 	var errlist map[string]syscall.Errno
 	if errno, ok := err.(syscall.Errno); ok && errno == syscall.EEXIST {
