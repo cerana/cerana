@@ -26,11 +26,12 @@ type Dataset struct {
 	DMUObjsetStats *DMUObjsetStats
 }
 
-// DatasetProperties are properties of a ZFS dataset.
+// DatasetProperties are properties of a ZFS dataset. Some properties may be
+// modified from the values returned by zfs.
 type DatasetProperties struct {
 	Available            uint64
 	Clones               []string
-	Compression          string // Value manipulated
+	Compression          string // Empty value is replaced with "off"
 	CompressionSource    string
 	CompressRatio        uint64
 	CreateTxg            uint64
@@ -53,7 +54,7 @@ type DatasetProperties struct {
 	Referenced           uint64
 	Reservation          uint64
 	ReservationSource    string
-	Type                 string // Value manipulated
+	Type                 string // Int type mapped to string type
 	Unique               uint64
 	Used                 uint64
 	UsedByChildren       uint64
