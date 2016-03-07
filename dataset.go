@@ -320,8 +320,8 @@ type DestroyOptions struct {
 	Defer           bool
 }
 
-// Destroy destroys a zfs dataset, optionally recursive for descendants and clones
-// clones. Note that recursive destroys are not an atomic operation.
+// Destroy destroys a zfs dataset, optionally recursive for descendants and clones.
+// Note that recursive destroys are not an atomic operation.
 func (d *Dataset) Destroy(opts *DestroyOptions) error {
 	// Recurse
 	if opts.Recursive {
@@ -497,7 +497,7 @@ func (d *Dataset) Snapshots() ([]*Dataset, error) {
 	return Snapshots(d.Name)
 }
 
-// Pool returns the zfs pool of the dataset.
+// Pool returns the zfs pool the dataset belongs to.
 func (d *Dataset) Pool() string {
 	return strings.Split(d.Name, "/")[0]
 }
