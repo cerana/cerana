@@ -173,40 +173,40 @@ func (p propStringWithSource) value() string {
 	return p.Value
 }
 
-func dsToDataset(in *ds) *Dataset {
+func dsToDataset(ds *ds) *Dataset {
 	var dsType string
-	if in.DMUObjsetStats.IsSnapshot {
+	if ds.DMUObjsetStats.IsSnapshot {
 		dsType = DatasetSnapshot
-	} else if dmuType(in.Properties.Type.Value) == dmuTypes["zvol"] {
+	} else if dmuType(ds.Properties.Type.Value) == dmuTypes["zvol"] {
 		dsType = DatasetVolume
 	} else {
 		dsType = DatasetFilesystem
 	}
 
-	compression := in.Properties.Compression.Value
+	compression := ds.Properties.Compression.Value
 	if compression == "" {
 		compression = "off"
 	}
 
-	mountpoint := in.Properties.Mountpoint.Value
+	mountpoint := ds.Properties.Mountpoint.Value
 	if mountpoint == "" && dsType != DatasetSnapshot {
-		mountpoint = fmt.Sprintf("/%s", in.Name)
+		mountpoint = fmt.Sprintf("/%s", ds.Name)
 	}
 
 	return &Dataset{
-		Name:          in.Name,
-		Origin:        in.Properties.Origin.Value,
-		Used:          in.Properties.Used.Value,
-		Avail:         in.Properties.Available.Value,
+		Name:          ds.Name,
+		Origin:        ds.Properties.Origin.Value,
+		Used:          ds.Properties.Used.Value,
+		Avail:         ds.Properties.Available.Value,
 		Mountpoint:    mountpoint,
 		Compression:   compression,
 		Type:          dsType,
-		Written:       in.Properties.Available.Value,
-		Volsize:       in.Properties.Volsize.Value,
-		Usedbydataset: in.Properties.UsedByDataset.Value,
-		Logicalused:   in.Properties.LogicalUsed.Value,
-		Quota:         in.Properties.Quota.Value,
-		ds:            in,
+		Written:       ds.Properties.Available.Value,
+		Volsize:       ds.Properties.Volsize.Value,
+		Usedbydataset: ds.Properties.UsedByDataset.Value,
+		Logicalused:   ds.Properties.LogicalUsed.Value,
+		Quota:         ds.Properties.Quota.Value,
+		ds:            ds,
 	}
 }
 
