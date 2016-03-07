@@ -25,7 +25,7 @@ func exists(name string) error {
 // Exists determines whether a dataset exists or not.
 func Exists(name string) (bool, error) {
 	if err := exists(name); err != nil {
-		if err.Error() == syscall.ENOENT.Error() {
+		if err == syscall.ENOENT {
 			err = nil
 		}
 		return false, err
