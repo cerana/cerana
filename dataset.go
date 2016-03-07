@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -227,7 +228,6 @@ func (ds *dataset) toDataset() *Dataset {
 		},
 		DMUObjsetStats: ds.DMUObjsetStats,
 	}
-
 }
 
 func getDatasets(name, dsType string, recurse bool, depth uint64) ([]*Dataset, error) {
@@ -385,6 +385,14 @@ func (d *Dataset) Diff(name string) {
 func (d *Dataset) SetProperty(name string, value interface{}) error {
 	// TODO: Implement when we have a zfs_set_property
 	return errors.New("zfs set property not implemented yet")
+}
+
+// Mountpoint returns the mountpoint of the dataset. It is based off of the
+// dataset mountpoint property joined to the dataset name with the
+// mountpointsource property trimmed from the name.
+func (d *Dataset) Mountpoint() string {
+	defaultPart, _ := filepath.Rel(d.Properties.MountpointSource, d.Name)
+	return filepath.Join(d.Properties.Mountpoint, defaultPart)
 }
 
 // Rollback rolls back a dataset to a previous snapshot.
