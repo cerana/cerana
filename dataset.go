@@ -36,39 +36,6 @@ type Dataset struct {
 	ds            *ds
 }
 
-// By is the type of a "less" function that defines the ordering of its Dataset arguments.
-type By func(p1, p2 *Dataset) bool
-
-// Sort is a method on the function type, By, that sorts the argument slice according to the function.
-func (by By) Sort(datasets []*Dataset) {
-	ds := &datasetSorter{
-		datasets: datasets,
-		by:       by, // The Sort method's receiver is the function (closure) that defines the sort order.
-	}
-	sort.Sort(ds)
-}
-
-// datasetSorter joins a By function and a slice of Datasets to be sorted.
-type datasetSorter struct {
-	datasets []*Dataset
-	by       func(p1, p2 *Dataset) bool // Closure used in the Less method.
-}
-
-// Len is part of sort.Interface.
-func (s *datasetSorter) Len() int {
-	return len(s.datasets)
-}
-
-// Swap is part of sort.Interface.
-func (s *datasetSorter) Swap(i, j int) {
-	s.datasets[i], s.datasets[j] = s.datasets[j], s.datasets[i]
-}
-
-// Less is part of sort.Interface. It is implemented by calling the "by" closure in the sorter.
-func (s *datasetSorter) Less(i, j int) bool {
-	return s.by(s.datasets[i], s.datasets[j])
-}
-
 type ds struct {
 	DMUObjsetStats *dmuObjsetStats `nv:"dmu_objset_stats"`
 	Name           string          `nv:"name"`
@@ -512,6 +479,39 @@ func (d *Dataset) Rename(newName string, recursive bool) (string, error) {
 
 	d.Name = newName
 	return "", nil
+}
+
+// By is the type of a "less" function that defines the ordering of its Dataset arguments.
+type By func(p1, p2 *Dataset) bool
+
+// Sort is a method on the function type, By, that sorts the argument slice according to the function.
+func (by By) Sort(datasets []*Dataset) {
+	ds := &datasetSorter{
+		datasets: datasets,
+		by:       by, // The Sort method's receiver is the function (closure) that defines the sort order.
+	}
+	sort.Sort(ds)
+}
+
+// datasetSorter joins a By function and a slice of Datasets to be sorted.
+type datasetSorter struct {
+	datasets []*Dataset
+	by       func(p1, p2 *Dataset) bool // Closure used in the Less method.
+}
+
+// Len is part of sort.Interface.
+func (s *datasetSorter) Len() int {
+	return len(s.datasets)
+}
+
+// Swap is part of sort.Interface.
+func (s *datasetSorter) Swap(i, j int) {
+	s.datasets[i], s.datasets[j] = s.datasets[j], s.datasets[i]
+}
+
+// Less is part of sort.Interface. It is implemented by calling the "by" closure in the sorter.
+func (s *datasetSorter) Less(i, j int) bool {
+	return s.by(s.datasets[i], s.datasets[j])
 }
 
 func init() {
