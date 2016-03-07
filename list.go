@@ -54,12 +54,12 @@ func getSize(r io.Reader) (int64, error) {
 	return int64(h.Size), nil
 }
 
-func properties(name string, types map[string]bool, recurse bool, depth uint64) (map[string]*dsProperties, error) {
+func properties(name string, types map[string]bool, recurse bool, depth uint64) (map[string]*datasetProperties, error) {
 	listing, err := list(name, types, recurse, depth)
 	if err != nil {
 		return nil, err
 	}
-	ret := make(map[string]*dsProperties, len(listing))
+	ret := make(map[string]*datasetProperties, len(listing))
 	for _, l := range listing {
 		name := l.Name
 		props := l.Properties
@@ -68,7 +68,7 @@ func properties(name string, types map[string]bool, recurse bool, depth uint64) 
 	return ret, nil
 }
 
-func list(name string, types map[string]bool, recurse bool, depth uint64) ([]*ds, error) {
+func list(name string, types map[string]bool, recurse bool, depth uint64) ([]*dataset, error) {
 	var reader io.Reader
 	reader, writer, err := os.Pipe()
 	if err != nil {
@@ -111,7 +111,7 @@ func list(name string, types map[string]bool, recurse bool, depth uint64) ([]*ds
 	var buf []byte
 	reader = bufio.NewReader(reader)
 
-	ret := []*ds{}
+	ret := []*dataset{}
 	for {
 		var size int64
 		size, err = getSize(reader)
@@ -133,7 +133,7 @@ func list(name string, types map[string]bool, recurse bool, depth uint64) ([]*ds
 			break
 		}
 
-		m := &ds{}
+		m := &dataset{}
 		err = nv.NewXDRDecoder(bytes.NewReader(buf)).Decode(&m)
 		if err != nil {
 			break

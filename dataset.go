@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"reflect"
 	"sort"
 	"strings"
 
@@ -19,40 +18,75 @@ const (
 	DatasetVolume     = "volume"
 )
 
-// Dataset is a ZFS dataset containing a simplified set of information.
+// Dataset contains information and properties for a ZFS dataset.
 type Dataset struct {
-	Name          string
-	Origin        string
-	Used          uint64
-	Avail         uint64
-	Mountpoint    string
-	Compression   string
-	Type          string
-	Written       uint64
-	Volsize       uint64
-	Usedbydataset uint64
-	Logicalused   uint64
-	Quota         uint64
-	ds            *ds
+	Name           string
+	Properties     *DatasetProperties
+	DMUObjsetStats *DMUObjsetStats
 }
 
-type ds struct {
-	DMUObjsetStats *dmuObjsetStats `nv:"dmu_objset_stats"`
-	Name           string          `nv:"name"`
-	Properties     *dsProperties   `nv:"properties"`
+// DatasetProperties are properties of a ZFS dataset.
+type DatasetProperties struct {
+	Available            uint64
+	Clones               []string
+	Compression          string // Value manipulated
+	CompressionSource    string
+	CompressRatio        uint64
+	CreateTxg            uint64
+	Creation             uint64
+	DeferDestroy         uint64
+	GUID                 uint64
+	LogicalReferenced    uint64
+	LogicalUsed          uint64
+	Mountpoint           string
+	MountpointSource     string
+	ObjsetID             uint64
+	Origin               string
+	Quota                uint64
+	QuotaSource          string
+	RefCompressRatio     uint64
+	RefQuota             uint64
+	RefQuotaSource       string
+	RefReservation       uint64
+	RefReservationSource string
+	Referenced           uint64
+	Reservation          uint64
+	ReservationSource    string
+	Type                 string // Value manipulated
+	Unique               uint64
+	Used                 uint64
+	UsedByChildren       uint64
+	UsedByDataset        uint64
+	UsedByRefReservation uint64
+	UsedBySnapshots      uint64
+	UserAccounting       uint64
+	UserRefs             uint64
+	Volsize              uint64
+	VolBlockSize         uint64
+	Written              uint64
 }
 
-type dmuObjsetStats struct {
+// DMUObjsetStats represents zfs dataset information.
+type DMUObjsetStats struct {
 	CreationTxg  uint64 `nv:"dds_creation_txg"`
 	GUID         uint64 `nv:"dds_guid"`
 	Inconsistent bool   `nv:"dds_inconsistent"`
 	IsSnapshot   bool   `nv:"dds_is_snapshot"`
-	NumClones    uint64 `nv:"dds_num_clonse"`
+	NumClones    uint64 `nv:"dds_num_clones"`
 	Origin       string `nv:"dds_origin"`
 	Type         string `nv:"dds_type"`
 }
 
-type dsProperties struct {
+// dataset is an intermediate struct for unmarshalling a zfs dataset nvlist.
+type dataset struct {
+	DMUObjsetStats *DMUObjsetStats    `nv:"dmu_objset_stats"`
+	Name           string             `nv:"name"`
+	Properties     *datasetProperties `nv:"properties"`
+}
+
+// datasetProperties is an intermediate struct for unmarshalling zfs dataset
+// properties nvlist.
+type datasetProperties struct {
 	Available            propUint64           `nv:"available"`
 	Clones               propClones           `nv:"clones"`
 	Compression          propStringWithSource `nv:"compression"`
@@ -84,12 +118,6 @@ type dsProperties struct {
 	Volsize              propUint64           `nv:"volsize"`
 	VolBlockSize         propUint64           `nv:"volblocksize"`
 	Written              propUint64           `nv:"written"`
-}
-
-var dsPropertyIndexes map[string]int
-
-type dsProperty interface {
-	value() interface{}
 }
 
 type propClones struct {
@@ -140,7 +168,8 @@ func (p propStringWithSource) value() string {
 	return p.Value
 }
 
-func dsToDataset(ds *ds) *Dataset {
+// toDataset returns a new Dataset based on the intermediate dataset.
+func (ds *dataset) toDataset() *Dataset {
 	var dsType string
 	if ds.DMUObjsetStats.IsSnapshot {
 		dsType = DatasetSnapshot
@@ -155,26 +184,50 @@ func dsToDataset(ds *ds) *Dataset {
 		compression = "off"
 	}
 
-	mountpoint := ds.Properties.Mountpoint.Value
-	if mountpoint == "" && dsType != DatasetSnapshot {
-		mountpoint = fmt.Sprintf("/%s", ds.Name)
+	return &Dataset{
+		Name: ds.Name,
+		Properties: &DatasetProperties{
+			Available:            ds.Properties.Available.Value,
+			Clones:               ds.Properties.Clones.value(),
+			Compression:          compression,
+			CompressionSource:    ds.Properties.Compression.Source,
+			CompressRatio:        ds.Properties.CompressRatio.Value,
+			CreateTxg:            ds.Properties.CreateTxg.Value,
+			Creation:             ds.Properties.Creation.Value,
+			DeferDestroy:         ds.Properties.DeferDestroy.Value,
+			GUID:                 ds.Properties.GUID.Value,
+			LogicalReferenced:    ds.Properties.LogicalReferenced.Value,
+			LogicalUsed:          ds.Properties.LogicalUsed.Value,
+			Mountpoint:           ds.Properties.Mountpoint.Value,
+			MountpointSource:     ds.Properties.Mountpoint.Source,
+			ObjsetID:             ds.Properties.ObjsetID.Value,
+			Origin:               ds.Properties.Origin.Value,
+			Quota:                ds.Properties.Quota.Value,
+			QuotaSource:          ds.Properties.Quota.Source,
+			RefCompressRatio:     ds.Properties.RefCompressRatio.Value,
+			RefQuota:             ds.Properties.RefQuota.Value,
+			RefQuotaSource:       ds.Properties.RefQuota.Source,
+			RefReservation:       ds.Properties.RefReservation.Value,
+			RefReservationSource: ds.Properties.RefReservation.Source,
+			Referenced:           ds.Properties.Referenced.Value,
+			Reservation:          ds.Properties.Reservation.Value,
+			ReservationSource:    ds.Properties.Reservation.Source,
+			Type:                 dsType,
+			Unique:               ds.Properties.Unique.Value,
+			Used:                 ds.Properties.Used.Value,
+			UsedByChildren:       ds.Properties.UsedByChildren.Value,
+			UsedByDataset:        ds.Properties.UsedByDataset.Value,
+			UsedByRefReservation: ds.Properties.UsedByRefReservation.Value,
+			UsedBySnapshots:      ds.Properties.UsedBySnapshots.Value,
+			UserAccounting:       ds.Properties.UserAccounting.Value,
+			UserRefs:             ds.Properties.UserRefs.Value,
+			Volsize:              ds.Properties.Volsize.Value,
+			VolBlockSize:         ds.Properties.VolBlockSize.Value,
+			Written:              ds.Properties.Written.Value,
+		},
+		DMUObjsetStats: ds.DMUObjsetStats,
 	}
 
-	return &Dataset{
-		Name:          ds.Name,
-		Origin:        ds.Properties.Origin.Value,
-		Used:          ds.Properties.Used.Value,
-		Avail:         ds.Properties.Available.Value,
-		Mountpoint:    mountpoint,
-		Compression:   compression,
-		Type:          dsType,
-		Written:       ds.Properties.Available.Value,
-		Volsize:       ds.Properties.Volsize.Value,
-		Usedbydataset: ds.Properties.UsedByDataset.Value,
-		Logicalused:   ds.Properties.LogicalUsed.Value,
-		Quota:         ds.Properties.Quota.Value,
-		ds:            ds,
-	}
 }
 
 func getDatasets(name, dsType string, recurse bool, depth uint64) ([]*Dataset, error) {
@@ -189,7 +242,7 @@ func getDatasets(name, dsType string, recurse bool, depth uint64) ([]*Dataset, e
 
 	datasets := make([]*Dataset, len(dss))
 	for i, ds := range dss {
-		datasets[i] = dsToDataset(ds)
+		datasets[i] = ds.toDataset()
 	}
 
 	byName := func(d1, d2 *Dataset) bool {
@@ -305,7 +358,7 @@ func (d *Dataset) Destroy(opts *DestroyOptions) error {
 
 	// Recurse Clones
 	if opts.RecursiveClones {
-		for cloneName := range d.ds.Properties.Clones.Value {
+		for _, cloneName := range d.Properties.Clones {
 			clone, err := GetDataset(cloneName)
 			if err != nil {
 				return err
@@ -328,17 +381,6 @@ func (d *Dataset) Diff(name string) {
 	// TODO: Implement when we have a zfs_diff
 }
 
-// GetProperty returns the current value of a property from the dataset.
-func (d *Dataset) GetProperty(name string) (interface{}, error) {
-	propertyIndex, ok := dsPropertyIndexes[strings.ToLower(name)]
-	dV := reflect.ValueOf(d.ds.Properties)
-	if !ok {
-		return nil, errors.New("not a valid property name")
-	}
-	property := reflect.Indirect(dV).Field(propertyIndex).Interface().(dsProperty)
-	return property.value(), nil
-}
-
 // SetProperty sets the value of a property of the dataset. Currently a stub.
 func (d *Dataset) SetProperty(name string, value interface{}) error {
 	// TODO: Implement when we have a zfs_set_property
@@ -358,7 +400,7 @@ func (d *Dataset) Rollback(destroyMoreRecent bool) error {
 
 	// Order snapshots from oldest to newest
 	creation := func(d1, d2 *Dataset) bool {
-		return d1.ds.Properties.Creation.Value < d2.ds.Properties.Creation.Value
+		return d1.Properties.Creation < d2.Properties.Creation
 	}
 	By(creation).Sort(snapshots)
 
@@ -445,7 +487,7 @@ func (d *Dataset) Snapshot(name string, recursive bool) error {
 		}
 		for _, child := range children {
 			// Can't snapshot a snapshot
-			if child.Type == DatasetSnapshot {
+			if child.Properties.Type == DatasetSnapshot {
 				continue
 			}
 			if err := child.Snapshot(name, recursive); err != nil {
@@ -481,6 +523,8 @@ func (d *Dataset) Rename(newName string, recursive bool) (string, error) {
 	return "", nil
 }
 
+// Dataset Sorting
+
 // By is the type of a "less" function that defines the ordering of its Dataset arguments.
 type By func(p1, p2 *Dataset) bool
 
@@ -512,18 +556,4 @@ func (s *datasetSorter) Swap(i, j int) {
 // Less is part of sort.Interface. It is implemented by calling the "by" closure in the sorter.
 func (s *datasetSorter) Less(i, j int) bool {
 	return s.by(s.datasets[i], s.datasets[j])
-}
-
-func init() {
-	dsPropertyIndexes = make(map[string]int)
-	dsPropertiesT := reflect.TypeOf(dsProperties{})
-	for i := 0; i < dsPropertiesT.NumField(); i++ {
-		field := dsPropertiesT.Field(i)
-		name := field.Name
-		tags := strings.Split(field.Tag.Get("nv"), ",")
-		if len(tags) > 0 && tags[0] != "" {
-			name = tags[0]
-		}
-		dsPropertyIndexes[strings.ToLower(name)] = i
-	}
 }
