@@ -70,8 +70,8 @@ func main() {
 		func(cmd *cobra.Command, args []string) error {
 			name, _ := cmd.Flags().GetString("name")
 			recursive, _ := cmd.Flags().GetBool("recursive")
-			recursiveClones, _ := cmd.Flags().GetBool("recursiveclones")
-			forceUnmount, _ := cmd.Flags().GetBool("forceunmount")
+			recursiveClones, _ := cmd.Flags().GetBool("recursive-clones")
+			forceUnmount, _ := cmd.Flags().GetBool("force-unmount")
 			deferDestroy, _ := cmd.Flags().GetBool("defer")
 
 			ds, err := gozfs.GetDataset(name)
@@ -89,8 +89,8 @@ func main() {
 		})
 	cmdDestroy.Flags().BoolP("defer", "d", false, "defer destroy")
 	cmdDestroy.Flags().BoolP("recursive", "r", false, "recursively destroy datasets")
-	cmdDestroy.Flags().BoolP("recursiveclones", "c", false, "recursively destroy clones")
-	cmdDestroy.Flags().BoolP("forceunmount", "f", false, "force unmount")
+	cmdDestroy.Flags().BoolP("recursive-clones", "c", false, "recursively destroy clones")
+	cmdDestroy.Flags().BoolP("force-unmount", "f", false, "force unmount")
 
 	cmdHolds := genCommand("holds", "Retrieve list of user holds on the specified snapshot.",
 		func(cmd *cobra.Command, args []string) error {
@@ -134,7 +134,7 @@ func main() {
 
 	cmdRollback := genCommand("rollback", "Rollback this filesystem or volume to its most recent snapshot.",
 		func(cmd *cobra.Command, args []string) error {
-			destroyMoreRecent, _ := cmd.Flags().GetBool("destroyrecent")
+			destroyMoreRecent, _ := cmd.Flags().GetBool("destroy-recent")
 			name, _ := cmd.Flags().GetString("name")
 
 			ds, err := gozfs.GetDataset(name)
@@ -145,7 +145,7 @@ func main() {
 			return ds.Rollback(destroyMoreRecent)
 		},
 	)
-	cmdRollback.Flags().BoolP("destroyrecent", "r", false, "destroy more recent snapshots and their clones")
+	cmdRollback.Flags().BoolP("destroy-recent", "r", false, "destroy more recent snapshots and their clones")
 
 	cmdCreate := genCommand("create", "Create a ZFS dataset or volume",
 		func(cmd *cobra.Command, args []string) error {
