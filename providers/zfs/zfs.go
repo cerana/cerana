@@ -13,4 +13,5 @@ type CommonArgs struct {
 // RegisterTasks registers all of ZFS's task handlers with the server.
 func (z *ZFS) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("zfs-exists", z.Exists)
+	server.RegisterTask("zfs-destroy", z.Destroy)
 }
