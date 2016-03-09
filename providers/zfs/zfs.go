@@ -25,6 +25,7 @@ func (z *ZFS) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("zfs-rollback", z.Rollback)
 	server.RegisterTask("zfs-clone", z.Clone)
 	server.RegisterTask("zfs-rename", z.Rename)
+	server.RegisterTask("zfs-list", z.List)
 }
 
 // fixPropertyTypes attempts to convert the underlying data types in a property
