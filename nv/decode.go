@@ -168,6 +168,7 @@ func fieldIndexMap(v reflect.Value) map[string]int {
 		tags := getTags(i, v)
 		isMap := (field.Kind() == reflect.Map || field.Kind() == reflect.Interface)
 
+		// skip "name" if "extra" exists because "name" is irrelevant
 		if len(tags) > 1 && tags[1] == "extra" && isMap {
 			name = extraName
 		} else if len(tags) > 0 && tags[0] != "" {
