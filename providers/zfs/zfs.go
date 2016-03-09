@@ -23,6 +23,7 @@ func (z *ZFS) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("zfs-holds", z.Holds)
 	server.RegisterTask("zfs-snapshot", z.Snapshot)
 	server.RegisterTask("zfs-rollback", z.Rollback)
+	server.RegisterTask("zfs-clone", z.Clone)
 }
 
 // fixPropertyTypes attempts to convert the underlying data types in a property
