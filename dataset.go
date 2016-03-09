@@ -68,6 +68,7 @@ type DatasetProperties struct {
 	UsedByRefReservation  uint64
 	UsedBySnapshots       uint64
 	UserAccounting        uint64
+	UserDefined           map[string]string
 	UserRefs              uint64
 	Version               uint64
 	VolBlockSize          uint64
@@ -97,41 +98,42 @@ type dataset struct {
 // datasetProperties is an intermediate struct for unmarshalling zfs dataset
 // properties nvlist.
 type datasetProperties struct {
-	Available            propUint64           `nv:"available"`
-	CaseSensitivity      propUint64WithSource `nv:"casesensitivity"`
-	Clones               propClones           `nv:"clones"`
-	CompressRatio        propUint64           `nv:"compressratio"`
-	Compression          propStringWithSource `nv:"compression"`
-	CreateTxg            propUint64           `nv:"createtxg"`
-	Creation             propUint64           `nv:"creation"`
-	DeferDestroy         propUint64           `nv:"defer_destroy"`
-	GUID                 propUint64           `nv:"guid"`
-	LogicalReferenced    propUint64           `nv:"logicalreferenced"`
-	LogicalUsed          propUint64           `nv:"logicalused"`
-	Mountpoint           propStringWithSource `nv:"mountpoint"`
-	Normalization        propUint64WithSource `nv:"normalization"`
-	ObjsetID             propUint64           `nv:"objsetid"`
-	Origin               propString           `nv:"origin"`
-	Quota                propUint64WithSource `nv:"quota"`
-	RefCompressRatio     propUint64           `nv:"refcompressratio"`
-	RefQuota             propUint64WithSource `nv:"refquota"`
-	RefReservation       propUint64WithSource `nv:"refreservation"`
-	Referenced           propUint64           `nv:"referenced"`
-	Reservation          propUint64WithSource `nv:"reservation"`
-	Type                 propUint64           `nv:"type"`
-	UTF8Only             propUint64WithSource `nv:"utf8only"`
-	Unique               propUint64           `nv:"unique"`
-	Used                 propUint64           `nv:"used"`
-	UsedByChildren       propUint64           `nv:"usedbychildren"`
-	UsedByDataset        propUint64           `nv:"usedbydataset"`
-	UsedByRefReservation propUint64           `nv:"usedbyrefreservation"`
-	UsedBySnapshots      propUint64           `nv:"usedbysnapshots"`
-	UserAccounting       propUint64           `nv:"useraccounting"`
-	UserRefs             propUint64           `nv:"userrefs"`
-	Version              propUint64           `nv:"version"`
-	VolBlockSize         propUint64WithSource `nv:"volblocksize"`
-	Volsize              propUint64           `nv:"volsize"`
-	Written              propUint64           `nv:"written"`
+	Available            propUint64                      `nv:"available"`
+	CaseSensitivity      propUint64WithSource            `nv:"casesensitivity"`
+	Clones               propClones                      `nv:"clones"`
+	CompressRatio        propUint64                      `nv:"compressratio"`
+	Compression          propStringWithSource            `nv:"compression"`
+	CreateTxg            propUint64                      `nv:"createtxg"`
+	Creation             propUint64                      `nv:"creation"`
+	DeferDestroy         propUint64                      `nv:"defer_destroy"`
+	GUID                 propUint64                      `nv:"guid"`
+	LogicalReferenced    propUint64                      `nv:"logicalreferenced"`
+	LogicalUsed          propUint64                      `nv:"logicalused"`
+	Mountpoint           propStringWithSource            `nv:"mountpoint"`
+	Normalization        propUint64WithSource            `nv:"normalization"`
+	ObjsetID             propUint64                      `nv:"objsetid"`
+	Origin               propString                      `nv:"origin"`
+	Quota                propUint64WithSource            `nv:"quota"`
+	RefCompressRatio     propUint64                      `nv:"refcompressratio"`
+	RefQuota             propUint64WithSource            `nv:"refquota"`
+	RefReservation       propUint64WithSource            `nv:"refreservation"`
+	Referenced           propUint64                      `nv:"referenced"`
+	Reservation          propUint64WithSource            `nv:"reservation"`
+	Type                 propUint64                      `nv:"type"`
+	UTF8Only             propUint64WithSource            `nv:"utf8only"`
+	Unique               propUint64                      `nv:"unique"`
+	Used                 propUint64                      `nv:"used"`
+	UsedByChildren       propUint64                      `nv:"usedbychildren"`
+	UsedByDataset        propUint64                      `nv:"usedbydataset"`
+	UsedByRefReservation propUint64                      `nv:"usedbyrefreservation"`
+	UsedBySnapshots      propUint64                      `nv:"usedbysnapshots"`
+	UserAccounting       propUint64                      `nv:"useraccounting"`
+	UserDefined          map[string]propStringWithSource `nv:",extra"`
+	UserRefs             propUint64                      `nv:"userrefs"`
+	Version              propUint64                      `nv:"version"`
+	VolBlockSize         propUint64WithSource            `nv:"volblocksize"`
+	Volsize              propUint64                      `nv:"volsize"`
+	Written              propUint64                      `nv:"written"`
 }
 
 type propClones struct {
@@ -198,6 +200,12 @@ func (ds *dataset) toDataset() *Dataset {
 		compression = "off"
 	}
 
+	userDefined := make(map[string]string)
+	for key, value := range ds.Properties.UserDefined {
+		userDefined[key] = value.Value
+		userDefined[key+"Source"] = value.Source
+	}
+
 	return &Dataset{
 		Name: ds.Name,
 		Properties: &DatasetProperties{
@@ -240,6 +248,7 @@ func (ds *dataset) toDataset() *Dataset {
 			UsedByRefReservation:  ds.Properties.UsedByRefReservation.Value,
 			UsedBySnapshots:       ds.Properties.UsedBySnapshots.Value,
 			UserAccounting:        ds.Properties.UserAccounting.Value,
+			UserDefined:           userDefined,
 			UserRefs:              ds.Properties.UserRefs.Value,
 			Version:               ds.Properties.Version.Value,
 			VolBlockSize:          ds.Properties.VolBlockSize.Value,
