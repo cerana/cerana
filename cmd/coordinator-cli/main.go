@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	argSep = ":"
+	argSep = "="
 )
 
 func main() {
@@ -58,26 +58,60 @@ func dieOnError(err error) {
 	}
 }
 
+// argmap is an arbitrarilly nested map
+type argmap map[string]interface{}
+
+func (am argmap) set(keys []string, value interface{}) error {
+	if len(keys) == 0 {
+		fmt.Println("no more keys and returning")
+		return nil
+	}
+
+	key := keys[0]
+
+	if len(keys) == 1 {
+		am[key] = value
+		return nil
+	}
+
+	var m argmap
+	mi, ok := am[key]
+	if !ok {
+		m = make(argmap)
+		am[key] = m
+	} else {
+		m, ok = mi.(argmap)
+		if !ok {
+			return fmt.Errorf("intermediate nested key %s defined and not a map", key)
+		}
+	}
+
+	return m.set(keys[1:], value)
+}
+
 func parseTaskArgs(taskArgs []string) (map[string]interface{}, error) {
-	out := make(map[string]interface{})
+	out := make(argmap)
 	for _, in := range taskArgs {
 		parts := strings.Split(in, argSep)
-		if len(parts) != 2 {
+		if len(parts) < 2 {
 			return nil, fmt.Errorf("invalid request arg: '%s'", in)
 		}
-		if arg, err := strconv.ParseInt(parts[1], 10, 64); err == nil {
-			out[parts[0]] = arg
-			continue
+
+		valueS := strings.Join(parts[1:], argSep)
+		var value interface{}
+		if arg, err := strconv.ParseInt(valueS, 10, 64); err == nil {
+			value = arg
+		} else if arg, err := strconv.ParseBool(valueS); err == nil {
+			value = arg
+		} else {
+			value = valueS
 		}
-		if arg, err := strconv.ParseBool(parts[1]); err == nil {
-			out[parts[0]] = arg
-			continue
+
+		keys := strings.Split(parts[0], ".")
+		if err := out.set(keys, value); err != nil {
+			return nil, err
 		}
-		if arg, err := strconv.ParseFloat(parts[1], 64); err == nil {
-			out[parts[0]] = arg
-			continue
-		}
-		out[parts[0]] = parts[1]
+
 	}
 	return out, nil
 }
