@@ -7,6 +7,10 @@ import (
 	"reflect"
 )
 
+const (
+	extraName = "__extra"
+)
+
 func decodePreamble(r io.Reader, byteOrder binary.ByteOrder) (codec, endianness, error) {
 	var err error
 	enc := encoding{}
@@ -54,13 +58,7 @@ func decodeList(dec decoder, target reflect.Value) error {
 	isMap := (target.Kind() == reflect.Map || target.Kind() == reflect.Interface)
 
 	if isMap {
-		// Initialize the map. Can't add keys without this.
-		if target.Kind() == reflect.Interface {
-			target.Set(reflect.MakeMap(reflect.TypeOf(map[string]interface{}{})))
-			target = target.Elem()
-		} else {
-			target.Set(reflect.MakeMap(target.Type()))
-		}
+		initializeMap(&target)
 	}
 
 	// Special map alias that collects values and nvlist types
@@ -72,8 +70,21 @@ func decodeList(dec decoder, target reflect.Value) error {
 		targetFieldIndexMap = fieldIndexMap(target)
 	}
 
+	// Set up the extra field map for fields not defined in the struct
+	var extraMap reflect.Value
+	if !isMap {
+		if index, ok := targetFieldIndexMap[extraName]; ok {
+			extraMap = target.Field(index)
+			initializeMap(&extraMap)
+		}
+	}
+
 	// Start decoding data
 	for {
+		// Reset the iteration target and map status
+		iterTarget := target
+		iterIsMap := isMap
+
 		// Done when there's no more data or an error has occurred
 		if end, err := dec.isEnd(); end || err != nil {
 			return err
@@ -91,22 +102,29 @@ func decodeList(dec decoder, target reflect.Value) error {
 		var targetField reflect.Value
 		if !isMap {
 			targetFieldIndex, ok := targetFieldIndexMap[pName]
-			// If there's no corresponding struct field, skip the data and move
-			// on to the next data pair
+			// If there's no corresponding struct field and no field for
+			// extras, skip the data and move on to the next data pair. If
+			// there is an field for extras, make that the new target for this
+			// iteration.
 			if !ok {
-				if err := dec.skip(); err != nil {
-					return err
+				if !extraMap.IsValid() {
+					if err := dec.skip(); err != nil {
+						return err
+					}
+					continue
 				}
-				continue
+				iterTarget = extraMap
+				iterIsMap = true
+			} else {
+				targetField = target.Field(targetFieldIndex)
 			}
-			targetField = target.Field(targetFieldIndex)
 		}
 
 		var targetType reflect.Type
 		if isList {
-			targetType = target.Type()
-		} else if isMap {
-			targetType = target.Type().Elem()
+			targetType = iterTarget.Type()
+		} else if iterIsMap {
+			targetType = iterTarget.Type().Elem()
 		} else {
 			targetType = targetField.Type()
 		}
@@ -120,7 +138,7 @@ func decodeList(dec decoder, target reflect.Value) error {
 		}
 
 		// Set the value appropriately
-		if isMap {
+		if iterIsMap {
 			name := reflect.ValueOf(pName)
 			if isList {
 				value = reflect.ValueOf(map[string]interface{}{
@@ -128,7 +146,7 @@ func decodeList(dec decoder, target reflect.Value) error {
 					"value": value.Interface(),
 				})
 			}
-			target.SetMapIndex(name, value)
+			iterTarget.SetMapIndex(name, value)
 		} else {
 			fieldSetter(targetField, value)
 		}
@@ -145,12 +163,28 @@ func fieldIndexMap(v reflect.Value) map[string]int {
 		if !field.CanSet() {
 			return true
 		}
+
 		name := v.Type().Field(i).Name
-		if tags := getTags(i, v); len(tags) > 0 && tags[0] != "" {
+		tags := getTags(i, v)
+		isMap := (field.Kind() == reflect.Map || field.Kind() == reflect.Interface)
+
+		if len(tags) > 1 && tags[1] == "extra" && isMap {
+			name = extraName
+		} else if len(tags) > 0 && tags[0] != "" {
 			name = tags[0]
 		}
 		vFieldIndexMap[name] = i
 		return true
 	})
 	return vFieldIndexMap
+}
+
+func initializeMap(target *reflect.Value) {
+	// Initialize the map. Can't add keys without this.
+	if target.Kind() == reflect.Interface {
+		target.Set(reflect.MakeMap(reflect.TypeOf(map[string]interface{}{})))
+		*target = target.Elem()
+	} else {
+		target.Set(reflect.MakeMap(target.Type()))
+	}
 }
