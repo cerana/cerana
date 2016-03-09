@@ -349,7 +349,8 @@ func init() {
 func struct2map(s interface{}) map[string]interface{} {
 	m := map[string]interface{}{}
 	val := reflect.ValueOf(s).Elem()
-	for name, index := range fieldIndexMap(val) {
+	indexMap, _ := fieldIndexMap(val)
+	for name, index := range indexMap {
 		m[name] = val.Field(index).Interface()
 	}
 	return m

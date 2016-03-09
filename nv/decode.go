@@ -2,6 +2,7 @@ package nv
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"reflect"
@@ -67,7 +68,10 @@ func decodeList(dec decoder, target reflect.Value) error {
 	// For structs, create the lookup table for field name/tag -> field index
 	var targetFieldIndexMap map[string]int
 	if !isMap {
-		targetFieldIndexMap = fieldIndexMap(target)
+		targetFieldIndexMap, err = fieldIndexMap(target)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Set up the extra field map for fields not defined in the struct
@@ -156,8 +160,9 @@ func decodeList(dec decoder, target reflect.Value) error {
 
 // fieldIndexMap creates a map of field names, with tag name overrides,
 // to their index
-func fieldIndexMap(v reflect.Value) map[string]int {
+func fieldIndexMap(v reflect.Value) (map[string]int, error) {
 	vFieldIndexMap := make(map[string]int)
+	var err error
 	forEachField(v, func(i int, field reflect.Value) bool {
 		// Skip fields that can't be set (e.g. unexported)
 		if !field.CanSet() {
@@ -171,13 +176,21 @@ func fieldIndexMap(v reflect.Value) map[string]int {
 		// skip "name" if "extra" exists because "name" is irrelevant
 		if len(tags) > 1 && tags[1] == "extra" && isMap {
 			name = extraName
+			if _, ok := vFieldIndexMap[name]; ok {
+				err = errors.New("more than one field tagged 'extra'")
+				return false
+			}
 		} else if len(tags) > 0 && tags[0] != "" {
 			name = tags[0]
+		}
+		if _, ok := vFieldIndexMap[name]; ok {
+			err = fmt.Errorf("more than one field with tag/name: %s", name)
+			return false
 		}
 		vFieldIndexMap[name] = i
 		return true
 	})
-	return vFieldIndexMap
+	return vFieldIndexMap, err
 }
 
 func initializeMap(target *reflect.Value) {
