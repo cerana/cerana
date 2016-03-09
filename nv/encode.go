@@ -99,6 +99,10 @@ func encodeStruct(enc encoder, v reflect.Value) error {
 		}
 		name := v.Type().Field(i).Name
 		tags := getTags(i, v)
+		// Skip fields tagged as "extra"
+		if len(tags) > 1 && tags[1] == "extra" {
+			return true
+		}
 		if len(tags) > 0 && tags[0] != "" {
 			name = tags[0]
 		}
