@@ -8,6 +8,7 @@ import (
 	"github.com/mistifyio/mistify/acomm"
 )
 
+// DestroyArgs are arguments for the Destroy handler.
 type DestroyArgs struct {
 	Name            string `json:"name"`
 	Defer           bool   `json:"defer"`
@@ -16,6 +17,7 @@ type DestroyArgs struct {
 	ForceUnmount    bool   `json:"force-unmount"`
 }
 
+// Destroy will destroy a dataset.
 func (z *ZFS) Destroy(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args DestroyArgs
 	if err := req.UnmarshalArgs(&args); err != nil {

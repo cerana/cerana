@@ -8,6 +8,7 @@ import (
 	"github.com/mistifyio/mistify/acomm"
 )
 
+// CreateArgs are arguments for the Create handler.
 type CreateArgs struct {
 	Name       string                 `json:"name"`
 	Type       string                 `json:"type"` // gozfs.Dataset[Filesystem,Snapshot,Volume]
@@ -15,10 +16,12 @@ type CreateArgs struct {
 	Properties map[string]interface{} `json:"properties"`
 }
 
+// CreateResult is the result from the Create Handler.
 type CreateResult struct {
 	Dataset *Dataset
 }
 
+// Create will create a new filesystem or volume dataset.
 func (z *ZFS) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args CreateArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
