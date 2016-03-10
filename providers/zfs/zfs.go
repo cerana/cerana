@@ -29,17 +29,17 @@ type CommonArgs struct {
 
 // RegisterTasks registers all of ZFS's task handlers with the server.
 func (z *ZFS) RegisterTasks(server *provider.Server) {
-	server.RegisterTask("zfs-exists", z.Exists)
-	server.RegisterTask("zfs-destroy", z.Destroy)
-	server.RegisterTask("zfs-create", z.Create)
-	server.RegisterTask("zfs-holds", z.Holds)
-	server.RegisterTask("zfs-snapshot", z.Snapshot)
-	server.RegisterTask("zfs-rollback", z.Rollback)
 	server.RegisterTask("zfs-clone", z.Clone)
-	server.RegisterTask("zfs-rename", z.Rename)
-	server.RegisterTask("zfs-list", z.List)
+	server.RegisterTask("zfs-create", z.Create)
+	server.RegisterTask("zfs-destroy", z.Destroy)
+	server.RegisterTask("zfs-exists", z.Exists)
 	server.RegisterTask("zfs-get", z.Get)
+	server.RegisterTask("zfs-holds", z.Holds)
+	server.RegisterTask("zfs-list", z.List)
+	server.RegisterTask("zfs-rename", z.Rename)
+	server.RegisterTask("zfs-rollback", z.Rollback)
 	server.RegisterTask("zfs-send", z.Send)
+	server.RegisterTask("zfs-snapshot", z.Snapshot)
 }
 
 // fixPropertyTypes attempts to convert the underlying data types in a property
