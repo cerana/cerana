@@ -256,23 +256,12 @@ func main() {
 	cmdList := genCommand("list", "List filesystems, volumes, snapshots and bookmarks.",
 		func(cmd *cobra.Command, args []string) error {
 			name, _ := cmd.Flags().GetString("name")
-			dsType, _ := cmd.Flags().GetString("type")
-			if dsType == "" {
-				dsType = "all"
+			dsTypes, _ := cmd.Flags().GetStringSlice("type")
+			if len(dsTypes) == 0 {
+				dsTypes = []string{"all"}
 			}
 
-			var datasets []*gozfs.Dataset
-			var err error
-			switch dsType {
-			case "all":
-				datasets, err = gozfs.Datasets(name)
-			case gozfs.DatasetFilesystem:
-				datasets, err = gozfs.Filesystems(name)
-			case gozfs.DatasetSnapshot:
-				datasets, err = gozfs.Snapshots(name)
-			case gozfs.DatasetVolume:
-				datasets, err = gozfs.Volumes(name)
-			}
+			datasets, err := gozfs.Datasets(name, dsTypes)
 			if err != nil {
 				return err
 			}
@@ -284,7 +273,7 @@ func main() {
 			return nil
 		})
 	cmdList.PersistentPreRun = dummyPersistentPreRun
-	cmdList.Flags().StringP("type", "t", "all", strings.Join([]string{"all", gozfs.DatasetFilesystem, gozfs.DatasetVolume, gozfs.DatasetSnapshot}, ","))
+	cmdList.Flags().StringSliceP("type", "t", []string{"all"}, strings.Join([]string{"all", gozfs.DatasetFilesystem, gozfs.DatasetVolume, gozfs.DatasetSnapshot}, ","))
 
 	cmdGet := genCommand("get", "Get dataset properties",
 		func(cmd *cobra.Command, args []string) error {

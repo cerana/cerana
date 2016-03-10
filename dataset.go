@@ -265,9 +265,10 @@ func (ds *dataset) toDataset() *Dataset {
 	}
 }
 
-func getDatasets(name, dsType string, recurse bool, depth uint64) ([]*Dataset, error) {
-	types := map[string]bool{
-		dsType: true,
+func getDatasets(name string, dsTypes []string, recurse bool, depth uint64) ([]*Dataset, error) {
+	types := make(map[string]bool)
+	for _, dsType := range dsTypes {
+		types[dsType] = true
 	}
 
 	dss, err := list(name, types, recurse, depth)
@@ -289,28 +290,16 @@ func getDatasets(name, dsType string, recurse bool, depth uint64) ([]*Dataset, e
 }
 
 // Datasets retrieves a list of all datasets, regardless of type.
-func Datasets(name string) ([]*Dataset, error) {
-	return getDatasets(name, "all", true, 0)
-}
-
-// Filesystems retrieves a list of all filesystems.
-func Filesystems(name string) ([]*Dataset, error) {
-	return getDatasets(name, DatasetFilesystem, true, 0)
-}
-
-// Snapshots retrieves a list of all snapshots.
-func Snapshots(name string) ([]*Dataset, error) {
-	return getDatasets(name, DatasetSnapshot, true, 0)
-}
-
-// Volumes retrieves a list of all volumes.
-func Volumes(name string) ([]*Dataset, error) {
-	return getDatasets(name, DatasetVolume, true, 0)
+func Datasets(name string, dsTypes []string) ([]*Dataset, error) {
+	if len(dsTypes) == 0 {
+		dsTypes = []string{"all"}
+	}
+	return getDatasets(name, dsTypes, true, 0)
 }
 
 // GetDataset retrieves a single dataset.
 func GetDataset(name string) (*Dataset, error) {
-	datasets, err := getDatasets(name, "all", false, 0)
+	datasets, err := getDatasets(name, nil, false, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -352,7 +341,7 @@ func ReceiveSnapshot(input io.Reader, name string) (*Dataset, error) {
 
 // Children returns a list of children of the dataset.
 func (d *Dataset) Children(depth uint64) ([]*Dataset, error) {
-	datasets, err := getDatasets(d.Name, "all", true, depth)
+	datasets, err := getDatasets(d.Name, nil, true, depth)
 	if err != nil {
 		return nil, err
 	}
@@ -436,7 +425,7 @@ func (d *Dataset) Rollback(destroyMoreRecent bool) error {
 	dsName := strings.Split(d.Name, "@")[0]
 
 	// Get all of the dataset's snapshots
-	snapshots, err := getDatasets(dsName, DatasetSnapshot, true, 1)
+	snapshots, err := getDatasets(dsName, []string{DatasetSnapshot}, true, 1)
 	if err != nil {
 		return err
 	}
@@ -543,7 +532,7 @@ func (d *Dataset) Snapshot(name string, recursive bool) error {
 
 // Snapshots returns a list of snapshots of the dataset.
 func (d *Dataset) Snapshots() ([]*Dataset, error) {
-	return Snapshots(d.Name)
+	return Datasets(d.Name, []string{DatasetSnapshot})
 }
 
 // Pool returns the zfs pool the dataset belongs to.
