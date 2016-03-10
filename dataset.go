@@ -29,43 +29,52 @@ type Dataset struct {
 // DatasetProperties are properties of a ZFS dataset. Some properties may be
 // modified from the values returned by zfs.
 type DatasetProperties struct {
-	Available            uint64
-	Clones               []string
-	Compression          string // Empty value is replaced with "off"
-	CompressionSource    string
-	CompressRatio        uint64
-	CreateTxg            uint64
-	Creation             uint64
-	DeferDestroy         uint64
-	GUID                 uint64
-	LogicalReferenced    uint64
-	LogicalUsed          uint64
-	Mountpoint           string
-	MountpointSource     string
-	ObjsetID             uint64
-	Origin               string
-	Quota                uint64
-	QuotaSource          string
-	RefCompressRatio     uint64
-	RefQuota             uint64
-	RefQuotaSource       string
-	RefReservation       uint64
-	RefReservationSource string
-	Referenced           uint64
-	Reservation          uint64
-	ReservationSource    string
-	Type                 string // Int type mapped to string type
-	Unique               uint64
-	Used                 uint64
-	UsedByChildren       uint64
-	UsedByDataset        uint64
-	UsedByRefReservation uint64
-	UsedBySnapshots      uint64
-	UserAccounting       uint64
-	UserRefs             uint64
-	Volsize              uint64
-	VolBlockSize         uint64
-	Written              uint64
+	Available             uint64
+	CaseSensitivity       uint64
+	CaseSensitivitySource string
+	Clones                []string
+	CompressRatio         uint64
+	Compression           string // Empty value is replaced with "off"
+	CompressionSource     string
+	CreateTxg             uint64
+	Creation              uint64
+	DeferDestroy          uint64
+	GUID                  uint64
+	LogicalReferenced     uint64
+	LogicalUsed           uint64
+	Mountpoint            string
+	MountpointSource      string
+	Normalization         uint64
+	NormalizationSource   string
+	ObjsetID              uint64
+	Origin                string
+	Quota                 uint64
+	QuotaSource           string
+	RefCompressRatio      uint64
+	RefQuota              uint64
+	RefQuotaSource        string
+	RefReservation        uint64
+	RefReservationSource  string
+	Referenced            uint64
+	Reservation           uint64
+	ReservationSource     string
+	Type                  string // Int type mapped to string type
+	UTF8Only              bool
+	UTF8OnlySource        string
+	Unique                uint64
+	Used                  uint64
+	UsedByChildren        uint64
+	UsedByDataset         uint64
+	UsedByRefReservation  uint64
+	UsedBySnapshots       uint64
+	UserAccounting        uint64
+	UserDefined           map[string]string
+	UserRefs              uint64
+	Version               uint64
+	VolBlockSize          uint64
+	VolBlockSizeSource    string
+	Volsize               uint64
+	Written               uint64
 }
 
 // DMUObjsetStats represents zfs dataset information.
@@ -89,37 +98,42 @@ type dataset struct {
 // datasetProperties is an intermediate struct for unmarshalling zfs dataset
 // properties nvlist.
 type datasetProperties struct {
-	Available            propUint64           `nv:"available"`
-	Clones               propClones           `nv:"clones"`
-	Compression          propStringWithSource `nv:"compression"`
-	CompressRatio        propUint64           `nv:"compressratio"`
-	CreateTxg            propUint64           `nv:"createtxg"`
-	Creation             propUint64           `nv:"creation"`
-	DeferDestroy         propUint64           `nv:"defer_destroy"`
-	GUID                 propUint64           `nv:"guid"`
-	LogicalReferenced    propUint64           `nv:"logicalreferenced"`
-	LogicalUsed          propUint64           `nv:"logicalused"`
-	Mountpoint           propStringWithSource `nv:"mountpoint"`
-	ObjsetID             propUint64           `nv:"objsetid"`
-	Origin               propString           `nv:"origin"`
-	Quota                propUint64WithSource `nv:"quota"`
-	RefCompressRatio     propUint64           `nv:"refcompressratio"`
-	RefQuota             propUint64WithSource `nv:"refquota"`
-	RefReservation       propUint64WithSource `nv:"refreservation"`
-	Referenced           propUint64           `nv:"referenced"`
-	Reservation          propUint64WithSource `nv:"reservation"`
-	Type                 propUint64           `nv:"type"`
-	Unique               propUint64           `nv:"unique"`
-	Used                 propUint64           `nv:"used"`
-	UsedByChildren       propUint64           `nv:"usedbychildren"`
-	UsedByDataset        propUint64           `nv:"usedbydataset"`
-	UsedByRefReservation propUint64           `nv:"usedbyrefreservation"`
-	UsedBySnapshots      propUint64           `nv:"usedbysnapshots"`
-	UserAccounting       propUint64           `nv:"useraccounting"`
-	UserRefs             propUint64           `nv:"userrefs"`
-	Volsize              propUint64           `nv:"volsize"`
-	VolBlockSize         propUint64           `nv:"volblocksize"`
-	Written              propUint64           `nv:"written"`
+	Available            propUint64                      `nv:"available"`
+	CaseSensitivity      propUint64WithSource            `nv:"casesensitivity"`
+	Clones               propClones                      `nv:"clones"`
+	CompressRatio        propUint64                      `nv:"compressratio"`
+	Compression          propStringWithSource            `nv:"compression"`
+	CreateTxg            propUint64                      `nv:"createtxg"`
+	Creation             propUint64                      `nv:"creation"`
+	DeferDestroy         propUint64                      `nv:"defer_destroy"`
+	GUID                 propUint64                      `nv:"guid"`
+	LogicalReferenced    propUint64                      `nv:"logicalreferenced"`
+	LogicalUsed          propUint64                      `nv:"logicalused"`
+	Mountpoint           propStringWithSource            `nv:"mountpoint"`
+	Normalization        propUint64WithSource            `nv:"normalization"`
+	ObjsetID             propUint64                      `nv:"objsetid"`
+	Origin               propString                      `nv:"origin"`
+	Quota                propUint64WithSource            `nv:"quota"`
+	RefCompressRatio     propUint64                      `nv:"refcompressratio"`
+	RefQuota             propUint64WithSource            `nv:"refquota"`
+	RefReservation       propUint64WithSource            `nv:"refreservation"`
+	Referenced           propUint64                      `nv:"referenced"`
+	Reservation          propUint64WithSource            `nv:"reservation"`
+	Type                 propUint64                      `nv:"type"`
+	UTF8Only             propUint64WithSource            `nv:"utf8only"`
+	Unique               propUint64                      `nv:"unique"`
+	Used                 propUint64                      `nv:"used"`
+	UsedByChildren       propUint64                      `nv:"usedbychildren"`
+	UsedByDataset        propUint64                      `nv:"usedbydataset"`
+	UsedByRefReservation propUint64                      `nv:"usedbyrefreservation"`
+	UsedBySnapshots      propUint64                      `nv:"usedbysnapshots"`
+	UserAccounting       propUint64                      `nv:"useraccounting"`
+	UserDefined          map[string]propStringWithSource `nv:",extra"`
+	UserRefs             propUint64                      `nv:"userrefs"`
+	Version              propUint64                      `nv:"version"`
+	VolBlockSize         propUint64WithSource            `nv:"volblocksize"`
+	Volsize              propUint64                      `nv:"volsize"`
+	Written              propUint64                      `nv:"written"`
 }
 
 type propClones struct {
@@ -186,46 +200,61 @@ func (ds *dataset) toDataset() *Dataset {
 		compression = "off"
 	}
 
+	userDefined := make(map[string]string)
+	for key, value := range ds.Properties.UserDefined {
+		userDefined[key] = value.Value
+		userDefined[key+"Source"] = value.Source
+	}
+
 	return &Dataset{
 		Name: ds.Name,
 		Properties: &DatasetProperties{
-			Available:            ds.Properties.Available.Value,
-			Clones:               ds.Properties.Clones.value(),
-			Compression:          compression,
-			CompressionSource:    ds.Properties.Compression.Source,
-			CompressRatio:        ds.Properties.CompressRatio.Value,
-			CreateTxg:            ds.Properties.CreateTxg.Value,
-			Creation:             ds.Properties.Creation.Value,
-			DeferDestroy:         ds.Properties.DeferDestroy.Value,
-			GUID:                 ds.Properties.GUID.Value,
-			LogicalReferenced:    ds.Properties.LogicalReferenced.Value,
-			LogicalUsed:          ds.Properties.LogicalUsed.Value,
-			Mountpoint:           ds.Properties.Mountpoint.Value,
-			MountpointSource:     ds.Properties.Mountpoint.Source,
-			ObjsetID:             ds.Properties.ObjsetID.Value,
-			Origin:               ds.Properties.Origin.Value,
-			Quota:                ds.Properties.Quota.Value,
-			QuotaSource:          ds.Properties.Quota.Source,
-			RefCompressRatio:     ds.Properties.RefCompressRatio.Value,
-			RefQuota:             ds.Properties.RefQuota.Value,
-			RefQuotaSource:       ds.Properties.RefQuota.Source,
-			RefReservation:       ds.Properties.RefReservation.Value,
-			RefReservationSource: ds.Properties.RefReservation.Source,
-			Referenced:           ds.Properties.Referenced.Value,
-			Reservation:          ds.Properties.Reservation.Value,
-			ReservationSource:    ds.Properties.Reservation.Source,
-			Type:                 dsType,
-			Unique:               ds.Properties.Unique.Value,
-			Used:                 ds.Properties.Used.Value,
-			UsedByChildren:       ds.Properties.UsedByChildren.Value,
-			UsedByDataset:        ds.Properties.UsedByDataset.Value,
-			UsedByRefReservation: ds.Properties.UsedByRefReservation.Value,
-			UsedBySnapshots:      ds.Properties.UsedBySnapshots.Value,
-			UserAccounting:       ds.Properties.UserAccounting.Value,
-			UserRefs:             ds.Properties.UserRefs.Value,
-			Volsize:              ds.Properties.Volsize.Value,
-			VolBlockSize:         ds.Properties.VolBlockSize.Value,
-			Written:              ds.Properties.Written.Value,
+			Available:             ds.Properties.Available.Value,
+			CaseSensitivity:       ds.Properties.CaseSensitivity.Value,
+			CaseSensitivitySource: ds.Properties.CaseSensitivity.Source,
+			Clones:                ds.Properties.Clones.value(),
+			CompressRatio:         ds.Properties.CompressRatio.Value,
+			Compression:           compression,
+			CompressionSource:     ds.Properties.Compression.Source,
+			CreateTxg:             ds.Properties.CreateTxg.Value,
+			Creation:              ds.Properties.Creation.Value,
+			DeferDestroy:          ds.Properties.DeferDestroy.Value,
+			GUID:                  ds.Properties.GUID.Value,
+			LogicalReferenced:     ds.Properties.LogicalReferenced.Value,
+			LogicalUsed:           ds.Properties.LogicalUsed.Value,
+			Mountpoint:            ds.Properties.Mountpoint.Value,
+			MountpointSource:      ds.Properties.Mountpoint.Source,
+			Normalization:         ds.Properties.Normalization.Value,
+			NormalizationSource:   ds.Properties.Normalization.Source,
+			ObjsetID:              ds.Properties.ObjsetID.Value,
+			Origin:                ds.Properties.Origin.Value,
+			Quota:                 ds.Properties.Quota.Value,
+			QuotaSource:           ds.Properties.Quota.Source,
+			RefCompressRatio:      ds.Properties.RefCompressRatio.Value,
+			RefQuota:              ds.Properties.RefQuota.Value,
+			RefQuotaSource:        ds.Properties.RefQuota.Source,
+			RefReservation:        ds.Properties.RefReservation.Value,
+			RefReservationSource:  ds.Properties.RefReservation.Source,
+			Referenced:            ds.Properties.Referenced.Value,
+			Reservation:           ds.Properties.Reservation.Value,
+			ReservationSource:     ds.Properties.Reservation.Source,
+			Type:                  dsType,
+			UTF8Only:              ds.Properties.UTF8Only.Value == 1,
+			UTF8OnlySource:        ds.Properties.UTF8Only.Source,
+			Unique:                ds.Properties.Unique.Value,
+			Used:                  ds.Properties.Used.Value,
+			UsedByChildren:        ds.Properties.UsedByChildren.Value,
+			UsedByDataset:         ds.Properties.UsedByDataset.Value,
+			UsedByRefReservation:  ds.Properties.UsedByRefReservation.Value,
+			UsedBySnapshots:       ds.Properties.UsedBySnapshots.Value,
+			UserAccounting:        ds.Properties.UserAccounting.Value,
+			UserDefined:           userDefined,
+			UserRefs:              ds.Properties.UserRefs.Value,
+			Version:               ds.Properties.Version.Value,
+			VolBlockSize:          ds.Properties.VolBlockSize.Value,
+			VolBlockSizeSource:    ds.Properties.VolBlockSize.Source,
+			Volsize:               ds.Properties.Volsize.Value,
+			Written:               ds.Properties.Written.Value,
 		},
 		DMUObjsetStats: ds.DMUObjsetStats,
 	}
