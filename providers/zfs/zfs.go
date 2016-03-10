@@ -4,11 +4,23 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/mistifyio/mistify/acomm"
 	"github.com/mistifyio/mistify/provider"
 )
 
 // ZFS is a provider of zfs functionality.
-type ZFS struct{}
+type ZFS struct {
+	config  *provider.Config
+	tracker *acomm.Tracker
+}
+
+// New creates a new instance of ZFS.
+func New(config *provider.Config, tracker *acomm.Tracker) *ZFS {
+	return &ZFS{
+		config:  config,
+		tracker: tracker,
+	}
+}
 
 // CommonArgs are arguments that apply to all handlers.
 type CommonArgs struct {
@@ -27,6 +39,7 @@ func (z *ZFS) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("zfs-rename", z.Rename)
 	server.RegisterTask("zfs-list", z.List)
 	server.RegisterTask("zfs-get", z.Get)
+	server.RegisterTask("zfs-send", z.Send)
 }
 
 // fixPropertyTypes attempts to convert the underlying data types in a property

@@ -19,7 +19,7 @@ func main() {
 
 	server, err := provider.NewServer(config)
 	dieOnError(err)
-	z := &zfs.ZFS{}
+	z := zfs.New(config, server.Tracker())
 	z.RegisterTasks(server)
 
 	if len(server.RegisteredTasks()) != 0 {
