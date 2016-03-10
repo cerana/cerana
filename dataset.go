@@ -48,6 +48,8 @@ type DatasetProperties struct {
 	NormalizationSource   string
 	ObjsetID              uint64
 	Origin                string
+	PrevSnap              string
+	PrevSnapSource        string
 	Quota                 uint64
 	QuotaSource           string
 	RefCompressRatio      uint64
@@ -113,6 +115,7 @@ type datasetProperties struct {
 	Normalization        propUint64WithSource            `nv:"normalization"`
 	ObjsetID             propUint64                      `nv:"objsetid"`
 	Origin               propString                      `nv:"origin"`
+	PrevSnap             propStringWithSource            `nv:"prevsnap"`
 	Quota                propUint64WithSource            `nv:"quota"`
 	RefCompressRatio     propUint64                      `nv:"refcompressratio"`
 	RefQuota             propUint64WithSource            `nv:"refquota"`
@@ -228,6 +231,8 @@ func (ds *dataset) toDataset() *Dataset {
 			NormalizationSource:   ds.Properties.Normalization.Source,
 			ObjsetID:              ds.Properties.ObjsetID.Value,
 			Origin:                ds.Properties.Origin.Value,
+			PrevSnap:              ds.Properties.PrevSnap.Value,
+			PrevSnapSource:        ds.Properties.PrevSnap.Source,
 			Quota:                 ds.Properties.Quota.Value,
 			QuotaSource:           ds.Properties.Quota.Source,
 			RefCompressRatio:      ds.Properties.RefCompressRatio.Value,
