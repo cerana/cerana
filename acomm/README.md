@@ -118,6 +118,7 @@ type Request struct {
 	ID             string           `json:"id"`
 	Task           string           `json:"task"`
 	ResponseHook   *url.URL         `json:"responsehook"`
+	StreamURL      *url.URL         `json:"stream_url"`
 	Args           *json.RawMessage `json:"args"`
 	SuccessHandler ResponseHandler  `json:"-"`
 	ErrorHandler   ResponseHandler  `json:"-"`
@@ -132,7 +133,7 @@ appropriately to handle a response.
 #### func  NewRequest
 
 ```go
-func NewRequest(task, responseHook string, args interface{}, sh ResponseHandler, eh ResponseHandler) (*Request, error)
+func NewRequest(task, responseHook, streamURL string, args interface{}, sh ResponseHandler, eh ResponseHandler) (*Request, error)
 ```
 NewRequest creates a new Request instance.
 

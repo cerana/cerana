@@ -43,7 +43,7 @@ func (s *TrackerTestSuite) SetupSuite() {
 func (s *TrackerTestSuite) SetupTest() {
 	var err error
 
-	s.Request, err = acomm.NewRequest("foobar", s.RespServer.URL, nil, nil, nil)
+	s.Request, err = acomm.NewRequest("foobar", s.RespServer.URL, "", nil, nil, nil)
 	s.Require().NoError(err, "request should be valid")
 
 	streamAddr, _ := url.ParseRequestURI(s.StreamServer.URL)
@@ -134,7 +134,7 @@ func (s *TrackerTestSuite) TestProxyUnix() {
 	s.Equal(0, s.Tracker.NumRequests(), "should have removed the request from tracking")
 
 	// Should not proxy a request already using unix response hook
-	origUnixReq, err := acomm.NewRequest("foobar", "unix://foo", struct{}{}, nil, nil)
+	origUnixReq, err := acomm.NewRequest("foobar", "unix://foo", "", struct{}{}, nil, nil)
 	if !s.NoError(err, "new request shoudl not error") {
 		return
 	}

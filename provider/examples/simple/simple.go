@@ -100,11 +100,11 @@ func (s *Simple) SystemStatus(req *acomm.Request) (interface{}, *url.URL, error)
 	// Prepare multiple requests
 	multiRequest := acomm.NewMultiRequest(s.tracker, 0)
 
-	cpuReq, err := acomm.NewRequest("CPUInfo", s.tracker.URL().String(), &CPUInfoArgs{GuestID: args.GuestID}, nil, nil)
+	cpuReq, err := acomm.NewRequest("CPUInfo", s.tracker.URL().String(), "", &CPUInfoArgs{GuestID: args.GuestID}, nil, nil)
 	if err != nil {
 		return nil, nil, err
 	}
-	diskReq, err := acomm.NewRequest("DiskInfo", s.tracker.URL().String(), &DiskInfoArgs{GuestID: args.GuestID}, nil, nil)
+	diskReq, err := acomm.NewRequest("DiskInfo", s.tracker.URL().String(), "", &DiskInfoArgs{GuestID: args.GuestID}, nil, nil)
 	if err != nil {
 		return nil, nil, err
 	}

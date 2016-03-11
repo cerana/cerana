@@ -18,6 +18,7 @@ type Request struct {
 	ID             string           `json:"id"`
 	Task           string           `json:"task"`
 	ResponseHook   *url.URL         `json:"responsehook"`
+	StreamURL      *url.URL         `json:"stream_url"`
 	Args           *json.RawMessage `json:"args"`
 	SuccessHandler ResponseHandler  `json:"-"`
 	ErrorHandler   ResponseHandler  `json:"-"`
@@ -29,7 +30,7 @@ type Request struct {
 type ResponseHandler func(*Request, *Response)
 
 // NewRequest creates a new Request instance.
-func NewRequest(task, responseHook string, args interface{}, sh ResponseHandler, eh ResponseHandler) (*Request, error) {
+func NewRequest(task, responseHook, streamURL string, args interface{}, sh ResponseHandler, eh ResponseHandler) (*Request, error) {
 	hook, err := url.ParseRequestURI(responseHook)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -37,6 +38,18 @@ func NewRequest(task, responseHook string, args interface{}, sh ResponseHandler,
 			"responseHook": responseHook,
 		}).Error("invalid response hook url")
 		return nil, err
+	}
+
+	var stream *url.URL
+	if streamURL != "" {
+		stream, err = url.ParseRequestURI(streamURL)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"error":     err,
+				"streamURL": streamURL,
+			}).Error("invalid response hook url")
+			return nil, err
+		}
 	}
 
 	if task == "" {
@@ -52,6 +65,7 @@ func NewRequest(task, responseHook string, args interface{}, sh ResponseHandler,
 		ID:             uuid.New(),
 		Task:           task,
 		ResponseHook:   hook,
+		StreamURL:      stream,
 		Args:           (*json.RawMessage)(&argsJSON),
 		SuccessHandler: sh,
 		ErrorHandler:   eh,
