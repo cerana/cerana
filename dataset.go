@@ -289,7 +289,8 @@ func getDatasets(name string, dsTypes []string, recurse bool, depth uint64) ([]*
 	return datasets, nil
 }
 
-// Datasets retrieves a list of all datasets, regardless of type.
+// Datasets retrieves a list of datasets of specified types.
+// If types are not specified, all types will be returned.
 func Datasets(name string, dsTypes []string) ([]*Dataset, error) {
 	if len(dsTypes) == 0 {
 		dsTypes = []string{"all"}
