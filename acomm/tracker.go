@@ -12,6 +12,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/mistifyio/mistify-logrus-ext"
 )
 
 const (
@@ -321,17 +322,13 @@ func (t *Tracker) ProxyUnix(req *Request, timeout time.Duration) (*Request, erro
 		return nil, err
 	}
 
-	// proxy the stream
 	if req.StreamURL != nil && req.StreamURL.Scheme != "unix" {
-		reader, writer := io.Pipe()
+		// proxy the stream
+		r, w := io.Pipe()
 
 		go func(src *url.URL) {
-			defer func() {
-				if err := writer.Close(); err != nil {
-					log.WithField("error", err).Error("failed to close proxy stream writer")
-				}
-			}()
-			if err := Stream(writer, src); err != nil {
+			defer logrusx.LogReturnedErr(w.Close, nil, "failed to close proxy stream writer")
+			if err := Stream(w, src); err != nil {
 				log.WithFields(log.Fields{
 					"error":     err,
 					"streamURL": src,
@@ -339,7 +336,7 @@ func (t *Tracker) ProxyUnix(req *Request, timeout time.Duration) (*Request, erro
 			}
 		}(req.StreamURL)
 
-		addr, err := t.NewStreamUnix("", reader)
+		addr, err := t.NewStreamUnix("", r)
 		if err != nil {
 			return nil, err
 		}
@@ -347,9 +344,9 @@ func (t *Tracker) ProxyUnix(req *Request, timeout time.Duration) (*Request, erro
 		req.StreamURL = addr
 	}
 
-	// proxy the request
 	unixReq := req
 	if req.ResponseHook.Scheme != "unix" {
+		// proxy the request
 		unixReq = &Request{
 			ID:           req.ID,
 			Task:         req.Task,
