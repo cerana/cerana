@@ -1,7 +1,9 @@
 package acomm_test
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -43,7 +45,7 @@ func (s *TrackerTestSuite) SetupSuite() {
 func (s *TrackerTestSuite) SetupTest() {
 	var err error
 
-	s.Request, err = acomm.NewRequest("foobar", s.RespServer.URL, nil, nil, nil)
+	s.Request, err = acomm.NewRequest("foobar", s.RespServer.URL, "", nil, nil, nil)
 	s.Require().NoError(err, "request should be valid")
 
 	streamAddr, _ := url.ParseRequestURI(s.StreamServer.URL)
@@ -112,12 +114,25 @@ func (s *TrackerTestSuite) TestProxyUnix() {
 		return
 	}
 
-	unixReq, err = s.Tracker.ProxyUnix(s.Request, 0)
+	streamServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, "hello")
+	}))
+	defer streamServer.Close()
+
+	req, err := acomm.NewRequest("foobar", s.RespServer.URL, streamServer.URL, nil, nil, nil)
+	s.NoError(err)
+
+	unixReq, err = s.Tracker.ProxyUnix(req, 0)
 	s.NoError(err, "should not fail proxying when tracker is listening")
 	s.NotNil(unixReq, "should return a request")
-	s.Equal(s.Request.ID, unixReq.ID, "new request should share ID with original")
+	s.Equal(req.ID, unixReq.ID, "new request should share ID with original")
 	s.Equal("unix", unixReq.ResponseHook.Scheme, "new request should have a unix response hook")
 	s.Equal(1, s.Tracker.NumRequests(), "should have tracked the new request")
+
+	var reqStreamData bytes.Buffer
+	s.NoError(acomm.Stream(&reqStreamData, unixReq.StreamURL), "should have streamed req data")
+	s.Equal("hello", reqStreamData.String(), "should have streamed req data")
+
 	resp, err := acomm.NewResponse(unixReq, struct{}{}, nil, nil)
 	if !s.NoError(err, "new response should not error") {
 		return
@@ -134,7 +149,7 @@ func (s *TrackerTestSuite) TestProxyUnix() {
 	s.Equal(0, s.Tracker.NumRequests(), "should have removed the request from tracking")
 
 	// Should not proxy a request already using unix response hook
-	origUnixReq, err := acomm.NewRequest("foobar", "unix://foo", struct{}{}, nil, nil)
+	origUnixReq, err := acomm.NewRequest("foobar", "unix://foo", "", struct{}{}, nil, nil)
 	if !s.NoError(err, "new request shoudl not error") {
 		return
 	}

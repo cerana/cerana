@@ -3,6 +3,7 @@ package acomm
 import (
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/url"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/mistifyio/mistify-logrus-ext"
 )
 
 const (
@@ -303,11 +305,13 @@ func (t *Tracker) setRequestTimeout(req *Request, timeout time.Duration) {
 	return
 }
 
-// ProxyUnix proxies requests that have response hooks of non-unix sockets
-// through one that does. If the response hook is already a unix socket, it
-// returns the original request. If not, it tracks the original request and
-// returns a new request with a unix socket response hook. The purpose of this
-// is so that there can be a single entry and exit point for external
+// ProxyUnix proxies requests that have response hooks and stream urls of
+// non-unix sockets. If the response hook and stream url are already unix
+// sockets, it returns the original request. If the response hook is not, it
+// tracks the original request and returns a new request with a unix socket
+// response hook. If the stream url is not, it pipes the original stream
+// through a new unix socket and updates the stream url. The purpose of this is
+// so that there can be a single entry and exit point for external
 // communication, while local services can reply directly to each other.
 func (t *Tracker) ProxyUnix(req *Request, timeout time.Duration) (*Request, error) {
 	if t.responseListener == nil {
@@ -318,13 +322,36 @@ func (t *Tracker) ProxyUnix(req *Request, timeout time.Duration) (*Request, erro
 		return nil, err
 	}
 
-	unixReq := req
+	if req.StreamURL != nil && req.StreamURL.Scheme != "unix" {
+		// proxy the stream
+		r, w := io.Pipe()
 
+		go func(src *url.URL) {
+			defer logrusx.LogReturnedErr(w.Close, nil, "failed to close proxy stream writer")
+			if err := Stream(w, src); err != nil {
+				log.WithFields(log.Fields{
+					"error":     err,
+					"streamURL": src,
+				}).Error("failed to stream")
+			}
+		}(req.StreamURL)
+
+		addr, err := t.NewStreamUnix("", r)
+		if err != nil {
+			return nil, err
+		}
+
+		req.StreamURL = addr
+	}
+
+	unixReq := req
 	if req.ResponseHook.Scheme != "unix" {
+		// proxy the request
 		unixReq = &Request{
 			ID:           req.ID,
 			Task:         req.Task,
 			ResponseHook: t.responseListener.URL(),
+			StreamURL:    req.StreamURL,
 			Args:         req.Args,
 			// Success and ErrorHandler are unnecessary here and intentionally
 			// omitted.

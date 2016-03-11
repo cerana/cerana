@@ -139,7 +139,7 @@ func makeRequest(coordinator, taskName, responseAddr string, taskArgs map[string
 	}
 
 	responseHook := fmt.Sprintf("http://%s/", responseAddr)
-	req, err := acomm.NewRequest(taskName, responseHook, taskArgs, nil, nil)
+	req, err := acomm.NewRequest(taskName, responseHook, "", taskArgs, nil, nil)
 	if err != nil {
 		return err
 	}
