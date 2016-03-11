@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -24,21 +25,23 @@ const (
 func main() {
 	log.SetLevel(log.FatalLevel)
 
-	var coordinator, responseAddr, taskName string
+	var coordinator, httpAddr, taskName string
 	var taskArgs []string
+	var streamRequest bool
 	flags.StringVarP(&coordinator, "coordinator_url", "c", "", "url of the coordinator")
 	flags.StringVarP(&taskName, "task", "t", "", "task to run")
 	flags.StringSliceVarP(&taskArgs, "request_arg", "a", []string{}, fmt.Sprintf("task specific argument the form 'key%svalue'. can be set multiple times", argSep))
-	flags.StringVarP(&responseAddr, "response_addr", "r", ":4080", "address for response http handler to listen on")
+	flags.StringVarP(&httpAddr, "http_addr", "r", ":4080", "address for http server to listen for responses and stream request data")
+	flags.BoolVarP(&streamRequest, "stream", "s", false, "stream data from STDIN to provider")
 	flags.Parse()
 
 	args, err := parseTaskArgs(taskArgs)
 	dieOnError(err)
 
-	result, stream, respErr, err := startResponseServer(responseAddr)
+	result, streamResult, respErr, err := startHTTPServer(httpAddr)
 	dieOnError(err)
 
-	dieOnError(makeRequest(coordinator, taskName, responseAddr, args))
+	dieOnError(makeRequest(coordinator, taskName, httpAddr, streamRequest, args))
 
 	select {
 	case err := <-respErr:
@@ -46,8 +49,8 @@ func main() {
 	case result := <-result:
 		j, _ := json.Marshal(result)
 		fmt.Println(string(j))
-	case stream := <-stream:
-		dieOnError(acomm.Stream(os.Stdout, stream))
+	case streamResult := <-streamResult:
+		dieOnError(acomm.Stream(os.Stdout, streamResult))
 	}
 }
 
@@ -116,12 +119,12 @@ func parseTaskArgs(taskArgs []string) (map[string]interface{}, error) {
 	return out, nil
 }
 
-func startResponseServer(addr string) (chan interface{}, chan *url.URL, chan error, error) {
+func startHTTPServer(addr string) (chan interface{}, chan *url.URL, chan error, error) {
 	result := make(chan interface{}, 1)
 	errChan := make(chan error, 1)
 	stream := make(chan *url.URL, 1)
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/response", func(w http.ResponseWriter, r *http.Request) {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			errChan <- err
@@ -148,6 +151,12 @@ func startResponseServer(addr string) (chan interface{}, chan *url.URL, chan err
 			result <- resp.Result
 		}
 	})
+	http.HandleFunc("/stream", func(w http.ResponseWriter, r *http.Request) {
+		if _, err := io.Copy(w, os.Stdin); err != nil {
+			errChan <- err
+			return
+		}
+	})
 
 	runErr := make(chan error)
 	running := time.NewTimer(time.Second)
@@ -166,14 +175,18 @@ func startResponseServer(addr string) (chan interface{}, chan *url.URL, chan err
 	return result, stream, errChan, err
 }
 
-func makeRequest(coordinator, taskName, responseAddr string, taskArgs map[string]interface{}) error {
+func makeRequest(coordinator, taskName, httpAddr string, stream bool, taskArgs map[string]interface{}) error {
 	coordinatorURL, err := url.ParseRequestURI(coordinator)
 	if err != nil {
 		return errors.New("invalid coordinator url")
 	}
 
-	responseHook := fmt.Sprintf("http://%s/", responseAddr)
-	req, err := acomm.NewRequest(taskName, responseHook, "", taskArgs, nil, nil)
+	responseHook := fmt.Sprintf("http://%s/response", httpAddr)
+	streamURL := ""
+	if stream {
+		streamURL = fmt.Sprintf("http://%s/stream", httpAddr)
+	}
+	req, err := acomm.NewRequest(taskName, responseHook, streamURL, taskArgs, nil, nil)
 	if err != nil {
 		return err
 	}
