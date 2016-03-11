@@ -10,10 +10,9 @@ import (
 
 // SnapshotArgs are the arguments for the Snapshot handler.
 type SnapshotArgs struct {
-	Name       string                 `json:"name"`
-	SnapName   string                 `json:"snapname"`
-	Recursive  bool                   `json:"recursive"`
-	Properties map[string]interface{} `json:"properties"`
+	Name      string `json:"name"`
+	SnapName  string `json:"snapname"`
+	Recursive bool   `json:"recursive"`
 }
 
 // Snapshot creates a snapshot of a filesystem or volume.
@@ -30,15 +29,10 @@ func (z *ZFS) Snapshot(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.New("missing arg: snapname")
 	}
 
-	if err := fixPropertyTypesFromJSON(args.Properties); err != nil {
-		return nil, nil, err
-	}
-
 	ds, err := gozfs.GetDataset(args.Name)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	// TODO: Pass properties through after updating gozfs
 	return nil, nil, ds.Snapshot(args.SnapName, args.Recursive)
 }

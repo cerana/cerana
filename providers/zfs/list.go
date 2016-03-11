@@ -29,19 +29,7 @@ func (z *ZFS) List(req *acomm.Request) (interface{}, *url.URL, error) {
 		args.Types = []string{"all"}
 	}
 
-	// TODO: Revisit this after updating gozfs to support arbitrary type combos
-	var list []*gozfs.Dataset
-	var err error
-	switch args.Types[0] {
-	case "all":
-		list, err = gozfs.Datasets(args.Name)
-	case gozfs.DatasetFilesystem:
-		list, err = gozfs.Filesystems(args.Name)
-	case gozfs.DatasetSnapshot:
-		list, err = gozfs.Snapshots(args.Name)
-	case gozfs.DatasetVolume:
-		list, err = gozfs.Volumes(args.Name)
-	}
+	list, err := gozfs.Datasets(args.Name, args.Types)
 	if err != nil {
 		return nil, nil, err
 	}
