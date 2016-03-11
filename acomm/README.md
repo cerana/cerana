@@ -278,12 +278,14 @@ socket.
 ```go
 func (t *Tracker) ProxyUnix(req *Request, timeout time.Duration) (*Request, error)
 ```
-ProxyUnix proxies requests that have response hooks of non-unix sockets through
-one that does. If the response hook is already a unix socket, it returns the
-original request. If not, it tracks the original request and returns a new
-request with a unix socket response hook. The purpose of this is so that there
-can be a single entry and exit point for external communication, while local
-services can reply directly to each other.
+ProxyUnix proxies requests that have response hooks and stream urls of non-unix
+sockets. If the response hook and stream url are already unix sockets, it
+returns the original request. If the response hook is not, it tracks the
+original request and returns a new request with a unix socket response hook. If
+the stream url is not, it pipes the original stream through a new unix socket
+and updates the stream url. The purpose of this is so that there can be a single
+entry and exit point for external communication, while local services can reply
+directly to each other.
 
 #### func (*Tracker) RemoveRequest
 
