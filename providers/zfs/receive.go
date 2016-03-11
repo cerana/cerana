@@ -12,11 +12,6 @@ import (
 	"github.com/mistifyio/mistify/acomm"
 )
 
-// ReceiveResult is the result from the Receive handler
-type ReceiveResult struct {
-	Dataset *Dataset
-}
-
 // TODO: Update this method once `gozfs` supports receive
 
 // Receive creates a new snapshot from a zfs stream. If it a full stream, then
@@ -51,5 +46,5 @@ func (z *ZFS) Receive(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 
-	return &ReceiveResult{newDataset(ds)}, nil, nil
+	return &DatasetResult{newDataset(ds)}, nil, nil
 }

@@ -27,6 +27,11 @@ type CommonArgs struct {
 	Name string `json:"name"` // Name of dataset
 }
 
+// DatasetResult is a common handler result.
+type DatasetResult struct {
+	Dataset *Dataset `json:"dataset"`
+}
+
 // RegisterTasks registers all of ZFS's task handlers with the server.
 func (z *ZFS) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("zfs-clone", z.Clone)

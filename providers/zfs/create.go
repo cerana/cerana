@@ -16,11 +16,6 @@ type CreateArgs struct {
 	Properties map[string]interface{} `json:"properties"`
 }
 
-// CreateResult is the result from the Create Handler.
-type CreateResult struct {
-	Dataset *Dataset
-}
-
 // Create will create a new filesystem or volume dataset.
 func (z *ZFS) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args CreateArgs
@@ -54,5 +49,5 @@ func (z *ZFS) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 
-	return &CreateResult{newDataset(ds)}, nil, nil
+	return &DatasetResult{newDataset(ds)}, nil, nil
 }

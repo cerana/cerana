@@ -15,11 +15,6 @@ type CloneArgs struct {
 	Properties map[string]interface{} `json:"properties"`
 }
 
-// CloneResult is the result from the Clone Handler.
-type CloneResult struct {
-	Dataset *Dataset
-}
-
 // Clone will create a clone from a snapshot.
 func (z *ZFS) Clone(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args CloneArgs
@@ -47,5 +42,5 @@ func (z *ZFS) Clone(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 
-	return &CloneResult{newDataset(ds)}, nil, nil
+	return &DatasetResult{newDataset(ds)}, nil, nil
 }

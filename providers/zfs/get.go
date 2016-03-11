@@ -8,11 +8,6 @@ import (
 	"github.com/mistifyio/mistify/acomm"
 )
 
-// GetResult is the result data for the List handler.
-type GetResult struct {
-	Dataset *Dataset `json:"dataset"`
-}
-
 // Get returns information about a dataset.
 func (z *ZFS) Get(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args CommonArgs
@@ -29,5 +24,5 @@ func (z *ZFS) Get(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 
-	return &GetResult{newDataset(ds)}, nil, nil
+	return &DatasetResult{newDataset(ds)}, nil, nil
 }

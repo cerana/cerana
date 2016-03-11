@@ -35,5 +35,5 @@ func (z *ZFS) Rename(req *acomm.Request) (interface{}, *url.URL, error) {
 	}
 
 	_, err = origin.Rename(args.Name, args.Recursive)
-	return nil, nil, nil
+	return nil, nil, err
 }
