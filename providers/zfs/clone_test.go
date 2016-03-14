@@ -18,7 +18,7 @@ func (s *zfs) TestClone() {
 		{&zfsp.CloneArgs{Name: "fs1/fs2", Origin: "fs1/fs1@snap1"}, eexist},
 		{&zfsp.CloneArgs{Name: "fs1/clone2", Origin: "fs1/fs1@foobar"}, enoent},
 		{&zfsp.CloneArgs{Name: "fs1/clone4", Origin: "fs1/fs1@snap1"}, ""},
-		{&zfsp.CloneArgs{Name: "fs1/clone5", Origin: "fs1/fs1@snap1", Properties: map[string]interface{}{"foo:bar": "baz"}}, ""},
+		{&zfsp.CloneArgs{Name: "fs1/clone5", Origin: "fs1/fs1@snap1", Properties: props{"foo:bar": "baz"}}, ""},
 	}
 
 	for _, test := range tests {

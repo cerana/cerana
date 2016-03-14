@@ -43,6 +43,8 @@ func TestZFS(t *testing.T) {
 	suite.Run(t, new(zfs))
 }
 
+type props map[string]interface{}
+
 func command(name string, arg ...string) *exec.Cmd {
 	cmd := exec.Command(name, arg...)
 	cmd.Stderr = os.Stderr
