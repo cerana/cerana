@@ -78,6 +78,23 @@ func (s *zfs) zfsSetup(pool string) {
 	zfs create $pool/fs/1snap
 	zfs snapshot $pool/fs/1snap@snap
 
+	zfs create $pool/fs/hold_snap
+	zfs snapshot $pool/fs/hold_snap@snap
+	zfs hold hold $pool/fs/hold_snap@snap
+
+	zfs create $pool/fs/unmounted
+	zfs unmount $pool/fs/unmounted
+
+	zfs create $pool/fs/unmounted_children
+	zfs create $pool/fs/unmounted_children/1
+	zfs create $pool/fs/unmounted_children/2
+	zfs unmount $pool/fs/unmounted_children
+
+	zfs snapshot $pool/fs@snap_with_clone
+	zfs clone $pool/fs@snap_with_clone $pool/fs_clone
+	zfs unmount $pool/fs_clone
+
+
 	zfs create $pool/vol
 	zfs create -V 8192 $pool/vol/1snap
 	zfs snapshot $pool/vol/1snap@snap
