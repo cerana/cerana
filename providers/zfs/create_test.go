@@ -17,22 +17,22 @@ func (s *zfs) TestCreate() {
 		err  string
 	}{
 		{&zfsp.CreateArgs{Name: "", Type: fs}, "missing arg: name"},
-		{&zfsp.CreateArgs{Name: "fs1", Type: fs}, eexist},
-		{&zfsp.CreateArgs{Name: "fs1/~1", Type: fs}, einval},
-		{&zfsp.CreateArgs{Name: "fsbadprop", Type: fs, Properties: props{"foo": "bar"}}, einval},
-		{&zfsp.CreateArgs{Name: "foobar/fs1", Type: fs}, enoent},
-		{&zfsp.CreateArgs{Name: "fscreatebad", Type: "asdf"}, "missing or invalid arg: type"},
-		{&zfsp.CreateArgs{Name: "fscreate1", Type: fs}, ""},
-		{&zfsp.CreateArgs{Name: "fscreate2", Type: fs, Properties: props{"foo:bar": "baz"}}, ""},
+		{&zfsp.CreateArgs{Name: "fs/no_type", Type: "asdf"}, "missing or invalid arg: type"},
+
+		{&zfsp.CreateArgs{Name: "fs", Type: fs}, eexist},
+		{&zfsp.CreateArgs{Name: "fs/~1", Type: fs}, einval},
+		{&zfsp.CreateArgs{Name: "fs/bad_prop", Type: fs, Properties: props{"foo": "bar"}}, einval},
+		{&zfsp.CreateArgs{Name: "fs_no_exist/fs", Type: fs}, enoent},
+		{&zfsp.CreateArgs{Name: "fs/basic_fs", Type: fs}, ""},
+		{&zfsp.CreateArgs{Name: "fs/fs_with_props", Type: fs, Properties: props{"foo:bar": "baz"}}, ""},
 
 		{&zfsp.CreateArgs{Name: "", Type: vol, Properties: props{"volsize": 8192}}, "missing arg: name"},
-		{&zfsp.CreateArgs{Name: "vol1", Type: vol, Properties: nil}, "missing or invalid arg: volsize"},
-		{&zfsp.CreateArgs{Name: "vol2", Type: vol, Volsize: 0, Properties: nil}, "missing or invalid arg: volsize"},
-		{&zfsp.CreateArgs{Name: "foovol/vol1", Type: vol, Volsize: 8192, Properties: nil}, enoent},
-		{&zfsp.CreateArgs{Name: "volbadprop", Type: vol, Volsize: 8192, Properties: props{"foo": "bar"}}, einval},
-		{&zfsp.CreateArgs{Name: "vol3", Type: vol, Volsize: 8192, Properties: nil}, ""},
-		{&zfsp.CreateArgs{Name: "fs2/vol1", Type: vol, Volsize: 8192, Properties: nil}, eexist},
-		{&zfsp.CreateArgs{Name: "vol4", Type: vol, Volsize: 1024, Properties: props{"volblocksize": 1024}}, ""},
+		{&zfsp.CreateArgs{Name: "vol/no_size", Type: vol, Properties: nil}, "missing or invalid arg: volsize"},
+		{&zfsp.CreateArgs{Name: "vol/bad_size", Type: vol, Volsize: 0, Properties: nil}, "missing or invalid arg: volsize"},
+		{&zfsp.CreateArgs{Name: "vol/bad_prop", Type: vol, Volsize: 8192, Properties: props{"foo": "bar"}}, einval},
+		{&zfsp.CreateArgs{Name: "vol/1snap", Type: vol, Volsize: 8192, Properties: nil}, eexist},
+		{&zfsp.CreateArgs{Name: "vol/basic_vol", Type: vol, Volsize: 8192, Properties: nil}, ""},
+		{&zfsp.CreateArgs{Name: "vol/vol_with_blocksize", Type: vol, Volsize: 1024, Properties: props{"volblocksize": 1024}}, ""},
 	}
 
 	for _, test := range tests {

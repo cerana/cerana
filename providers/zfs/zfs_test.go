@@ -73,35 +73,16 @@ func (s *zfs) zfsSetup(pool string) {
         truncate -s1G $f
     done
     zpool create $pool ${files[*]}
-    zfs create $pool/fs1
-    zfs create $pool/fs1/fs1
-    zfs create $pool/fs1/fs2
-    zfs create $pool/fs1/fs4
-    zfs snapshot $pool/fs1/fs1@snap1
-    zfs snapshot $pool/fs1/fs2@snap1
-    zfs snapshot $pool/fs1/fs2@snap2
-    zfs snapshot $pool/fs1/fs2@snap3
-    zfs clone $pool/fs1/fs1@snap1 $pool/fs1/fs3
-    zfs hold hold1 $pool/fs1/fs2@snap1
-    zfs hold hold2 $pool/fs1/fs2@snap2
-    zfs unmount $pool/fs1/fs4
-    zfs create $pool/fs2
-    zfs create -V 8192 $pool/fs2/vol1
-    zfs create -b 1024 -V 2048 $pool/fs2/vol2
-    zfs create -V 8192 $pool/fs2/vol4
-    zfs snapshot $pool/fs2/vol1@snap1
-    zfs snapshot $pool/fs2/vol2@snap1
-    zfs snapshot $pool/fs2/vol2@snap2
-    zfs snapshot $pool/fs2/vol2@snap3
-    zfs clone $pool/fs2/vol1@snap1 $pool/fs2/vol3
-    zfs hold hold1 $pool/fs2/vol2@snap1
-    zfs hold hold2 $pool/fs2/vol2@snap2
-    zfs create $pool/fs3
-    zfs create $pool/fs3/fs1
-    zfs create $pool/fs3/fs2
-    zfs create $pool/fs3/fs3
-    zfs snapshot -r $pool/fs3@snap1
-    exit 0
+
+	zfs create $pool/fs
+	zfs create $pool/fs/1snap
+	zfs snapshot $pool/fs/1snap@snap
+
+	zfs create $pool/vol
+	zfs create -V 8192 $pool/vol/1snap
+	zfs snapshot $pool/vol/1snap@snap
+
+	exit 0
     `)
 
 	cmd := command("sudo", "bash", "-c", string(script))
@@ -122,6 +103,14 @@ func (s *zfs) zfsTearDown() {
 		_ = os.Remove(s.files[i])
 	}
 	s.Require().NoError(err)
+}
+
+func unmount(ds string) error {
+	return command("sudo", "zfs", "unmount", ds).Run()
+}
+
+func unhold(tag, snapshot string) error {
+	return command("sudo", "zfs", "release", tag, snapshot).Run()
 }
 
 func (s *zfs) SetupSuite() {
