@@ -41,6 +41,7 @@ func (z *ZFS) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("zfs-get", z.Get)
 	server.RegisterTask("zfs-holds", z.Holds)
 	server.RegisterTask("zfs-list", z.List)
+	server.RegisterTask("zfs-mount", z.Mount)
 	server.RegisterTask("zfs-receive", z.Receive)
 	server.RegisterTask("zfs-rename", z.Rename)
 	server.RegisterTask("zfs-rollback", z.Rollback)
