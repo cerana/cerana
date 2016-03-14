@@ -11,7 +11,7 @@ import (
 // CreateArgs are arguments for the Create handler.
 type CreateArgs struct {
 	Name       string                 `json:"name"`
-	Type       string                 `json:"type"` // gozfs.Dataset[Filesystem,Snapshot,Volume]
+	Type       string                 `json:"type"` // gozfs.Dataset[Filesystem,Volume]
 	Volsize    uint64                 `json:"volsize"`
 	Properties map[string]interface{} `json:"properties"`
 }
