@@ -56,10 +56,10 @@ func (s *zfs) TestClone() {
 			if !s.NotNil(result.Dataset) {
 				continue
 			}
-			s.Equal(result.Dataset.Name, test.args.Name, argsS)
-			s.Equal(result.Dataset.Properties.Origin, test.args.Origin, argsS)
+			s.Equal(test.args.Name, result.Dataset.Name, argsS)
+			s.Equal(test.args.Origin, result.Dataset.Properties.Origin, argsS)
 			for key, value := range test.args.Properties {
-				s.Equal(result.Dataset.Properties.UserDefined[key], value, argsS)
+				s.Equal(value, result.Dataset.Properties.UserDefined[key], argsS)
 			}
 		} else {
 			s.EqualError(err, test.err, argsS)

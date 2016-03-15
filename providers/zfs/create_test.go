@@ -62,13 +62,16 @@ func (s *zfs) TestCreate() {
 			if !s.NotNil(ds, argsS) {
 				continue
 			}
-			s.Equal(ds.Name, test.args.Name, argsS)
-			s.Equal(ds.Properties.Type, test.args.Type, argsS)
+			s.Equal(test.args.Name, ds.Name, argsS)
+			s.Equal(test.args.Type, ds.Properties.Type, argsS)
 			if _, ok := test.args.Properties["foo:bar"]; ok {
-				s.Equal(ds.Properties.UserDefined["foo:bar"], "baz", argsS)
+				s.Equal("baz", ds.Properties.UserDefined["foo:bar"], argsS)
 			}
 			if test.args.Type == vol {
-
+				s.Equal(test.args.Volsize, ds.Properties.Volsize, argsS)
+				if test.args.Properties["volblocksize"] != nil {
+					s.EqualValues(test.args.Properties["volblocksize"], ds.Properties.VolBlockSize, argsS)
+				}
 			}
 		} else {
 			s.EqualError(err, test.err, argsS)
