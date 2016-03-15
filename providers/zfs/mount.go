@@ -3,6 +3,8 @@ package zfs
 import (
 	"errors"
 	"net/url"
+	"strings"
+	"syscall"
 
 	"github.com/mistifyio/go-zfs"
 	"github.com/mistifyio/mistify/acomm"
@@ -29,11 +31,20 @@ func (z *ZFS) Mount(req *acomm.Request) (interface{}, *url.URL, error) {
 
 	ds, err := zfs.GetDataset(args.Name)
 	if err != nil {
+		// Fix errors to be more like what gozfs will probably return
+		if strings.Contains(err.Error(), "dataset does not exist") {
+			err = syscall.ENOENT
+		}
 		return nil, nil, err
 	}
 
 	ds, err = ds.Mount(args.Overlay, nil)
 	if err != nil {
+		// Fix errors to be more like what gozfs will probably return
+		if strings.Contains(err.Error(), "already mounted") {
+			err = syscall.EBUSY
+		}
+
 		return nil, nil, err
 	}
 
