@@ -80,6 +80,11 @@ func (s *zfs) zfsSetup(pool string) {
 	zfs create $pool/fs/1snap
 	zfs snapshot $pool/fs/1snap@snap
 
+	zfs create $pool/fs/3snap
+	zfs snapshot $pool/fs/3snap@snap1
+	zfs snapshot $pool/fs/3snap@snap2
+	zfs snapshot $pool/fs/3snap@snap3
+
 	zfs create $pool/fs/hold_snap
 	zfs snapshot $pool/fs/hold_snap@snap
 	zfs hold hold $pool/fs/hold_snap@snap
