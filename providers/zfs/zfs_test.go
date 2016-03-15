@@ -28,6 +28,8 @@ var (
 	enoent       = syscall.ENOENT.Error()
 	epipe        = syscall.EPIPE.Error()
 	exdev        = syscall.EXDEV.Error()
+
+	longName = strings.Repeat("z", 257)
 )
 
 type zfs struct {
