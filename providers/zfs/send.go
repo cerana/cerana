@@ -7,6 +7,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/mistifyio/gozfs"
+	"github.com/mistifyio/mistify-logrus-ext"
 	"github.com/mistifyio/mistify/acomm"
 )
 
@@ -38,9 +39,7 @@ func (z *ZFS) Send(req *acomm.Request) (interface{}, *url.URL, error) {
 
 	go func() {
 		defer func() {
-			if err := writer.Close(); err != nil {
-				logrus.WithField("error", err).Error("failed to close snapshot stream writer")
-			}
+			logrusx.LogReturnedErr(writer.Close, nil, "failed to close snapshot stream writer")
 		}()
 		if err := ds.Send(writer); err != nil {
 			logrus.WithField("error", err).Error("failed to send snapshot")
