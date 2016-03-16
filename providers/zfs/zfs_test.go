@@ -1,6 +1,7 @@
 package zfs_test
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -10,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mistifyio/gozfs"
 	"github.com/mistifyio/mistify/acomm"
 	"github.com/mistifyio/mistify/provider"
 	zfsp "github.com/mistifyio/mistify/providers/zfs"
@@ -174,4 +176,39 @@ func (s *zfs) TearDownTest() {
 func (s *zfs) TearDownSuite() {
 	s.tracker.Stop()
 	_ = os.RemoveAll(s.dir)
+}
+
+func (s *zfs) TestDatasetMoutpoint() {
+	tests := []struct {
+		name             string
+		mountpointSource string
+		mountpoint       string
+		result           string
+	}{
+		{"foo", "", "", "foo"},
+		{"foo", "foo", "bar", "bar"},
+		{"foo/bar", "foo", "baz", "baz/bar"},
+	}
+
+	for _, test := range tests {
+		testS := fmt.Sprintf("%+v", test)
+		ds := &zfsp.Dataset{
+			Name: test.name,
+			Properties: &gozfs.DatasetProperties{
+				MountpointSource: test.mountpointSource,
+				Mountpoint:       test.mountpoint,
+			},
+		}
+
+		s.Equal(test.result, ds.Mountpoint(), testS)
+	}
+}
+
+func (s *zfs) TestRegisterTasks() {
+	server, err := provider.NewServer(s.config)
+	s.Require().NoError(err)
+
+	s.zfs.RegisterTasks(server)
+
+	s.True(len(server.RegisteredTasks()) > 0)
 }
