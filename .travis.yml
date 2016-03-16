@@ -1,23 +1,37 @@
 language: go
+sudo: required
 dist: trusty
 
 # Versions of Go and deps in the build matrix should test the current in use by
 # mistify-os and the latest release.
+
+env:
+  - V_ZFS=0.6.5.5
 
 go:
   - 1.5.2
   - 1.6
 
 before_install:
+  - sudo apt-get -qq update
   - go get github.com/alecthomas/gometalinter
   - gometalinter --install --update
 
 install:
+  - sudo apt-get install -y --force-yes autoconf dh-autoreconf zlib1g-dev linux-headers-$(uname -r) uuid-dev tree
+  - cd $HOME
+  - curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$V_ZFS/spl-$V_ZFS.tar.gz | tar xz
+  - git clone https://github.com/ClusterHQ/zfs -b libzfs_core-HEAD && (cd zfs && git checkout 2c9b2d6bf312d0ffb4a14c0570fcb8150196a9be)
+  - MAKEFLAGS=-j$(($(grep -c '^processor' /proc/cpuinfo) * 2 + 1))
+  - (cd spl-$V_ZFS && ./configure --prefix=/usr && make && sudo make install)
+  - (cd zfs && ./autogen.sh && ./configure --prefix=/usr --with-spl=/usr/src/spl-$V_ZFS && make && sudo make install)
+  - sudo modprobe zfs
+  - cd $TRAVIS_BUILD_DIR
   - go get -t -v ./...
 
 script:
   - gometalinter --disable-all --enable=goimports --enable=errcheck --enable=vet --enable=gofmt --enable=golint --enable=vetshadow --deadline=30s ./...
-  - go test -v ./...
+  - sudo -E $(which go) test -v ./...
 
 after_success:
   - gometalinter --disable=errcheck --disable=vet --disable=gofmt --disable=golint --disable=vetshadow --deadline=30s ./...
