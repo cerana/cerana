@@ -41,8 +41,8 @@ func (z *ZFS) Send(req *acomm.Request) (interface{}, *url.URL, error) {
 		defer func() {
 			logrusx.LogReturnedErr(writer.Close, nil, "failed to close snapshot stream writer")
 		}()
-		if err := ds.Send(writer); err != nil {
-			logrus.WithField("error", err).Error("failed to send snapshot")
+		if sendErr := ds.Send(writer); sendErr != nil {
+			logrus.WithField("error", sendErr).Error("failed to send snapshot")
 		}
 	}()
 
