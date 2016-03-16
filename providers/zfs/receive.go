@@ -4,6 +4,8 @@ import (
 	"errors"
 	"io"
 	"net/url"
+	"strings"
+	"syscall"
 
 	"github.com/Sirupsen/logrus"
 	zfs "github.com/mistifyio/go-zfs"
@@ -26,7 +28,7 @@ func (z *ZFS) Receive(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.New("missing arg: name")
 	}
 	if req.StreamURL == nil {
-		return nil, nil, errors.New("missing requet StreamURL")
+		return nil, nil, errors.New("missing request stream-url")
 	}
 
 	r, w := io.Pipe()
@@ -38,6 +40,12 @@ func (z *ZFS) Receive(req *acomm.Request) (interface{}, *url.URL, error) {
 	}()
 
 	if _, err := zfs.ReceiveSnapshot(r, args.Name); err != nil {
+		// Fix errors to be more like what gozfs will probably return
+		if strings.Contains(err.Error(), "dataset does not exist") {
+			err = syscall.ENOENT
+		} else if strings.Contains(err.Error(), "exists\nmust specify -F to overwrite") {
+			err = syscall.EEXIST
+		}
 		return nil, nil, err
 	}
 

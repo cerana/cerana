@@ -37,6 +37,7 @@ type zfs struct {
 	pool    string
 	files   []string
 	dir     string
+	config  *provider.Config
 	tracker *acomm.Tracker
 	zfs     *zfsp.ZFS
 }
@@ -152,6 +153,7 @@ func (s *zfs) SetupSuite() {
 	v.Set("log_level", "fatal")
 	s.Require().NoError(config.LoadConfig())
 	s.Require().NoError(config.SetupLogging())
+	s.config = config
 
 	tracker, err := acomm.NewTracker(filepath.Join(s.dir, "tracker.sock"), nil, 5*time.Second)
 	s.Require().NoError(err)
