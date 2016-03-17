@@ -3,6 +3,10 @@
 *.a
 *.so
 
+# Compiled cmds
+cmd/coordinator-cli/coordinator-cli
+cmd/coordinator/coordinator
+
 # Folders
 _obj
 _test
