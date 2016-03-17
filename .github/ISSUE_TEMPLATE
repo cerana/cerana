@@ -1,22 +1,20 @@
-Description:
+#Issue Description
 
 
-Output of `uname -a`:
+#Steps to Reproduce (If applicable):
 
 
-Environment (physical, VM, cloud provider, etc.):
+#Acceptance Criteria (How do we know when this is done?)
 
 
-Steps to Reproduce:
-1.
-2.
-3.
+#Related Tickets
 
 
-Results:
+#Additional Info
+##Output of `uname -a`:
 
 
-Expected Results:
+##Environment (physical, VM, cloud provider, etc.):
 
 
-Additional Info:
+##Other Relevant Info:
