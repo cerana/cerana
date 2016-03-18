@@ -6,6 +6,7 @@
 # Compiled cmds
 cmd/coordinator-cli/coordinator-cli
 cmd/coordinator/coordinator
+cmd/zfs-provider/zfs-provider
 
 # Folders
 _obj
