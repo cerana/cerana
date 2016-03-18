@@ -18,10 +18,10 @@ type Dataset struct {
 	DMUObjsetStats *gozfs.DMUObjsetStats
 }
 
-// Mountpoint returns the mountpoint of the dataset. It is based off of the
-// dataset mountpoint property joined to the dataset name with the
-// mountpointsource property trimmed from the name.
+// Mountpoint returns the resolved mountpoint of the dataset.
 func (d *Dataset) Mountpoint() string {
+	// dataset mountpoint property joined to the dataset name with the
+	// mountpointsource property trimmed from the name.
 	defaultPart, _ := filepath.Rel(d.Properties.MountpointSource, d.Name)
 	return filepath.Join(d.Properties.Mountpoint, defaultPart)
 }
