@@ -66,7 +66,6 @@ type argmap map[string]interface{}
 
 func (am argmap) set(keys []string, value interface{}) error {
 	if len(keys) == 0 {
-		fmt.Println("no more keys and returning")
 		return nil
 	}
 
