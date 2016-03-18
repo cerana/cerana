@@ -7,13 +7,13 @@ import (
 	"github.com/mistifyio/mistify/acomm"
 )
 
-// ListUnitsResult is the result of the ListUnits handler.
-type ListUnitsResult struct {
+// ListResult is the result of the List handler.
+type ListResult struct {
 	Units []dbus.UnitStatus `json:"units"`
 }
 
-// ListUnits retuns a list of unit statuses.
-func (s *Systemd) ListUnits(req *acomm.Request) (interface{}, *url.URL, error) {
+// List retuns a list of unit statuses.
+func (s *Systemd) List(req *acomm.Request) (interface{}, *url.URL, error) {
 	dconn, err := dbus.New()
 	if err != nil {
 		return nil, nil, err
@@ -21,5 +21,5 @@ func (s *Systemd) ListUnits(req *acomm.Request) (interface{}, *url.URL, error) {
 	defer dconn.Close()
 
 	list, err := dconn.ListUnits()
-	return &ListUnitsResult{list}, nil, err
+	return &ListResult{list}, nil, err
 }
