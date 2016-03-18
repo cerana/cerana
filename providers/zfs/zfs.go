@@ -50,7 +50,7 @@ func (z *ZFS) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("zfs-unmount", z.Unmount)
 }
 
-// fixPropertyTypes attempts to convert the underlying data types in a property
+// fixPropertyTypesFromJSON attempts to convert the underlying data types in a property
 // map that came from JSON to what zfs expects.
 func fixPropertyTypesFromJSON(properties map[string]interface{}) error {
 	for key, origValue := range properties {
