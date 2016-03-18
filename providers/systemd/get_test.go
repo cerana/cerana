@@ -12,8 +12,9 @@ func (s *sd) TestGet() {
 		name string
 		err  string
 	}{
-		{"dbus.service", ""},
+		{"", "missing arg: name"},
 		{"doesnotexist.service", "unit not found"},
+		{"dbus.service", ""},
 	}
 
 	for _, test := range tests {
