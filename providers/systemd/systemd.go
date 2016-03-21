@@ -16,6 +16,7 @@ type Systemd struct{}
 
 // RegisterTasks registers all of Systemd's task handlers with the server.
 func (s *Systemd) RegisterTasks(server *provider.Server) {
+	server.RegisterTask("systemd-disable", s.Get)
 	server.RegisterTask("systemd-get", s.Get)
 	server.RegisterTask("systemd-list", s.List)
 	server.RegisterTask("systemd-restart", s.Start)
