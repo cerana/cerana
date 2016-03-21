@@ -1,5 +1,5 @@
 [Unit]
-Description=Systemd provider test - Fail
+Description=Systemd provider test - Exit 1
 
 [Service]
 ExecStart=/bin/sh -c "exit 1"
