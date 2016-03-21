@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	"github.com/mistifyio/mistify/acomm"
-	"github.com/mistifyio/mistify/providers/systemd"
+	systemdp "github.com/mistifyio/mistify/providers/systemd"
 )
 
-func (s *sd) TestGet() {
+func (s *systemd) TestGet() {
 	tests := []struct {
 		name string
 		err  string
@@ -18,7 +18,7 @@ func (s *sd) TestGet() {
 	}
 
 	for _, test := range tests {
-		args := &systemd.GetArgs{test.name}
+		args := &systemdp.GetArgs{test.name}
 		argsS := fmt.Sprintf("%+v", test)
 
 		req, err := acomm.NewRequest("zfs-exists", "unix:///tmp/foobar", "", args, nil, nil)
@@ -30,7 +30,7 @@ func (s *sd) TestGet() {
 			if !s.NoError(err, argsS) {
 				continue
 			}
-			result, ok := res.(*systemd.GetResult)
+			result, ok := res.(*systemdp.GetResult)
 			if !s.True(ok, argsS) {
 				continue
 			}

@@ -2,16 +2,16 @@ package systemd_test
 
 import (
 	"github.com/mistifyio/mistify/acomm"
-	"github.com/mistifyio/mistify/providers/systemd"
+	systemdp "github.com/mistifyio/mistify/providers/systemd"
 )
 
-func (s *sd) TestList() {
+func (s *systemd) TestList() {
 	res, streamURL, err := s.systemd.List(&acomm.Request{})
 	s.Nil(streamURL)
 	if !s.NoError(err) {
 		return
 	}
-	result, ok := res.(*systemd.ListResult)
+	result, ok := res.(*systemdp.ListResult)
 	if !s.True(ok) {
 		return
 	}

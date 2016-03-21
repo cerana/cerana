@@ -5,17 +5,17 @@ import (
 	"testing"
 
 	"github.com/coreos/go-systemd/dbus"
-	"github.com/mistifyio/mistify/providers/systemd"
+	systemdp "github.com/mistifyio/mistify/providers/systemd"
 	"github.com/stretchr/testify/suite"
 )
 
-type sd struct {
+type systemd struct {
 	suite.Suite
-	systemd *systemd.Systemd
+	systemd *systemdp.Systemd
 }
 
-func TestSd(t *testing.T) {
-	suite.Run(t, new(sd))
+func TestSystemd(t *testing.T) {
+	suite.Run(t, new(systemd))
 }
 
 func enable(name string) error {

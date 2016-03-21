@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	"github.com/mistifyio/mistify/acomm"
-	"github.com/mistifyio/mistify/providers/systemd"
+	systemdp "github.com/mistifyio/mistify/providers/systemd"
 )
 
-func (s *sd) TestStart() {
+func (s *systemd) TestStart() {
 	exit1Svc := "systemd-test-fail.service"
 	s.Require().NoError(enable(exit1Svc))
 	defer func() {
@@ -20,13 +20,13 @@ func (s *sd) TestStart() {
 		err  string
 	}{
 		{"", "", "missing arg: name"},
-		{"doesnotexist.service", systemd.ModeFail, "unit not found"},
-		{"dbus.service", systemd.ModeFail, ""},
-		{exit1Svc, systemd.ModeFail, ""},
+		{"doesnotexist.service", systemdp.ModeFail, "unit not found"},
+		{"dbus.service", systemdp.ModeFail, ""},
+		{exit1Svc, systemdp.ModeFail, ""},
 	}
 
 	for _, test := range tests {
-		args := &systemd.StartArgs{test.name, test.mode}
+		args := &systemdp.StartArgs{test.name, test.mode}
 		argsS := fmt.Sprintf("%+v", test)
 
 		req, err := acomm.NewRequest("zfs-exists", "unix:///tmp/foobar", "", args, nil, nil)
@@ -38,7 +38,7 @@ func (s *sd) TestStart() {
 			if !s.NoError(err, argsS) {
 				continue
 			}
-			result, ok := res.(*systemd.StartResult)
+			result, ok := res.(*systemdp.StartResult)
 			if !s.True(ok, argsS) {
 				continue
 			}
