@@ -2,6 +2,15 @@ package systemd
 
 import "github.com/mistifyio/mistify/provider"
 
+// Unit start modes
+const (
+	ModeReplace    = "replace"
+	ModeFail       = "fail"
+	ModeIsolate    = "isolate"
+	ModeIgnoreDeps = "ignore-dependencies"
+	ModeIgnoreReqs = "ignore-requirements"
+)
+
 // Systemd is a provider of systemd functionality
 type Systemd struct{}
 
@@ -9,4 +18,5 @@ type Systemd struct{}
 func (s *Systemd) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("systemd-list", s.List)
 	server.RegisterTask("systemd-get", s.Get)
+	server.RegisterTask("systemd-start", s.Start)
 }
