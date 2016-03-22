@@ -11,14 +11,14 @@ import (
 func main() {
 	log.SetFormatter(&logx.MistifyFormatter{})
 
-	config := provider.NewConfig(nil, nil)
+	config := systemd.NewConfig(nil, nil)
 	flag.StringP("unit-file-dir", "d", "", "directory in which to create unit files")
 	flag.Parse()
 
 	dieOnError(config.LoadConfig())
 	dieOnError(config.SetupLogging())
 
-	server, err := provider.NewServer(config)
+	server, err := provider.NewServer(config.Config)
 	dieOnError(err)
 	s := systemd.New(config)
 	s.RegisterTasks(server)

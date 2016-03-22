@@ -18,8 +18,10 @@ import (
 type systemd struct {
 	suite.Suite
 	dir     string
-	config  *provider.Config
+	config  *systemdp.Config
 	systemd *systemdp.Systemd
+	flagset *pflag.FlagSet
+	viper   *viper.Viper
 }
 
 func TestSystemd(t *testing.T) {
@@ -45,7 +47,7 @@ func (s *systemd) SetupSuite() {
 
 	v := viper.New()
 	flagset := pflag.NewFlagSet("systemd", pflag.PanicOnError)
-	config := provider.NewConfig(flagset, v)
+	config := systemdp.NewConfig(flagset, v)
 	s.Require().NoError(flagset.Parse([]string{}))
 	v.Set("service_name", "systemd-provider-test")
 	v.Set("socket_dir", s.dir)
@@ -55,6 +57,8 @@ func (s *systemd) SetupSuite() {
 	s.Require().NoError(config.LoadConfig())
 	s.Require().NoError(config.SetupLogging())
 	s.config = config
+	s.flagset = flagset
+	s.viper = v
 
 	s.systemd = systemdp.New(config)
 }
@@ -64,7 +68,7 @@ func (s *systemd) TearDownSuite() {
 }
 
 func (s *systemd) TestRegisterTasks() {
-	server, err := provider.NewServer(s.config)
+	server, err := provider.NewServer(s.config.Config)
 	s.Require().NoError(err)
 
 	s.systemd.RegisterTasks(server)

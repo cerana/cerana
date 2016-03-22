@@ -20,9 +20,6 @@ func (s *systemd) TestCreate() {
 		{"empty.service", nil, ""},
 		{"nonempty.service", []*unit.UnitOption{{"foo", "bar", "baz"}}, ""},
 		{"nonempty.service", []*unit.UnitOption{{"foo2", "bar2", "baz2"}}, "unit file already exists"}, // duplicate
-		{"../../../../../../relative.service", []*unit.UnitOption{{"foo", "bar", "baz"}}, ""},
-		{"..", []*unit.UnitOption{{"foo", "bar", "baz"}}, "invalid filename"},
-		{".", []*unit.UnitOption{{"foo", "bar", "baz"}}, "invalid filename"},
 	}
 
 	for _, test := range tests {

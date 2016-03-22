@@ -21,9 +21,9 @@ type Systemd struct {
 }
 
 // New creates a new instance of Systemd.
-func New(config *provider.Config) *Systemd {
+func New(config *Config) *Systemd {
 	return &Systemd{
-		config: &Config{config},
+		config: config,
 	}
 }
 
