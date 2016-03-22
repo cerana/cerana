@@ -3,21 +3,64 @@ package systemd_test
 import (
 	"errors"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/coreos/go-systemd/dbus"
+	"github.com/mistifyio/mistify/provider"
 	systemdp "github.com/mistifyio/mistify/providers/systemd"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/suite"
 )
 
 type systemd struct {
 	suite.Suite
+	dir     string
+	config  *provider.Config
 	systemd *systemdp.Systemd
 }
 
 func TestSystemd(t *testing.T) {
 	suite.Run(t, new(systemd))
+}
+
+func (s *systemd) SetupSuite() {
+	dir, err := ioutil.TempDir("", "systemd-provider-test-")
+	s.Require().NoError(err)
+	s.dir = dir
+
+	// Put premade unit files into dir provider was configured with so they can
+	// be enabled by provider.
+	files, err := ioutil.ReadDir("./_test")
+	s.Require().NoError(err)
+	for _, file := range files {
+		oldPath, err := filepath.Abs(filepath.Join("./_test", file.Name()))
+		s.Require().NoError(err)
+		newPath, err := filepath.Abs(filepath.Join(s.dir, file.Name()))
+		s.Require().NoError(err)
+		s.Require().NoError(os.Link(oldPath, newPath))
+	}
+
+	v := viper.New()
+	flagset := pflag.NewFlagSet("systemd", pflag.PanicOnError)
+	config := provider.NewConfig(flagset, v)
+	s.Require().NoError(flagset.Parse([]string{}))
+	v.Set("service_name", "zfs-provider-test")
+	v.Set("socket_dir", s.dir)
+	v.Set("coordinator_url", "unix:///tmp/foobar")
+	v.Set("unit_file_dir", s.dir)
+	v.Set("log_level", "fatal")
+	s.Require().NoError(config.LoadConfig())
+	s.Require().NoError(config.SetupLogging())
+	s.config = config
+
+	s.systemd = systemdp.New(config)
+}
+
+func (s *systemd) TearDownSuite() {
+	_ = os.RemoveAll(s.dir)
 }
 
 func enable(name string) error {

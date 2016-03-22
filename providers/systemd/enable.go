@@ -10,9 +10,9 @@ import (
 
 // EnableArgs are arguments for the disable handler.
 type EnableArgs struct {
-	Filepath string `json:"filepath"`
-	Runtime  bool   `json:"runtime"`
-	Force    bool   `json:"force"`
+	Name    string `json:"name"`
+	Runtime bool   `json:"runtime"`
+	Force   bool   `json:"force"`
 }
 
 // Enable disables a service.
@@ -21,8 +21,13 @@ func (s *Systemd) Enable(req *acomm.Request) (interface{}, *url.URL, error) {
 	if err := req.UnmarshalArgs(&args); err != nil {
 		return nil, nil, err
 	}
-	if args.Filepath == "" {
-		return nil, nil, errors.New("missing arg: filepath")
+	if args.Name == "" {
+		return nil, nil, errors.New("missing arg: name")
+	}
+
+	unitFilePath, err := s.config.UnitFilePath(args.Name)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	dconn, err := dbus.New()
@@ -31,6 +36,6 @@ func (s *Systemd) Enable(req *acomm.Request) (interface{}, *url.URL, error) {
 	}
 	defer dconn.Close()
 
-	_, _, err = dconn.EnableUnitFiles([]string{args.Filepath}, args.Runtime, args.Force)
+	_, _, err = dconn.EnableUnitFiles([]string{unitFilePath}, args.Runtime, args.Force)
 	return nil, nil, err
 }

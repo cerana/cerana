@@ -1,8 +1,11 @@
 package systemd
 
-import "github.com/mistifyio/mistify/provider"
+import (
+	"github.com/mistifyio/mistify/acomm"
+	"github.com/mistifyio/mistify/provider"
+)
 
-// Unit start modes
+// Unit start modes.
 const (
 	ModeReplace    = "replace"
 	ModeFail       = "fail"
@@ -11,8 +14,18 @@ const (
 	ModeIgnoreReqs = "ignore-requirements"
 )
 
-// Systemd is a provider of systemd functionality
-type Systemd struct{}
+// Systemd is a provider of systemd functionality.
+type Systemd struct {
+	config  *Config
+	tracker *acomm.Tracker
+}
+
+// New creates a new instance of Systemd.
+func New(config *provider.Config) *Systemd {
+	return &Systemd{
+		config: &Config{config},
+	}
+}
 
 // RegisterTasks registers all of Systemd's task handlers with the server.
 func (s *Systemd) RegisterTasks(server *provider.Server) {

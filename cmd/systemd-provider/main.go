@@ -12,6 +12,7 @@ func main() {
 	log.SetFormatter(&logx.MistifyFormatter{})
 
 	config := provider.NewConfig(nil, nil)
+	flag.StringP("unit-file-dir", "d", "", "directory in which to create unit files")
 	flag.Parse()
 
 	dieOnError(config.LoadConfig())
@@ -19,8 +20,8 @@ func main() {
 
 	server, err := provider.NewServer(config)
 	dieOnError(err)
-	z := &systemd.Systemd{}
-	z.RegisterTasks(server)
+	s := systemd.New(config)
+	s.RegisterTasks(server)
 
 	if len(server.RegisteredTasks()) != 0 {
 		dieOnError(server.Start())

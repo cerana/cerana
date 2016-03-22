@@ -2,7 +2,6 @@ package systemd_test
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/mistifyio/mistify/acomm"
 	systemdp "github.com/mistifyio/mistify/providers/systemd"
@@ -14,22 +13,18 @@ func (s *systemd) TestEnable() {
 	}()
 
 	tests := []struct {
-		filename string
-		runtime  bool
-		force    bool
-		err      string
+		name    string
+		runtime bool
+		force   bool
+		err     string
 	}{
-		{"", false, false, "missing arg: filepath"},
+		{"", false, false, "missing arg: name"},
 		{"doesnotexist.service", false, false, "No such file or directory"},
 		{"systemd-test-loop.service", false, false, ""},
 	}
 
 	for _, test := range tests {
-		fullpath := ""
-		if test.filename != "" {
-			fullpath, _ = filepath.Abs(filepath.Join("./_test", test.filename))
-		}
-		args := &systemdp.EnableArgs{fullpath, test.runtime, test.force}
+		args := &systemdp.EnableArgs{test.name, test.runtime, test.force}
 		argsS := fmt.Sprintf("%+v", test)
 
 		req, err := acomm.NewRequest("zfs-enable", "unix:///tmp/foobar", "", args, nil, nil)
