@@ -29,6 +29,7 @@ func New(config *provider.Config) *Systemd {
 
 // RegisterTasks registers all of Systemd's task handlers with the server.
 func (s *Systemd) RegisterTasks(server *provider.Server) {
+	server.RegisterTask("systemd-create", s.Disable)
 	server.RegisterTask("systemd-disable", s.Disable)
 	server.RegisterTask("systemd-enable", s.Enable)
 	server.RegisterTask("systemd-get", s.Get)

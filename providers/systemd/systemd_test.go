@@ -47,7 +47,7 @@ func (s *systemd) SetupSuite() {
 	flagset := pflag.NewFlagSet("systemd", pflag.PanicOnError)
 	config := provider.NewConfig(flagset, v)
 	s.Require().NoError(flagset.Parse([]string{}))
-	v.Set("service_name", "zfs-provider-test")
+	v.Set("service_name", "systemd-provider-test")
 	v.Set("socket_dir", s.dir)
 	v.Set("coordinator_url", "unix:///tmp/foobar")
 	v.Set("unit_file_dir", s.dir)
@@ -61,6 +61,15 @@ func (s *systemd) SetupSuite() {
 
 func (s *systemd) TearDownSuite() {
 	_ = os.RemoveAll(s.dir)
+}
+
+func (s *systemd) TestRegisterTasks() {
+	server, err := provider.NewServer(s.config)
+	s.Require().NoError(err)
+
+	s.systemd.RegisterTasks(server)
+
+	s.True(len(server.RegisteredTasks()) > 0)
 }
 
 func enable(name string) error {

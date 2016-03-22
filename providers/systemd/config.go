@@ -26,6 +26,9 @@ func (c *Config) UnitFilePath(name string) (string, error) {
 		return "", err
 	}
 	name = filepath.Base(name)
+	if name == "." || name == ".." {
+		return "", errors.New("invalid filename")
+	}
 	return filepath.Abs(filepath.Join(unitFileDir, name))
 }
 
