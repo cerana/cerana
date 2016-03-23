@@ -1,6 +1,6 @@
 language: go
 sudo: required
-dist: trusty
+dist: wily
 
 # Versions of Go and deps in the build matrix should test the current in use by
 # mistify-os and the latest release.
@@ -30,11 +30,11 @@ install:
   - go get -t -v ./...
 
 script:
-  - gometalinter --disable-all --enable=goimports --enable=errcheck --enable=vet --enable=gofmt --enable=golint --enable=vetshadow --deadline=30s ./...
+  - gometalinter --disable-all --enable=goimports --enable=errcheck --enable=vet --enable=gofmt --enable=golint --enable=vetshadow --deadline=30s -j $(($(nproc) + 1)) ./...
   - sudo -E $(which go) test -v ./...
 
 after_success:
-  - gometalinter --disable=errcheck --disable=vet --disable=gofmt --disable=golint --disable=vetshadow --deadline=30s ./...
+  - gometalinter --disable=errcheck --disable=vet --disable=gofmt --disable=golint --disable=vetshadow --deadline=30s -j $(($(nproc) + 1)) ./...
 
 notifications:
   email: false
