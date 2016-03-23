@@ -24,7 +24,7 @@ func (s *systemd) TestDisable() {
 	}
 
 	for _, test := range tests {
-		args := &systemdp.DisableArgs{test.name, test.runtime}
+		args := &systemdp.DisableArgs{Name: test.name, Runtime: test.runtime}
 		argsS := fmt.Sprintf("%+v", test)
 
 		req, err := acomm.NewRequest("zfs-disable", "unix:///tmp/foobar", "", args, nil, nil)

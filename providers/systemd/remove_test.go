@@ -21,7 +21,7 @@ func (s *systemd) TestRemove() {
 	}
 
 	for _, test := range tests {
-		args := &systemdp.RemoveArgs{test.name}
+		args := &systemdp.RemoveArgs{Name: test.name}
 		argsS := fmt.Sprintf("%+v", args)
 
 		unitpath := s.dir + "/" + test.name

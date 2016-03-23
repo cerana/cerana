@@ -35,7 +35,7 @@ func (s *systemd) TestActions() {
 	}
 
 	for _, test := range tests {
-		args := &systemdp.ActionArgs{test.name, test.mode}
+		args := &systemdp.ActionArgs{Name: test.name, Mode: test.mode}
 		argsS := fmt.Sprintf("%+v", test)
 
 		req, err := acomm.NewRequest("zfs-"+test.action, "unix:///tmp/foobar", "", args, nil, nil)

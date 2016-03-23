@@ -59,7 +59,7 @@ func (s *Systemd) systemdAction(action string, req *acomm.Request) (interface{},
 
 	// Run the action. Ignore jobid since we are waiting for the result; once a
 	// job is completed, the jobid is meaningless.
-	if _, err := actionFn(args.Name, args.Mode, resultChan); err != nil {
+	if _, err = actionFn(args.Name, args.Mode, resultChan); err != nil {
 		if strings.Contains(err.Error(), "No such file or directory") {
 			err = errors.New("unit not found")
 		}

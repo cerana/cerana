@@ -32,11 +32,14 @@ func (s *Systemd) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 
-	if _, err := os.Stat(unitFilePath); err == nil {
+	if _, err = os.Stat(unitFilePath); err == nil {
 		return nil, nil, errors.New("unit file already exists")
 	}
 
 	unitFileContents, err := ioutil.ReadAll(unit.Serialize(args.UnitOptions))
+	if err != nil {
+		return nil, nil, err
+	}
 	// TODO: Sort out file permissions
 	return nil, nil, ioutil.WriteFile(unitFilePath, unitFileContents, os.ModePerm)
 }

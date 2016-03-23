@@ -23,7 +23,7 @@ func (s *systemd) TestCreate() {
 	}
 
 	for _, test := range tests {
-		args := &systemdp.CreateArgs{test.name, test.options}
+		args := &systemdp.CreateArgs{Name: test.name, UnitOptions: test.options}
 		argsS := fmt.Sprintf("%+v", args)
 		req, err := acomm.NewRequest("zfs-create", "unix:///tmp/foobar", "", args, nil, nil)
 		s.Require().NoError(err, argsS)

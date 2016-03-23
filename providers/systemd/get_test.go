@@ -18,7 +18,7 @@ func (s *systemd) TestGet() {
 	}
 
 	for _, test := range tests {
-		args := &systemdp.GetArgs{test.name}
+		args := &systemdp.GetArgs{Name: test.name}
 		argsS := fmt.Sprintf("%+v", test)
 
 		req, err := acomm.NewRequest("zfs-exists", "unix:///tmp/foobar", "", args, nil, nil)

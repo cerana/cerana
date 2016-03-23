@@ -69,6 +69,7 @@ func (c *Config) Validate() error {
 	return nil
 }
 
+// LoadConfig loads and validates the Systemd provider config
 func (c *Config) LoadConfig() error {
 	if err := c.Config.LoadConfig(); err != nil {
 		return err

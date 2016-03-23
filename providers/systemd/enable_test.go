@@ -24,7 +24,7 @@ func (s *systemd) TestEnable() {
 	}
 
 	for _, test := range tests {
-		args := &systemdp.EnableArgs{test.name, test.runtime, test.force}
+		args := &systemdp.EnableArgs{Name: test.name, Runtime: test.runtime, Force: test.force}
 		argsS := fmt.Sprintf("%+v", test)
 
 		req, err := acomm.NewRequest("zfs-enable", "unix:///tmp/foobar", "", args, nil, nil)

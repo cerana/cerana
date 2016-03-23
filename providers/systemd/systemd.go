@@ -1,9 +1,6 @@
 package systemd
 
-import (
-	"github.com/mistifyio/mistify/acomm"
-	"github.com/mistifyio/mistify/provider"
-)
+import "github.com/mistifyio/mistify/provider"
 
 // Unit start modes.
 const (
@@ -16,8 +13,7 @@ const (
 
 // Systemd is a provider of systemd functionality.
 type Systemd struct {
-	config  *Config
-	tracker *acomm.Tracker
+	config *Config
 }
 
 // New creates a new instance of Systemd.
