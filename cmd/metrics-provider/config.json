@@ -1,0 +1,4 @@
+{
+    "service_name": "metrics-provider",
+    "coordinator_url": "unix:///tmp/mistify/coordinator/coordinator.sock"
+}
