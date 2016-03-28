@@ -35,10 +35,10 @@ func (s *systemd) SetupSuite() {
 
 	// Put premade unit files into dir provider was configured with so they can
 	// be enabled by provider.
-	files, err := ioutil.ReadDir("./_test")
+	files, err := ioutil.ReadDir("./_test_data")
 	s.Require().NoError(err)
 	for _, file := range files {
-		oldPath, err := filepath.Abs(filepath.Join("./_test", file.Name()))
+		oldPath, err := filepath.Abs(filepath.Join("./_test_data", file.Name()))
 		s.Require().NoError(err)
 		newPath, err := filepath.Abs(filepath.Join(s.dir, file.Name()))
 		s.Require().NoError(err)
@@ -77,7 +77,7 @@ func (s *systemd) TestRegisterTasks() {
 }
 
 func enable(name string) error {
-	svcPath, err := filepath.Abs(filepath.Join("./_test", name))
+	svcPath, err := filepath.Abs(filepath.Join("./_test_data", name))
 	if err != nil {
 		return err
 	}

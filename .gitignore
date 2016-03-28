@@ -8,5 +8,9 @@ cmd/zfs-provider/zfs-provider
 *.swp
 *~
 
+# Test files
+*.test
+test.out
+
 # Local files and directories
 .vagrant

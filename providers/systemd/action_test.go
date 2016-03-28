@@ -9,9 +9,9 @@ import (
 )
 
 func (s *systemd) TestActions() {
-	s.Require().NoError(enableAll("./_test"))
+	s.Require().NoError(enableAll("./_test_data"))
 	defer func() {
-		s.Require().NoError(disableAll("./_test"))
+		s.Require().NoError(disableAll("./_test_data"))
 	}()
 
 	tests := []struct {
