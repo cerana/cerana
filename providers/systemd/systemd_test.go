@@ -2,6 +2,7 @@ package systemd_test
 
 import (
 	"errors"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -42,7 +43,7 @@ func (s *systemd) SetupSuite() {
 		s.Require().NoError(err)
 		newPath, err := filepath.Abs(filepath.Join(s.dir, file.Name()))
 		s.Require().NoError(err)
-		s.Require().NoError(os.Link(oldPath, newPath))
+		s.Require().NoError(copyFile(oldPath, newPath))
 	}
 
 	v := viper.New()
@@ -134,4 +135,26 @@ func disableAll(dir string) error {
 		_ = disable(file.Name())
 	}
 	return nil
+}
+
+func copyFile(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+	out, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		cerr := out.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
+	if _, err = io.Copy(out, in); err != nil {
+		return err
+	}
+	return out.Sync()
 }
