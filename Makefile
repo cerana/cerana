@@ -1,4 +1,5 @@
 SHELL := /bin/bash
+IMAGE := mistifyio/mistify-os:zfs-stable-api
 
 # Recursive wildcard function
 rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) $(filter $(subst *,%,$2),$d))
@@ -24,15 +25,11 @@ testOutputs := $(addsuffix test.out,$(pkgdirs))
 .PHONY: test
 test: $(testOutputs)
 
-# Force the test targets to run. For some reason, just using phony doesn't work.
-FORCE:
-
 # Run a package's test suite in a container and collect the output.
 .SECONDEXPANSION:
-.PHONY: $(testOutputs)
-$(testOutputs): %/test.out: $$(call testBinFromDir,%) FORCE
+$(testOutputs): %/test.out: $$(call testBinFromDir,%)
 	flock /dev/stdout -c 'echo "RUN   $<"'
-	cid=$(shell docker run -dti -v "$(CURDIR):/mistify:ro" -v /sys/fs/cgroup:/sys/fs/cgroup:ro --name $(notdir $<) mistifyio/mistify-os) && \
+	cid=$(shell docker run -dti -v "$(CURDIR):/mistify:ro" -v /sys/fs/cgroup:/sys/fs/cgroup:ro --privileged --device /dev/zfs:/dev/zfs --name $(notdir $<) $(IMAGE)) && \
 	test -n $(cid) && \
 	sleep .25 && \
 	docker exec $$cid sh -c "cd /mistify; cd $(@D); ./$(notdir $<) -test.v" &> $@; \
@@ -43,11 +40,13 @@ $(testOutputs): %/test.out: $$(call testBinFromDir,%) FORCE
 	exit $$ret
 
 # Build a package's test binaries. Done outside the container so it can be used
-# with the baes MistifyOS instead of the SDK.
+# with the base MistifyOS instead of the SDK. Always for a rebuild.
 .SECONDARY: $(testBins)
-$(testBins): %.test:
+$(testBins): %.test: FORCE
 	echo BUILD $@
 	cd $(dir $@) && flock -s /dev/stdout go test -c
+
+FORCE:
 
 clean:
 	go clean ./...
