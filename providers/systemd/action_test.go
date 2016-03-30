@@ -38,7 +38,7 @@ func (s *systemd) TestActions() {
 		args := &systemdp.ActionArgs{Name: test.name, Mode: test.mode}
 		argsS := fmt.Sprintf("%+v", test)
 
-		req, err := acomm.NewRequest("zfs-"+test.action, "unix:///tmp/foobar", "", args, nil, nil)
+		req, err := acomm.NewRequest("systemd-"+test.action, "unix:///tmp/foobar", "", args, nil, nil)
 		s.Require().NoError(err, argsS)
 
 		var fn func(*acomm.Request) (interface{}, *url.URL, error)

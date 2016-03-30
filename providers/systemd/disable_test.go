@@ -27,7 +27,7 @@ func (s *systemd) TestDisable() {
 		args := &systemdp.DisableArgs{Name: test.name, Runtime: test.runtime}
 		argsS := fmt.Sprintf("%+v", test)
 
-		req, err := acomm.NewRequest("zfs-disable", "unix:///tmp/foobar", "", args, nil, nil)
+		req, err := acomm.NewRequest("systemd-disable", "unix:///tmp/foobar", "", args, nil, nil)
 		s.Require().NoError(err, argsS)
 
 		res, streamURL, err := s.systemd.Disable(req)

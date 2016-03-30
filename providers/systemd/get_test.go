@@ -21,7 +21,7 @@ func (s *systemd) TestGet() {
 		args := &systemdp.GetArgs{Name: test.name}
 		argsS := fmt.Sprintf("%+v", test)
 
-		req, err := acomm.NewRequest("zfs-exists", "unix:///tmp/foobar", "", args, nil, nil)
+		req, err := acomm.NewRequest("systemd-exists", "unix:///tmp/foobar", "", args, nil, nil)
 		s.Require().NoError(err, argsS)
 
 		res, streamURL, err := s.systemd.Get(req)

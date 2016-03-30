@@ -32,7 +32,7 @@ func (s *systemd) TestRemove() {
 			s.NoError(f.Close())
 		}
 
-		req, err := acomm.NewRequest("zfs-remove", "unix:///tmp/foobar", "", args, nil, nil)
+		req, err := acomm.NewRequest("systemd-remove", "unix:///tmp/foobar", "", args, nil, nil)
 		s.Require().NoError(err, argsS)
 
 		res, streamURL, err := s.systemd.Remove(req)
