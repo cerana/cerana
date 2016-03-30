@@ -7,12 +7,14 @@ import (
 	"github.com/shirou/gopsutil/disk"
 )
 
+// DiskResult is the result for the Disk handler.
 type DiskResult struct {
 	IO         map[string]disk.DiskIOCountersStat `json:"io"`
 	Partitions []disk.DiskPartitionStat           `json:"partitions"`
 	Usage      []*disk.DiskUsageStat              `json:"usage"`
 }
 
+// Disk returns information about the disk partitions, io, and usage.
 func (m *Metrics) Disk(req *acomm.Request) (interface{}, *url.URL, error) {
 	io, err := disk.DiskIOCounters()
 	if err != nil {
