@@ -29,8 +29,10 @@ install:
   - cd $TRAVIS_BUILD_DIR
   - go get -t -v ./...
 
-script:
+before_script:
   - gometalinter --disable-all --enable=goimports --enable=errcheck --enable=vet --enable=gofmt --enable=golint --enable=vetshadow --deadline=30s -j $(($(nproc) + 1)) ./...
+
+script:
   - make test
 
 after_success:
