@@ -26,10 +26,17 @@ testOutputs := $(addsuffix test.out,$(pkgdirs))
 test: $(testOutputs)
 
 # Run a package's test suite in a container and collect the output.
+# Use a custom tmp directory so zpool commands work, which require paths
+# relative to the host. Mount /tmp for that custom tmp directory to work.
+# Mount the cgroup fs for systemd to work. Use SYS_ADMIN cap for zpool mounting.
+# Add /dev/zfs device for zfs to work.
 .SECONDEXPANSION:
 $(testOutputs): %/test.out: $$(call testBinFromDir,%)
 	flock /dev/stdout -c 'echo "RUN   $<"'
-	cid=$(shell docker run -dti -v "$(CURDIR):/mistify:ro" -v /sys/fs/cgroup:/sys/fs/cgroup:ro --privileged --device /dev/zfs:/dev/zfs --name $(notdir $<) $(IMAGE)) && \
+	tmpdir=/tmp/$(notdir $<); \
+	rm -rf $$tmpdir && \
+	mkdir $$tmpdir && \
+	cid=$(shell docker run -dti -v "$(CURDIR):/mistify:ro" -v /tmp:/tmp -v /sys/fs/cgroup:/sys/fs/cgroup:ro --cap-add=SYS_ADMIN --device /dev/zfs:/dev/zfs --name $(notdir $<) -e "TMPDIR=$(tmpdir)" $(IMAGE)) && \
 	test -n $(cid) && \
 	sleep .25 && \
 	docker exec $$cid sh -c "cd /mistify; cd $(@D); ./$(notdir $<) -test.v" &> $@; \
@@ -37,6 +44,7 @@ $(testOutputs): %/test.out: $$(call testBinFromDir,%)
 	docker kill $$cid  &>/dev/null && \
 	docker rm -v $$cid &>/dev/null && \
 	flock /dev/stdout -c 'echo "+++ $< +++"; cat $@'; \
+	rm -rf $$tmpdir; \
 	exit $$ret
 
 # Build a package's test binaries. Done outside the container so it can be used
