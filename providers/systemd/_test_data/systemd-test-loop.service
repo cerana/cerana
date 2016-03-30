@@ -1,0 +1,8 @@
+[Unit]
+Description=Systemd provider test - Loop forever
+
+[Service]
+ExecStart=/bin/sh -c "while true; do sleep 1; done"
+
+[Install]
+WantedBy=multi-user.target

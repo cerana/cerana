@@ -1,0 +1,8 @@
+[Unit]
+Description=Systemd provider test - Exit 0
+
+[Service]
+ExecStart=/bin/sh -c "exit 0"
+
+[Install]
+WantedBy=multi-user.target
