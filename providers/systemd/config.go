@@ -3,7 +3,6 @@ package systemd
 import (
 	"errors"
 	"path/filepath"
-	"strings"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/mistifyio/mistify/provider"
@@ -33,14 +32,12 @@ func (c *Config) UnitFilePath(name string) (string, error) {
 	if err := c.UnmarshalKey("unit_file_dir", &unitFileDir); err != nil {
 		return "", err
 	}
-	name, err := filepath.Abs(filepath.Join("/", strings.TrimSpace(name)))
-	if err != nil {
+
+	baseName := filepath.Base(name)
+	if baseName != name || name == "/" || name == "." || name == ".." {
 		return "", errors.New("invalid name")
 	}
-	name = filepath.Base(name)
-	if name == "/" {
-		return "", errors.New("invalid name")
-	}
+
 	return filepath.Abs(filepath.Join(unitFileDir, name))
 }
 

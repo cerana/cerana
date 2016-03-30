@@ -9,10 +9,7 @@ func (s *systemd) TestUnitFilePath() {
 		err    string
 	}{
 		{"", "", "invalid name"},
-		{" ", "", "invalid name"},
-		{". ", "", "invalid name"},
 		{".", "", "invalid name"},
-		{".. ", "", "invalid name"},
 		{"..", "", "invalid name"},
 		{"../ ", "", "invalid name"},
 		{"../", "", "invalid name"},
@@ -23,13 +20,17 @@ func (s *systemd) TestUnitFilePath() {
 		{"/", "", "invalid name"},
 		{"/.", "", "invalid name"},
 		{"/..", "", "invalid name"},
+		{"/foo", "", "invalid name"},
+		{"./foo", "", "invalid name"},
+		{"../foo", "", "invalid name"},
+		{"/bar/foo", "", "invalid name"},
+		{"foo/", "", "invalid name"},
+		{" ", s.dir + "/ ", ""},
+		{". ", s.dir + "/. ", ""},
+		{".. ", s.dir + "/.. ", ""},
 		{"foo", s.dir + "/foo", ""},
-		{"foo ", s.dir + "/foo", ""},
-		{"/foo", s.dir + "/foo", ""},
-		{"./foo", s.dir + "/foo", ""},
-		{"../foo", s.dir + "/foo", ""},
-		{"/bar/foo", s.dir + "/foo", ""},
-		{"foo/", s.dir + "/foo", ""},
+		{"foo ", s.dir + "/foo ", ""},
+		{" foo", s.dir + "/ foo", ""},
 	}
 
 	for _, test := range tests {
