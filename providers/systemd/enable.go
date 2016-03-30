@@ -4,7 +4,6 @@ import (
 	"errors"
 	"net/url"
 
-	"github.com/coreos/go-systemd/dbus"
 	"github.com/mistifyio/mistify/acomm"
 )
 
@@ -30,12 +29,6 @@ func (s *Systemd) Enable(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 
-	dconn, err := dbus.New()
-	if err != nil {
-		return nil, nil, err
-	}
-	defer dconn.Close()
-
-	_, _, err = dconn.EnableUnitFiles([]string{unitFilePath}, args.Runtime, args.Force)
+	_, _, err = s.dconn.EnableUnitFiles([]string{unitFilePath}, args.Runtime, args.Force)
 	return nil, nil, err
 }

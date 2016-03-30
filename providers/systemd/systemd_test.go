@@ -62,7 +62,8 @@ func (s *systemd) SetupSuite() {
 	s.flagset = flagset
 	s.viper = v
 
-	s.systemd = systemdp.New(config)
+	s.systemd, err = systemdp.New(config)
+	s.Require().NoError(err)
 }
 
 func (s *systemd) TearDownSuite() {

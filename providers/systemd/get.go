@@ -28,13 +28,7 @@ func (s *Systemd) Get(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.New("missing arg: name")
 	}
 
-	dconn, err := dbus.New()
-	if err != nil {
-		return nil, nil, err
-	}
-	defer dconn.Close()
-
-	list, err := dconn.ListUnits()
+	list, err := s.dconn.ListUnits()
 	if err != nil {
 		return nil, nil, err
 	}

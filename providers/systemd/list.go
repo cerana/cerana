@@ -14,12 +14,6 @@ type ListResult struct {
 
 // List retuns a list of unit statuses.
 func (s *Systemd) List(req *acomm.Request) (interface{}, *url.URL, error) {
-	dconn, err := dbus.New()
-	if err != nil {
-		return nil, nil, err
-	}
-	defer dconn.Close()
-
-	list, err := dconn.ListUnits()
+	list, err := s.dconn.ListUnits()
 	return &ListResult{list}, nil, err
 }

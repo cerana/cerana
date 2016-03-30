@@ -4,7 +4,6 @@ import (
 	"errors"
 	"net/url"
 
-	"github.com/coreos/go-systemd/dbus"
 	"github.com/mistifyio/mistify/acomm"
 )
 
@@ -24,12 +23,6 @@ func (s *Systemd) Disable(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.New("missing arg: name")
 	}
 
-	dconn, err := dbus.New()
-	if err != nil {
-		return nil, nil, err
-	}
-	defer dconn.Close()
-
-	_, err = dconn.DisableUnitFiles([]string{args.Name}, args.Runtime)
+	_, err := s.dconn.DisableUnitFiles([]string{args.Name}, args.Runtime)
 	return nil, nil, err
 }

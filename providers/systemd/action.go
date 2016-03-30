@@ -5,7 +5,6 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/coreos/go-systemd/dbus"
 	"github.com/mistifyio/mistify/acomm"
 )
 
@@ -40,26 +39,20 @@ func (s *Systemd) systemdAction(action string, req *acomm.Request) (interface{},
 		return nil, nil, errors.New("missing arg: name")
 	}
 
-	dconn, err := dbus.New()
-	if err != nil {
-		return nil, nil, err
-	}
-	defer dconn.Close()
-
 	resultChan := make(chan string)
 	var actionFn func(string, string, chan<- string) (int, error)
 	switch action {
 	case "start":
-		actionFn = dconn.StartUnit
+		actionFn = s.dconn.StartUnit
 	case "stop":
-		actionFn = dconn.StopUnit
+		actionFn = s.dconn.StopUnit
 	case "restart":
-		actionFn = dconn.RestartUnit
+		actionFn = s.dconn.RestartUnit
 	}
 
 	// Run the action. Ignore jobid since we are waiting for the result; once a
 	// job is completed, the jobid is meaningless.
-	if _, err = actionFn(args.Name, args.Mode, resultChan); err != nil {
+	if _, err := actionFn(args.Name, args.Mode, resultChan); err != nil {
 		if strings.Contains(err.Error(), "No such file or directory") {
 			err = errors.New("unit not found")
 		}
@@ -68,8 +61,8 @@ func (s *Systemd) systemdAction(action string, req *acomm.Request) (interface{},
 	result := <-resultChan
 
 	if result != "done" {
-		err = errors.New(result)
+		return nil, nil, errors.New(result)
 	}
 
-	return nil, nil, err
+	return nil, nil, nil
 }

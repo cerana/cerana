@@ -20,7 +20,8 @@ func main() {
 
 	server, err := provider.NewServer(config.Config)
 	dieOnError(err)
-	s := systemd.New(config)
+	s, err := systemd.New(config)
+	dieOnError(err)
 	s.RegisterTasks(server)
 
 	if len(server.RegisteredTasks()) != 0 {

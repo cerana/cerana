@@ -1,6 +1,9 @@
 package systemd
 
-import "github.com/mistifyio/mistify/provider"
+import (
+	"github.com/coreos/go-systemd/dbus"
+	"github.com/mistifyio/mistify/provider"
+)
 
 // Unit start modes.
 const (
@@ -14,13 +17,19 @@ const (
 // Systemd is a provider of systemd functionality.
 type Systemd struct {
 	config *Config
+	dconn  *dbus.Conn
 }
 
 // New creates a new instance of Systemd.
-func New(config *Config) *Systemd {
+func New(config *Config) (*Systemd, error) {
+	dconn, err := dbus.New()
+	if err != nil {
+		return nil, err
+	}
 	return &Systemd{
 		config: config,
-	}
+		dconn:  dconn,
+	}, nil
 }
 
 // RegisterTasks registers all of Systemd's task handlers with the server.
