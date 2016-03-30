@@ -1,0 +1,69 @@
+#!dot
+digraph {
+	title="Booting MistifyOS";
+	label="Booting MistifyOS";
+	#rankdir=LR;
+
+	#decision[shape="diamond", label="Decision"];
+	#action[shape="box", label="Action"];
+	#decision -> action [label="choice"];
+
+	start[shape="box", style=rounded, label="Power On"];
+	fail[shape="box", style=rounded, label="FAIL"];
+
+	start -> media1
+	media1[shape="diamond", label="Physical Media Present?"];
+	media1 -> grub1 [label="yes"];
+	grub1[shape="box", label="Boot GRUB"];
+	grub1 -> grub2;
+	grub2[shape="box", label="Set kernel args"];
+	grub2 -> boot1;
+	media1 -> pxe1 [label="no"];
+
+	pxe1[shape="diamond", label="PXE Boot Succeeds?"];
+	pxe1 -> ipxe1 [label="yes"];
+	pxe1 -> fail [label="no"];
+	ipxe1[shape="box", label="Chain to IPXE\nLoad IPXE script over http"];
+	ipxe1 -> ipxe2;
+	ipxe2[shape="box", label="Set kernel args:\nmac addr, cluster ip, my ip, etc."];
+	ipxe2 -> boot1;
+
+	boot1[shape="box", label="Boot Kernel"];
+	boot1 -> boot2;
+	boot2[shape="box", label="Execute /init\nAll following steps\nare in /init\nuntil execution of\nsystemd"];
+	boot2 -> boot3;
+	boot3[shape="box", label="udev etc."];
+	boot3 -> walkthrough1;
+	walkthrough1[shape="box", label="begin boot time configuration"];
+	walkthrough1 -> zfs1;
+	zfs1[shape="diamond", label="ZFS pool exists?"];
+	zfs1 -> zfsimport [label="yes"];
+	zfs1 -> zfs2 [label="no"];
+	zfs2[shape="diamond", label="User wants Auto ZFS layout?"];
+	zfs2 -> zfscreate [label="yes"];
+	zfsprompt -> zfscreate;
+	zfs2 -> zfsprompt [label="no"];
+	zfsprompt[shape="box", label="prompt user for ZFS layout"];
+	zfscreate[shape="box", label="create ZFS pool"];
+	zfsimport[shape="box", label="import ZFS pool"];
+	zfscreate -> walkthrough2;
+	zfsimport -> walkthrough2;
+	walkthrough2[shape="diamond", label="Were we booted with \nMAC, IP, and Cluster config?"];
+	walkthrough2 -> net2 [label="yes"];
+	walkthrough2 -> walkthrough3 [label="no"];
+	walkthrough3[shape="diamond", label="Is IP config stored?"];
+	walkthrough3 -> net1 [label="no"];
+	walkthrough3 -> net2 [label="yes"];
+	net1[shape="box", label="prompt user for Network config"];
+	net2[shape="box", label="Store Network config\nStart networking"];
+	net1 -> net2;
+	net2 -> walkthrough4;
+	walkthrough4[shape="diamond", label="Do we have cluster config?"];
+	walkthrough4 -> cluster [label="yes"];
+	walkthrough4 -> nocluster [label="no"];
+	cluster[shape="box", label="Store cluster info\nand systemd configs\nfor cluster software"];
+	cluster -> end;
+	nocluster[shape="box", label="Not part\nof a cluster"];
+	nocluster -> end
+	end[shape="box", style=rounded, label="Start systemd"];
+}
