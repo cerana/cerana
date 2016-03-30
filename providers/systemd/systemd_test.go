@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/coreos/go-systemd/dbus"
+	"github.com/mistifyio/mistify-logrus-ext"
 	"github.com/mistifyio/mistify/provider"
 	systemdp "github.com/mistifyio/mistify/providers/systemd"
 	"github.com/spf13/pflag"
@@ -142,17 +143,12 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer in.Close()
+	defer logrusx.LogReturnedErr(in.Close, nil, "failed to close source file")
 	out, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
-	defer func() {
-		cerr := out.Close()
-		if err == nil {
-			err = cerr
-		}
-	}()
+	defer logrusx.LogReturnedErr(out.Close, nil, "failed to close dest file")
 	if _, err = io.Copy(out, in); err != nil {
 		return err
 	}
