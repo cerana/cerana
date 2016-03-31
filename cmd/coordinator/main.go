@@ -2,8 +2,8 @@ package main
 
 import (
 	log "github.com/Sirupsen/logrus"
-	logx "github.com/mistifyio/mistify-logrus-ext"
 	"github.com/cerana/cerana/coordinator"
+	logx "github.com/mistifyio/mistify-logrus-ext"
 	flag "github.com/spf13/pflag"
 )
 

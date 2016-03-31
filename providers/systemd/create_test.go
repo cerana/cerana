@@ -5,9 +5,9 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"github.com/coreos/go-systemd/unit"
 	"github.com/cerana/cerana/acomm"
 	systemdp "github.com/cerana/cerana/providers/systemd"
+	"github.com/coreos/go-systemd/unit"
 )
 
 func (s *systemd) TestCreate() {

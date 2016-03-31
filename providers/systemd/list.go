@@ -3,8 +3,8 @@ package systemd
 import (
 	"net/url"
 
-	"github.com/coreos/go-systemd/dbus"
 	"github.com/cerana/cerana/acomm"
+	"github.com/coreos/go-systemd/dbus"
 )
 
 // ListResult is the result of the List handler.

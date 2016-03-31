@@ -6,8 +6,8 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/mistifyio/go-zfs"
 	"github.com/cerana/cerana/acomm"
+	"github.com/mistifyio/go-zfs"
 )
 
 // TODO: Update this method once `gozfs` supports Unmount

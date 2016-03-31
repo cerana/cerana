@@ -8,10 +8,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/coreos/go-systemd/dbus"
-	"github.com/mistifyio/mistify-logrus-ext"
 	"github.com/cerana/cerana/provider"
 	systemdp "github.com/cerana/cerana/providers/systemd"
+	"github.com/coreos/go-systemd/dbus"
+	"github.com/mistifyio/mistify-logrus-ext"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/suite"

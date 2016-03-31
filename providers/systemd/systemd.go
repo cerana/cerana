@@ -1,8 +1,8 @@
 package systemd
 
 import (
-	"github.com/coreos/go-systemd/dbus"
 	"github.com/cerana/cerana/provider"
+	"github.com/coreos/go-systemd/dbus"
 )
 
 // Unit start modes.

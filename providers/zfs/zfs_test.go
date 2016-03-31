@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mistifyio/gozfs"
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/provider"
 	zfsp "github.com/cerana/cerana/providers/zfs"
+	"github.com/mistifyio/gozfs"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/suite"

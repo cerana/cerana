@@ -4,8 +4,8 @@ import (
 	"errors"
 	"net/url"
 
-	"github.com/mistifyio/gozfs"
 	"github.com/cerana/cerana/acomm"
+	"github.com/mistifyio/gozfs"
 )
 
 // RenameArgs are arguments for the Rename handler.

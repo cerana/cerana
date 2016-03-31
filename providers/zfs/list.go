@@ -3,8 +3,8 @@ package zfs
 import (
 	"net/url"
 
-	"github.com/mistifyio/gozfs"
 	"github.com/cerana/cerana/acomm"
+	"github.com/mistifyio/gozfs"
 )
 
 // ListArgs are the args for the List handler.

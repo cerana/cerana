@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/mistifyio/gozfs"
 	"github.com/cerana/cerana/acomm"
 	zfsp "github.com/cerana/cerana/providers/zfs"
+	"github.com/mistifyio/gozfs"
 )
 
 func (s *zfs) TestCreate() {

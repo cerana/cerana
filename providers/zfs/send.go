@@ -6,9 +6,9 @@ import (
 	"os"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/cerana/cerana/acomm"
 	"github.com/mistifyio/gozfs"
 	"github.com/mistifyio/mistify-logrus-ext"
-	"github.com/cerana/cerana/acomm"
 )
 
 // Send returns information about a dataset.
