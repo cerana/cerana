@@ -1,6 +1,6 @@
 package metrics
 
-import "github.com/mistifyio/mistify/provider"
+import "github.com/cerana/cerana/provider"
 
 // Metrics is a provider of system info and metrics functionality.
 type Metrics struct{}
