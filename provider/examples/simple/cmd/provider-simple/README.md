@@ -1,6 +1,6 @@
 # provider-simple
 
-[![provider-simple](https://godoc.org/github.com/mistifyio/mistify/provider/examples/simple/cmd/provider-simple?status.png)](https://godoc.org/github.com/mistifyio/mistify/provider/examples/simple/cmd/provider-simple)
+[![provider-simple](https://godoc.org/github.com/cerana/cerana/provider/examples/simple/cmd/provider-simple?status.png)](https://godoc.org/github.com/cerana/cerana/provider/examples/simple/cmd/provider-simple)
 
 ### Usage
 

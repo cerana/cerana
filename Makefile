@@ -17,6 +17,10 @@ pkgs := $(notdir $(patsubst %/,%,$(pkgdirs)))
 testBins := $(join $(pkgdirs), $(addsuffix .test,$(pkgs)))
 testOutputs := $(addsuffix test.out,$(pkgdirs))
 
+.PHONY: godocdown
+godocdown:
+	find -type f -name \*.go -execdir godocdown -template $(CURDIR)/.godocdown.template -o README.md \;
+
 # Suppress Make output. The relevant test output will be collected and sent to
 # stdout
 .SILENT:

@@ -1,6 +1,6 @@
 # acomm
 
-[![acomm](https://godoc.org/github.com/mistifyio/mistify/acomm?status.png)](https://godoc.org/github.com/mistifyio/mistify/acomm)
+[![acomm](https://godoc.org/github.com/cerana/cerana/acomm?status.png)](https://godoc.org/github.com/cerana/cerana/acomm)
 
 Package acomm is a library for asynchronous JSON-RPC-like communication between
 services.

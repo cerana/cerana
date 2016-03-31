@@ -1,6 +1,6 @@
 # coordinator
 
-[![coordinator](https://godoc.org/github.com/mistifyio/mistify/cmd/coordinator?status.png)](https://godoc.org/github.com/mistifyio/mistify/cmd/coordinator)
+[![coordinator](https://godoc.org/github.com/cerana/cerana/cmd/coordinator?status.png)](https://godoc.org/github.com/cerana/cerana/cmd/coordinator)
 
 ### Usage
 
