@@ -7,7 +7,7 @@ import (
 	"syscall"
 
 	"github.com/mistifyio/go-zfs"
-	"github.com/mistifyio/mistify/acomm"
+	"github.com/cerana/cerana/acomm"
 )
 
 // TODO: Update this method once `gozfs` supports Mount

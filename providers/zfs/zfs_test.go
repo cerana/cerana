@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"github.com/mistifyio/gozfs"
-	"github.com/mistifyio/mistify/acomm"
-	"github.com/mistifyio/mistify/provider"
-	zfsp "github.com/mistifyio/mistify/providers/zfs"
+	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/provider"
+	zfsp "github.com/cerana/cerana/providers/zfs"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/suite"

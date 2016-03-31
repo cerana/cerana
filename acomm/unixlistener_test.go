@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/mistifyio/mistify/acomm"
+	"github.com/cerana/cerana/acomm"
 	"github.com/stretchr/testify/suite"
 )
 

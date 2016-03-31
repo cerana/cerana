@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/mistifyio/mistify/acomm"
+	"github.com/cerana/cerana/acomm"
 	"github.com/pborman/uuid"
 	"github.com/stretchr/testify/suite"
 )

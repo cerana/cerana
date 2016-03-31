@@ -2,7 +2,7 @@ package systemd
 
 import (
 	"github.com/coreos/go-systemd/dbus"
-	"github.com/mistifyio/mistify/provider"
+	"github.com/cerana/cerana/provider"
 )
 
 // Unit start modes.

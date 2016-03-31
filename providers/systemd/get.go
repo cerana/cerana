@@ -5,7 +5,7 @@ import (
 	"net/url"
 
 	"github.com/coreos/go-systemd/dbus"
-	"github.com/mistifyio/mistify/acomm"
+	"github.com/cerana/cerana/acomm"
 )
 
 // GetArgs are args for the Get handler

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mistifyio/mistify/acomm"
-	"github.com/mistifyio/mistify/provider"
+	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/provider"
 )
 
 // ZFS is a provider of zfs functionality.
