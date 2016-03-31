@@ -11,7 +11,7 @@
     -l, --log_level="warning": log level: debug/info/warn/error/fatal/panic
     -t, --request_timeout=0: default timeout for requests in seconds
     -n, --service_name="": name of the coordinator
-    -s, --socket_dir="/tmp/mistify": base directory in which to create task sockets
+    -s, --socket_dir="/tmp/cerana": base directory in which to create task sockets
 
 
 --

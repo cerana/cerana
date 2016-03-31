@@ -51,7 +51,7 @@ func NewConfig(flagSet *flag.FlagSet, v *viper.Viper) *Config {
 
 	flagSet.StringP("config_file", "c", "", "path to config file")
 	flagSet.StringP("service_name", "n", "", "provider service name")
-	flagSet.StringP("socket_dir", "s", "/tmp/mistify", "base directory in which to create task sockets")
+	flagSet.StringP("socket_dir", "s", "/tmp/cerana", "base directory in which to create task sockets")
 	flagSet.UintP("default_priority", "p", 50, "default task priority")
 	flagSet.StringP("coordinator_url", "u", "", "url of coordinator for making requests")
 	flagSet.StringP("log_level", "l", "warning", "log level: debug/info/warn/error/fatal/panic")

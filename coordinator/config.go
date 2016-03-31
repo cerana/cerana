@@ -38,7 +38,7 @@ func NewConfig(flagSet *flag.FlagSet, v *viper.Viper) *Config {
 
 	flagSet.StringP("config_file", "c", "", "path to config file")
 	flagSet.StringP("service_name", "n", "", "name of the coordinator")
-	flagSet.StringP("socket_dir", "s", "/tmp/mistify", "base directory in which to create task sockets")
+	flagSet.StringP("socket_dir", "s", "/tmp/cerana", "base directory in which to create task sockets")
 	flagSet.UintP("external_port", "p", 8080, "port for the http external request server to listen")
 	flagSet.StringP("log_level", "l", "warning", "log level: debug/info/warn/error/fatal/panic")
 	flagSet.UintP("request_timeout", "t", 0, "default timeout for requests in seconds")
