@@ -3,7 +3,7 @@ package metrics
 import (
 	"net/url"
 
-	"github.com/mistifyio/mistify/acomm"
+	"github.com/cerana/cerana/acomm"
 	"github.com/shirou/gopsutil/net"
 )
 

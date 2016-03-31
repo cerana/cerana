@@ -3,8 +3,8 @@ package metrics_test
 import (
 	"testing"
 
-	"github.com/mistifyio/mistify/provider"
-	metricsp "github.com/mistifyio/mistify/providers/metrics"
+	"github.com/cerana/cerana/provider"
+	metricsp "github.com/cerana/cerana/providers/metrics"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/suite"
