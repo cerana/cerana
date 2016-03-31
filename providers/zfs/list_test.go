@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/cerana/cerana/acomm"
+	zfsp "github.com/cerana/cerana/providers/zfs"
 	"github.com/mistifyio/gozfs"
-	"github.com/mistifyio/mistify/acomm"
-	zfsp "github.com/mistifyio/mistify/providers/zfs"
 )
 
 func (s *zfs) TestList() {

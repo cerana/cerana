@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/url"
 
-	"github.com/mistifyio/mistify/acomm"
+	"github.com/cerana/cerana/acomm"
 )
 
 // DisableArgs are arguments for the disable handler.

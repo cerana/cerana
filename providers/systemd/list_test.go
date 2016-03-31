@@ -1,8 +1,8 @@
 package systemd_test
 
 import (
-	"github.com/mistifyio/mistify/acomm"
-	systemdp "github.com/mistifyio/mistify/providers/systemd"
+	"github.com/cerana/cerana/acomm"
+	systemdp "github.com/cerana/cerana/providers/systemd"
 )
 
 func (s *systemd) TestList() {

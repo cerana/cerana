@@ -8,10 +8,10 @@ import (
 	"syscall"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/cerana/cerana/acomm"
 	zfs "github.com/mistifyio/go-zfs"
 	"github.com/mistifyio/gozfs"
 	"github.com/mistifyio/mistify-logrus-ext"
-	"github.com/mistifyio/mistify/acomm"
 )
 
 // TODO: Update this method once `gozfs` supports receive

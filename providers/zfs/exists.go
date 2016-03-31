@@ -4,8 +4,8 @@ import (
 	"errors"
 	"net/url"
 
+	"github.com/cerana/cerana/acomm"
 	"github.com/mistifyio/gozfs"
-	"github.com/mistifyio/mistify/acomm"
 )
 
 // ExistsResult is the result data for the Exists handler.

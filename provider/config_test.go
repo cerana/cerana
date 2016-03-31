@@ -10,7 +10,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/mistifyio/mistify/provider"
+	"github.com/cerana/cerana/provider"
 	"github.com/pborman/uuid"
 	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"

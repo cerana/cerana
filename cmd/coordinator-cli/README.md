@@ -1,6 +1,6 @@
 # coordinator-cli
 
-[![coordinator-cli](https://godoc.org/github.com/mistifyio/mistify/cmd/coordinator-cli?status.png)](https://godoc.org/github.com/mistifyio/mistify/cmd/coordinator-cli)
+[![coordinator-cli](https://godoc.org/github.com/cerana/cerana/cmd/coordinator-cli?status.png)](https://godoc.org/github.com/cerana/cerana/cmd/coordinator-cli)
 
 ### Usage
 
