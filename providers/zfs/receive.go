@@ -11,7 +11,7 @@ import (
 	"github.com/cerana/cerana/acomm"
 	zfs "github.com/mistifyio/go-zfs"
 	"github.com/mistifyio/gozfs"
-	"github.com/mistifyio/mistify-logrus-ext"
+	"github.com/cerana/cerana/pkg/logrusx"
 )
 
 // TODO: Update this method once `gozfs` supports receive

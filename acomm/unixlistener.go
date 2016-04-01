@@ -10,7 +10,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	logx "github.com/mistifyio/mistify-logrus-ext"
+	logx "github.com/cerana/cerana/pkg/logrusx"
 )
 
 // UnixListener is a wrapper for a unix socket. It handles creation and

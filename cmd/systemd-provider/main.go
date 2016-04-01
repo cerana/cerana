@@ -4,7 +4,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/provider"
 	"github.com/cerana/cerana/providers/systemd"
-	logx "github.com/mistifyio/mistify-logrus-ext"
+	logx "github.com/cerana/cerana/pkg/logrusx"
 	flag "github.com/spf13/pflag"
 )
 

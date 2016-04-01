@@ -12,7 +12,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/mistifyio/mistify-logrus-ext"
+	"github.com/cerana/cerana/pkg/logrusx"
 )
 
 const (

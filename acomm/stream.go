@@ -9,7 +9,7 @@ import (
 	"net/url"
 
 	log "github.com/Sirupsen/logrus"
-	logx "github.com/mistifyio/mistify-logrus-ext"
+	logx "github.com/cerana/cerana/pkg/logrusx"
 )
 
 // NewStreamUnix sets up an ad-hoc unix listner to stream data.
