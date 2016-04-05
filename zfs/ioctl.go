@@ -1,4 +1,4 @@
-package gozfs
+package zfs
 
 // #cgo CFLAGS: -fms-extensions -Wno-microsoft
 // int zfs_ioctl(int, char *, int, void *, int, void *, int);

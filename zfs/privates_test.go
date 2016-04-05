@@ -1,4 +1,4 @@
-package gozfs
+package zfs
 
 import (
 	"io"
