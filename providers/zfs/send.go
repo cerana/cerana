@@ -7,7 +7,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/acomm"
-	"github.com/mistifyio/gozfs"
+	"github.com/cerana/cerana/zfs"
 	"github.com/mistifyio/mistify-logrus-ext"
 )
 
@@ -22,7 +22,7 @@ func (z *ZFS) Send(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.New("missing arg: name")
 	}
 
-	ds, err := gozfs.GetDataset(args.Name)
+	ds, err := zfs.GetDataset(args.Name)
 	if err != nil {
 		return nil, nil, err
 	}

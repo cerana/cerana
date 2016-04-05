@@ -49,7 +49,7 @@ func (s *internal) create(pool string) {
 	s.pool = pool
 	files := make([]string, 5)
 	for i := range files {
-		f, err := ioutil.TempFile("", "gozfs-test-temp")
+		f, err := ioutil.TempFile("", "zfs-test-temp")
 		if err != nil {
 			panic(err)
 		}
@@ -123,7 +123,7 @@ func (s *internal) destroy() {
 }
 
 func (s *internal) SetupTest() {
-	s.create("gozfs-test")
+	s.create("zfs-test")
 }
 
 func (s *internal) TearDownTest() {
@@ -139,7 +139,7 @@ func (s *internal) TestClone() {
 }
 
 func (s *internal) TestCreateFS() {
-	s.EqualError(create("gozfs-test-no-exists/1", dmuZFS, nil), enoent)
+	s.EqualError(create("zfs-test-no-exists/1", dmuZFS, nil), enoent)
 	s.EqualError(create(s.pool+"/~1", dmuZFS, nil), einval)
 	s.EqualError(create(s.pool+"/1", dmuNumtypes+1, nil), einval)
 	s.EqualError(create(s.pool+"/1", dmuZFS, map[string]interface{}{"bad-prop": true}), einval)
@@ -161,7 +161,7 @@ func (s *internal) TestCreateVOL() {
 		props p
 		err   string
 	}{
-		{"gozfs-test-no-exists/1", nil, enoent},
+		{"zfs-test-no-exists/1", nil, enoent},
 		{s.pool + "/" + longName, nil, einval}, // WANTE(ENAMETOOLONG)
 		{s.pool + "/~1", nil, einval},
 		{s.pool + "/1", p{"bad-prop": true}, einval},
