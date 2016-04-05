@@ -396,7 +396,7 @@ func decode(t *testing.T, name string, ptr interface{}, dec tDecoder) {
 	assertFields(t, name, m)
 }
 
-//go:generate make -s -C _test ../known_good_data_test.go
+//go:generate make -s -C _test_data ../known_good_data_test.go
 func TestDecodeGood(t *testing.T) {
 	for _, test := range good {
 		if testing.Verbose() {
