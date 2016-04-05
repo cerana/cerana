@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mistifyio/gozfs/nv"
+	"github.com/cerana/cerana/zfs/nv"
 )
 
 // ZFS Dataset Types

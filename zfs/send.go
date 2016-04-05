@@ -3,7 +3,7 @@ package gozfs
 import (
 	"bytes"
 
-	"github.com/mistifyio/gozfs/nv"
+	"github.com/cerana/cerana/zfs/nv"
 )
 
 func send(name string, outputFD uintptr, fromSnap string, largeBlockOK, embedOK bool) error {

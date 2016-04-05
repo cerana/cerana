@@ -3,7 +3,7 @@ package gozfs
 import (
 	"bytes"
 
-	"github.com/mistifyio/gozfs/nv"
+	"github.com/cerana/cerana/zfs/nv"
 )
 
 func create(name string, createType dmuType, props map[string]interface{}) error {

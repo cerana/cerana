@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"syscall"
 
-	"github.com/mistifyio/gozfs/nv"
+	"github.com/cerana/cerana/zfs/nv"
 )
 
 func snapshot(pool string, snapNames []string, props map[string]string) (map[string]syscall.Errno, error) {

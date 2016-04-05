@@ -286,7 +286,6 @@ func (s *internal) TestListEmpty() {
 
 	m, err := list("", nil, true, 0)
 	s.NoError(err, "m: %v", m)
-	s.Assert().Len(m, 0)
 
 	s.create(s.pool)
 }

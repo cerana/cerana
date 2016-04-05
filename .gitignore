@@ -3,6 +3,7 @@ cmd/coordinator-cli/coordinator-cli
 cmd/coordinator/coordinator
 cmd/systemd-provider/systemd-provider
 cmd/zfs-provider/zfs-provider
+cmd/zfs/zfs
 
 # Temporary files
 *.swp

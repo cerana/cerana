@@ -1,8 +1,8 @@
 # Pure Go Client for ZFS Stable API #
 
-[![GoDoc](https://godoc.org/github.com/mistifyio/gozfs?status.svg)](https://godoc.org/github.com/mistifyio/gozfs)
+[![GoDoc](https://godoc.org/github.com/cerana/cerana/zfs?status.svg)](https://godoc.org/github.com/cerana/cerana/zfs)
 ![status=alpha](https://img.shields.io/badge/status-alpha-orange.svg)
-[![MIT Licensed](https://img.shields.io/github/license/mistifyio/gozfs.svg)](./LICENSE)
+[![MIT Licensed](https://img.shields.io/github/license/cerana/cerana/zfs.svg)](../LICENSE)
 
 ## Requirements ##
 
@@ -24,11 +24,10 @@ The beta TODO list is more or less:
 - [ ] stabilize `zfs_receive`
 - [ ] avoid `zfs_cmd_t` in its current form
 - [ ] implement usable public api akin to [go-zfs](https://github.com/mistifyio/go-zfs)
-- [ ] find a better name
 
 # Contributing #
 
-See the [contributing guidelines](./CONTRIBUTING.md)
+See the [contributing guidelines](../CONTRIBUTING.md)
 
 # cgo #
 All the nv list handling is fully implemented in go.

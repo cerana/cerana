@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/mistifyio/gozfs/nv"
+	"github.com/cerana/cerana/zfs/nv"
 )
 
 func main() {

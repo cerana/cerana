@@ -3,7 +3,7 @@ package gozfs
 import (
 	"bytes"
 
-	"github.com/mistifyio/gozfs/nv"
+	"github.com/cerana/cerana/zfs/nv"
 )
 
 func destroy(name string, deferFlag bool) error {

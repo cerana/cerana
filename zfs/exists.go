@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"syscall"
 
-	"github.com/mistifyio/gozfs/nv"
+	"github.com/cerana/cerana/zfs/nv"
 )
 
 func exists(name string) error {

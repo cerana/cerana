@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/mistifyio/gozfs"
+	"github.com/cerana/cerana/zfs"
 	cobra "github.com/spf13/cobra"
 )
 

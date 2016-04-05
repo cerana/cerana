@@ -9,7 +9,7 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/mistifyio/gozfs/nv"
+	"github.com/cerana/cerana/zfs/nv"
 )
 
 type pipeHeader struct {

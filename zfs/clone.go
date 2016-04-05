@@ -3,7 +3,7 @@ package gozfs
 import (
 	"bytes"
 
-	"github.com/mistifyio/gozfs/nv"
+	"github.com/cerana/cerana/zfs/nv"
 )
 
 func clone(name, origin string, props map[string]interface{}) error {
