@@ -49,13 +49,13 @@ func NewNativeDecoder(r io.ReadSeeker) *NativeDecoder {
 // treated as uint8/[]uint8.
 func (d *NativeDecoder) Decode(target interface{}) (err error) {
 	// Validate data encoding
-	codec, endianness, err := decodePreamble(d.r, binary.BigEndian)
+	dataCodec, dataEndianness, err := decodePreamble(d.r, binary.BigEndian)
 	if err != nil {
 		return err
-	} else if codec != nativeCodec {
-		return fmt.Errorf("invalid encoding: %v", codec)
-	} else if endianness != littleEndian {
-		return fmt.Errorf("invalid endianess: %v", endianness)
+	} else if dataCodec != nativeCodec {
+		return fmt.Errorf("invalid encoding: %v", dataCodec)
+	} else if dataEndianness != littleEndian {
+		return fmt.Errorf("invalid endianess: %v", dataEndianness)
 	}
 
 	// Validate target
@@ -98,7 +98,7 @@ func (d *NativeDecoder) meta() (string, dataType, error) {
 
 	len := uint32(align8(int(d.pair.NameLen)))
 	buf := make([]byte, len)
-	if _, err := d.r.Read(buf); err != nil {
+	if _, err = d.r.Read(buf); err != nil {
 		return "", 0, err
 	}
 	if len == 0 {
