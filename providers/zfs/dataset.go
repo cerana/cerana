@@ -3,19 +3,19 @@ package zfs
 import (
 	"path/filepath"
 
-	"github.com/mistifyio/gozfs"
+	"github.com/cerana/cerana/zfs"
 )
 
 // Dataset contains information and properties for a ZFS dataset. This struct
-// is the same as gozfs.Dataset, except all methods that interact with ZFS have
+// is the same as zfs.Dataset, except all methods that interact with ZFS have
 // been removed. The ZFS provider should be the only place that interacts with
 // zfs directly.
 //
 // Use this struct for datasets anywhere outside the ZFS provider.
 type Dataset struct {
 	Name           string
-	Properties     *gozfs.DatasetProperties
-	DMUObjsetStats *gozfs.DMUObjsetStats
+	Properties     *zfs.DatasetProperties
+	DMUObjsetStats *zfs.DMUObjsetStats
 }
 
 // Mountpoint returns the resolved mountpoint of the dataset.
@@ -26,7 +26,7 @@ func (d *Dataset) Mountpoint() string {
 	return filepath.Join(d.Properties.Mountpoint, defaultPart)
 }
 
-func newDataset(orig *gozfs.Dataset) *Dataset {
+func newDataset(orig *zfs.Dataset) *Dataset {
 	if orig == nil {
 		return nil
 	}

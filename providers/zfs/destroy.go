@@ -5,7 +5,7 @@ import (
 	"net/url"
 
 	"github.com/cerana/cerana/acomm"
-	"github.com/mistifyio/gozfs"
+	"github.com/cerana/cerana/zfs"
 )
 
 // DestroyArgs are arguments for the Destroy handler.
@@ -27,12 +27,12 @@ func (z *ZFS) Destroy(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.New("missing arg: name")
 	}
 
-	ds, err := gozfs.GetDataset(args.Name)
+	ds, err := zfs.GetDataset(args.Name)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	opts := &gozfs.DestroyOptions{
+	opts := &zfs.DestroyOptions{
 		Recursive:       args.Recursive,
 		RecursiveClones: args.RecursiveClones,
 		ForceUnmount:    args.ForceUnmount,

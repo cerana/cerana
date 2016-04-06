@@ -6,12 +6,12 @@ import (
 
 	"github.com/cerana/cerana/acomm"
 	zfsp "github.com/cerana/cerana/providers/zfs"
-	"github.com/mistifyio/gozfs"
+	libzfs "github.com/cerana/cerana/zfs"
 )
 
 func (s *zfs) TestCreate() {
-	fs := gozfs.DatasetFilesystem
-	vol := gozfs.DatasetVolume
+	fs := libzfs.DatasetFilesystem
+	vol := libzfs.DatasetVolume
 	tests := []struct {
 		args *zfsp.CreateArgs
 		err  string

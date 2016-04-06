@@ -5,7 +5,7 @@ import (
 	"net/url"
 
 	"github.com/cerana/cerana/acomm"
-	"github.com/mistifyio/gozfs"
+	"github.com/cerana/cerana/zfs"
 )
 
 // RenameArgs are arguments for the Rename handler.
@@ -29,7 +29,7 @@ func (z *ZFS) Rename(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.New("missing arg: origin")
 	}
 
-	origin, err := gozfs.GetDataset(args.Origin)
+	origin, err := zfs.GetDataset(args.Origin)
 	if err != nil {
 		return nil, nil, err
 	}

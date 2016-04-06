@@ -5,13 +5,13 @@ import (
 	"net/url"
 
 	"github.com/cerana/cerana/acomm"
-	"github.com/mistifyio/gozfs"
+	"github.com/cerana/cerana/zfs"
 )
 
 // CreateArgs are arguments for the Create handler.
 type CreateArgs struct {
 	Name       string                 `json:"name"`
-	Type       string                 `json:"type"` // gozfs.Dataset[Filesystem,Volume]
+	Type       string                 `json:"type"` // zfs.Dataset[Filesystem,Volume]
 	Volsize    uint64                 `json:"volsize"`
 	Properties map[string]interface{} `json:"properties"`
 }
@@ -30,17 +30,17 @@ func (z *ZFS) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 
-	var ds *gozfs.Dataset
+	var ds *zfs.Dataset
 	var err error
 	switch args.Type {
-	case gozfs.DatasetFilesystem:
-		ds, err = gozfs.CreateFilesystem(args.Name, args.Properties)
-	case gozfs.DatasetVolume:
+	case zfs.DatasetFilesystem:
+		ds, err = zfs.CreateFilesystem(args.Name, args.Properties)
+	case zfs.DatasetVolume:
 		if args.Volsize <= 0 {
 			err = errors.New("missing or invalid arg: volsize")
 			break
 		}
-		ds, err = gozfs.CreateVolume(args.Name, args.Volsize, args.Properties)
+		ds, err = zfs.CreateVolume(args.Name, args.Volsize, args.Properties)
 	default:
 		err = errors.New("missing or invalid arg: type")
 	}

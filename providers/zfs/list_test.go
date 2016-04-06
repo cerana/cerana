@@ -6,7 +6,7 @@ import (
 
 	"github.com/cerana/cerana/acomm"
 	zfsp "github.com/cerana/cerana/providers/zfs"
-	"github.com/mistifyio/gozfs"
+	libzfs "github.com/cerana/cerana/zfs"
 )
 
 func (s *zfs) TestList() {
@@ -20,10 +20,10 @@ func (s *zfs) TestList() {
 		{&zfsp.ListArgs{Name: longName}, einval},
 		{&zfsp.ListArgs{Name: "ds_no_exist"}, enoent},
 		{&zfsp.ListArgs{Name: s.pool}, ""},
-		{&zfsp.ListArgs{Name: s.pool, Types: []string{gozfs.DatasetFilesystem}}, ""},
-		{&zfsp.ListArgs{Name: s.pool, Types: []string{gozfs.DatasetVolume}}, ""},
-		{&zfsp.ListArgs{Name: s.pool, Types: []string{gozfs.DatasetSnapshot}}, ""},
-		{&zfsp.ListArgs{Name: s.pool, Types: []string{gozfs.DatasetVolume, gozfs.DatasetSnapshot}}, ""},
+		{&zfsp.ListArgs{Name: s.pool, Types: []string{libzfs.DatasetFilesystem}}, ""},
+		{&zfsp.ListArgs{Name: s.pool, Types: []string{libzfs.DatasetVolume}}, ""},
+		{&zfsp.ListArgs{Name: s.pool, Types: []string{libzfs.DatasetSnapshot}}, ""},
+		{&zfsp.ListArgs{Name: s.pool, Types: []string{libzfs.DatasetVolume, libzfs.DatasetSnapshot}}, ""},
 		{&zfsp.ListArgs{Name: s.pool, Types: []string{"foobar"}}, ""},
 	}
 
