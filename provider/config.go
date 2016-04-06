@@ -8,7 +8,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	logx "github.com/mistifyio/mistify-logrus-ext"
+	logx "github.com/cerana/cerana/pkg/logrusx"
 	"github.com/mitchellh/mapstructure"
 	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"

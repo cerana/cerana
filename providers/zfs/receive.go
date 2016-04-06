@@ -9,9 +9,9 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/logrusx"
 	zfs "github.com/mistifyio/go-zfs"
 	"github.com/mistifyio/gozfs"
-	"github.com/mistifyio/mistify-logrus-ext"
 )
 
 // TODO: Update this method once `gozfs` supports receive

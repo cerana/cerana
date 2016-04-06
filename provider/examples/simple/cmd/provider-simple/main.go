@@ -2,9 +2,9 @@ package main
 
 import (
 	log "github.com/Sirupsen/logrus"
+	logx "github.com/cerana/cerana/pkg/logrusx"
 	"github.com/cerana/cerana/provider"
 	"github.com/cerana/cerana/provider/examples/simple"
-	logx "github.com/mistifyio/mistify-logrus-ext"
 	flag "github.com/spf13/pflag"
 )
 

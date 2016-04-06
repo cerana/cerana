@@ -10,7 +10,7 @@ import (
 	"net/url"
 
 	log "github.com/Sirupsen/logrus"
-	logx "github.com/mistifyio/mistify-logrus-ext"
+	logx "github.com/cerana/cerana/pkg/logrusx"
 )
 
 // Response is a response data structure for asynchronous requests. The ID
