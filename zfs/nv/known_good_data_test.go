@@ -335,16 +335,16 @@ type type_doubles struct {
 }
 
 type type_empty_arrays struct {
-	A []int16 `nv:"empty int16"`
-	B []int32 `nv:"empty int32"`
-	C []int64 `nv:"empty int64"`
-	D []int8 `nv:"empty int8"`
+	A []int16                  `nv:"empty int16"`
+	B []int32                  `nv:"empty int32"`
+	C []int64                  `nv:"empty int64"`
+	D []int8                   `nv:"empty int8"`
 	E []map[string]interface{} `nv:"empty nvlist"`
-	F []string `nv:"empty string"`
-	G []uint16 `nv:"empty uint16"`
-	H []uint32 `nv:"empty uint32"`
-	I []uint64 `nv:"empty uint64"`
-	J []uint8 `nv:"empty uint8"`
+	F []string                 `nv:"empty string"`
+	G []uint16                 `nv:"empty uint16"`
+	H []uint32                 `nv:"empty uint32"`
+	I []uint64                 `nv:"empty uint64"`
+	J []uint8                  `nv:"empty uint8"`
 }
 
 var good = []struct {

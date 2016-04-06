@@ -12,6 +12,7 @@ nv.txt: nv
 
 known_good_data_test.go: nv
 	./$^ > $@
+	goimports -w $@
 
 ../known_good_data_test.go: known_good_data_test.go
 	cp $^ $@.tmp
