@@ -21,6 +21,14 @@ testOutputs := $(addsuffix test.out,$(pkgdirs))
 godocdown:
 	find -type f -name \*.go -execdir godocdown -template $(CURDIR)/.godocdown.template -o README.md \;
 
+.PHONY: lint-required
+lint-required:
+	cat gometalinter.required.flags <(printf "\n") <(go list ./... | sed "s|github.com/cerana/cerana/||" | grep -v -E "^(zfs|zfs/nv|cmd/zfs|cmd/nvprint)$$") | gometalinter @/dev/stdin
+
+.PHONY: lint-optional
+lint-optional:
+	gometalinter @gometalinter.optional.flags
+
 # Suppress Make output. The relevant test output will be collected and sent to
 # stdout
 .SILENT:

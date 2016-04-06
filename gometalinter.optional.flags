@@ -1,0 +1,8 @@
+--disable=errcheck
+--disable=vet
+--disable=gofmt
+--disable=golint
+--disable=vetshadow
+--deadline=60s
+--concurrency=1
+./...

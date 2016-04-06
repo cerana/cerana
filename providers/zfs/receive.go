@@ -9,8 +9,8 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/acomm"
-	gzfs "github.com/mistifyio/go-zfs"
 	"github.com/cerana/cerana/zfs"
+	gzfs "github.com/mistifyio/go-zfs"
 	"github.com/mistifyio/mistify-logrus-ext"
 )
 
