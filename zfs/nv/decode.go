@@ -155,7 +155,6 @@ func decodeList(dec decoder, target reflect.Value) error {
 			fieldSetter(targetField, value)
 		}
 	}
-	return nil
 }
 
 // fieldIndexMap creates a map of field names, with tag name overrides,
