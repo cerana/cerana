@@ -11,7 +11,7 @@ import (
 type flag uint32
 
 const (
-	_ flag = iota
+	ignoreMe flag = iota
 	uniqueName
 	uniqueNameType
 )
