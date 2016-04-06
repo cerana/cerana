@@ -9,6 +9,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/zfs"
+	"github.com/mistifyio/mistify-logrus-ext"
 	cobra "github.com/spf13/cobra"
 )
 
@@ -188,7 +189,7 @@ func main() {
 				if err != nil {
 					return err
 				}
-				defer outputFile.Close()
+				defer logrusx.LogReturnedErr(outputFile.Close, log.Fields{"filename": outputFile.Name()}, "failed to close temp output file")
 
 				outputWriter = outputFile
 			} else {
