@@ -7,3 +7,4 @@
 --enable=vetshadow
 --deadline=30s
 --concurrency=1
+./...
