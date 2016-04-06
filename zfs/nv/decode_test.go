@@ -375,14 +375,18 @@ type tDecoder struct {
 func decode(t *testing.T, name string, ptr interface{}, dec tDecoder) {
 	m := map[string]interface{}{}
 
-	dec.r.Seek(0, 0)
+	if _, err := dec.r.Seek(0, 0); err != nil {
+		t.Fatal(name, "decode seek 0 failed:", err)
+	}
 	if err := dec.Decode(&m); err != nil {
 		t.Fatal(name, "decode as map failed:", err)
 	}
 
 	assertFields(t, name, m)
 
-	dec.r.Seek(0, 0)
+	if _, err := dec.r.Seek(0, 0); err != nil {
+		t.Fatal(name, "decode seek 0 failed:", err)
+	}
 	if err := dec.Decode(ptr); err != nil {
 		t.Fatal(name, "decode as struct failed:", err)
 	}

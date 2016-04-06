@@ -112,8 +112,8 @@ func (d *NativeDecoder) meta() (string, dataType, error) {
 }
 
 func (d *NativeDecoder) skip() error {
-	d.r.Seek(int64(align8(int(d.size))), 1)
-	return nil
+	_, err := d.r.Seek(int64(align8(int(d.size))), 1)
+	return err
 }
 
 func (d *NativeDecoder) isEnd() (bool, error) {

@@ -80,7 +80,9 @@ type tEncoder struct {
 func encode(t *testing.T, name string, data []byte, ptr interface{}, dec tDecoder, enc tEncoder) {
 	m := map[string]interface{}{}
 
-	dec.r.Seek(0, 0)
+	if _, err := dec.r.Seek(0, 0); err != nil {
+		t.Fatal(name, "decode seek 0 failed:", err)
+	}
 	if err := dec.Decode(&m); err != nil {
 		t.Fatal(name, "decode as map failed:", err)
 	}
@@ -90,7 +92,9 @@ func encode(t *testing.T, name string, data []byte, ptr interface{}, dec tDecode
 	}
 	enc.w.Reset()
 
-	dec.r.Seek(0, 0)
+	if _, err := dec.r.Seek(0, 0); err != nil {
+		t.Fatal(name, "decode seek 0 failed:", err)
+	}
 	if err := dec.Decode(ptr); err != nil {
 		t.Fatal(name, "decode as struct failed:", err)
 	}
