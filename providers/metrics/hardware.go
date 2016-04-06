@@ -11,8 +11,7 @@ import (
 // Hardware returns information about the hardware.
 func (m *Metrics) Hardware(req *acomm.Request) (interface{}, *url.URL, error) {
 	// Note: json output from lshw is broken when specifying classes with `-C`
-	lshw := exec.Command("lshw", "-json")
-	out, err := lshw.Output()
+	out, err := exec.Command("lshw", "-json").Output()
 	if err != nil {
 		return nil, nil, err
 	}
