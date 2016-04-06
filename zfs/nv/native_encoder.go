@@ -76,16 +76,16 @@ func (e nativeEncoder) item(name string, dtype dataType, value interface{}) erro
 	vbuf := &bytes.Buffer{}
 	size := 0
 	switch dtype {
-	case _BOOLEAN:
+	case _boolean:
 		nelements = 0
-	case _BOOLEAN_VALUE:
+	case _booleanValue:
 		size = 4
 		if value.(bool) {
 			value = uint32(1)
 		} else {
 			value = uint32(0)
 		}
-	case _BOOLEAN_ARRAY:
+	case _booleanArray:
 		nelements = uint32(len(value.([]bool)))
 		size = int(4 * nelements)
 		bools := value.([]bool)
@@ -98,49 +98,49 @@ func (e nativeEncoder) item(name string, dtype dataType, value interface{}) erro
 			}
 		}
 		value = uint32s
-	case _INT8, _UINT8:
+	case _int8, _uint8:
 		size = 1
-	case _INT16, _UINT16:
+	case _int16, _uint16:
 		size = 2
-	case _BYTE:
+	case _byte:
 		value = int32(value.(byte))
 		fallthrough
-	case _INT32, _UINT32:
+	case _int32, _uint32:
 		size = 4
-	case _INT64, _UINT64, _DOUBLE, _HRTIME:
+	case _int64, _uint64, _double, _hrtime:
 		size = 8
-	case _INT8_ARRAY:
+	case _int8Array:
 		nelements = uint32(len(value.([]int8)))
 		size = int(1 * nelements)
-	case _INT16_ARRAY:
+	case _int16Array:
 		nelements = uint32(len(value.([]int16)))
 		size = int(2 * nelements)
-	case _INT32_ARRAY:
+	case _int32Array:
 		nelements = uint32(len(value.([]int32)))
 		size = int(4 * nelements)
-	case _INT64_ARRAY:
+	case _int64Array:
 		nelements = uint32(len(value.([]int64)))
 		size = int(8 * nelements)
-	case _BYTE_ARRAY, _UINT8_ARRAY:
+	case _byteArray, _uint8Array:
 		nelements = uint32(len(value.([]uint8)))
 		size = int(1 * nelements)
-	case _UINT16_ARRAY:
+	case _uint16Array:
 		nelements = uint32(len(value.([]uint16)))
 		size = int(2 * nelements)
-	case _UINT32_ARRAY:
+	case _uint32Array:
 		nelements = uint32(len(value.([]uint32)))
 		size = int(4 * nelements)
-	case _UINT64_ARRAY:
+	case _uint64Array:
 		nelements = uint32(len(value.([]uint64)))
 		size = int(8 * nelements)
-	case _STRING:
+	case _string:
 		str := value.(string)
 		size = len(str) + 1
 		buf := make([]byte, size)
 		copy(buf, str)
 		buf = buf[:size]
 		value = buf
-	case _STRING_ARRAY:
+	case _stringArray:
 		nelements = uint32(len(value.([]string)))
 		strs := value.([]string)
 		size = int(nelements * 8)
@@ -155,7 +155,7 @@ func (e nativeEncoder) item(name string, dtype dataType, value interface{}) erro
 			i += len(str) + 1
 		}
 		value = buf
-	case _NVLIST:
+	case _nvlist:
 		enc := NewNativeEncoder(vbuf)
 		enc.embedded = true
 		if err := encodeList(enc, reflect.ValueOf(value)); err != nil {
@@ -163,7 +163,7 @@ func (e nativeEncoder) item(name string, dtype dataType, value interface{}) erro
 		}
 		// embedded's nvl header + double interior pointers
 		size = 24
-	case _NVLIST_ARRAY:
+	case _nvlistArray:
 		nelements = uint32(len(value.([]map[string]interface{})))
 		// 24 for the nvlist + 8 bytes for the pointer as part of the
 		// array
@@ -176,7 +176,7 @@ func (e nativeEncoder) item(name string, dtype dataType, value interface{}) erro
 		enc := NewNativeEncoder(vbuf)
 		enc.embedded = true
 		for i := uint32(0); i < nelements; i++ {
-			if err := enc.header(header{Flag: _UNIQUE_NAME}); err != nil {
+			if err := enc.header(header{Flag: uniqueName}); err != nil {
 				return err
 			}
 		}
@@ -190,7 +190,7 @@ func (e nativeEncoder) item(name string, dtype dataType, value interface{}) erro
 	}
 
 	sizeAligned := uint32(align8(size))
-	if vbuf.Len() == 0 && dtype != _BOOLEAN {
+	if vbuf.Len() == 0 && dtype != _boolean {
 		if err := binary.Write(vbuf, e.order, value); err != nil {
 			return err
 		}

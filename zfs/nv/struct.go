@@ -7,16 +7,16 @@ import (
 	"sort"
 )
 
-//go:generate stringer -type=flag
+//go:generate sh -c "stringer -type=flag && sed -i 's#_flag_name#flagName#g;s#_flag_index#flagIndex#g' flag_string.go"
 type flag uint32
 
 const (
 	_ flag = iota
-	_UNIQUE_NAME
-	_UNIQUE_NAME_TYPE
+	uniqueName
+	uniqueNameType
 )
 
-//go:generate stringer -type=dataType
+//go:generate sh -c "stringer -type=dataType && sed -i 's#_dataType_name#dataTypeName#g;s#_dataType_index#dataTypeIndex#g' datatype_string.go"
 type dataType uint32
 
 // Boolean is used for encoding and decoding the nvlist BOOLEAN datatype, which
@@ -76,37 +76,37 @@ func prettyPrint(dst io.Writer, m map[string]interface{}, indenter, indent strin
 }
 
 const (
-	_UNKNOWN dataType = iota
-	_BOOLEAN
-	_BYTE
-	_INT16
-	_UINT16
-	_INT32
-	_UINT32
-	_INT64
-	_UINT64
-	_STRING
-	_BYTE_ARRAY
-	_INT16_ARRAY
-	_UINT16_ARRAY
-	_INT32_ARRAY
-	_UINT32_ARRAY
-	_INT64_ARRAY
-	_UINT64_ARRAY // 0x10
-	_STRING_ARRAY
-	_HRTIME
-	_NVLIST
-	_NVLIST_ARRAY
-	_BOOLEAN_VALUE
-	_INT8
-	_UINT8
-	_BOOLEAN_ARRAY
-	_INT8_ARRAY
-	_UINT8_ARRAY
-	_DOUBLE
+	_unknown dataType = iota
+	_boolean
+	_byte
+	_int16
+	_uint16
+	_int32
+	_uint32
+	_int64
+	_uint64
+	_string
+	_byteArray
+	_int16Array
+	_uint16Array
+	_int32Array
+	_uint32Array
+	_int64Array
+	_uint64Array // 0x10
+	_stringArray
+	_hrtime
+	_nvlist
+	_nvlistArray
+	_booleanValue
+	_int8
+	_uint8
+	_booleanArray
+	_int8Array
+	_uint8Array
+	_double
 )
 
-//go:generate stringer -type=codec
+//go:generate sh -c "stringer -type=codec && sed -i 's#_codec_name#codecName#g;s#_codec_index#codecIndex#g' codec_string.go"
 type codec uint8
 
 const (
@@ -115,7 +115,7 @@ const (
 	maxCodec = xdrCodec
 )
 
-//go:generate stringer -type=endianness
+//go:generate sh -c "stringer -type=endianness && sed -i 's#_endianness_name#endiannessName#g;s#_endianness_index#endiannessIndex#g' endianness_string.go"
 type endianness uint8
 
 const (
@@ -160,23 +160,23 @@ func (p pair) headerSize() int {
 func (p pair) encodedSize() int {
 	valSize := 0
 	switch p.Type {
-	case _BOOLEAN:
+	case _boolean:
 		valSize = 0
-	case _BYTE, _INT8, _UINT8, _INT16, _UINT16, _BOOLEAN_VALUE, _INT32, _UINT32:
+	case _byte, _int8, _uint8, _int16, _uint16, _booleanValue, _int32, _uint32:
 		valSize = 4
-	case _INT64, _UINT64, _HRTIME, _DOUBLE:
+	case _int64, _uint64, _hrtime, _double:
 		valSize = 8
-	case _BYTE_ARRAY:
+	case _byteArray:
 		valSize = int(p.NElements * 1)
-	case _BOOLEAN_ARRAY, _INT8_ARRAY, _UINT8_ARRAY, _INT16_ARRAY, _UINT16_ARRAY, _INT32_ARRAY, _UINT32_ARRAY:
+	case _booleanArray, _int8Array, _uint8Array, _int16Array, _uint16Array, _int32Array, _uint32Array:
 		valSize = 4 + int(p.NElements*4)
-	case _INT64_ARRAY, _UINT64_ARRAY:
+	case _int64Array, _uint64Array:
 		valSize = 4 + int(p.NElements*8)
-	case _STRING:
+	case _string:
 		valSize = 4 + len(p.data.(string))
-	case _NVLIST, _NVLIST_ARRAY:
+	case _nvlist, _nvlistArray:
 		valSize = len(p.data.([]byte))
-	case _STRING_ARRAY:
+	case _stringArray:
 		slice := p.data.([]string)
 		for i := range slice {
 			valSize += align4(4 + len(slice[i]))
@@ -196,31 +196,31 @@ func (p pair) decodedSize() int {
 	// 	/* aligned ptr array for string arrays */
 	// 	/* aligned array of data for value */
 	// } nvpair_t;
-	nvpair_tSize := 4 + 2 + 2 + 4 + 4 + len(p.Name) + 1
+	nvpairTSize := 4 + 2 + 2 + 4 + 4 + len(p.Name) + 1
 
 	valSize := 0
 	switch p.Type {
-	case _BOOLEAN:
+	case _boolean:
 		valSize = 0
-	case _BYTE, _INT8, _UINT8:
+	case _byte, _int8, _uint8:
 		valSize = 1
-	case _INT16, _UINT16:
+	case _int16, _uint16:
 		valSize = 2
-	case _BOOLEAN_VALUE, _INT32, _UINT32:
+	case _booleanValue, _int32, _uint32:
 		valSize = 4
-	case _INT64, _UINT64, _HRTIME, _DOUBLE:
+	case _int64, _uint64, _hrtime, _double:
 		valSize = 8
-	case _BYTE_ARRAY, _INT8_ARRAY, _UINT8_ARRAY:
+	case _byteArray, _int8Array, _uint8Array:
 		valSize = int(p.NElements * 1)
-	case _INT16_ARRAY, _UINT16_ARRAY:
+	case _int16Array, _uint16Array:
 		valSize = int(p.NElements * 2)
-	case _INT32_ARRAY, _UINT32_ARRAY:
+	case _int32Array, _uint32Array:
 		valSize = int(p.NElements * 4)
-	case _INT64_ARRAY, _UINT64_ARRAY:
+	case _int64Array, _uint64Array:
 		valSize = int(p.NElements * 8)
-	case _STRING:
+	case _string:
 		valSize = len(p.data.(string)) + 1
-	case _NVLIST:
+	case _nvlist:
 		// /* nvlist header */
 		// typedef struct nvlist {
 		// 	int32_t		nvl_version;
@@ -230,18 +230,18 @@ func (p pair) decodedSize() int {
 		// 	int32_t		nvl_pad;	/* currently not used, for alignment */
 		// } nvlist_t;
 		valSize = 4 + 4 + 8 + 4 + 4
-	case _NVLIST_ARRAY:
+	case _nvlistArray:
 		// value_sz = (uint64_t)nelem * sizeof (uint64_t) +
 		//	      (uint64_t)nelem * NV_ALIGN(sizeof (nvlist_t));
 		valSize = int(p.NElements) * (8 + align8(4+4+8+4+4))
-	case _BOOLEAN_ARRAY:
+	case _booleanArray:
 		valSize = 4 + int(p.NElements*4)
-	case _STRING_ARRAY:
+	case _stringArray:
 		valSize = int(p.NElements * 8)
 		slice := p.data.([]string)
 		for i := range slice {
 			valSize += len(slice[i]) + 1
 		}
 	}
-	return align8(nvpair_tSize) + align8(valSize)
+	return align8(nvpairTSize) + align8(valSize)
 }

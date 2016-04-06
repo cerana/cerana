@@ -142,7 +142,7 @@ func TestEncodeGood(t *testing.T) {
 }
 
 func TestEncodeBad(t *testing.T) {
-	for _, test := range encode_bad {
+	for _, test := range encodeBad {
 		if testing.Verbose() {
 			fmt.Println(" -- ", test.err)
 		} else {
