@@ -58,11 +58,11 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-	if err := out.WriteString("\n"); err != nil {
+	if _, err := out.WriteString("\n"); err != nil {
 		fmt.Println(err)
 		return
 	}
-	if err := out.WriteTo(os.Stdout); err != nil {
+	if _, err := out.WriteTo(os.Stdout); err != nil {
 		fmt.Println(err)
 		return
 	}
