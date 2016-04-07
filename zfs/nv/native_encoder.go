@@ -8,18 +8,21 @@ import (
 	"reflect"
 )
 
-type nativeEncoder struct {
+// NativeEncoder is an Encoder for native encoding.
+type NativeEncoder struct {
 	w          io.Writer
 	order      binary.ByteOrder
 	embedded   bool
 	skipHeader bool
 }
 
-func NewNativeEncoder(w io.Writer) *nativeEncoder {
-	return &nativeEncoder{w: w, order: binary.LittleEndian}
+// NewNativeEncoder creates a new nativeEncoder.
+func NewNativeEncoder(w io.Writer) *NativeEncoder {
+	return &NativeEncoder{w: w, order: binary.LittleEndian}
 }
 
-func (e nativeEncoder) Encode(i interface{}) error {
+// Encode encodes the supplied data with native encoding.
+func (e NativeEncoder) Encode(i interface{}) error {
 	if i == nil {
 		return errors.New("can not encode a nil pointer")
 	}
@@ -37,7 +40,7 @@ func (e nativeEncoder) Encode(i interface{}) error {
 	return encodeList(e, v)
 }
 
-func (e nativeEncoder) header(h header) error {
+func (e NativeEncoder) header(h header) error {
 	if e.skipHeader {
 		return nil
 	}
@@ -55,11 +58,11 @@ func (e nativeEncoder) header(h header) error {
 	return nil
 }
 
-func (e nativeEncoder) footer() error {
+func (e NativeEncoder) footer() error {
 	return binary.Write(e.w, e.order, uint32(0))
 }
 
-func (e nativeEncoder) item(name string, dtype dataType, value interface{}) error {
+func (e NativeEncoder) item(name string, dtype dataType, value interface{}) error {
 	/*
 		type nativePair struct {
 			Size      uint32

@@ -10,17 +10,19 @@ import (
 	xdr "github.com/davecgh/go-xdr/xdr2"
 )
 
+// XDRDecoder is a Decoder for XDR encoding.
 type XDRDecoder struct {
 	*xdr.Decoder
 	r    io.ReadSeeker
 	pair pair
 }
 
+// NewXDRDecoder creates a new XDRDecoder.
 func NewXDRDecoder(r io.ReadSeeker) *XDRDecoder {
 	return &XDRDecoder{Decoder: xdr.NewDecoder(r), r: r}
 }
 
-// Decode
+// Decode decodes data into a supplied target.
 // Note: care should be taken when decoding into a `map[string]interface{}` as
 // bytes/uint8s (and their array forms) can not be distinguished and will be
 // treated as uint8/[]uint8.

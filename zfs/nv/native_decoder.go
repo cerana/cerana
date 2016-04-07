@@ -31,6 +31,7 @@ type nativePair struct {
 	Data interface{}
 }
 
+// NativeDecoder is a Decoder for native encoding.
 type NativeDecoder struct {
 	r           io.ReadSeeker
 	pair        nativePair
@@ -39,11 +40,12 @@ type NativeDecoder struct {
 	savedHeader header
 }
 
+// NewNativeDecoder creates a new NativeDecoder.
 func NewNativeDecoder(r io.ReadSeeker) *NativeDecoder {
 	return &NativeDecoder{r: r}
 }
 
-// Decode
+// Decode decodes data into a supplied target.
 // Note: care should be taken when decoding into a `map[string]interface{}` as
 // bytes/uint8s (and their array forms) can not be distinguished and will be
 // treated as uint8/[]uint8.

@@ -10,14 +10,17 @@ import (
 	xdr "github.com/davecgh/go-xdr/xdr2"
 )
 
+// XDREncoder is an Encoder for XDR encoding.
 type XDREncoder struct {
 	w io.Writer
 }
 
+// NewXDREncoder creates a new XDREncoder.
 func NewXDREncoder(w io.Writer) XDREncoder {
 	return XDREncoder{w: w}
 }
 
+// Encode encodes data using XDR encoding.
 func (e XDREncoder) Encode(i interface{}) error {
 	if i == nil {
 		return errors.New("can not encode a nil pointer")
