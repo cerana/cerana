@@ -7,10 +7,10 @@ import (
 	"syscall"
 
 	"github.com/cerana/cerana/acomm"
-	"github.com/mistifyio/go-zfs"
+	gzfs "github.com/mistifyio/go-zfs"
 )
 
-// TODO: Update this method once `gozfs` supports Mount
+// TODO: Update this method once `zfs` supports Mount
 
 // MountArgs are arguments for the Mount handler.
 type MountArgs struct {
@@ -29,9 +29,9 @@ func (z *ZFS) Mount(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.New("missing arg: name")
 	}
 
-	ds, err := zfs.GetDataset(args.Name)
+	ds, err := gzfs.GetDataset(args.Name)
 	if err != nil {
-		// Fix errors to be more like what gozfs will probably return
+		// Fix errors to be more like what zfs will probably return
 		if strings.Contains(err.Error(), "dataset does not exist") {
 			err = syscall.ENOENT
 		}
@@ -40,7 +40,7 @@ func (z *ZFS) Mount(req *acomm.Request) (interface{}, *url.URL, error) {
 
 	ds, err = ds.Mount(args.Overlay, nil)
 	if err != nil {
-		// Fix errors to be more like what gozfs will probably return
+		// Fix errors to be more like what zfs will probably return
 		if strings.Contains(err.Error(), "already mounted") {
 			err = syscall.EBUSY
 		}

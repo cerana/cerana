@@ -5,7 +5,7 @@ import (
 	"net/url"
 
 	"github.com/cerana/cerana/acomm"
-	"github.com/mistifyio/gozfs"
+	"github.com/cerana/cerana/zfs"
 )
 
 // ExistsResult is the result data for the Exists handler.
@@ -24,7 +24,7 @@ func (z *ZFS) Exists(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.New("missing arg: name")
 	}
 
-	exists, err := gozfs.Exists(args.Name)
+	exists, err := zfs.Exists(args.Name)
 	if err != nil {
 		return nil, nil, err
 	}

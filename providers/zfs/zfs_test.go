@@ -14,7 +14,7 @@ import (
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/provider"
 	zfsp "github.com/cerana/cerana/providers/zfs"
-	"github.com/mistifyio/gozfs"
+	libzfs "github.com/cerana/cerana/zfs"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/suite"
@@ -146,7 +146,7 @@ func (s *zfs) SetupSuite() {
 	s.dir = dir
 
 	v := viper.New()
-	flagset := pflag.NewFlagSet("go-zfs", pflag.PanicOnError)
+	flagset := pflag.NewFlagSet("zfs-provider", pflag.PanicOnError)
 	config := provider.NewConfig(flagset, v)
 	s.Require().NoError(flagset.Parse([]string{}))
 	v.Set("service_name", "zfs-provider-test")
@@ -194,7 +194,7 @@ func (s *zfs) TestDatasetMoutpoint() {
 		testS := fmt.Sprintf("%+v", test)
 		ds := &zfsp.Dataset{
 			Name: test.name,
-			Properties: &gozfs.DatasetProperties{
+			Properties: &libzfs.DatasetProperties{
 				MountpointSource: test.mountpointSource,
 				Mountpoint:       test.mountpoint,
 			},

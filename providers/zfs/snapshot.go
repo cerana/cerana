@@ -5,7 +5,7 @@ import (
 	"net/url"
 
 	"github.com/cerana/cerana/acomm"
-	"github.com/mistifyio/gozfs"
+	"github.com/cerana/cerana/zfs"
 )
 
 // SnapshotArgs are the arguments for the Snapshot handler.
@@ -29,7 +29,7 @@ func (z *ZFS) Snapshot(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.New("missing arg: snapname")
 	}
 
-	ds, err := gozfs.GetDataset(args.Name)
+	ds, err := zfs.GetDataset(args.Name)
 	if err != nil {
 		return nil, nil, err
 	}

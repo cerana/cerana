@@ -4,7 +4,7 @@ import (
 	"net/url"
 
 	"github.com/cerana/cerana/acomm"
-	"github.com/mistifyio/gozfs"
+	"github.com/cerana/cerana/zfs"
 )
 
 // ListArgs are the args for the List handler.
@@ -29,7 +29,7 @@ func (z *ZFS) List(req *acomm.Request) (interface{}, *url.URL, error) {
 		args.Types = []string{"all"}
 	}
 
-	list, err := gozfs.Datasets(args.Name, args.Types)
+	list, err := zfs.Datasets(args.Name, args.Types)
 	if err != nil {
 		return nil, nil, err
 	}

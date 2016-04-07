@@ -5,7 +5,7 @@ import (
 	"net/url"
 
 	"github.com/cerana/cerana/acomm"
-	"github.com/mistifyio/gozfs"
+	"github.com/cerana/cerana/zfs"
 )
 
 // Get returns information about a dataset.
@@ -19,7 +19,7 @@ func (z *ZFS) Get(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.New("missing arg: name")
 	}
 
-	ds, err := gozfs.GetDataset(args.Name)
+	ds, err := zfs.GetDataset(args.Name)
 	if err != nil {
 		return nil, nil, err
 	}

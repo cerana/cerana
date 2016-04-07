@@ -33,7 +33,7 @@ CommonArgs are arguments that apply to all handlers.
 ```go
 type CreateArgs struct {
 	Name       string                 `json:"name"`
-	Type       string                 `json:"type"` // gozfs.Dataset[Filesystem,Volume]
+	Type       string                 `json:"type"` // zfs.Dataset[Filesystem,Volume]
 	Volsize    uint64                 `json:"volsize"`
 	Properties map[string]interface{} `json:"properties"`
 }
@@ -46,13 +46,13 @@ CreateArgs are arguments for the Create handler.
 ```go
 type Dataset struct {
 	Name           string
-	Properties     *gozfs.DatasetProperties
-	DMUObjsetStats *gozfs.DMUObjsetStats
+	Properties     *zfs.DatasetProperties
+	DMUObjsetStats *zfs.DMUObjsetStats
 }
 ```
 
 Dataset contains information and properties for a ZFS dataset. This struct is
-the same as gozfs.Dataset, except all methods that interact with ZFS have been
+the same as zfs.Dataset, except all methods that interact with ZFS have been
 removed. The ZFS provider should be the only place that interacts with zfs
 directly.
 
