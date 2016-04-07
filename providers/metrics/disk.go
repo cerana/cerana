@@ -9,26 +9,26 @@ import (
 
 // DiskResult is the result for the Disk handler.
 type DiskResult struct {
-	IO         map[string]disk.DiskIOCountersStat `json:"io"`
-	Partitions []disk.DiskPartitionStat           `json:"partitions"`
-	Usage      []*disk.DiskUsageStat              `json:"usage"`
+	IO         map[string]disk.IOCountersStat `json:"io"`
+	Partitions []disk.PartitionStat           `json:"partitions"`
+	Usage      []*disk.UsageStat              `json:"usage"`
 }
 
 // Disk returns information about the disk partitions, io, and usage.
 func (m *Metrics) Disk(req *acomm.Request) (interface{}, *url.URL, error) {
-	io, err := disk.DiskIOCounters()
+	io, err := disk.IOCounters()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	partitions, err := disk.DiskPartitions(true)
+	partitions, err := disk.Partitions(true)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	usage := make([]*disk.DiskUsageStat, 0, len(partitions))
+	usage := make([]*disk.UsageStat, 0, len(partitions))
 	for _, partition := range partitions {
-		u, err := disk.DiskUsage(partition.Mountpoint)
+		u, err := disk.Usage(partition.Mountpoint)
 		if err != nil {
 			return nil, nil, err
 		}

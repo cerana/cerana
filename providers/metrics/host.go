@@ -9,6 +9,6 @@ import (
 
 // Host returns information about the host machine.
 func (m *Metrics) Host(req *acomm.Request) (interface{}, *url.URL, error) {
-	hostInfo, err := host.HostInfo()
+	hostInfo, err := host.Info()
 	return hostInfo, nil, err
 }
