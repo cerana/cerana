@@ -168,22 +168,22 @@ static char *sanitize(char *name) {
 
 static std::string gen_type(const char *cname) {
 	std::string name("type ");
-	name +=(cname);
+	name += (cname);
     std::string camel("");
 
     int i;
-    for(i=0; name[i]!='\0'; i++){
+    for(i = 0; name[i] != '\0'; i++){
         if (name[i] == ' ' || name[i] == '(' || name[i] == ')'){
             continue;
         }
-        if(i>0 && name[i-1]==' '){
-            if(name[i]>='a' && name[i]<='z'){
-                camel +=(name[i]-32);
-            } else if (name[i]>='A' && name[i]<='Z') {
-                camel +=(name[i]+32);
+        if(i > 0 && name[i-1] == ' '){
+            if(name[i] >= 'a' && name[i] <= 'z'){
+                camel += (name[i]-32);
+            } else if (name[i] >= 'A' && name[i] <= 'Z') {
+                camel += (name[i] + 32);
             }
         } else {
-            camel +=(name[i]);
+            camel += (name[i]);
         }
     }
 	return camel;
