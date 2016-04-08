@@ -112,7 +112,7 @@ func decodeList(dec decoder, target reflect.Value) error {
 			// iteration.
 			if !ok {
 				if !extraMap.IsValid() {
-					if err := dec.skip(); err != nil {
+					if err = dec.skip(); err != nil {
 						return err
 					}
 					continue

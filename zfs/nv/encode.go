@@ -77,8 +77,8 @@ func encodeList(enc encoder, v reflect.Value) error {
 		sort.Strings(keys)
 
 		for _, name := range keys {
-			v := v.MapIndex(reflect.ValueOf(name))
-			if err := encodeItem(enc, name, nil, v); err != nil {
+			val := v.MapIndex(reflect.ValueOf(name))
+			if err := encodeItem(enc, name, nil, val); err != nil {
 				return err
 			}
 		}

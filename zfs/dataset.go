@@ -457,7 +457,7 @@ func (d *Dataset) Rollback(destroyMoreRecent bool) error {
 			Recursive:       true,
 			RecursiveClones: true,
 		}
-		if err := snapshot.Destroy(opts); err != nil {
+		if err = snapshot.Destroy(opts); err != nil {
 			return err
 		}
 	}
