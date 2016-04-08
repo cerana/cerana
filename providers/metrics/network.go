@@ -9,18 +9,18 @@ import (
 
 // NetworkResult is the result for the Network handler.
 type NetworkResult struct {
-	IO         []net.NetIOCountersStat `json:"io"`
-	Interfaces []net.NetInterfaceStat  `json:"interfaces"`
+	IO         []net.IOCountersStat `json:"io"`
+	Interfaces []net.InterfaceStat  `json:"interfaces"`
 }
 
 // Network returns information about the net interfaces and io.
 func (m *Metrics) Network(req *acomm.Request) (interface{}, *url.URL, error) {
-	interfaces, err := net.NetInterfaces()
+	interfaces, err := net.Interfaces()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	io, err := net.NetIOCounters(true)
+	io, err := net.IOCounters(true)
 	if err != nil {
 		return nil, nil, err
 	}

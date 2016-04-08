@@ -10,24 +10,24 @@ import (
 
 // CPUResult is the result of the CPU handler.
 type CPUResult struct {
-	Info  []cpu.CPUInfoStat  `json:"info"`
-	Load  *load.LoadAvgStat  `json:"load"`
-	Times []cpu.CPUTimesStat `json:"times"`
+	Info  []cpu.InfoStat  `json:"info"`
+	Load  *load.AvgStat   `json:"load"`
+	Times []cpu.TimesStat `json:"times"`
 }
 
 // CPU returns information about the CPU hardware, times, and load.
 func (m *Metrics) CPU(req *acomm.Request) (interface{}, *url.URL, error) {
-	info, err := cpu.CPUInfo()
+	info, err := cpu.Info()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	loadAvg, err := load.LoadAvg()
+	loadAvg, err := load.Avg()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	times, err := cpu.CPUTimes(true)
+	times, err := cpu.Times(true)
 	if err != nil {
 		return nil, nil, err
 	}
