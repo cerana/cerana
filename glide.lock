@@ -1,0 +1,87 @@
+hash: 9cceaf0217c3e7cfb3fcc1292552bf1aa7e70322321ddfe874626063180c5fa0
+updated: 2016-04-07T20:37:43.509388403Z
+imports:
+- name: github.com/BurntSushi/toml
+  version: bbd5bb678321a0d6e58f1099321dfa73391c1b6f
+- name: github.com/coreos/go-systemd
+  version: 7b2428fec40033549c68f54e26e89e7ca9a9ce31
+  subpackages:
+  - dbus
+  - unit
+- name: github.com/davecgh/go-xdr
+  version: a829af976409261bb27af8bfebe356624dcb8bae
+  subpackages:
+  - xdr2
+- name: github.com/go-ole/go-ole
+  version: 572eabb84c424e76a0d39d31510dd7dfd62f70b2
+  subpackages:
+  - oleutil
+- name: github.com/godbus/dbus
+  version: d40f8873baf2c51e569484fd212d0667c54aa343
+- name: github.com/hashicorp/hcl
+  version: 2604f3bda7e8960c1be1063709e7d7f0765048d0
+  subpackages:
+  - hcl/ast
+  - hcl/parser
+  - hcl/token
+  - json/parser
+  - hcl/scanner
+  - hcl/strconv
+  - json/scanner
+  - json/token
+- name: github.com/inconshreveable/mousetrap
+  version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
+- name: github.com/kr/pretty
+  version: add1dbc86daf0f983cd4a48ceb39deb95c729b67
+- name: github.com/kr/text
+  version: bb797dc4fb8320488f47bf11de07a733d7233e1f
+- name: github.com/magiconair/properties
+  version: c265cfa48dda6474e208715ca93e987829f572f8
+- name: github.com/mistifyio/go-zfs
+  version: 67e6c1df1c39c396e50d3a2770c8902888702b3e
+- name: github.com/mitchellh/mapstructure
+  version: d2dd0262208475919e1a362f675cfc0e7c10e905
+- name: github.com/pborman/uuid
+  version: c55201b036063326c5b1b89ccfe45a184973d073
+- name: github.com/shirou/gopsutil
+  version: e8f7a95747d711f34ddfe9dd9b825a84bd059dec
+  subpackages:
+  - cpu
+  - disk
+  - host
+  - load
+  - mem
+  - net
+  - internal/common
+  - process
+- name: github.com/shirou/w32
+  version: 3c9377fc6748f222729a8270fe2775d149a249ad
+- name: github.com/Sirupsen/logrus
+  version: 4b6ea7319e214d98c938f12692336f7ca9348d6b
+- name: github.com/spf13/cast
+  version: 27b586b42e29bec072fe7379259cc719e1289da6
+- name: github.com/spf13/cobra
+  version: 4c05eb1145f16d0e6bb4a3e1b6d769f4713cb41f
+- name: github.com/spf13/jwalterweatherman
+  version: 33c24e77fb80341fe7130ee7c594256ff08ccc46
+- name: github.com/spf13/pflag
+  version: 7f60f83a2c81bc3c3c0d5297f61ddfa68da9d3b7
+- name: github.com/spf13/viper
+  version: c975dc1b4eacf4ec7fdbf0873638de5d090ba323
+- name: github.com/StackExchange/wmi
+  version: f3e2bae1e0cb5aef83e319133eabfee30013a4a5
+- name: github.com/tylerb/graceful
+  version: 9a3d4236b03bb5d26f7951134d248f9d5510d599
+- name: golang.org/x/net
+  version: e45385e9b226f570b1f086bf287b25d3d4117776
+  subpackages:
+  - netutil
+- name: golang.org/x/sys
+  version: 042a8f53ce82bbe081222da955159491e32146a0
+  subpackages:
+  - unix
+- name: gopkg.in/fsnotify.v1
+  version: 875cf421b32f8f1b31bd43776297876d01542279
+- name: gopkg.in/yaml.v2
+  version: a83829b6f1293c91addabc89d0571c246397bbf4
+devImports: []

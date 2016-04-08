@@ -1,0 +1,25 @@
+package: github.com/cerana/cerana
+import:
+- package: github.com/Sirupsen/logrus
+- package: github.com/coreos/go-systemd
+  subpackages:
+  - dbus
+  - unit
+- package: github.com/davecgh/go-xdr
+  subpackages:
+  - xdr2
+- package: github.com/mistifyio/go-zfs
+- package: github.com/mitchellh/mapstructure
+- package: github.com/pborman/uuid
+- package: github.com/shirou/gopsutil
+  subpackages:
+  - cpu
+  - disk
+  - host
+  - load
+  - mem
+  - net
+- package: github.com/spf13/cobra
+- package: github.com/spf13/pflag
+- package: github.com/spf13/viper
+- package: github.com/tylerb/graceful

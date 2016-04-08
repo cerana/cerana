@@ -39,6 +39,10 @@ Submit unit tests for all changes. Before submitting a pull request, make sure t
 
 TravisCI is configured to run a build on pull request. Results can be found [here](https://travis-ci.org/cerana/cerana)
 
+### Dependencies
+
+All go dependencies are vendored and managed using [glide](https://github.com/Masterminds/glide). Use `glide install` to get the current set of dependencies. When introducing a new dependency `glide get [package name]` and commit both the updated `glide.yaml` and `glide.lock`. See the `glide` README for for more information.
+
 ## Contact
 
 * Internet Relay Chat (IRC) - `#cerana` on `irc.freenode.net`

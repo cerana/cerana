@@ -12,14 +12,14 @@ testBinFromDir=$(addprefix $(addsuffix /,$(1)), $(addsuffix .test, $(notdir $(1)
 # Determine the list of go packages to be tested based on which have test files.
 # Test targets are of the form `pkgdir/pkgname.test`
 test_files := $(call rwildcard,,*_test.go)
-pkgdirs := $(sort $(dir $(test_files)))
+pkgdirs := $(filter-out vendor/%, $(sort $(dir $(test_files))))
 pkgs := $(notdir $(patsubst %/,%,$(pkgdirs)))
 testBins := $(join $(pkgdirs), $(addsuffix .test,$(pkgs)))
 testOutputs := $(addsuffix test.out,$(pkgdirs))
 
 .PHONY: godocdown
 godocdown:
-	find -type f -name \*.go -execdir godocdown -template $(CURDIR)/.godocdown.template -o README.md \;
+	find -type f -name \*.go -not -path "./vendor/*" -execdir godocdown -template $(CURDIR)/.godocdown.template -o README.md \;
 
 .PHONY: lint-required
 lint-required:
