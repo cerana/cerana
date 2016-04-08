@@ -16,7 +16,7 @@ type NativeEncoder struct {
 	skipHeader bool
 }
 
-// NewNativeEncoder creates a new nativeEncoder.
+// NewNativeEncoder creates a new NativeEncoder.
 func NewNativeEncoder(w io.Writer) *NativeEncoder {
 	return &NativeEncoder{w: w, order: binary.LittleEndian}
 }
