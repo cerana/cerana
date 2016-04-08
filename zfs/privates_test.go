@@ -54,7 +54,7 @@ func (s *internal) create(pool string) {
 			panic(err)
 		}
 		files[i] = f.Name()
-		f.Close()
+		s.Require().NoError(f.Close())
 	}
 	s.files = files
 
@@ -117,7 +117,7 @@ func (s *internal) create(pool string) {
 func (s *internal) destroy() {
 	err := command("sudo", "zpool", "destroy", s.pool).Run()
 	for i := range s.files {
-		os.Remove(s.files[i])
+		s.NoError(os.Remove(s.files[i]))
 	}
 	s.Require().NoError(err)
 }
@@ -418,14 +418,8 @@ func receive(r *os.File, target string) error {
 		if err != nil {
 			panic(err)
 		}
-		in.Close()
-		r.Close()
 	}()
-	cmdErr := cmd.Run()
-	if cmdErr != nil {
-		return cmdErr
-	}
-	return err
+	return cmd.Run()
 }
 
 func (s *internal) TestSendSimple() {
@@ -436,24 +430,24 @@ func (s *internal) TestSendSimple() {
 	// expect epipe
 	reader, writer, err := os.Pipe()
 	s.Require().NoError(err)
-	reader.Close()
+	s.NoError(reader.Close())
 	s.EqualError(send(s.pool+"/a/2@snap1", writer.Fd(), "", true, true), epipe)
-	writer.Close()
+	s.NoError(writer.Close())
 
 	// expect ebadf
 	reader, writer, err = os.Pipe()
 	s.Require().NoError(err)
-	writer.Close()
+	s.NoError(writer.Close())
 	s.EqualError(send(s.pool+"/a/2@snap1", writer.Fd(), "", true, true), ebadf)
-	reader.Close()
+	s.NoError(reader.Close())
 
 	// ok
 	reader, writer, err = os.Pipe()
 	s.Require().NoError(err)
 	s.NoError(send(s.pool+"/a/4", writer.Fd(), "", true, true))
 	s.NoError(receive(reader, s.pool+"/c"))
-	reader.Close()
-	writer.Close()
+	s.NoError(reader.Close())
+	s.NoError(writer.Close())
 }
 
 // Tests both incremental and verifies actual file changes
@@ -469,9 +463,9 @@ func (s *internal) TestSendComplex() {
 	reader, writer, err := os.Pipe()
 	NoError(err)
 	NoError(send(s.pool+"/a/2@pre", writer.Fd(), "", true, true))
-	writer.Close() // must be before receiver, otherwise can block
+	s.NoError(writer.Close()) // must be before receiver, otherwise can block
 	s.NoError(receive(reader, s.pool+"/c"))
-	reader.Close()
+	s.NoError(reader.Close())
 	name = strings.Replace(name, "/a/", "/c/", 1)
 	_, err = os.Stat(name)
 	s.NoError(err)
@@ -479,9 +473,9 @@ func (s *internal) TestSendComplex() {
 	reader, writer, err = os.Pipe()
 	NoError(err)
 	s.NoError(send(s.pool+"/a/2@post", writer.Fd(), s.pool+"/a/2@pre", false, false))
-	writer.Close() // must be before receiver, otherwise can block
+	s.NoError(writer.Close()) // must be before receiver, otherwise can block
 	s.NoError(receive(reader, s.pool+"/c"))
-	reader.Close()
+	s.NoError(reader.Close())
 	_, err = os.Stat(name)
 	s.IsType(&os.PathError{}, err)
 }

@@ -4,14 +4,13 @@ package nv
 
 import "fmt"
 
-const _flag_name = "_UNIQUE_NAME_UNIQUE_NAME_TYPE"
+const flagName = "ignoreMeuniqueNameuniqueNameType"
 
-var _flag_index = [...]uint8{0, 12, 29}
+var flagIndex = [...]uint8{0, 8, 18, 32}
 
 func (i flag) String() string {
-	i -= 1
-	if i >= flag(len(_flag_index)-1) {
-		return fmt.Sprintf("flag(%d)", i+1)
+	if i >= flag(len(flagIndex)-1) {
+		return fmt.Sprintf("flag(%d)", i)
 	}
-	return _flag_name[_flag_index[i]:_flag_index[i+1]]
+	return flagName[flagIndex[i]:flagIndex[i+1]]
 }

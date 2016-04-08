@@ -6,12 +6,6 @@
 
 ## Usage
 
-#### func  NewNativeEncoder
-
-```go
-func NewNativeEncoder(w io.Writer) *nativeEncoder
-```
-
 #### func  PrettyPrint
 
 ```go
@@ -41,21 +35,46 @@ type NativeDecoder struct {
 }
 ```
 
+NativeDecoder is a Decoder for native encoding.
 
 #### func  NewNativeDecoder
 
 ```go
 func NewNativeDecoder(r io.ReadSeeker) *NativeDecoder
 ```
+NewNativeDecoder creates a new NativeDecoder.
 
 #### func (*NativeDecoder) Decode
 
 ```go
 func (d *NativeDecoder) Decode(target interface{}) (err error)
 ```
-Decode Note: care should be taken when decoding into a `map[string]interface{}`
-as bytes/uint8s (and their array forms) can not be distinguished and will be
-treated as uint8/[]uint8.
+Decode decodes data into a supplied target. Note: care should be taken when
+decoding into a `map[string]interface{}` as bytes/uint8s (and their array forms)
+can not be distinguished and will be treated as uint8/[]uint8.
+
+#### type NativeEncoder
+
+```go
+type NativeEncoder struct {
+}
+```
+
+NativeEncoder is an Encoder for native encoding.
+
+#### func  NewNativeEncoder
+
+```go
+func NewNativeEncoder(w io.Writer) *NativeEncoder
+```
+NewNativeEncoder creates a new nativeEncoder.
+
+#### func (NativeEncoder) Encode
+
+```go
+func (e NativeEncoder) Encode(i interface{}) error
+```
+Encode encodes the supplied data with native encoding.
 
 #### type XDRDecoder
 
@@ -65,21 +84,23 @@ type XDRDecoder struct {
 }
 ```
 
+XDRDecoder is a Decoder for XDR encoding.
 
 #### func  NewXDRDecoder
 
 ```go
 func NewXDRDecoder(r io.ReadSeeker) *XDRDecoder
 ```
+NewXDRDecoder creates a new XDRDecoder.
 
 #### func (*XDRDecoder) Decode
 
 ```go
 func (d *XDRDecoder) Decode(target interface{}) error
 ```
-Decode Note: care should be taken when decoding into a `map[string]interface{}`
-as bytes/uint8s (and their array forms) can not be distinguished and will be
-treated as uint8/[]uint8.
+Decode decodes data into a supplied target. Note: care should be taken when
+decoding into a `map[string]interface{}` as bytes/uint8s (and their array forms)
+can not be distinguished and will be treated as uint8/[]uint8.
 
 #### type XDREncoder
 
@@ -88,18 +109,21 @@ type XDREncoder struct {
 }
 ```
 
+XDREncoder is an Encoder for XDR encoding.
 
 #### func  NewXDREncoder
 
 ```go
 func NewXDREncoder(w io.Writer) XDREncoder
 ```
+NewXDREncoder creates a new XDREncoder.
 
 #### func (XDREncoder) Encode
 
 ```go
 func (e XDREncoder) Encode(i interface{}) error
 ```
+Encode encodes data using XDR encoding.
 
 --
 *Generated with [godocdown](https://github.com/robertkrimen/godocdown)*

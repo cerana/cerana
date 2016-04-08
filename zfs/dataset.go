@@ -457,7 +457,7 @@ func (d *Dataset) Rollback(destroyMoreRecent bool) error {
 			Recursive:       true,
 			RecursiveClones: true,
 		}
-		if err := snapshot.Destroy(opts); err != nil {
+		if err = snapshot.Destroy(opts); err != nil {
 			return err
 		}
 	}
@@ -475,35 +475,74 @@ type fdCloser interface {
 	Close() error
 }
 
+type pipeFdCloser struct {
+	r    *os.File
+	w    *os.File
+	done chan error
+}
+
+func (pfc *pipeFdCloser) Fd() uintptr {
+	return pfc.w.Fd()
+}
+
+func (pfc *pipeFdCloser) Close() error {
+	var err error
+	for _, theErr := range []error{<-pfc.done, pfc.r.Close(), pfc.w.Close()} {
+		if err == nil {
+			err = theErr
+		}
+	}
+	return err
+}
+
+func (pfc *pipeFdCloser) Copy(output io.Writer) {
+	_, err := io.Copy(output, pfc.r)
+	pfc.done <- err
+}
+
+type noopFdCloser struct {
+	w fdCloser
+}
+
+func (nfc *noopFdCloser) Fd() uintptr {
+	return nfc.w.Fd()
+}
+
+func (nfc *noopFdCloser) Close() error {
+	return nil
+}
+
+func newFdCloser(output io.Writer) (fdCloser, error) {
+	outputFdCloser, isFdCloser := output.(fdCloser)
+
+	if isFdCloser {
+		return &noopFdCloser{outputFdCloser}, nil
+	}
+
+	r, w, err := os.Pipe()
+	if err != nil {
+		return nil, err
+	}
+	pfc := &pipeFdCloser{
+		r:    r,
+		w:    w,
+		done: make(chan error, 1),
+	}
+	go pfc.Copy(output)
+	return pfc, nil
+}
+
 // Send sends a stream of a snapshot to the writer.
 func (d *Dataset) Send(output io.Writer) error {
-	done := make(chan error, 1)
-
-	outputFdCloser, isFdCloser := output.(fdCloser)
-	// Connect a file descriptor to the output Writer
-	if !isFdCloser {
-		r, w, err := os.Pipe()
-		if err != nil {
-			return err
-		}
-		defer w.Close()
-		defer r.Close()
-
-		outputFdCloser = w
-
-		// Copy data to the output Writer
-		go func() {
-			_, err := io.Copy(output, r)
-			done <- err
-		}()
-	} else {
-		done <- nil
-	}
-
-	if err := send(d.Name, outputFdCloser.Fd(), "", false, false); err != nil {
+	fdc, err := newFdCloser(output)
+	if err != nil {
 		return err
 	}
-	return <-done
+
+	if err := send(d.Name, fdc.Fd(), "", false, false); err != nil {
+		return err
+	}
+	return fdc.Close()
 }
 
 // Snapshot creates a new snapshot of the dataset.

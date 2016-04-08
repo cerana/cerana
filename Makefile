@@ -23,7 +23,7 @@ godocdown:
 
 .PHONY: lint-required
 lint-required:
-	cat gometalinter.required.flags <(printf "\n") <(go list ./... | sed "s|github.com/cerana/cerana/||" | grep -v -E "^(zfs|zfs/nv|cmd/zfs|cmd/nvprint)$$") | gometalinter @/dev/stdin
+	gometalinter @gometalinter.required.flags
 
 .PHONY: lint-optional
 lint-optional:

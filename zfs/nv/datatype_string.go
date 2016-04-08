@@ -4,13 +4,13 @@ package nv
 
 import "fmt"
 
-const _dataType_name = "_UNKNOWN_BOOLEAN_BYTE_INT16_UINT16_INT32_UINT32_INT64_UINT64_STRING_BYTE_ARRAY_INT16_ARRAY_UINT16_ARRAY_INT32_ARRAY_UINT32_ARRAY_INT64_ARRAY_UINT64_ARRAY_STRING_ARRAY_HRTIME_NVLIST_NVLIST_ARRAY_BOOLEAN_VALUE_INT8_UINT8_BOOLEAN_ARRAY_INT8_ARRAY_UINT8_ARRAY_DOUBLE"
+const dataTypeName = "_unknown_boolean_byte_int16_uint16_int32_uint32_int64_uint64_string_byteArray_int16Array_uint16Array_int32Array_uint32Array_int64Array_uint64Array_stringArray_hrtime_nvlist_nvlistArray_booleanValue_int8_uint8_booleanArray_int8Array_uint8Array_double"
 
-var _dataType_index = [...]uint16{0, 8, 16, 21, 27, 34, 40, 47, 53, 60, 67, 78, 90, 103, 115, 128, 140, 153, 166, 173, 180, 193, 207, 212, 218, 232, 243, 255, 262}
+var dataTypeIndex = [...]uint8{0, 8, 16, 21, 27, 34, 40, 47, 53, 60, 67, 77, 88, 100, 111, 123, 134, 146, 158, 165, 172, 184, 197, 202, 208, 221, 231, 242, 249}
 
 func (i dataType) String() string {
-	if i >= dataType(len(_dataType_index)-1) {
+	if i >= dataType(len(dataTypeIndex)-1) {
 		return fmt.Sprintf("dataType(%d)", i)
 	}
-	return _dataType_name[_dataType_index[i]:_dataType_index[i+1]]
+	return dataTypeName[dataTypeIndex[i]:dataTypeIndex[i+1]]
 }

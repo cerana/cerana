@@ -10,14 +10,17 @@ import (
 	xdr "github.com/davecgh/go-xdr/xdr2"
 )
 
+// XDREncoder is an Encoder for XDR encoding.
 type XDREncoder struct {
 	w io.Writer
 }
 
+// NewXDREncoder creates a new XDREncoder.
 func NewXDREncoder(w io.Writer) XDREncoder {
 	return XDREncoder{w: w}
 }
 
+// Encode encodes data using XDR encoding.
 func (e XDREncoder) Encode(i interface{}) error {
 	if i == nil {
 		return errors.New("can not encode a nil pointer")
@@ -62,13 +65,13 @@ func (e XDREncoder) item(name string, dtype dataType, value interface{}) error {
 
 	vbuf := &bytes.Buffer{}
 	switch p.Type {
-	case _BOOLEAN:
+	case _boolean:
 		p.NElements = 0
-	case _BYTE:
+	case _byte:
 		value = int8(value.(uint8))
-	case _UINT8:
+	case _uint8:
 		value = int(int8(value.(uint8)))
-	case _BYTE_ARRAY:
+	case _byteArray:
 		p.NElements = uint32(len(value.([]byte)))
 		n := int(p.NElements)
 		arrType := reflect.ArrayOf(n, reflect.TypeOf(byte(0)))
@@ -77,17 +80,17 @@ func (e XDREncoder) item(name string, dtype dataType, value interface{}) error {
 			arr.Index(i).SetUint(uint64(b))
 		}
 		value = arr.Interface()
-	case _BOOLEAN_ARRAY:
+	case _booleanArray:
 		p.NElements = uint32(len(value.([]bool)))
-	case _INT8_ARRAY:
+	case _int8Array:
 		p.NElements = uint32(len(value.([]int8)))
-	case _INT16_ARRAY:
+	case _int16Array:
 		p.NElements = uint32(len(value.([]int16)))
-	case _INT32_ARRAY:
+	case _int32Array:
 		p.NElements = uint32(len(value.([]int32)))
-	case _INT64_ARRAY:
+	case _int64Array:
 		p.NElements = uint32(len(value.([]int64)))
-	case _UINT8_ARRAY:
+	case _uint8Array:
 		// this one is weird since UINT8s are encoded as char
 		// aka int32s... :(
 		p.NElements = uint32(len(value.([]uint8)))
@@ -98,13 +101,13 @@ func (e XDREncoder) item(name string, dtype dataType, value interface{}) error {
 			slice.Index(i).SetInt(int64(int8(b)))
 		}
 		value = slice.Interface()
-	case _UINT16_ARRAY:
+	case _uint16Array:
 		p.NElements = uint32(len(value.([]uint16)))
-	case _UINT32_ARRAY:
+	case _uint32Array:
 		p.NElements = uint32(len(value.([]uint32)))
-	case _UINT64_ARRAY:
+	case _uint64Array:
 		p.NElements = uint32(len(value.([]uint64)))
-	case _STRING_ARRAY:
+	case _stringArray:
 		p.NElements = uint32(len(value.([]string)))
 		arrType := reflect.ArrayOf(int(p.NElements), reflect.TypeOf(""))
 		arr := reflect.New(arrType).Elem()
@@ -112,13 +115,13 @@ func (e XDREncoder) item(name string, dtype dataType, value interface{}) error {
 			arr.Index(i).SetString(b)
 		}
 		value = arr.Interface()
-	case _NVLIST:
+	case _nvlist:
 		enc := NewXDREncoder(vbuf)
 		if err := encodeList(enc, reflect.ValueOf(value)); err != nil {
 			return err
 		}
 		p.data = vbuf.Bytes()
-	case _NVLIST_ARRAY:
+	case _nvlistArray:
 		p.NElements = uint32(len(value.([]map[string]interface{})))
 		for _, l := range value.([]map[string]interface{}) {
 			enc := NewXDREncoder(vbuf)
@@ -129,7 +132,7 @@ func (e XDREncoder) item(name string, dtype dataType, value interface{}) error {
 		p.data = vbuf.Bytes()
 	}
 
-	if vbuf.Len() == 0 && p.Type != _BOOLEAN {
+	if vbuf.Len() == 0 && p.Type != _boolean {
 		_, err := xdr.NewEncoder(vbuf).Encode(value)
 		if err != nil {
 			return err

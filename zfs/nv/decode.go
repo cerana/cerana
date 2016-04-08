@@ -44,7 +44,7 @@ func decodeList(dec decoder, target reflect.Value) error {
 	if h.Version != 0 {
 		return fmt.Errorf("unexpected version: %v", h.Version)
 	}
-	if h.Flag < _UNIQUE_NAME || h.Flag > _UNIQUE_NAME_TYPE {
+	if h.Flag < uniqueName || h.Flag > uniqueNameType {
 		return fmt.Errorf("unexpected Flag: %v", h.Flag)
 	}
 
@@ -112,7 +112,7 @@ func decodeList(dec decoder, target reflect.Value) error {
 			// iteration.
 			if !ok {
 				if !extraMap.IsValid() {
-					if err := dec.skip(); err != nil {
+					if err = dec.skip(); err != nil {
 						return err
 					}
 					continue
@@ -155,7 +155,6 @@ func decodeList(dec decoder, target reflect.Value) error {
 			fieldSetter(targetField, value)
 		}
 	}
-	return nil
 }
 
 // fieldIndexMap creates a map of field names, with tag name overrides,

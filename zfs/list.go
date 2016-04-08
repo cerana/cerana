@@ -68,14 +68,18 @@ func properties(name string, types map[string]bool, recurse bool, depth uint64) 
 	return ret, nil
 }
 
-func list(name string, types map[string]bool, recurse bool, depth uint64) ([]*dataset, error) {
-	var reader io.Reader
-	reader, writer, err := os.Pipe()
+func list(name string, types map[string]bool, recurse bool, depth uint64) (ret []*dataset, err error) {
+	pipeReader, writer, err := os.Pipe()
 	if err != nil {
-		return nil, err
+		return
 	}
-	defer reader.(*os.File).Close()
-	defer writer.Close()
+	defer func() {
+		for _, theErr := range []error{writer.Close(), pipeReader.Close()} {
+			if err == nil {
+				err = theErr
+			}
+		}
+	}()
 
 	opts := map[string]interface{}{
 		"fd": int32(writer.Fd()),
@@ -100,18 +104,17 @@ func list(name string, types map[string]bool, recurse bool, depth uint64) ([]*da
 	encoded := &bytes.Buffer{}
 	err = nv.NewNativeEncoder(encoded).Encode(args)
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	err = ioctl(zfs, name, encoded.Bytes(), nil)
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	var buf []byte
-	reader = bufio.NewReader(reader)
+	reader := bufio.NewReader(pipeReader)
 
-	ret := []*dataset{}
 	for {
 		var size int64
 		size, err = getSize(reader)
@@ -145,5 +148,5 @@ func list(name string, types map[string]bool, recurse bool, depth uint64) ([]*da
 
 		ret = append(ret, m)
 	}
-	return ret, err
+	return
 }

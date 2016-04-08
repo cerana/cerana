@@ -4,13 +4,13 @@ package nv
 
 import "fmt"
 
-const _endianness_name = "bigEndianlittleEndian"
+const endiannessName = "bigEndianlittleEndian"
 
-var _endianness_index = [...]uint8{0, 9, 21}
+var endiannessIndex = [...]uint8{0, 9, 21}
 
 func (i endianness) String() string {
-	if i >= endianness(len(_endianness_index)-1) {
+	if i >= endianness(len(endiannessIndex)-1) {
 		return fmt.Sprintf("endianness(%d)", i)
 	}
-	return _endianness_name[_endianness_index[i]:_endianness_index[i+1]]
+	return endiannessName[endiannessIndex[i]:endiannessIndex[i+1]]
 }

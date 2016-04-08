@@ -31,6 +31,7 @@ type nativePair struct {
 	Data interface{}
 }
 
+// NativeDecoder is a Decoder for native encoding.
 type NativeDecoder struct {
 	r           io.ReadSeeker
 	pair        nativePair
@@ -39,23 +40,24 @@ type NativeDecoder struct {
 	savedHeader header
 }
 
+// NewNativeDecoder creates a new NativeDecoder.
 func NewNativeDecoder(r io.ReadSeeker) *NativeDecoder {
 	return &NativeDecoder{r: r}
 }
 
-// Decode
+// Decode decodes data into a supplied target.
 // Note: care should be taken when decoding into a `map[string]interface{}` as
 // bytes/uint8s (and their array forms) can not be distinguished and will be
 // treated as uint8/[]uint8.
 func (d *NativeDecoder) Decode(target interface{}) (err error) {
 	// Validate data encoding
-	codec, endianness, err := decodePreamble(d.r, binary.BigEndian)
+	dataCodec, dataEndianness, err := decodePreamble(d.r, binary.BigEndian)
 	if err != nil {
 		return err
-	} else if codec != nativeCodec {
-		return fmt.Errorf("invalid encoding: %v", codec)
-	} else if endianness != littleEndian {
-		return fmt.Errorf("invalid endianess: %v", endianness)
+	} else if dataCodec != nativeCodec {
+		return fmt.Errorf("invalid encoding: %v", dataCodec)
+	} else if dataEndianness != littleEndian {
+		return fmt.Errorf("invalid endianess: %v", dataEndianness)
 	}
 
 	// Validate target
@@ -98,7 +100,7 @@ func (d *NativeDecoder) meta() (string, dataType, error) {
 
 	len := uint32(align8(int(d.pair.NameLen)))
 	buf := make([]byte, len)
-	if _, err := d.r.Read(buf); err != nil {
+	if _, err = d.r.Read(buf); err != nil {
 		return "", 0, err
 	}
 	if len == 0 {
@@ -112,8 +114,8 @@ func (d *NativeDecoder) meta() (string, dataType, error) {
 }
 
 func (d *NativeDecoder) skip() error {
-	d.r.Seek(int64(align8(int(d.size))), 1)
-	return nil
+	_, err := d.r.Seek(int64(align8(int(d.size))), 1)
+	return err
 }
 
 func (d *NativeDecoder) isEnd() (bool, error) {
@@ -138,94 +140,94 @@ func (d *NativeDecoder) value(targetType reflect.Type) (reflect.Value, fieldSetF
 
 	var v interface{}
 	switch d.pair.Type {
-	case _BOOLEAN:
+	case _boolean:
 		err = nil
 		v := Boolean(true)
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
-	case _BOOLEAN_VALUE:
+	case _booleanValue:
 		seek = 4
 		v, err = d.decodeBool()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetBool(v.(bool))
 		}
-	case _BYTE:
+	case _byte:
 		seek = 7
 		v, err = d.decodeByte()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetUint(uint64(v.(uint8)))
 		}
-	case _INT8:
+	case _int8:
 		seek = 7
 		v, err = d.decodeInt8()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetInt(int64(v.(int8)))
 		}
-	case _INT16:
+	case _int16:
 		seek = 6
 		v, err = d.decodeInt16()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetInt(int64(v.(int16)))
 		}
-	case _INT32:
+	case _int32:
 		v, err = d.decodeInt32()
 		seek = 4
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetInt(int64(v.(int32)))
 		}
-	case _INT64:
+	case _int64:
 		v, err = d.decodeInt64()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetInt(v.(int64))
 		}
-	case _UINT8:
+	case _uint8:
 		seek = 4
 		v, err = d.decodeUint8()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetUint(uint64(v.(uint8)))
 		}
-	case _UINT16:
+	case _uint16:
 		seek = 6
 		v, err = d.decodeUint16()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetUint(uint64(v.(uint16)))
 		}
-	case _UINT32:
+	case _uint32:
 		seek = 4
 		v, err = d.decodeUint32()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetUint(uint64(v.(uint32)))
 		}
-	case _UINT64:
+	case _uint64:
 		v, err = d.decodeUint64()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetUint(uint64(v.(uint64)))
 		}
-	case _HRTIME:
+	case _hrtime:
 		v, err = d.decodeHRTime()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetInt(int64(v.(time.Duration)))
 		}
-	case _DOUBLE:
+	case _double:
 		v, err = d.decodeFloat64()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetFloat(v.(float64))
 		}
-	case _BOOLEAN_ARRAY:
+	case _booleanArray:
 		used := 4 * d.pair.NElements
 		seek = int64(d.size - used)
 		v, err = d.decodeBoolArray(d.pair.NElements)
@@ -233,7 +235,7 @@ func (d *NativeDecoder) value(targetType reflect.Type) (reflect.Value, fieldSetF
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
-	case _BYTE_ARRAY:
+	case _byteArray:
 		used := 1 * d.pair.NElements
 		seek = int64(d.size - used)
 		v, err = d.decodeByteArray(d.pair.NElements)
@@ -241,7 +243,7 @@ func (d *NativeDecoder) value(targetType reflect.Type) (reflect.Value, fieldSetF
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
-	case _INT8_ARRAY:
+	case _int8Array:
 		used := 1 * d.pair.NElements
 		seek = int64(d.size - used)
 		v, err = d.decodeInt8Array(d.pair.NElements)
@@ -249,7 +251,7 @@ func (d *NativeDecoder) value(targetType reflect.Type) (reflect.Value, fieldSetF
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
-	case _INT16_ARRAY:
+	case _int16Array:
 		used := 2 * d.pair.NElements
 		seek = int64(d.size - used)
 		v, err = d.decodeInt16Array(d.pair.NElements)
@@ -257,7 +259,7 @@ func (d *NativeDecoder) value(targetType reflect.Type) (reflect.Value, fieldSetF
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
-	case _INT32_ARRAY:
+	case _int32Array:
 		used := 4 * d.pair.NElements
 		seek = int64(d.size - used)
 		v, err = d.decodeInt32Array(d.pair.NElements)
@@ -265,13 +267,13 @@ func (d *NativeDecoder) value(targetType reflect.Type) (reflect.Value, fieldSetF
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
-	case _INT64_ARRAY:
+	case _int64Array:
 		v, err = d.decodeInt64Array(d.pair.NElements)
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
-	case _UINT8_ARRAY:
+	case _uint8Array:
 		used := 1 * d.pair.NElements
 		seek = int64(d.size - used)
 		v, err = d.decodeUint8Array(d.pair.NElements)
@@ -279,7 +281,7 @@ func (d *NativeDecoder) value(targetType reflect.Type) (reflect.Value, fieldSetF
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
-	case _UINT16_ARRAY:
+	case _uint16Array:
 		used := 2 * d.pair.NElements
 		seek = int64(d.size - used)
 		v, err = d.decodeUint16Array(d.pair.NElements)
@@ -287,7 +289,7 @@ func (d *NativeDecoder) value(targetType reflect.Type) (reflect.Value, fieldSetF
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
-	case _UINT32_ARRAY:
+	case _uint32Array:
 		used := 4 * d.pair.NElements
 		seek = int64(d.size - used)
 		v, err = d.decodeUint32Array(d.pair.NElements)
@@ -295,19 +297,19 @@ func (d *NativeDecoder) value(targetType reflect.Type) (reflect.Value, fieldSetF
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
-	case _UINT64_ARRAY:
+	case _uint64Array:
 		v, err = d.decodeUint64Array(d.pair.NElements)
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
-	case _STRING:
+	case _string:
 		v, err = d.decodeString(int(d.size))
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetString(v.(string))
 		}
-	case _STRING_ARRAY:
+	case _stringArray:
 		skip := 8 * int64(d.pair.NElements)
 		if _, err = d.r.Seek(skip, 1); err != nil {
 			break
@@ -319,7 +321,7 @@ func (d *NativeDecoder) value(targetType reflect.Type) (reflect.Value, fieldSetF
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
-	case _NVLIST:
+	case _nvlist:
 		val = reflect.Indirect(reflect.New(targetType))
 
 		dec := NewNativeDecoder(d.r)
@@ -332,7 +334,7 @@ func (d *NativeDecoder) value(targetType reflect.Type) (reflect.Value, fieldSetF
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
-	case _NVLIST_ARRAY:
+	case _nvlistArray:
 		if targetType.Kind() == reflect.Interface {
 			targetType = reflect.TypeOf([]map[string]interface{}{})
 		}

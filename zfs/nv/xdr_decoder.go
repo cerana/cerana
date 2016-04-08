@@ -10,17 +10,19 @@ import (
 	xdr "github.com/davecgh/go-xdr/xdr2"
 )
 
+// XDRDecoder is a Decoder for XDR encoding.
 type XDRDecoder struct {
 	*xdr.Decoder
 	r    io.ReadSeeker
 	pair pair
 }
 
+// NewXDRDecoder creates a new XDRDecoder.
 func NewXDRDecoder(r io.ReadSeeker) *XDRDecoder {
 	return &XDRDecoder{Decoder: xdr.NewDecoder(r), r: r}
 }
 
-// Decode
+// Decode decodes data into a supplied target.
 // Note: care should be taken when decoding into a `map[string]interface{}` as
 // bytes/uint8s (and their array forms) can not be distinguished and will be
 // treated as uint8/[]uint8.
@@ -83,92 +85,92 @@ func (d *XDRDecoder) value(targetType reflect.Type) (reflect.Value, fieldSetFunc
 
 	var v interface{}
 	switch d.pair.Type {
-	case _BOOLEAN:
+	case _boolean:
 		err = nil
 		v := Boolean(true)
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
-	case _BOOLEAN_VALUE:
+	case _booleanValue:
 		v, err = d.decodeBool()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetBool(v.(bool))
 		}
-	case _BYTE:
+	case _byte:
 		v, err = d.decodeByte()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetUint(uint64(v.(uint8)))
 		}
-	case _INT8:
+	case _int8:
 		v, err = d.decodeInt8()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetInt(int64(v.(int8)))
 		}
-	case _INT16:
+	case _int16:
 		v, err = d.decodeInt16()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetInt(int64(v.(int16)))
 		}
-	case _INT32:
+	case _int32:
 		v, err = d.decodeInt32()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetInt(int64(v.(int32)))
 		}
-	case _INT64:
+	case _int64:
 		v, err = d.decodeInt64()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetInt(v.(int64))
 		}
-	case _UINT8:
+	case _uint8:
 		v, err = d.decodeUint8()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetUint(uint64(v.(uint8)))
 		}
-	case _UINT16:
+	case _uint16:
 		v, err = d.decodeUint16()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetUint(uint64(v.(uint16)))
 		}
-	case _UINT32:
+	case _uint32:
 		v, err = d.decodeUint32()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetUint(uint64(v.(uint32)))
 		}
-	case _UINT64:
+	case _uint64:
 		v, err = d.decodeUint64()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetUint(uint64(v.(uint64)))
 		}
-	case _HRTIME:
+	case _hrtime:
 		v, err = d.decodeHRTime()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetInt(int64(v.(time.Duration)))
 		}
-	case _DOUBLE:
+	case _double:
 		v, err = d.decodeFloat64()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetFloat(v.(float64))
 		}
-	case _BOOLEAN_ARRAY:
+	case _booleanArray:
 		v, err = d.decodeBoolArray()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
-	case _BYTE_ARRAY:
+	case _byteArray:
 		if _, err = d.r.Seek(-4, 1); err == nil {
 			v, err = d.decodeByteArray()
 			val = reflect.ValueOf(v)
@@ -176,61 +178,61 @@ func (d *XDRDecoder) value(targetType reflect.Type) (reflect.Value, fieldSetFunc
 				field.SetBytes(v.([]byte))
 			}
 		}
-	case _INT8_ARRAY:
+	case _int8Array:
 		v, err = d.decodeInt8Array()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
-	case _INT16_ARRAY:
+	case _int16Array:
 		v, err = d.decodeInt16Array()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
-	case _INT32_ARRAY:
+	case _int32Array:
 		v, err = d.decodeInt32Array()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
-	case _INT64_ARRAY:
+	case _int64Array:
 		v, err = d.decodeInt64Array()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
-	case _UINT8_ARRAY:
+	case _uint8Array:
 		v, err = d.decodeUint8Array()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
-	case _UINT16_ARRAY:
+	case _uint16Array:
 		v, err = d.decodeUint16Array()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
-	case _UINT32_ARRAY:
+	case _uint32Array:
 		v, err = d.decodeUint32Array()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
-	case _UINT64_ARRAY:
+	case _uint64Array:
 		v, err = d.decodeUint64Array()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
-	case _STRING:
+	case _string:
 		v, err = d.decodeString()
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.SetString(v.(string))
 		}
-	case _STRING_ARRAY:
+	case _stringArray:
 		if _, err = d.r.Seek(-4, 1); err == nil {
 			v, err = d.decodeStringArray()
 			val = reflect.ValueOf(v)
@@ -238,13 +240,13 @@ func (d *XDRDecoder) value(targetType reflect.Type) (reflect.Value, fieldSetFunc
 				field.Set(val)
 			}
 		}
-	case _NVLIST:
+	case _nvlist:
 		val = reflect.Indirect(reflect.New(targetType))
 		err = decodeList(d, val)
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
-	case _NVLIST_ARRAY:
+	case _nvlistArray:
 		if targetType.Kind() == reflect.Interface {
 			targetType = reflect.TypeOf([]map[string]interface{}{})
 		}
