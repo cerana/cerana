@@ -46,22 +46,10 @@ func (s *zfs) TestReceive() {
 
 		res, resStreamURL, err := s.zfs.Receive(req)
 		s.Nil(resStreamURL, argsS)
+		s.Nil(res, argsS)
 		if test.err == "" {
 			s.NoError(err, argsS)
-			if !s.NotNil(res, argsS) {
-				continue
-			}
-
-			result, ok := res.(*zfsp.DatasetResult)
-			if !s.True(ok) {
-				continue
-			}
-			if !s.NotNil(result.Dataset) {
-				continue
-			}
-			s.Equal(test.args.Name, result.Dataset.Name, argsS)
 		} else {
-			s.Nil(res, argsS)
 			s.EqualError(err, test.err, argsS)
 		}
 	}

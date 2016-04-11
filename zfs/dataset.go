@@ -334,12 +334,6 @@ func CreateVolume(name string, size uint64, properties map[string]interface{}) (
 	return createDataset(name, dmuZVOL, properties)
 }
 
-// ReceiveSnapshot creates a snapshot from a zfs send stream. Currently a stub.
-func ReceiveSnapshot(input io.Reader, name string) (*Dataset, error) {
-	// TODO: Implement when we have a zfs_receive
-	return nil, errors.New("zfs receive not yet implemented")
-}
-
 // Children returns a list of children of the dataset.
 func (d *Dataset) Children(depth uint64) ([]*Dataset, error) {
 	datasets, err := getDatasets(d.Name, nil, true, depth)
