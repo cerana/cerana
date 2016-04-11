@@ -614,6 +614,29 @@ func (d *Dataset) Mount(overlay bool, options []string) error {
 	return nil
 }
 
+// Unmount unmounts the dataset.
+func (d *Dataset) Unmount(force bool) error {
+	// TODO: Reimplement when we have a native zfs_unmount
+	gzfsDS, err := gzfs.GetDataset(d.Name)
+	if err != nil {
+		// Fix errors to be more like what zfs will probably return
+		if strings.Contains(err.Error(), "dataset does not exist") {
+			err = syscall.ENOENT
+		}
+		return err
+	}
+
+	if _, err := gzfsDS.Unmount(force); err != nil {
+		// Fix errors to be more like what zfs will probably return
+		if strings.Contains(err.Error(), "not currently mounted") {
+			return syscall.EINVAL
+		}
+		return err
+	}
+
+	return nil
+}
+
 // Dataset Sorting
 
 // By is the type of a "less" function that defines the ordering of its Dataset arguments.

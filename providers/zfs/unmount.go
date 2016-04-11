@@ -3,14 +3,10 @@ package zfs
 import (
 	"errors"
 	"net/url"
-	"strings"
-	"syscall"
 
 	"github.com/cerana/cerana/acomm"
-	gzfs "github.com/mistifyio/go-zfs"
+	"github.com/cerana/cerana/zfs"
 )
-
-// TODO: Update this method once `zfs` supports Unmount
 
 // UnmountArgs are arguments for the Unmount handler.
 type UnmountArgs struct {
@@ -29,23 +25,10 @@ func (z *ZFS) Unmount(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.New("missing arg: name")
 	}
 
-	ds, err := gzfs.GetDataset(args.Name)
+	ds, err := zfs.GetDataset(args.Name)
 	if err != nil {
-		// Fix errors to be more like what zfs will probably return
-		if strings.Contains(err.Error(), "dataset does not exist") {
-			err = syscall.ENOENT
-		}
 		return nil, nil, err
 	}
 
-	ds, err = ds.Unmount(args.Force)
-	if err != nil {
-		// Fix errors to be more like what zfs will probably return
-		if strings.Contains(err.Error(), "not currently mounted") {
-			err = syscall.EINVAL
-		}
-		return nil, nil, err
-	}
-
-	return nil, nil, nil
+	return nil, nil, ds.Unmount(args.Force)
 }
