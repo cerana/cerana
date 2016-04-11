@@ -8,8 +8,10 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"syscall"
 
 	"github.com/cerana/cerana/zfs/nv"
+	gzfs "github.com/mistifyio/go-zfs"
 )
 
 // ZFS Dataset Types
@@ -587,6 +589,29 @@ func (d *Dataset) Rename(newName string, recursive bool) (string, error) {
 
 	d.Name = newName
 	return "", nil
+}
+
+// Mount mounts the dataset.
+func (d *Dataset) Mount(overlay bool, options []string) error {
+	// TODO: Reimplement when we have a native zfs_mount
+	gzfsDS, err := gzfs.GetDataset(d.Name)
+	if err != nil {
+		// Fix errors to be more like what zfs will probably return
+		if strings.Contains(err.Error(), "dataset does not exist") {
+			err = syscall.ENOENT
+		}
+		return err
+	}
+
+	if _, err := gzfsDS.Mount(overlay, options); err != nil {
+		// Fix errors to be more like what zfs will probably return
+		if strings.Contains(err.Error(), "already mounted") {
+			return syscall.EBUSY
+		}
+		return err
+	}
+
+	return nil
 }
 
 // Dataset Sorting
