@@ -185,8 +185,14 @@ func makeRequest(coordinator, taskName, httpAddr string, stream bool, taskArgs m
 	if stream {
 		streamURL = fmt.Sprintf("http://%s/stream", httpAddr)
 	}
-	req, err := acomm.NewRequest(taskName, responseHook, streamURL, taskArgs, nil, nil)
-	if err != nil {
+	req := acomm.NewRequest(taskName)
+	if err := req.SetResponseHook(responseHook); err != nil {
+		return err
+	}
+	if err := req.SetStreamURL(streamURL); err != nil {
+		return err
+	}
+	if err := req.SetArgs(taskArgs); err != nil {
 		return err
 	}
 

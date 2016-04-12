@@ -21,8 +21,9 @@ func (s *systemd) TestGet() {
 		args := &systemdp.GetArgs{Name: test.name}
 		argsS := fmt.Sprintf("%+v", test)
 
-		req, err := acomm.NewRequest("systemd-exists", "unix:///tmp/foobar", "", args, nil, nil)
-		s.Require().NoError(err, argsS)
+		req := acomm.NewRequest("systemd-get")
+		req.ResponseHook = s.responseHook
+		s.Require().NoError(req.SetArgs(args), argsS)
 
 		res, streamURL, err := s.systemd.Get(req)
 		s.Nil(streamURL, argsS)

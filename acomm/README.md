@@ -133,7 +133,7 @@ appropriately to handle a response.
 #### func  NewRequest
 
 ```go
-func NewRequest(task, responseHook, streamURL string, args interface{}, sh ResponseHandler, eh ResponseHandler) (*Request, error)
+func NewRequest(task string) *Request
 ```
 NewRequest creates a new Request instance.
 
@@ -151,7 +151,29 @@ assumed no handling is necessary and silently finishes.
 ```go
 func (req *Request) Respond(resp *Response) error
 ```
-Respond sends a Response to a Request's ResponseHook.
+Respond sends a Response to the ResponseHook if present.
+
+#### func (*Request) SetArgs
+
+```go
+func (req *Request) SetArgs(args interface{}) error
+```
+SetArgs sets the Args.
+
+#### func (*Request) SetResponseHook
+
+```go
+func (req *Request) SetResponseHook(urlString string) error
+```
+SetResponseHook is a convenience method to set the ResponseHook from a string
+url.
+
+#### func (*Request) SetStreamURL
+
+```go
+func (req *Request) SetStreamURL(urlString string) error
+```
+SetStreamURL is a convenience method to set the StreamURL from a string url.
 
 #### func (*Request) UnmarshalArgs
 

@@ -32,8 +32,9 @@ func (s *systemd) TestRemove() {
 			s.NoError(f.Close())
 		}
 
-		req, err := acomm.NewRequest("systemd-remove", "unix:///tmp/foobar", "", args, nil, nil)
-		s.Require().NoError(err, argsS)
+		req := acomm.NewRequest("systemd-remove")
+		req.ResponseHook = s.responseHook
+		s.Require().NoError(req.SetArgs(args), argsS)
 
 		res, streamURL, err := s.systemd.Remove(req)
 		s.Nil(streamURL, argsS)

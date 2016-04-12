@@ -3,6 +3,7 @@ package zfs_test
 import (
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -36,12 +37,13 @@ var (
 
 type zfs struct {
 	suite.Suite
-	pool    string
-	files   []string
-	dir     string
-	config  *provider.Config
-	tracker *acomm.Tracker
-	zfs     *zfsp.ZFS
+	pool         string
+	files        []string
+	dir          string
+	config       *provider.Config
+	tracker      *acomm.Tracker
+	zfs          *zfsp.ZFS
+	responseHook *url.URL
 }
 
 func TestZFS(t *testing.T) {
@@ -141,6 +143,7 @@ func unhold(tag, snapshot string) error {
 }
 
 func (s *zfs) SetupSuite() {
+	s.responseHook, _ = url.ParseRequestURI("unix:///tmp/foobar")
 	dir, err := ioutil.TempDir("", "zfs-provider-test-")
 	s.Require().NoError(err)
 	s.dir = dir

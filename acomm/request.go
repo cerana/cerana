@@ -30,46 +30,56 @@ type Request struct {
 type ResponseHandler func(*Request, *Response)
 
 // NewRequest creates a new Request instance.
-func NewRequest(task, responseHook, streamURL string, args interface{}, sh ResponseHandler, eh ResponseHandler) (*Request, error) {
-	hook, err := url.ParseRequestURI(responseHook)
+func NewRequest(task string) *Request {
+	return &Request{
+		ID:   uuid.New(),
+		Task: task,
+	}
+}
+
+// SetResponseHook is a convenience method to set the ResponseHook from a
+// string url.
+func (req *Request) SetResponseHook(urlString string) error {
+	responseHook, err := url.ParseRequestURI(urlString)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error":        err,
-			"responseHook": responseHook,
+			"responseHook": urlString,
 		}).Error("invalid response hook url")
-		return nil, err
+		return err
 	}
 
-	var stream *url.URL
-	if streamURL != "" {
-		stream, err = url.ParseRequestURI(streamURL)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"error":     err,
-				"streamURL": streamURL,
-			}).Error("invalid response hook url")
-			return nil, err
-		}
+	req.ResponseHook = responseHook
+	return nil
+}
+
+// SetStreamURL is a convenience method to set the StreamURL from a string url.
+func (req *Request) SetStreamURL(urlString string) error {
+	streamURL, err := url.ParseRequestURI(urlString)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error":     err,
+			"streamURL": urlString,
+		}).Error("invalid stream url")
+		return err
 	}
 
-	if task == "" {
-		return nil, errors.New("missing task")
-	}
+	req.StreamURL = streamURL
+	return nil
+}
 
+// SetArgs sets the Args.
+func (req *Request) SetArgs(args interface{}) error {
 	argsJSON, err := json.Marshal(args)
 	if err != nil {
-		return nil, err
+		log.WithFields(log.Fields{
+			"error": err,
+			"args":  args,
+		}).Error("unable to set args")
+		return err
 	}
-
-	return &Request{
-		ID:             uuid.New(),
-		Task:           task,
-		ResponseHook:   hook,
-		StreamURL:      stream,
-		Args:           (*json.RawMessage)(&argsJSON),
-		SuccessHandler: sh,
-		ErrorHandler:   eh,
-	}, nil
+	req.Args = (*json.RawMessage)(&argsJSON)
+	return nil
 }
 
 // UnmarshalArgs unmarshals the request args into the destination object.
@@ -110,19 +120,15 @@ func (req *Request) Validate() error {
 		}).Error("invalid req")
 		return err
 	}
-	if req.ResponseHook == nil {
-		err := errors.New("missing response hook")
-		log.WithFields(log.Fields{
-			"req":   req,
-			"error": err,
-		}).Error("invalid req")
-		return err
-	}
+
 	return nil
 }
 
-// Respond sends a Response to a Request's ResponseHook.
+// Respond sends a Response to the ResponseHook if present.
 func (req *Request) Respond(resp *Response) error {
+	if req.ResponseHook == nil {
+		return nil
+	}
 	return Send(req.ResponseHook, resp)
 }
 

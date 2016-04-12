@@ -27,8 +27,9 @@ func (s *zfs) TestExists() {
 		}
 		argsS := fmt.Sprintf("%+v", test.args)
 
-		req, err := acomm.NewRequest("zfs-exists", "unix:///tmp/foobar", "", test.args, nil, nil)
-		s.Require().NoError(err, argsS)
+		req := acomm.NewRequest("zfs-exists")
+		req.ResponseHook = s.responseHook
+		s.Require().NoError(req.SetArgs(test.args), argsS)
 
 		res, streamURL, err := s.zfs.Exists(req)
 		s.Empty(streamURL, argsS)

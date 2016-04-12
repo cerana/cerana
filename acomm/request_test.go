@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"reflect"
 	"testing"
 
 	log "github.com/Sirupsen/logrus"
@@ -26,69 +25,96 @@ func TestRequestTestSuite(t *testing.T) {
 }
 
 func (s *RequestTestSuite) TestNewRequest() {
-	task := "foobar"
-	args := map[string]string{
-		"foo": "bar",
-	}
-
-	sh, eh, _ := generateHandlers()
-
 	tests := []struct {
-		description  string
-		task         string
-		responseHook string
-		streamURL    string
-		args         interface{}
-		sh           acomm.ResponseHandler
-		eh           acomm.ResponseHandler
-		expectedErr  bool
+		description string
+		task        string
 	}{
-		{"missing response hook", task, "", "", args, sh, eh, true},
-		{"invalid response hook", task, "asdf", "", args, sh, eh, true},
-		{"missing args", task, "unix://asdf", "", nil, sh, eh, false},
-		{"unix hook and args", task, "unix://asdf", "", args, sh, eh, false},
-		{"http hook and args", task, "http://asdf", "", args, sh, eh, false},
-		{"https hook and args", task, "https://asdf", "", args, sh, eh, false},
-		{"unix stream", task, "unix://asdf", "unix://asdf", args, sh, eh, false},
-		{"http stream", task, "http://asdf", "http://asdf", args, sh, eh, false},
-		{"https stream", task, "https://asdf", "https://asdf", args, sh, eh, false},
-		{"unix hook, args, no handlers", task, "unix://asdf", "", args, nil, nil, false},
-		{"unix hook, args, sh handler", task, "unix://asdf", "", args, sh, nil, false},
-		{"unix hook, args, eh handler", task, "unix://asdf", "", args, nil, eh, false},
-		{"missing task ", "", "unix://asdf", "", args, sh, eh, true},
+		{"without task", ""},
+		{"with task", "foobar"},
 	}
 
 	for _, test := range tests {
 		msg := testMsgFunc(test.description)
-		req, err := acomm.NewRequest(test.task, test.responseHook, test.streamURL, test.args, test.sh, test.eh)
-		if test.expectedErr {
-			s.Error(err, msg("should have failed"))
-			s.Nil(req, msg("should not have returned a request"))
-		} else {
-			if !s.NoError(err, msg("should have succeeded")) {
-				s.T().Log(msg(err.Error()))
-				continue
-			}
-			if !s.NotNil(req, msg("should have returned a request")) {
-				continue
-			}
-
-			s.NotEmpty(req.ID, msg("should have set an ID"))
-			s.Equal(test.task, req.Task, msg("should have set the task"))
-			s.Equal(test.responseHook, req.ResponseHook.String(), msg("should have set the response hook"))
-			if test.streamURL != "" {
-				s.Equal(test.streamURL, req.StreamURL.String(), msg("should have set the stream url"))
-			}
-			var args map[string]string
-			s.NoError(req.UnmarshalArgs(&args))
-			if test.args == nil {
-				s.Nil(args, msg("should have nil arguments"))
-			} else {
-				s.Equal(test.args, args, msg("should have set the arguments"))
-			}
-			s.Equal(reflect.ValueOf(test.sh).Pointer(), reflect.ValueOf(req.SuccessHandler).Pointer(), msg("should have set success handler"))
-			s.Equal(reflect.ValueOf(test.eh).Pointer(), reflect.ValueOf(req.ErrorHandler).Pointer(), msg("should have set error handler"))
+		req := acomm.NewRequest(test.task)
+		if !s.NotNil(req, msg("should have returned a request")) {
+			continue
 		}
+
+		s.NotEmpty(req.ID, msg("should have set an ID"))
+		s.Equal(test.task, req.Task, msg("should have set the task"))
+	}
+}
+
+func (s *RequestTestSuite) TestSetResponseHook() {
+	tests := []struct {
+		description  string
+		responseHook string
+		expectedErr  bool
+	}{
+		{"empty", "", true},
+		{"invalid", "asdf", true},
+		{"unix", "unix://asdf", false},
+		{"http", "http://asdf", false},
+		{"https", "https://asdf", false},
+	}
+
+	for _, test := range tests {
+		msg := testMsgFunc(test.description)
+		req := &acomm.Request{}
+		err := req.SetResponseHook(test.responseHook)
+		if test.expectedErr {
+			s.Error(err, msg("should have errored"))
+			s.Nil(req.ResponseHook, msg("should not have set response hook"))
+		} else {
+			s.NoError(err, msg("should not have errored"))
+			s.NotNil(req.ResponseHook, msg("should have set response hook"))
+			s.Equal(test.responseHook, req.ResponseHook.String(), msg("should be equivalent response hooks"))
+		}
+	}
+}
+
+func (s *RequestTestSuite) TestSetStreamURL() {
+	tests := []struct {
+		description string
+		streamURL   string
+		expectedErr bool
+	}{
+		{"empty", "", true},
+		{"invalid", "asdf", true},
+		{"unix", "unix://asdf", false},
+		{"http", "http://asdf", false},
+		{"https", "https://asdf", false},
+	}
+
+	for _, test := range tests {
+		msg := testMsgFunc(test.description)
+		req := &acomm.Request{}
+		err := req.SetStreamURL(test.streamURL)
+		if test.expectedErr {
+			s.Error(err, msg("should have errored"))
+			s.Nil(req.StreamURL, msg("should not have set stream url"))
+		} else {
+			s.NoError(err, msg("should not have errored"))
+			s.NotNil(req.StreamURL, msg("should have set stream url"))
+			s.Equal(test.streamURL, req.StreamURL.String(), msg("should be equivalent stream urls"))
+		}
+	}
+}
+
+func (s *RequestTestSuite) TestSetArgs() {
+	tests := []struct {
+		description string
+		args        interface{}
+	}{
+		{"nil", nil},
+		{"map", map[string]string{"foo": "bar"}},
+	}
+
+	for _, test := range tests {
+		msg := testMsgFunc(test.description)
+		req := &acomm.Request{}
+		s.NoError(req.SetArgs(test.args), msg("should not error"))
+		s.NotNil(req.Args, msg("should have set args"))
 	}
 }
 
@@ -115,10 +141,11 @@ func (s *RequestTestSuite) TestHandleResponse() {
 		handled["success"] = 0
 		handled["error"] = 0
 		msg := testMsgFunc(test.description)
-		req, err := acomm.NewRequest("foobar", "unix://foo", "", struct{}{}, test.sh, test.eh)
-		if !s.NoError(err, msg("should not fail to build req")) {
-			continue
-		}
+		req := acomm.NewRequest("foobar")
+		_ = req.SetArgs(struct{}{})
+		req.SuccessHandler = test.sh
+		req.ErrorHandler = test.eh
+
 		resp, err := acomm.NewResponse(req, test.respResult, nil, test.respErr)
 		if !s.NoError(err, msg("should not fail to build resp")) {
 			continue
@@ -155,7 +182,7 @@ func (s *RequestTestSuite) TestValidate() {
 	}{
 		{"missing ID", "", "foo", rh, true},
 		{"missing Task", uuid.New(), "", rh, true},
-		{"missing ResponseHook", uuid.New(), "foo", nil, true},
+		{"missing ResponseHook", uuid.New(), "foo", nil, false},
 		{"valid", uuid.New(), "foo", rh, false},
 	}
 

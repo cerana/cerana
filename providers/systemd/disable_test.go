@@ -27,8 +27,9 @@ func (s *systemd) TestDisable() {
 		args := &systemdp.DisableArgs{Name: test.name, Runtime: test.runtime}
 		argsS := fmt.Sprintf("%+v", test)
 
-		req, err := acomm.NewRequest("systemd-disable", "unix:///tmp/foobar", "", args, nil, nil)
-		s.Require().NoError(err, argsS)
+		req := acomm.NewRequest("systemd-disable")
+		req.ResponseHook = s.responseHook
+		s.Require().NoError(req.SetArgs(args), argsS)
 
 		res, streamURL, err := s.systemd.Disable(req)
 		s.Nil(streamURL, argsS)

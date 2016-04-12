@@ -67,7 +67,7 @@ NativeEncoder is an Encoder for native encoding.
 ```go
 func NewNativeEncoder(w io.Writer) *NativeEncoder
 ```
-NewNativeEncoder creates a new nativeEncoder.
+NewNativeEncoder creates a new NativeEncoder.
 
 #### func (NativeEncoder) Encode
 

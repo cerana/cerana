@@ -110,7 +110,10 @@ func (s *ServerSuite) TestStartHandleStop() {
 	respHandler := func(req *acomm.Request, resp *acomm.Response) {
 		close(handled)
 	}
-	req, _ := acomm.NewRequest("foobar", tracker.URL().String(), "", struct{}{}, respHandler, respHandler)
+	req := acomm.NewRequest("foobar")
+	req.ResponseHook = tracker.URL()
+	req.SuccessHandler = respHandler
+	req.ErrorHandler = respHandler
 	providerSocket, _ := url.ParseRequestURI("unix://" + s.server.TaskSocketPath("foobar"))
 	if !s.NoError(s.server.Tracker().TrackRequest(req, 5*time.Second)) {
 		return

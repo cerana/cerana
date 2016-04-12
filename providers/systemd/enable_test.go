@@ -27,8 +27,9 @@ func (s *systemd) TestEnable() {
 		args := &systemdp.EnableArgs{Name: test.name, Runtime: test.runtime, Force: test.force}
 		argsS := fmt.Sprintf("%+v", test)
 
-		req, err := acomm.NewRequest("systemd-enable", "unix:///tmp/foobar", "", args, nil, nil)
-		s.Require().NoError(err, argsS)
+		req := acomm.NewRequest("systemd-enable")
+		req.ResponseHook = s.responseHook
+		s.Require().NoError(req.SetArgs(args), argsS)
 
 		res, streamURL, err := s.systemd.Enable(req)
 		s.Nil(streamURL, argsS)

@@ -38,8 +38,9 @@ func (s *systemd) TestActions() {
 		args := &systemdp.ActionArgs{Name: test.name, Mode: test.mode}
 		argsS := fmt.Sprintf("%+v", test)
 
-		req, err := acomm.NewRequest("systemd-"+test.action, "unix:///tmp/foobar", "", args, nil, nil)
-		s.Require().NoError(err, argsS)
+		req := acomm.NewRequest("systemd-" + test.action)
+		req.ResponseHook = s.responseHook
+		s.Require().NoError(req.SetArgs(args), argsS)
 
 		var fn func(*acomm.Request) (interface{}, *url.URL, error)
 		switch test.action {

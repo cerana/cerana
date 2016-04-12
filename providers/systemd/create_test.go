@@ -25,8 +25,10 @@ func (s *systemd) TestCreate() {
 	for _, test := range tests {
 		args := &systemdp.CreateArgs{Name: test.name, UnitOptions: test.options}
 		argsS := fmt.Sprintf("%+v", args)
-		req, err := acomm.NewRequest("systemd-create", "unix:///tmp/foobar", "", args, nil, nil)
-		s.Require().NoError(err, argsS)
+
+		req := acomm.NewRequest("systemd-create")
+		req.ResponseHook = s.responseHook
+		s.Require().NoError(req.SetArgs(args), argsS)
 
 		res, streamURL, err := s.systemd.Create(req)
 		s.Nil(streamURL, argsS)
