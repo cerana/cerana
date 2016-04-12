@@ -19,7 +19,7 @@ import (
 type Response struct {
 	ID        string           `json:"id"`
 	Result    *json.RawMessage `json:"result"`
-	StreamURL *url.URL         `json:"stream_url"`
+	StreamURL *url.URL         `json:"streamURL"`
 	Error     error            `json:"error"`
 }
 

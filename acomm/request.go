@@ -17,8 +17,8 @@ import (
 type Request struct {
 	ID             string           `json:"id"`
 	Task           string           `json:"task"`
-	ResponseHook   *url.URL         `json:"responsehook"`
-	StreamURL      *url.URL         `json:"stream_url"`
+	ResponseHook   *url.URL         `json:"responseHook"`
+	StreamURL      *url.URL         `json:"streamURL"`
 	Args           *json.RawMessage `json:"args"`
 	SuccessHandler ResponseHandler  `json:"-"`
 	ErrorHandler   ResponseHandler  `json:"-"`
