@@ -17,6 +17,7 @@ import (
 type Request struct {
 	ID             string           `json:"id"`
 	Task           string           `json:"task"`
+	TaskURL        *url.URL         `json:"taskURL"`
 	ResponseHook   *url.URL         `json:"responseHook"`
 	StreamURL      *url.URL         `json:"streamURL"`
 	Args           *json.RawMessage `json:"args"`
@@ -65,6 +66,21 @@ func (req *Request) SetStreamURL(urlString string) error {
 	}
 
 	req.StreamURL = streamURL
+	return nil
+}
+
+// SetTaskURL is a convenience method to set the TaskURL from a string url.
+func (req *Request) SetTaskURL(urlString string) error {
+	taskURL, err := url.ParseRequestURI(urlString)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error":   err,
+			"taskURL": urlString,
+		}).Error("invalid task url")
+		return err
+	}
+
+	req.TaskURL = taskURL
 	return nil
 }
 

@@ -101,6 +101,34 @@ func (s *RequestTestSuite) TestSetStreamURL() {
 	}
 }
 
+func (s *RequestTestSuite) TestSetTaskURL() {
+	tests := []struct {
+		description string
+		taskURL     string
+		expectedErr bool
+	}{
+		{"empty", "", true},
+		{"invalid", "asdf", true},
+		{"unix", "unix://asdf", false},
+		{"http", "http://asdf", false},
+		{"https", "https://asdf", false},
+	}
+
+	for _, test := range tests {
+		msg := testMsgFunc(test.description)
+		req := &acomm.Request{}
+		err := req.SetTaskURL(test.taskURL)
+		if test.expectedErr {
+			s.Error(err, msg("should have errored"))
+			s.Nil(req.TaskURL, msg("should not have set task url"))
+		} else {
+			s.NoError(err, msg("should not have errored"))
+			s.NotNil(req.TaskURL, msg("should have set task url"))
+			s.Equal(test.taskURL, req.TaskURL.String(), msg("should be equivalent task urls"))
+		}
+	}
+}
+
 func (s *RequestTestSuite) TestSetArgs() {
 	tests := []struct {
 		description string

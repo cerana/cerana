@@ -117,6 +117,7 @@ Responses returns responses for all of the requests, keyed on the request name
 type Request struct {
 	ID             string           `json:"id"`
 	Task           string           `json:"task"`
+	TaskURL        *url.URL         `json:"taskURL"`
 	ResponseHook   *url.URL         `json:"responseHook"`
 	StreamURL      *url.URL         `json:"streamURL"`
 	Args           *json.RawMessage `json:"args"`
@@ -174,6 +175,13 @@ url.
 func (req *Request) SetStreamURL(urlString string) error
 ```
 SetStreamURL is a convenience method to set the StreamURL from a string url.
+
+#### func (*Request) SetTaskURL
+
+```go
+func (req *Request) SetTaskURL(urlString string) error
+```
+SetTaskURL is a convenience method to set the TaskURL from a string url.
 
 #### func (*Request) UnmarshalArgs
 
