@@ -30,6 +30,7 @@ type Server struct {
 
 // NewServer creates and initializes a new instance of Server.
 func NewServer(config *Config) (*Server, error) {
+	http.DefaultTransport.(*http.Transport).DisableKeepAlives = true
 	if err := config.Validate(); err != nil {
 		return nil, err
 	}
@@ -190,10 +191,16 @@ func (s *Server) acceptInternalRequest(conn net.Conn) {
 }
 
 func (s *Server) handleRequest(req *acomm.Request) error {
+	var err error
 	if req.TaskURL == nil {
-		return s.localTask(req)
+		err = s.localTask(req)
+	} else {
+		err = s.externalTask(req)
 	}
-	return s.externalTask(req)
+	if err != nil {
+		_ = s.proxy.RemoveRequest(req)
+	}
+	return err
 }
 
 // localTask handles proxying and forwarding a request to a provider for
