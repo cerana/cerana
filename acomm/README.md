@@ -260,7 +260,7 @@ Tracker keeps track of requests waiting on a response.
 #### func  NewTracker
 
 ```go
-func NewTracker(socketPath string, httpStreamURL *url.URL, defaultTimeout time.Duration) (*Tracker, error)
+func NewTracker(socketPath string, httpStreamURL, externalProxyURL *url.URL, defaultTimeout time.Duration) (*Tracker, error)
 ```
 NewTracker creates and initializes a new Tracker. If a socketPath is not
 provided, the response socket will be created in a temporary directory.
@@ -294,6 +294,20 @@ NewStreamUnix sets up an ad-hoc unix listner to stream data.
 func (t *Tracker) NumRequests() int
 ```
 NumRequests returns the number of tracked requests
+
+#### func (*Tracker) ProxyExternal
+
+```go
+func (t *Tracker) ProxyExternal(req *Request, timeout time.Duration) (*Request, error)
+```
+ProxyExternal proxies a request intended for an external destination
+
+#### func (*Tracker) ProxyExternalHandler
+
+```go
+func (t *Tracker) ProxyExternalHandler(w http.ResponseWriter, r *http.Request)
+```
+ProxyExternalHandler is an HTTP HandlerFunc for proxying an external request.
 
 #### func (*Tracker) ProxyStreamHTTPURL
 

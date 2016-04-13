@@ -160,7 +160,7 @@ func (s *zfs) SetupSuite() {
 	s.Require().NoError(config.SetupLogging())
 	s.config = config
 
-	tracker, err := acomm.NewTracker(filepath.Join(s.dir, "tracker.sock"), nil, 5*time.Second)
+	tracker, err := acomm.NewTracker(filepath.Join(s.dir, "tracker.sock"), nil, nil, 5*time.Second)
 	s.Require().NoError(err)
 	s.Require().NoError(tracker.Start())
 	s.tracker = tracker
