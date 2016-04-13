@@ -8,8 +8,10 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"syscall"
 
 	"github.com/cerana/cerana/zfs/nv"
+	gzfs "github.com/mistifyio/go-zfs"
 )
 
 // ZFS Dataset Types
@@ -334,12 +336,6 @@ func CreateVolume(name string, size uint64, properties map[string]interface{}) (
 	return createDataset(name, dmuZVOL, properties)
 }
 
-// ReceiveSnapshot creates a snapshot from a zfs send stream. Currently a stub.
-func ReceiveSnapshot(input io.Reader, name string) (*Dataset, error) {
-	// TODO: Implement when we have a zfs_receive
-	return nil, errors.New("zfs receive not yet implemented")
-}
-
 // Children returns a list of children of the dataset.
 func (d *Dataset) Children(depth uint64) ([]*Dataset, error) {
 	datasets, err := getDatasets(d.Name, nil, true, depth)
@@ -593,6 +589,52 @@ func (d *Dataset) Rename(newName string, recursive bool) (string, error) {
 
 	d.Name = newName
 	return "", nil
+}
+
+// Mount mounts the dataset.
+func (d *Dataset) Mount(overlay bool, options []string) error {
+	// TODO: Reimplement when we have a native zfs_mount
+	gzfsDS, err := gzfs.GetDataset(d.Name)
+	if err != nil {
+		// Fix errors to be more like what zfs will probably return
+		if strings.Contains(err.Error(), "dataset does not exist") {
+			err = syscall.ENOENT
+		}
+		return err
+	}
+
+	if _, err := gzfsDS.Mount(overlay, options); err != nil {
+		// Fix errors to be more like what zfs will probably return
+		if strings.Contains(err.Error(), "already mounted") {
+			return syscall.EBUSY
+		}
+		return err
+	}
+
+	return nil
+}
+
+// Unmount unmounts the dataset.
+func (d *Dataset) Unmount(force bool) error {
+	// TODO: Reimplement when we have a native zfs_unmount
+	gzfsDS, err := gzfs.GetDataset(d.Name)
+	if err != nil {
+		// Fix errors to be more like what zfs will probably return
+		if strings.Contains(err.Error(), "dataset does not exist") {
+			err = syscall.ENOENT
+		}
+		return err
+	}
+
+	if _, err := gzfsDS.Unmount(force); err != nil {
+		// Fix errors to be more like what zfs will probably return
+		if strings.Contains(err.Error(), "not currently mounted") {
+			return syscall.EINVAL
+		}
+		return err
+	}
+
+	return nil
 }
 
 // Dataset Sorting

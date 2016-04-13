@@ -30,6 +30,13 @@ func Exists(name string) (bool, error)
 ```
 Exists determines whether a dataset exists or not.
 
+#### func  Receive
+
+```go
+func Receive(stream io.Reader, name string) error
+```
+Receive creates a snapshot from a zfs send stream.
+
 #### type By
 
 ```go
@@ -96,13 +103,6 @@ func GetDataset(name string) (*Dataset, error)
 ```
 GetDataset retrieves a single dataset.
 
-#### func  ReceiveSnapshot
-
-```go
-func ReceiveSnapshot(input io.Reader, name string) (*Dataset, error)
-```
-ReceiveSnapshot creates a snapshot from a zfs send stream. Currently a stub.
-
 #### func (*Dataset) Children
 
 ```go
@@ -138,6 +138,13 @@ Diff returns changes between a snapshot and the given dataset. Currently a stub.
 func (d *Dataset) Holds() ([]string, error)
 ```
 Holds returns a list of user holds on the dataset.
+
+#### func (*Dataset) Mount
+
+```go
+func (d *Dataset) Mount(overlay bool, options []string) error
+```
+Mount mounts the dataset.
 
 #### func (*Dataset) Mountpoint
 
@@ -196,6 +203,13 @@ Snapshot creates a new snapshot of the dataset.
 func (d *Dataset) Snapshots() ([]*Dataset, error)
 ```
 Snapshots returns a list of snapshots of the dataset.
+
+#### func (*Dataset) Unmount
+
+```go
+func (d *Dataset) Unmount(force bool) error
+```
+Unmount unmounts the dataset.
 
 #### type DatasetProperties
 

@@ -190,11 +190,11 @@ func (s *internal) TestCreateVOL() {
 
 }
 
-func unmount(ds string) error {
+func (s *internal) unmount(ds string) error {
 	return command("sudo", "zfs", "unmount", ds).Run()
 }
 
-func unhold(tag, snapshot string) error {
+func (s *internal) unhold(tag, snapshot string) error {
 	return command("sudo", "zfs", "release", tag, snapshot).Run()
 }
 
@@ -218,22 +218,22 @@ func (s *internal) TestDestroy() {
 
 	// mounted
 	s.EqualError(destroy(s.pool+"/a/3", false), ebusy)
-	s.NoError(unmount(s.pool + "/a/3"))
+	s.NoError(s.unmount(s.pool + "/a/3"))
 	s.NoError(destroy(s.pool+"/a/3", true))
 
 	// has holds
 	s.EqualError(destroy(s.pool+"/a/2@snap1", false), ebusy)
-	s.NoError(unhold("hold1", s.pool+"/a/2@snap1"))
+	s.NoError(s.unhold("hold1", s.pool+"/a/2@snap1"))
 	s.NoError(destroy(s.pool+"/a/2@snap1", false))
 	s.EqualError(destroy(s.pool+"/a/2@snap2", false), ebusy)
-	s.NoError(unhold("hold2", s.pool+"/a/2@snap2"))
+	s.NoError(s.unhold("hold2", s.pool+"/a/2@snap2"))
 	s.NoError(destroy(s.pool+"/a/2@snap2", true))
 
 	s.EqualError(destroy(s.pool+"/b/2@snap1", false), ebusy)
-	s.NoError(unhold("hold1", s.pool+"/b/2@snap1"))
+	s.NoError(s.unhold("hold1", s.pool+"/b/2@snap1"))
 	s.NoError(destroy(s.pool+"/b/2@snap1", true))
 	s.EqualError(destroy(s.pool+"/b/2@snap2", false), ebusy)
-	s.NoError(unhold("hold2", s.pool+"/b/2@snap2"))
+	s.NoError(s.unhold("hold2", s.pool+"/b/2@snap2"))
 	s.NoError(destroy(s.pool+"/b/2@snap2", true))
 
 	// misc
@@ -245,14 +245,14 @@ func (s *internal) TestDestroy() {
 
 	// has child datasets
 	s.EqualError(destroy(s.pool+"/a", false), ebusy)
-	s.NoError(unmount(s.pool + "/a"))
+	s.NoError(s.unmount(s.pool + "/a"))
 	s.EqualError(destroy(s.pool+"/a", false), eexist)
 	s.NoError(destroyKids(s.pool + "/a"))
 	s.NoError(destroy(s.pool+"/a", false))
 
 	s.EqualError(destroy(s.pool+"/b", false), ebusy)
 	s.NoError(destroyKids(s.pool + "/b"))
-	s.NoError(unmount(s.pool + "/b"))
+	s.NoError(s.unmount(s.pool + "/b"))
 	s.NoError(destroy(s.pool+"/b", true))
 
 }
@@ -407,7 +407,7 @@ func (s *internal) TestRollback() {
 	}
 }
 
-func receive(r *os.File, target string) error {
+func (s *internal) receive(r *os.File, target string) error {
 	cmd := command("sudo", "zfs", "receive", "-e", target)
 	in, err := cmd.StdinPipe()
 	if err != nil {
@@ -445,7 +445,7 @@ func (s *internal) TestSendSimple() {
 	reader, writer, err = os.Pipe()
 	s.Require().NoError(err)
 	s.NoError(send(s.pool+"/a/4", writer.Fd(), "", true, true))
-	s.NoError(receive(reader, s.pool+"/c"))
+	s.NoError(s.receive(reader, s.pool+"/c"))
 	s.NoError(reader.Close())
 	s.NoError(writer.Close())
 }
@@ -464,7 +464,7 @@ func (s *internal) TestSendComplex() {
 	NoError(err)
 	NoError(send(s.pool+"/a/2@pre", writer.Fd(), "", true, true))
 	s.NoError(writer.Close()) // must be before receiver, otherwise can block
-	s.NoError(receive(reader, s.pool+"/c"))
+	s.NoError(s.receive(reader, s.pool+"/c"))
 	s.NoError(reader.Close())
 	name = strings.Replace(name, "/a/", "/c/", 1)
 	_, err = os.Stat(name)
@@ -474,7 +474,7 @@ func (s *internal) TestSendComplex() {
 	NoError(err)
 	s.NoError(send(s.pool+"/a/2@post", writer.Fd(), s.pool+"/a/2@pre", false, false))
 	s.NoError(writer.Close()) // must be before receiver, otherwise can block
-	s.NoError(receive(reader, s.pool+"/c"))
+	s.NoError(s.receive(reader, s.pool+"/c"))
 	s.NoError(reader.Close())
 	_, err = os.Stat(name)
 	s.IsType(&os.PathError{}, err)

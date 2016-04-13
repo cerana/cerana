@@ -3,14 +3,10 @@ package zfs
 import (
 	"errors"
 	"net/url"
-	"strings"
-	"syscall"
 
 	"github.com/cerana/cerana/acomm"
-	gzfs "github.com/mistifyio/go-zfs"
+	"github.com/cerana/cerana/zfs"
 )
-
-// TODO: Update this method once `zfs` supports Mount
 
 // MountArgs are arguments for the Mount handler.
 type MountArgs struct {
@@ -29,24 +25,10 @@ func (z *ZFS) Mount(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.New("missing arg: name")
 	}
 
-	ds, err := gzfs.GetDataset(args.Name)
+	ds, err := zfs.GetDataset(args.Name)
 	if err != nil {
-		// Fix errors to be more like what zfs will probably return
-		if strings.Contains(err.Error(), "dataset does not exist") {
-			err = syscall.ENOENT
-		}
 		return nil, nil, err
 	}
 
-	ds, err = ds.Mount(args.Overlay, nil)
-	if err != nil {
-		// Fix errors to be more like what zfs will probably return
-		if strings.Contains(err.Error(), "already mounted") {
-			err = syscall.EBUSY
-		}
-
-		return nil, nil, err
-	}
-
-	return nil, nil, nil
+	return nil, nil, ds.Mount(args.Overlay, nil)
 }
