@@ -390,9 +390,16 @@ func (t *Tracker) ProxyExternal(req *Request, timeout time.Duration) (*Request, 
 		ID:           req.ID,
 		Task:         req.Task,
 		ResponseHook: t.externalProxyURL,
-		StreamURL:    req.StreamURL,
 		Args:         req.Args,
 	}
+	if req.StreamURL != nil {
+		streamURL, err := t.ProxyStreamHTTPURL(req.StreamURL) // Replace the StreamURL with a proxy stream url
+		if err != nil {
+			return nil, err
+		}
+		externalReq.StreamURL = streamURL
+	}
+
 	if err := t.TrackRequest(req, timeout); err != nil {
 		return nil, err
 	}
