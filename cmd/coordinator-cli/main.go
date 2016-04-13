@@ -25,10 +25,11 @@ const (
 func main() {
 	log.SetLevel(log.FatalLevel)
 
-	var coordinator, httpAddr, taskName string
+	var coordinator, taskURL, httpAddr, taskName string
 	var taskArgs []string
 	var streamRequest bool
 	flags.StringVarP(&coordinator, "coordinator_url", "c", "", "url of the coordinator")
+	flags.StringVarP(&taskURL, "task_url", "u", "", "url of the task handler if different than coordinator")
 	flags.StringVarP(&taskName, "task", "t", "", "task to run")
 	flags.StringSliceVarP(&taskArgs, "request_arg", "a", []string{}, fmt.Sprintf("task specific argument the form 'key%svalue'. can be set multiple times", argSep))
 	flags.StringVarP(&httpAddr, "http_addr", "r", ":4080", "address for http server to listen for responses and stream request data")
@@ -41,7 +42,7 @@ func main() {
 	result, streamResult, respErr, err := startHTTPServer(httpAddr)
 	dieOnError(err)
 
-	dieOnError(makeRequest(coordinator, taskName, httpAddr, streamRequest, args))
+	dieOnError(makeRequest(coordinator, taskName, httpAddr, taskURL, streamRequest, args))
 
 	select {
 	case err := <-respErr:
@@ -174,7 +175,7 @@ func startHTTPServer(addr string) (chan interface{}, chan *url.URL, chan error, 
 	return result, stream, errChan, err
 }
 
-func makeRequest(coordinator, taskName, httpAddr string, stream bool, taskArgs map[string]interface{}) error {
+func makeRequest(coordinator, taskName, httpAddr, taskURL string, stream bool, taskArgs map[string]interface{}) error {
 	coordinatorURL, err := url.ParseRequestURI(coordinator)
 	if err != nil {
 		return errors.New("invalid coordinator url")
@@ -189,10 +190,13 @@ func makeRequest(coordinator, taskName, httpAddr string, stream bool, taskArgs m
 	if err := req.SetResponseHook(responseHook); err != nil {
 		return err
 	}
-	if err := req.SetStreamURL(streamURL); err != nil {
+	if err := req.SetStreamURL(streamURL); streamURL != "" && err != nil {
 		return err
 	}
 	if err := req.SetArgs(taskArgs); err != nil {
+		return err
+	}
+	if err := req.SetTaskURL(taskURL); taskURL != "" && err != nil {
 		return err
 	}
 
