@@ -411,13 +411,9 @@ func (t *Tracker) ProxyExternal(req *Request, timeout time.Duration) (*Request, 
 // ProxyExternalHandler is an HTTP HandlerFunc for proxying an external request.
 func (t *Tracker) ProxyExternalHandler(w http.ResponseWriter, r *http.Request) {
 	resp := &Response{}
-	body, err := ioutil.ReadAll(r.Body)
-	if err == nil {
-		err = json.Unmarshal(body, resp)
-	}
-
+	decoder := json.NewDecoder(r.Body)
 	ack := &Response{
-		Error: err,
+		Error: decoder.Decode(resp),
 	}
 	ackJSON, err := json.Marshal(ack)
 	if err != nil {
