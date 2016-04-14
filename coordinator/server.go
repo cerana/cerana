@@ -53,15 +53,13 @@ func NewServer(config *Config) (*Server, error) {
 		"response",
 		config.ServiceName()+".sock")
 
-	streamURL, err := url.ParseRequestURI(
-		fmt.Sprintf("http://%s:%d/stream", getLocalIP(), config.ExternalPort()))
+	streamURL, err := url.ParseRequestURI(fmt.Sprintf("http://%s:%d/stream", getLocalIP(), config.ExternalPort()))
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
 		}).Error("failed to generate stream url")
 	}
-	proxyURL, err := url.ParseRequestURI(
-		fmt.Sprintf("http://%s:%d/proxy", getLocalIP(), config.ExternalPort()))
+	proxyURL, err := url.ParseRequestURI(fmt.Sprintf("http://%s:%d/proxy", getLocalIP(), config.ExternalPort()))
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
