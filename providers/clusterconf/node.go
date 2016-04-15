@@ -18,4 +18,4 @@ type Node struct {
 type NodeHistory map[time.Time]*Node
 
 // NodesHistory is the historical information for multiple nodes.
-type NodesHistory map[string]*HistoricalNode
+type NodesHistory map[string]*NodeHistory
