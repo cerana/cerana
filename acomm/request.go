@@ -27,15 +27,71 @@ type Request struct {
 	proxied        bool
 }
 
+// RequestOptions are properties and options used to create a new Request
+// object. There are options to either directly specify a URL or provide a
+// string that will be parsed.
+type RequestOptions struct {
+	Task               string
+	TaskURL            *url.URL
+	TaskURLString      string
+	ResponseHook       *url.URL
+	ResponseHookString string
+	StreamURL          *url.URL
+	StreamURLString    string
+	Args               interface{}
+	SuccessHandler     ResponseHandler
+	ErrorHandler       ResponseHandler
+}
+
 // ResponseHandler is a function to run when a request receives a response.
 type ResponseHandler func(*Request, *Response)
 
 // NewRequest creates a new Request instance.
-func NewRequest(task string) *Request {
-	return &Request{
-		ID:   uuid.New(),
-		Task: task,
+func NewRequest(opts *RequestOptions) (*Request, error) {
+	if opts == nil {
+		return nil, errors.New("missing request options")
 	}
+
+	req := &Request{
+		ID:             uuid.New(),
+		Task:           opts.Task,
+		SuccessHandler: opts.SuccessHandler,
+		ErrorHandler:   opts.ErrorHandler,
+	}
+
+	if err := req.SetArgs(opts.Args); err != nil {
+		return nil, err
+	}
+
+	if opts.TaskURL != nil {
+		req.TaskURL = opts.TaskURL
+	} else if opts.TaskURLString != "" {
+		if err := req.SetTaskURL(opts.TaskURLString); err != nil {
+			return nil, err
+		}
+	}
+
+	if opts.ResponseHook != nil {
+		req.ResponseHook = opts.ResponseHook
+	} else if opts.ResponseHookString != "" {
+		if err := req.SetResponseHook(opts.ResponseHookString); err != nil {
+			return nil, err
+		}
+	}
+
+	if opts.StreamURL != nil {
+		req.StreamURL = opts.StreamURL
+	} else if opts.StreamURLString != "" {
+		if err := req.SetStreamURL(opts.StreamURLString); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+
+	return req, nil
 }
 
 // SetResponseHook is a convenience method to set the ResponseHook from a

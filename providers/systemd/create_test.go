@@ -26,9 +26,12 @@ func (s *systemd) TestCreate() {
 		args := &systemdp.CreateArgs{Name: test.name, UnitOptions: test.options}
 		argsS := fmt.Sprintf("%+v", args)
 
-		req := acomm.NewRequest("systemd-create")
-		req.ResponseHook = s.responseHook
-		s.Require().NoError(req.SetArgs(args), argsS)
+		req, err := acomm.NewRequest(&acomm.RequestOptions{
+			Task:         "systemd-create",
+			ResponseHook: s.responseHook,
+			Args:         args,
+		})
+		s.Require().NoError(err, argsS)
 
 		res, streamURL, err := s.systemd.Create(req)
 		s.Nil(streamURL, argsS)

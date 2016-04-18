@@ -41,10 +41,13 @@ func (s *zfs) TestReceive() {
 			reqStreamURL = streamURL
 		}
 
-		req := acomm.NewRequest("zfs-receive")
-		req.ResponseHook = s.responseHook
-		req.StreamURL = reqStreamURL
-		s.Require().NoError(req.SetArgs(test.args), argsS)
+		req, err := acomm.NewRequest(&acomm.RequestOptions{
+			Task:         "zfs-receive",
+			ResponseHook: s.responseHook,
+			StreamURL:    reqStreamURL,
+			Args:         test.args,
+		})
+		s.Require().NoError(err, argsS)
 
 		res, resStreamURL, err := s.zfs.Receive(req)
 		s.Nil(resStreamURL, argsS)

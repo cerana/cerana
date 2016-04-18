@@ -30,9 +30,12 @@ func (s *zfs) TestRename() {
 		}
 		argsS := fmt.Sprintf("%+v", test.args)
 
-		req := acomm.NewRequest("zfs-rename")
-		req.ResponseHook = s.responseHook
-		s.Require().NoError(req.SetArgs(test.args), argsS)
+		req, err := acomm.NewRequest(&acomm.RequestOptions{
+			Task:         "zfs-rename",
+			ResponseHook: s.responseHook,
+			Args:         test.args,
+		})
+		s.Require().NoError(err, argsS)
 
 		res, streamURL, err := s.zfs.Rename(req)
 		s.Empty(streamURL, argsS)

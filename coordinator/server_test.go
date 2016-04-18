@@ -139,9 +139,13 @@ func (s *ServerSuite) TestReqRespHandle() {
 			coordinatorURL = internalURL
 		}
 
-		req := acomm.NewRequest(test.taskName)
-		_ = req.SetResponseHook(hookURL)
-		_ = req.SetArgs(test.params)
+		req, err := acomm.NewRequest(&acomm.RequestOptions{
+			Task:               test.taskName,
+			ResponseHookString: hookURL,
+			Args:               test.params,
+		})
+		s.Require().NoError(err, msg("should have created req"))
+
 		if err := acomm.Send(coordinatorURL, req); err != nil {
 			result <- nil
 		}

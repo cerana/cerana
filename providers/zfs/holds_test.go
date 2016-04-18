@@ -26,9 +26,12 @@ func (s *zfs) TestHolds() {
 		}
 		argsS := fmt.Sprintf("%+v", test.args)
 
-		req := acomm.NewRequest("zfs-holds")
-		req.ResponseHook = s.responseHook
-		s.Require().NoError(req.SetArgs(test.args), argsS)
+		req, err := acomm.NewRequest(&acomm.RequestOptions{
+			Task:         "zfs-holds",
+			ResponseHook: s.responseHook,
+			Args:         test.args,
+		})
+		s.Require().NoError(err, argsS)
 
 		res, streamURL, err := s.zfs.Holds(req)
 		s.Empty(streamURL, argsS)

@@ -28,9 +28,12 @@ func (s *zfs) TestSend() {
 		}
 		argsS := fmt.Sprintf("%+v", test.args)
 
-		req := acomm.NewRequest("zfs-send")
-		req.ResponseHook = s.responseHook
-		s.Require().NoError(req.SetArgs(test.args), argsS)
+		req, err := acomm.NewRequest(&acomm.RequestOptions{
+			Task:         "zfs-send",
+			ResponseHook: s.responseHook,
+			Args:         test.args,
+		})
+		s.Require().NoError(err, argsS)
 
 		res, streamURL, err := s.zfs.Send(req)
 		if test.err == "" {

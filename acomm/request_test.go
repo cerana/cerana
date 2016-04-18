@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"reflect"
 	"testing"
 
 	log "github.com/Sirupsen/logrus"
@@ -25,23 +26,82 @@ func TestRequestTestSuite(t *testing.T) {
 }
 
 func (s *RequestTestSuite) TestNewRequest() {
+	task := "foobar"
+	args := map[string]string{
+		"foo": "bar",
+	}
+
+	sh, eh, _ := generateHandlers()
+
+	unixURL, _ := url.ParseRequestURI("unix://asdf")
+
 	tests := []struct {
 		description string
-		task        string
+		opts        *acomm.RequestOptions
+		expectedErr bool
 	}{
-		{"without task", ""},
-		{"with task", "foobar"},
+		{"nil options", nil, true},
+		{"empty options", &acomm.RequestOptions{}, true},
+		{"task", &acomm.RequestOptions{Task: task}, false},
+		{"args", &acomm.RequestOptions{Task: task, Args: args}, false},
+		{"invalid response hook string", &acomm.RequestOptions{Task: task, ResponseHookString: "asdf"}, true},
+		{"valid response hook string", &acomm.RequestOptions{Task: task, ResponseHookString: "unix://asdf"}, false},
+		{"valid response hook url", &acomm.RequestOptions{Task: task, ResponseHook: unixURL}, false},
+		{"invalid task url string", &acomm.RequestOptions{Task: task, TaskURLString: "asdf"}, true},
+		{"valid task url string", &acomm.RequestOptions{Task: task, TaskURLString: "unix://asdf"}, false},
+		{"valid task url url", &acomm.RequestOptions{Task: task, TaskURL: unixURL}, false},
+		{"invalid stream url string", &acomm.RequestOptions{Task: task, StreamURLString: "asdf"}, true},
+		{"valid stream url string", &acomm.RequestOptions{Task: task, StreamURLString: "unix://asdf"}, false},
+		{"valid stream url url", &acomm.RequestOptions{Task: task, StreamURL: unixURL}, false},
+		{"success and error handlers", &acomm.RequestOptions{Task: task, SuccessHandler: sh, ErrorHandler: eh}, false},
 	}
 
 	for _, test := range tests {
 		msg := testMsgFunc(test.description)
-		req := acomm.NewRequest(test.task)
-		if !s.NotNil(req, msg("should have returned a request")) {
+		req, err := acomm.NewRequest(test.opts)
+
+		if test.expectedErr {
+			s.Error(err, msg("should have failed"))
+			s.Nil(req, msg("should not return req on error"))
 			continue
 		}
 
-		s.NotEmpty(req.ID, msg("should have set an ID"))
-		s.Equal(test.task, req.Task, msg("should have set the task"))
+		if !s.NoError(err, msg("should have succeeded")) {
+			continue
+		}
+		if !s.NotNil(req, msg("should have returned a req")) {
+			continue
+		}
+
+		s.NotEmpty(req.ID, msg("should have assigned an ID"))
+		s.Equal(test.opts.Task, req.Task, msg("should have set task"))
+
+		responseHook := test.opts.ResponseHook
+		if test.opts.ResponseHookString != "" {
+			responseHook, _ = url.ParseRequestURI(test.opts.ResponseHookString)
+		}
+		s.Equal(responseHook, req.ResponseHook, msg("should have set response hook"))
+		taskURL := test.opts.TaskURL
+		if test.opts.TaskURLString != "" {
+			taskURL, _ = url.ParseRequestURI(test.opts.TaskURLString)
+		}
+		s.Equal(taskURL, req.TaskURL, msg("should have set task url"))
+		streamURL := test.opts.StreamURL
+		if test.opts.StreamURLString != "" {
+			streamURL, _ = url.ParseRequestURI(test.opts.StreamURLString)
+		}
+		s.Equal(streamURL, req.StreamURL, msg("should have set stream url"))
+
+		var args map[string]string
+		s.NoError(req.UnmarshalArgs(&args))
+		if test.opts.Args == nil {
+			s.Nil(args, msg("should have nil arguments"))
+		} else {
+			s.Equal(test.opts.Args, args, msg("should have set the arguments"))
+		}
+
+		s.Equal(reflect.ValueOf(test.opts.SuccessHandler).Pointer(), reflect.ValueOf(req.SuccessHandler).Pointer(), msg("should have set success handler"))
+		s.Equal(reflect.ValueOf(test.opts.ErrorHandler).Pointer(), reflect.ValueOf(req.ErrorHandler).Pointer(), msg("should have set error handler"))
 	}
 }
 
@@ -169,10 +229,13 @@ func (s *RequestTestSuite) TestHandleResponse() {
 		handled["success"] = 0
 		handled["error"] = 0
 		msg := testMsgFunc(test.description)
-		req := acomm.NewRequest("foobar")
-		_ = req.SetArgs(struct{}{})
-		req.SuccessHandler = test.sh
-		req.ErrorHandler = test.eh
+		req, err := acomm.NewRequest(&acomm.RequestOptions{
+			Task:           "foobar",
+			Args:           struct{}{},
+			SuccessHandler: test.sh,
+			ErrorHandler:   test.eh,
+		})
+		s.Require().NoError(err, msg("should have created request"))
 
 		resp, err := acomm.NewResponse(req, test.respResult, nil, test.respErr)
 		if !s.NoError(err, msg("should not fail to build resp")) {

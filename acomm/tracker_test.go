@@ -51,8 +51,11 @@ func (s *TrackerTestSuite) SetupSuite() {
 func (s *TrackerTestSuite) SetupTest() {
 	var err error
 
-	s.Request = acomm.NewRequest("foobar")
-	s.Require().NoError(s.Request.SetResponseHook(s.RespServer.URL), "response hook should be set")
+	s.Request, err = acomm.NewRequest(&acomm.RequestOptions{
+		Task:               "foobar",
+		ResponseHookString: s.RespServer.URL,
+	})
+	s.Require().NoError(err, "request should be created")
 
 	streamAddr, _ := url.ParseRequestURI(s.StreamServer.URL)
 	externalAddr, _ := url.ParseRequestURI(s.ExternalServer.URL)
@@ -129,9 +132,12 @@ func (s *TrackerTestSuite) TestProxyUnix() {
 	}))
 	defer streamServer.Close()
 
-	req := acomm.NewRequest("foobar")
-	s.NoError(req.SetResponseHook(s.RespServer.URL))
-	s.NoError(req.SetStreamURL(streamServer.URL))
+	req, err := acomm.NewRequest(&acomm.RequestOptions{
+		Task:               "foobar",
+		ResponseHookString: s.RespServer.URL,
+		StreamURLString:    streamServer.URL,
+	})
+	s.Require().NoError(err, "request should be created")
 
 	unixReq, err = s.Tracker.ProxyUnix(req, 0)
 	s.NoError(err, "should not fail proxying when tracker is listening")
@@ -160,9 +166,12 @@ func (s *TrackerTestSuite) TestProxyUnix() {
 	s.Equal(0, s.Tracker.NumRequests(), "should have removed the request from tracking")
 
 	// Should not proxy a request already using unix response hook
-	origUnixReq := acomm.NewRequest("foobar")
-	_ = origUnixReq.SetResponseHook("unix://foo")
-	_ = origUnixReq.SetArgs(struct{}{})
+	origUnixReq, err := acomm.NewRequest(&acomm.RequestOptions{
+		Task:               "foobar",
+		ResponseHookString: "unix://foo",
+		Args:               struct{}{},
+	})
+	s.Require().NoError(err, "request should be created")
 	unixReq, err = s.Tracker.ProxyUnix(origUnixReq, 0)
 	s.NoError(err, "should not error with unix response hook")
 	s.Equal(origUnixReq, unixReq, "should not proxy unix response hook")
@@ -174,10 +183,12 @@ func (s *TrackerTestSuite) TestProxyExternal() {
 		return
 	}
 
-	origReq := acomm.NewRequest("foobar")
-	if !s.NoError(origReq.SetResponseHook(s.RespServer.URL), "should not have failed to set response hook") {
-		return
-	}
+	origReq, err := acomm.NewRequest(&acomm.RequestOptions{
+		Task:               "foobar",
+		ResponseHookString: s.RespServer.URL,
+		Args:               struct{}{},
+	})
+	s.Require().NoError(err, "request should be created")
 
 	proxyReq, err := s.Tracker.ProxyExternal(origReq, 0)
 	if !s.NoError(err, "should not have failed to create proxy req") {

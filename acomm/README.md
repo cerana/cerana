@@ -134,7 +134,7 @@ appropriately to handle a response.
 #### func  NewRequest
 
 ```go
-func NewRequest(task string) *Request
+func NewRequest(opts *RequestOptions) (*Request, error)
 ```
 NewRequest creates a new Request instance.
 
@@ -196,6 +196,27 @@ UnmarshalArgs unmarshals the request args into the destination object.
 func (req *Request) Validate() error
 ```
 Validate validates the reqeust
+
+#### type RequestOptions
+
+```go
+type RequestOptions struct {
+	Task               string
+	TaskURL            *url.URL
+	TaskURLString      string
+	ResponseHook       *url.URL
+	ResponseHookString string
+	StreamURL          *url.URL
+	StreamURLString    string
+	Args               interface{}
+	SuccessHandler     ResponseHandler
+	ErrorHandler       ResponseHandler
+}
+```
+
+RequestOptions are properties and options used to create a new Request object.
+There are options to either directly specify a URL or provide a string that will
+be parsed.
 
 #### type Response
 
