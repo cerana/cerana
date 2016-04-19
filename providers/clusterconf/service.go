@@ -7,6 +7,7 @@ import (
 	"path"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/pborman/uuid"
 )
 
 const servicesPrefix string = "services"
@@ -14,7 +15,8 @@ const servicesPrefix string = "services"
 // Service is information about a service.
 type Service struct {
 	*ServiceConf
-	c        *ClusterConf
+	c *ClusterConf
+	// ModIndex should be treated as opaque, but passed back on updates
 	ModIndex uint64 `json:"modIndex"`
 }
 
@@ -71,6 +73,10 @@ func (c *ClusterConf) UpdateService(req *acomm.Request) (interface{}, *url.URL, 
 		return nil, nil, errors.New("missing arg: service")
 	}
 	args.Service.c = c
+
+	if args.Service.ID == "" {
+		args.Service.ID = uuid.New()
+	}
 
 	if err := args.Service.update(); err != nil {
 		return nil, nil, err
