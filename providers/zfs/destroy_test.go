@@ -31,7 +31,11 @@ func (s *zfs) TestDestroy() {
 		}
 		argsS := fmt.Sprintf("%+v", test.args)
 
-		req, err := acomm.NewRequest("zfs-destroy", "unix:///tmp/foobar", "", test.args, nil, nil)
+		req, err := acomm.NewRequest(acomm.RequestOptions{
+			Task:         "zfs-destroy",
+			ResponseHook: s.responseHook,
+			Args:         test.args,
+		})
 		s.Require().NoError(err, argsS)
 
 		res, streamURL, err := s.zfs.Destroy(req)

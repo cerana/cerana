@@ -17,8 +17,9 @@ import (
 type Request struct {
 	ID             string           `json:"id"`
 	Task           string           `json:"task"`
-	ResponseHook   *url.URL         `json:"responsehook"`
-	StreamURL      *url.URL         `json:"stream_url"`
+	TaskURL        *url.URL         `json:"taskURL"`
+	ResponseHook   *url.URL         `json:"responseHook"`
+	StreamURL      *url.URL         `json:"streamURL"`
 	Args           *json.RawMessage `json:"args"`
 	SuccessHandler ResponseHandler  `json:"-"`
 	ErrorHandler   ResponseHandler  `json:"-"`
@@ -26,50 +27,127 @@ type Request struct {
 	proxied        bool
 }
 
+// RequestOptions are properties and options used to create a new Request
+// object. There are options to either directly specify a URL or provide a
+// string that will be parsed.
+type RequestOptions struct {
+	Task               string
+	TaskURL            *url.URL
+	TaskURLString      string
+	ResponseHook       *url.URL
+	ResponseHookString string
+	StreamURL          *url.URL
+	StreamURLString    string
+	Args               interface{}
+	SuccessHandler     ResponseHandler
+	ErrorHandler       ResponseHandler
+}
+
 // ResponseHandler is a function to run when a request receives a response.
 type ResponseHandler func(*Request, *Response)
 
 // NewRequest creates a new Request instance.
-func NewRequest(task, responseHook, streamURL string, args interface{}, sh ResponseHandler, eh ResponseHandler) (*Request, error) {
-	hook, err := url.ParseRequestURI(responseHook)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"error":        err,
-			"responseHook": responseHook,
-		}).Error("invalid response hook url")
+func NewRequest(opts RequestOptions) (*Request, error) {
+	req := &Request{
+		ID:             uuid.New(),
+		Task:           opts.Task,
+		SuccessHandler: opts.SuccessHandler,
+		ErrorHandler:   opts.ErrorHandler,
+	}
+
+	if err := req.SetArgs(opts.Args); err != nil {
 		return nil, err
 	}
 
-	var stream *url.URL
-	if streamURL != "" {
-		stream, err = url.ParseRequestURI(streamURL)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"error":     err,
-				"streamURL": streamURL,
-			}).Error("invalid response hook url")
+	if opts.TaskURL != nil {
+		req.TaskURL = opts.TaskURL
+	} else if opts.TaskURLString != "" {
+		if err := req.SetTaskURL(opts.TaskURLString); err != nil {
 			return nil, err
 		}
 	}
 
-	if task == "" {
-		return nil, errors.New("missing task")
+	if opts.ResponseHook != nil {
+		req.ResponseHook = opts.ResponseHook
+	} else if opts.ResponseHookString != "" {
+		if err := req.SetResponseHook(opts.ResponseHookString); err != nil {
+			return nil, err
+		}
 	}
 
-	argsJSON, err := json.Marshal(args)
-	if err != nil {
+	if opts.StreamURL != nil {
+		req.StreamURL = opts.StreamURL
+	} else if opts.StreamURLString != "" {
+		if err := req.SetStreamURL(opts.StreamURLString); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := req.Validate(); err != nil {
 		return nil, err
 	}
 
-	return &Request{
-		ID:             uuid.New(),
-		Task:           task,
-		ResponseHook:   hook,
-		StreamURL:      stream,
-		Args:           (*json.RawMessage)(&argsJSON),
-		SuccessHandler: sh,
-		ErrorHandler:   eh,
-	}, nil
+	return req, nil
+}
+
+// SetResponseHook is a convenience method to set the ResponseHook from a
+// string url.
+func (req *Request) SetResponseHook(urlString string) error {
+	responseHook, err := url.ParseRequestURI(urlString)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error":        err,
+			"responseHook": urlString,
+		}).Error("invalid response hook url")
+		return err
+	}
+
+	req.ResponseHook = responseHook
+	return nil
+}
+
+// SetStreamURL is a convenience method to set the StreamURL from a string url.
+func (req *Request) SetStreamURL(urlString string) error {
+	streamURL, err := url.ParseRequestURI(urlString)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error":     err,
+			"streamURL": urlString,
+		}).Error("invalid stream url")
+		return err
+	}
+
+	req.StreamURL = streamURL
+	return nil
+}
+
+// SetTaskURL is a convenience method to set the TaskURL from a string url.
+func (req *Request) SetTaskURL(urlString string) error {
+	taskURL, err := url.ParseRequestURI(urlString)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error":   err,
+			"taskURL": urlString,
+		}).Error("invalid task url")
+		return err
+	}
+
+	req.TaskURL = taskURL
+	return nil
+}
+
+// SetArgs sets the Args.
+func (req *Request) SetArgs(args interface{}) error {
+	argsJSON, err := json.Marshal(args)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+			"args":  args,
+		}).Error("unable to set args")
+		return err
+	}
+	req.Args = (*json.RawMessage)(&argsJSON)
+	return nil
 }
 
 // UnmarshalArgs unmarshals the request args into the destination object.
@@ -110,19 +188,15 @@ func (req *Request) Validate() error {
 		}).Error("invalid req")
 		return err
 	}
-	if req.ResponseHook == nil {
-		err := errors.New("missing response hook")
-		log.WithFields(log.Fields{
-			"req":   req,
-			"error": err,
-		}).Error("invalid req")
-		return err
-	}
+
 	return nil
 }
 
-// Respond sends a Response to a Request's ResponseHook.
+// Respond sends a Response to the ResponseHook if present.
 func (req *Request) Respond(resp *Response) error {
+	if req.ResponseHook == nil {
+		return nil
+	}
 	return Send(req.ResponseHook, resp)
 }
 

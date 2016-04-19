@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"path/filepath"
 	"testing"
@@ -19,11 +20,12 @@ import (
 
 type systemd struct {
 	suite.Suite
-	dir     string
-	config  *systemdp.Config
-	systemd *systemdp.Systemd
-	flagset *pflag.FlagSet
-	viper   *viper.Viper
+	dir          string
+	config       *systemdp.Config
+	systemd      *systemdp.Systemd
+	flagset      *pflag.FlagSet
+	viper        *viper.Viper
+	responseHook *url.URL
 }
 
 func TestSystemd(t *testing.T) {
@@ -31,6 +33,8 @@ func TestSystemd(t *testing.T) {
 }
 
 func (s *systemd) SetupSuite() {
+	s.responseHook, _ = url.ParseRequestURI("unix:///tmp/foobar")
+
 	dir, err := ioutil.TempDir("", "systemd-provider-test-")
 	s.Require().NoError(err)
 	s.dir = dir

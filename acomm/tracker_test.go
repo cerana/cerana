@@ -18,11 +18,12 @@ import (
 
 type TrackerTestSuite struct {
 	suite.Suite
-	Tracker      *acomm.Tracker
-	RespServer   *httptest.Server
-	StreamServer *httptest.Server
-	Responses    chan *acomm.Response
-	Request      *acomm.Request
+	Tracker        *acomm.Tracker
+	RespServer     *httptest.Server
+	ExternalServer *httptest.Server
+	StreamServer   *httptest.Server
+	Responses      chan *acomm.Response
+	Request        *acomm.Request
 }
 
 func (s *TrackerTestSuite) SetupSuite() {
@@ -38,6 +39,11 @@ func (s *TrackerTestSuite) SetupSuite() {
 		s.Responses <- resp
 	}))
 
+	// Create http server that calls s.tracker.HandleResponse(resp)
+	s.ExternalServer = httptest.NewServer(http.HandlerFunc(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		s.Tracker.ProxyExternalHandler(w, r)
+	})))
+
 	// Mock HTTP Stream server
 	s.StreamServer = httptest.NewServer(http.HandlerFunc(acomm.ProxyStreamHandler))
 }
@@ -45,17 +51,24 @@ func (s *TrackerTestSuite) SetupSuite() {
 func (s *TrackerTestSuite) SetupTest() {
 	var err error
 
-	s.Request, err = acomm.NewRequest("foobar", s.RespServer.URL, "", nil, nil, nil)
-	s.Require().NoError(err, "request should be valid")
+	s.Request, err = acomm.NewRequest(acomm.RequestOptions{
+		Task:               "foobar",
+		ResponseHookString: s.RespServer.URL,
+	})
+	s.Require().NoError(err, "request should be created")
 
 	streamAddr, _ := url.ParseRequestURI(s.StreamServer.URL)
-	s.Tracker, err = acomm.NewTracker("", streamAddr, 0)
+	externalAddr, _ := url.ParseRequestURI(s.ExternalServer.URL)
+	s.Tracker, err = acomm.NewTracker("", streamAddr, externalAddr, 0)
 	s.Require().NoError(err, "failed to create new Tracker")
 	s.Require().NotNil(s.Tracker, "failed to create new Tracker")
 }
 
 func (s *TrackerTestSuite) TearDownTest() {
 	s.Tracker.Stop()
+	for i := 0; i < len(s.Responses); i++ {
+		<-s.Responses
+	}
 }
 
 func (s *TrackerTestSuite) TearDownSuite() {
@@ -119,8 +132,12 @@ func (s *TrackerTestSuite) TestProxyUnix() {
 	}))
 	defer streamServer.Close()
 
-	req, err := acomm.NewRequest("foobar", s.RespServer.URL, streamServer.URL, nil, nil, nil)
-	s.NoError(err)
+	req, err := acomm.NewRequest(acomm.RequestOptions{
+		Task:               "foobar",
+		ResponseHookString: s.RespServer.URL,
+		StreamURLString:    streamServer.URL,
+	})
+	s.Require().NoError(err, "request should be created")
 
 	unixReq, err = s.Tracker.ProxyUnix(req, 0)
 	s.NoError(err, "should not fail proxying when tracker is listening")
@@ -149,12 +166,57 @@ func (s *TrackerTestSuite) TestProxyUnix() {
 	s.Equal(0, s.Tracker.NumRequests(), "should have removed the request from tracking")
 
 	// Should not proxy a request already using unix response hook
-	origUnixReq, err := acomm.NewRequest("foobar", "unix://foo", "", struct{}{}, nil, nil)
-	if !s.NoError(err, "new request shoudl not error") {
-		return
-	}
+	origUnixReq, err := acomm.NewRequest(acomm.RequestOptions{
+		Task:               "foobar",
+		ResponseHookString: "unix://foo",
+		Args:               struct{}{},
+	})
+	s.Require().NoError(err, "request should be created")
 	unixReq, err = s.Tracker.ProxyUnix(origUnixReq, 0)
 	s.NoError(err, "should not error with unix response hook")
 	s.Equal(origUnixReq, unixReq, "should not proxy unix response hook")
 	s.Equal(0, s.Tracker.NumRequests(), "should not response an unproxied request")
+}
+
+func (s *TrackerTestSuite) TestProxyExternal() {
+	if !s.NoError(s.Tracker.Start(), "listner should start") {
+		return
+	}
+
+	origReq, err := acomm.NewRequest(acomm.RequestOptions{
+		Task:               "foobar",
+		ResponseHookString: s.RespServer.URL,
+		Args:               struct{}{},
+	})
+	s.Require().NoError(err, "request should be created")
+
+	proxyReq, err := s.Tracker.ProxyExternal(origReq, 0)
+	if !s.NoError(err, "should not have failed to create proxy req") {
+		return
+	}
+	if !s.NotNil(proxyReq, "should not be a nil proxy req") {
+		return
+	}
+	s.Equal(origReq.ID, proxyReq.ID, "ids should be equal")
+	s.Equal("http", proxyReq.ResponseHook.Scheme, "new request should have http response hook")
+	if !s.Equal(1, s.Tracker.NumRequests(), "should have tracked the new request") {
+		return
+	}
+
+	resp, err := acomm.NewResponse(proxyReq, struct{}{}, nil, nil)
+	if !s.NoError(err, "new response should not error") {
+		return
+	}
+	if !s.NoError(acomm.Send(proxyReq.ResponseHook, resp), "response send should not error") {
+		return
+	}
+
+	lastResp := s.NextResp()
+	if !s.NotNil(lastResp, "response should have been proxied to original response hook") {
+		return
+	}
+
+	s.Equal(origReq.ID, lastResp.ID, "response should have been proxied to original response hook")
+	s.Equal(0, s.Tracker.NumRequests(), "should have removed the request from tracking")
+
 }

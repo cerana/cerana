@@ -30,6 +30,7 @@ type Server struct {
 
 // NewServer creates and initializes a new instance of Server.
 func NewServer(config *Config) (*Server, error) {
+	http.DefaultTransport.(*http.Transport).DisableKeepAlives = true
 	if err := config.Validate(); err != nil {
 		return nil, err
 	}
@@ -46,9 +47,33 @@ func NewServer(config *Config) (*Server, error) {
 		config.ServiceName()+".sock")
 	s.internal = acomm.NewUnixListener(internalSocket, 0)
 
-	// External server for requests from outside
+	// Response socket for proxied requests
+	responseSocket := filepath.Join(
+		config.SocketDir(),
+		"response",
+		config.ServiceName()+".sock")
+
+	streamURL, err := url.ParseRequestURI(fmt.Sprintf("http://%s:%d/stream", getLocalIP(), config.ExternalPort()))
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error("failed to generate stream url")
+	}
+	proxyURL, err := url.ParseRequestURI(fmt.Sprintf("http://%s:%d/proxy", getLocalIP(), config.ExternalPort()))
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error("failed to generate proxy url")
+	}
+	s.proxy, err = acomm.NewTracker(responseSocket, streamURL, proxyURL, config.RequestTimeout())
+	if err != nil {
+		return nil, err
+	}
+
+	// External server for requests to and from outside
 	mux := http.NewServeMux()
 	mux.HandleFunc("/stream", acomm.ProxyStreamHandler)
+	mux.HandleFunc("/proxy", s.proxy.ProxyExternalHandler)
 	mux.HandleFunc("/", s.externalHandler)
 	s.external = &graceful.Server{
 		Server: &http.Server{
@@ -58,23 +83,6 @@ func NewServer(config *Config) (*Server, error) {
 		NoSignalHandling: true,
 	}
 
-	// Response socket for proxied requests
-	responseSocket := filepath.Join(
-		config.SocketDir(),
-		"response",
-		config.ServiceName()+".sock")
-
-	streamURL, err := url.ParseRequestURI(
-		fmt.Sprintf("http://%s:%d/stream", getLocalIP(), config.ExternalPort()))
-	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-		}).Error("failed to generate stream url")
-	}
-	s.proxy, err = acomm.NewTracker(responseSocket, streamURL, config.RequestTimeout())
-	if err != nil {
-		return nil, err
-	}
 	log.WithFields(log.Fields{
 		"response": responseSocket,
 		"stream":   streamURL.String(),
@@ -180,9 +188,22 @@ func (s *Server) acceptInternalRequest(conn net.Conn) {
 	return
 }
 
-// handleRequest handles proxying and forwarding a request to a provider for
-// the specified task.
 func (s *Server) handleRequest(req *acomm.Request) error {
+	var err error
+	if req.TaskURL == nil {
+		err = s.localTask(req)
+	} else {
+		err = s.externalTask(req)
+	}
+	if err != nil {
+		_ = s.proxy.RemoveRequest(req)
+	}
+	return err
+}
+
+// localTask handles proxying and forwarding a request to a provider for
+// the specified task.
+func (s *Server) localTask(req *acomm.Request) error {
 	providerSockets, err := s.getProviders(req.Task)
 	if err != nil {
 		return err
@@ -208,6 +229,17 @@ func (s *Server) handleRequest(req *acomm.Request) error {
 	}
 
 	return err
+}
+
+// externalTask handles proxying and forwarding a request to an external
+// service (e.g. another coordinator)
+func (s *Server) externalTask(req *acomm.Request) error {
+	taskURL := req.TaskURL
+	proxyReq, err := s.proxy.ProxyExternal(req, 0)
+	if err != nil {
+		return err
+	}
+	return acomm.Send(taskURL, proxyReq)
 }
 
 // getProviders returns a list of providers registered for a given task.

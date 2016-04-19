@@ -27,7 +27,11 @@ func (s *zfs) TestSnapshot() {
 		}
 		argsS := fmt.Sprintf("%+v", test.args)
 
-		req, err := acomm.NewRequest("zfs-snapshot", "unix:///tmp/foobar", "", test.args, nil, nil)
+		req, err := acomm.NewRequest(acomm.RequestOptions{
+			Task:         "zfs-snapshot",
+			ResponseHook: s.responseHook,
+			Args:         test.args,
+		})
 		s.Require().NoError(err, argsS)
 
 		res, streamURL, err := s.zfs.Snapshot(req)

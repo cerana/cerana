@@ -41,7 +41,8 @@ func (s *ResponseTestSuite) TestNewResponse() {
 		"foo": "bar",
 	}
 
-	request, _ := acomm.NewRequest("foobar", "unix://foo", "", nil, nil, nil)
+	request, err := acomm.NewRequest(acomm.RequestOptions{Task: "foobar"})
+	s.Require().NoError(err, "should have created request")
 	respErr := errors.New("foobar")
 
 	tests := []struct {

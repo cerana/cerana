@@ -30,7 +30,11 @@ func (s *zfs) TestList() {
 	for _, test := range tests {
 		argsS := fmt.Sprintf("%+v", test.args)
 
-		req, err := acomm.NewRequest("zfs-list", "unix:///tmp/foobar", "", test.args, nil, nil)
+		req, err := acomm.NewRequest(acomm.RequestOptions{
+			Task:         "zfs-list",
+			ResponseHook: s.responseHook,
+			Args:         test.args,
+		})
 		s.Require().NoError(err, argsS)
 
 		res, streamURL, err := s.zfs.List(req)

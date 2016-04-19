@@ -117,8 +117,9 @@ Responses returns responses for all of the requests, keyed on the request name
 type Request struct {
 	ID             string           `json:"id"`
 	Task           string           `json:"task"`
-	ResponseHook   *url.URL         `json:"responsehook"`
-	StreamURL      *url.URL         `json:"stream_url"`
+	TaskURL        *url.URL         `json:"taskURL"`
+	ResponseHook   *url.URL         `json:"responseHook"`
+	StreamURL      *url.URL         `json:"streamURL"`
 	Args           *json.RawMessage `json:"args"`
 	SuccessHandler ResponseHandler  `json:"-"`
 	ErrorHandler   ResponseHandler  `json:"-"`
@@ -133,7 +134,7 @@ appropriately to handle a response.
 #### func  NewRequest
 
 ```go
-func NewRequest(task, responseHook, streamURL string, args interface{}, sh ResponseHandler, eh ResponseHandler) (*Request, error)
+func NewRequest(opts RequestOptions) (*Request, error)
 ```
 NewRequest creates a new Request instance.
 
@@ -151,7 +152,36 @@ assumed no handling is necessary and silently finishes.
 ```go
 func (req *Request) Respond(resp *Response) error
 ```
-Respond sends a Response to a Request's ResponseHook.
+Respond sends a Response to the ResponseHook if present.
+
+#### func (*Request) SetArgs
+
+```go
+func (req *Request) SetArgs(args interface{}) error
+```
+SetArgs sets the Args.
+
+#### func (*Request) SetResponseHook
+
+```go
+func (req *Request) SetResponseHook(urlString string) error
+```
+SetResponseHook is a convenience method to set the ResponseHook from a string
+url.
+
+#### func (*Request) SetStreamURL
+
+```go
+func (req *Request) SetStreamURL(urlString string) error
+```
+SetStreamURL is a convenience method to set the StreamURL from a string url.
+
+#### func (*Request) SetTaskURL
+
+```go
+func (req *Request) SetTaskURL(urlString string) error
+```
+SetTaskURL is a convenience method to set the TaskURL from a string url.
 
 #### func (*Request) UnmarshalArgs
 
@@ -167,13 +197,34 @@ func (req *Request) Validate() error
 ```
 Validate validates the reqeust
 
+#### type RequestOptions
+
+```go
+type RequestOptions struct {
+	Task               string
+	TaskURL            *url.URL
+	TaskURLString      string
+	ResponseHook       *url.URL
+	ResponseHookString string
+	StreamURL          *url.URL
+	StreamURLString    string
+	Args               interface{}
+	SuccessHandler     ResponseHandler
+	ErrorHandler       ResponseHandler
+}
+```
+
+RequestOptions are properties and options used to create a new Request object.
+There are options to either directly specify a URL or provide a string that will
+be parsed.
+
 #### type Response
 
 ```go
 type Response struct {
 	ID        string           `json:"id"`
 	Result    *json.RawMessage `json:"result"`
-	StreamURL *url.URL         `json:"stream_url"`
+	StreamURL *url.URL         `json:"streamURL"`
 	Error     error            `json:"error"`
 }
 ```
@@ -230,7 +281,7 @@ Tracker keeps track of requests waiting on a response.
 #### func  NewTracker
 
 ```go
-func NewTracker(socketPath string, httpStreamURL *url.URL, defaultTimeout time.Duration) (*Tracker, error)
+func NewTracker(socketPath string, httpStreamURL, externalProxyURL *url.URL, defaultTimeout time.Duration) (*Tracker, error)
 ```
 NewTracker creates and initializes a new Tracker. If a socketPath is not
 provided, the response socket will be created in a temporary directory.
@@ -264,6 +315,20 @@ NewStreamUnix sets up an ad-hoc unix listner to stream data.
 func (t *Tracker) NumRequests() int
 ```
 NumRequests returns the number of tracked requests
+
+#### func (*Tracker) ProxyExternal
+
+```go
+func (t *Tracker) ProxyExternal(req *Request, timeout time.Duration) (*Request, error)
+```
+ProxyExternal proxies a request intended for an external destination
+
+#### func (*Tracker) ProxyExternalHandler
+
+```go
+func (t *Tracker) ProxyExternalHandler(w http.ResponseWriter, r *http.Request)
+```
+ProxyExternalHandler is an HTTP HandlerFunc for proxying an external request.
 
 #### func (*Tracker) ProxyStreamHTTPURL
 

@@ -34,14 +34,19 @@ func (s *zfs) TestReceive() {
 		}
 		argsS := fmt.Sprintf("%+v, origin: %s", test.args, test.origin)
 
-		reqStreamURL := ""
+		var reqStreamURL *url.URL
 		if test.origin != "" {
 			streamURL, err := s.zfsSendStreamURL(test.origin)
 			s.Require().NoError(err)
-			reqStreamURL = streamURL.String()
+			reqStreamURL = streamURL
 		}
 
-		req, err := acomm.NewRequest("zfs-send", "unix:///tmp/foobar", reqStreamURL, test.args, nil, nil)
+		req, err := acomm.NewRequest(acomm.RequestOptions{
+			Task:         "zfs-receive",
+			ResponseHook: s.responseHook,
+			StreamURL:    reqStreamURL,
+			Args:         test.args,
+		})
 		s.Require().NoError(err, argsS)
 
 		res, resStreamURL, err := s.zfs.Receive(req)

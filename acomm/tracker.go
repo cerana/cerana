@@ -1,11 +1,13 @@
 package acomm
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
+	"net/http"
 	"net/url"
 	"os"
 	"sync"
@@ -26,6 +28,7 @@ type Tracker struct {
 	status           int
 	responseListener *UnixListener
 	httpStreamURL    *url.URL
+	externalProxyURL *url.URL
 	defaultTimeout   time.Duration
 	requestsLock     sync.Mutex // Protects requests
 	requests         map[string]*Request
@@ -36,7 +39,7 @@ type Tracker struct {
 
 // NewTracker creates and initializes a new Tracker. If a socketPath is not
 // provided, the response socket will be created in a temporary directory.
-func NewTracker(socketPath string, httpStreamURL *url.URL, defaultTimeout time.Duration) (*Tracker, error) {
+func NewTracker(socketPath string, httpStreamURL, externalProxyURL *url.URL, defaultTimeout time.Duration) (*Tracker, error) {
 	if socketPath == "" {
 		var err error
 		socketPath, err = generateTempSocketPath("", "acommTrackerResponses-")
@@ -53,6 +56,7 @@ func NewTracker(socketPath string, httpStreamURL *url.URL, defaultTimeout time.D
 		status:           statusStopped,
 		responseListener: NewUnixListener(socketPath, 0),
 		httpStreamURL:    httpStreamURL,
+		externalProxyURL: externalProxyURL,
 		dataStreams:      make(map[string]*UnixListener),
 		defaultTimeout:   defaultTimeout,
 	}, nil
@@ -363,4 +367,72 @@ func (t *Tracker) ProxyUnix(req *Request, timeout time.Duration) (*Request, erro
 	}
 
 	return unixReq, nil
+}
+
+// ProxyExternal proxies a request intended for an external destination
+func (t *Tracker) ProxyExternal(req *Request, timeout time.Duration) (*Request, error) {
+	if t.externalProxyURL == nil {
+		err := errors.New("tracker missing external proxy url")
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error(err)
+		return nil, err
+	}
+	if t.responseListener == nil {
+		err := errors.New("request tracker's response listener not active")
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error(err)
+		return nil, err
+	}
+
+	externalReq := &Request{
+		ID:           req.ID,
+		Task:         req.Task,
+		ResponseHook: t.externalProxyURL,
+		Args:         req.Args,
+	}
+	if req.StreamURL != nil {
+		streamURL, err := t.ProxyStreamHTTPURL(req.StreamURL) // Replace the StreamURL with a proxy stream url
+		if err != nil {
+			return nil, err
+		}
+		externalReq.StreamURL = streamURL
+	}
+
+	if err := t.TrackRequest(req, timeout); err != nil {
+		return nil, err
+	}
+	req.proxied = true
+
+	return externalReq, nil
+}
+
+// ProxyExternalHandler is an HTTP HandlerFunc for proxying an external request.
+func (t *Tracker) ProxyExternalHandler(w http.ResponseWriter, r *http.Request) {
+	resp := &Response{}
+	decoder := json.NewDecoder(r.Body)
+	ack := &Response{
+		Error: decoder.Decode(resp),
+	}
+	ackJSON, err := json.Marshal(ack)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+			"ack":   ack,
+		}).Error("failed to marshal ack")
+		return
+	}
+	if _, err := w.Write(ackJSON); err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+			"ack":   ack,
+		}).Error("failed to ack response")
+		return
+	}
+
+	if ack.Error != nil {
+		return
+	}
+	t.HandleResponse(resp)
 }

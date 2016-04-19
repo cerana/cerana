@@ -35,7 +35,7 @@ func NewServer(config *Config) (*Server, error) {
 		config.SocketDir(),
 		"response",
 		config.ServiceName()+".sock")
-	tracker, err := acomm.NewTracker(responseSocket, nil, config.RequestTimeout())
+	tracker, err := acomm.NewTracker(responseSocket, nil, nil, config.RequestTimeout())
 	if err != nil {
 		return nil, err
 	}
