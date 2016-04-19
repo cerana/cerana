@@ -37,23 +37,22 @@ func (s *RequestTestSuite) TestNewRequest() {
 
 	tests := []struct {
 		description string
-		opts        *acomm.RequestOptions
+		opts        acomm.RequestOptions
 		expectedErr bool
 	}{
-		{"nil options", nil, true},
-		{"empty options", &acomm.RequestOptions{}, true},
-		{"task", &acomm.RequestOptions{Task: task}, false},
-		{"args", &acomm.RequestOptions{Task: task, Args: args}, false},
-		{"invalid response hook string", &acomm.RequestOptions{Task: task, ResponseHookString: "asdf"}, true},
-		{"valid response hook string", &acomm.RequestOptions{Task: task, ResponseHookString: "unix://asdf"}, false},
-		{"valid response hook url", &acomm.RequestOptions{Task: task, ResponseHook: unixURL}, false},
-		{"invalid task url string", &acomm.RequestOptions{Task: task, TaskURLString: "asdf"}, true},
-		{"valid task url string", &acomm.RequestOptions{Task: task, TaskURLString: "unix://asdf"}, false},
-		{"valid task url url", &acomm.RequestOptions{Task: task, TaskURL: unixURL}, false},
-		{"invalid stream url string", &acomm.RequestOptions{Task: task, StreamURLString: "asdf"}, true},
-		{"valid stream url string", &acomm.RequestOptions{Task: task, StreamURLString: "unix://asdf"}, false},
-		{"valid stream url url", &acomm.RequestOptions{Task: task, StreamURL: unixURL}, false},
-		{"success and error handlers", &acomm.RequestOptions{Task: task, SuccessHandler: sh, ErrorHandler: eh}, false},
+		{"empty options", acomm.RequestOptions{}, true},
+		{"task", acomm.RequestOptions{Task: task}, false},
+		{"args", acomm.RequestOptions{Task: task, Args: args}, false},
+		{"invalid response hook string", acomm.RequestOptions{Task: task, ResponseHookString: "asdf"}, true},
+		{"valid response hook string", acomm.RequestOptions{Task: task, ResponseHookString: "unix://asdf"}, false},
+		{"valid response hook url", acomm.RequestOptions{Task: task, ResponseHook: unixURL}, false},
+		{"invalid task url string", acomm.RequestOptions{Task: task, TaskURLString: "asdf"}, true},
+		{"valid task url string", acomm.RequestOptions{Task: task, TaskURLString: "unix://asdf"}, false},
+		{"valid task url url", acomm.RequestOptions{Task: task, TaskURL: unixURL}, false},
+		{"invalid stream url string", acomm.RequestOptions{Task: task, StreamURLString: "asdf"}, true},
+		{"valid stream url string", acomm.RequestOptions{Task: task, StreamURLString: "unix://asdf"}, false},
+		{"valid stream url url", acomm.RequestOptions{Task: task, StreamURL: unixURL}, false},
+		{"success and error handlers", acomm.RequestOptions{Task: task, SuccessHandler: sh, ErrorHandler: eh}, false},
 	}
 
 	for _, test := range tests {
@@ -229,7 +228,7 @@ func (s *RequestTestSuite) TestHandleResponse() {
 		handled["success"] = 0
 		handled["error"] = 0
 		msg := testMsgFunc(test.description)
-		req, err := acomm.NewRequest(&acomm.RequestOptions{
+		req, err := acomm.NewRequest(acomm.RequestOptions{
 			Task:           "foobar",
 			Args:           struct{}{},
 			SuccessHandler: test.sh,

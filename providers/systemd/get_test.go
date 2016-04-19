@@ -21,7 +21,7 @@ func (s *systemd) TestGet() {
 		args := &systemdp.GetArgs{Name: test.name}
 		argsS := fmt.Sprintf("%+v", test)
 
-		req, err := acomm.NewRequest(&acomm.RequestOptions{
+		req, err := acomm.NewRequest(acomm.RequestOptions{
 			Task:         "systemd-get",
 			ResponseHook: s.responseHook,
 			Args:         args,

@@ -36,7 +36,7 @@ func (s *zfs) TestClone() {
 		}
 		argsS := fmt.Sprintf("%+v", test.args)
 
-		req, err := acomm.NewRequest(&acomm.RequestOptions{
+		req, err := acomm.NewRequest(acomm.RequestOptions{
 			Task:         "zfs-clone",
 			ResponseHook: s.responseHook,
 			Args:         test.args,

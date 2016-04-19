@@ -32,7 +32,7 @@ func (s *systemd) TestRemove() {
 			s.NoError(f.Close())
 		}
 
-		req, err := acomm.NewRequest(&acomm.RequestOptions{
+		req, err := acomm.NewRequest(acomm.RequestOptions{
 			Task:         "systemd-remove",
 			ResponseHook: s.responseHook,
 			Args:         args,

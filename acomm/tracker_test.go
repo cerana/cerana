@@ -51,7 +51,7 @@ func (s *TrackerTestSuite) SetupSuite() {
 func (s *TrackerTestSuite) SetupTest() {
 	var err error
 
-	s.Request, err = acomm.NewRequest(&acomm.RequestOptions{
+	s.Request, err = acomm.NewRequest(acomm.RequestOptions{
 		Task:               "foobar",
 		ResponseHookString: s.RespServer.URL,
 	})
@@ -132,7 +132,7 @@ func (s *TrackerTestSuite) TestProxyUnix() {
 	}))
 	defer streamServer.Close()
 
-	req, err := acomm.NewRequest(&acomm.RequestOptions{
+	req, err := acomm.NewRequest(acomm.RequestOptions{
 		Task:               "foobar",
 		ResponseHookString: s.RespServer.URL,
 		StreamURLString:    streamServer.URL,
@@ -166,7 +166,7 @@ func (s *TrackerTestSuite) TestProxyUnix() {
 	s.Equal(0, s.Tracker.NumRequests(), "should have removed the request from tracking")
 
 	// Should not proxy a request already using unix response hook
-	origUnixReq, err := acomm.NewRequest(&acomm.RequestOptions{
+	origUnixReq, err := acomm.NewRequest(acomm.RequestOptions{
 		Task:               "foobar",
 		ResponseHookString: "unix://foo",
 		Args:               struct{}{},
@@ -183,7 +183,7 @@ func (s *TrackerTestSuite) TestProxyExternal() {
 		return
 	}
 
-	origReq, err := acomm.NewRequest(&acomm.RequestOptions{
+	origReq, err := acomm.NewRequest(acomm.RequestOptions{
 		Task:               "foobar",
 		ResponseHookString: s.RespServer.URL,
 		Args:               struct{}{},

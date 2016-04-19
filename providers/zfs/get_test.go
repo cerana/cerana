@@ -26,7 +26,7 @@ func (s *zfs) TestGet() {
 		}
 		argsS := fmt.Sprintf("%+v", test.args)
 
-		req, err := acomm.NewRequest(&acomm.RequestOptions{
+		req, err := acomm.NewRequest(acomm.RequestOptions{
 			Task:         "zfs-get",
 			ResponseHook: s.responseHook,
 			Args:         test.args,

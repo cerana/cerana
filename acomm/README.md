@@ -134,7 +134,7 @@ appropriately to handle a response.
 #### func  NewRequest
 
 ```go
-func NewRequest(opts *RequestOptions) (*Request, error)
+func NewRequest(opts RequestOptions) (*Request, error)
 ```
 NewRequest creates a new Request instance.
 

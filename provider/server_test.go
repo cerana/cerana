@@ -110,7 +110,7 @@ func (s *ServerSuite) TestStartHandleStop() {
 	respHandler := func(req *acomm.Request, resp *acomm.Response) {
 		close(handled)
 	}
-	req, err := acomm.NewRequest(&acomm.RequestOptions{
+	req, err := acomm.NewRequest(acomm.RequestOptions{
 		Task:           "foobar",
 		ResponseHook:   tracker.URL(),
 		SuccessHandler: respHandler,

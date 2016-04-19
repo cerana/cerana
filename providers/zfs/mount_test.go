@@ -26,7 +26,7 @@ func (s *zfs) TestMount() {
 		}
 		argsS := fmt.Sprintf("%+v", test.args)
 
-		req, err := acomm.NewRequest(&acomm.RequestOptions{
+		req, err := acomm.NewRequest(acomm.RequestOptions{
 			Task:         "zfs-mount",
 			ResponseHook: s.responseHook,
 			Args:         test.args,

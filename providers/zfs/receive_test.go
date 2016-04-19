@@ -41,7 +41,7 @@ func (s *zfs) TestReceive() {
 			reqStreamURL = streamURL
 		}
 
-		req, err := acomm.NewRequest(&acomm.RequestOptions{
+		req, err := acomm.NewRequest(acomm.RequestOptions{
 			Task:         "zfs-receive",
 			ResponseHook: s.responseHook,
 			StreamURL:    reqStreamURL,

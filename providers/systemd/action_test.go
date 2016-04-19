@@ -38,7 +38,7 @@ func (s *systemd) TestActions() {
 		args := &systemdp.ActionArgs{Name: test.name, Mode: test.mode}
 		argsS := fmt.Sprintf("%+v", test)
 
-		req, err := acomm.NewRequest(&acomm.RequestOptions{
+		req, err := acomm.NewRequest(acomm.RequestOptions{
 			Task:         "systemd-" + test.action,
 			ResponseHook: s.responseHook,
 			Args:         args,

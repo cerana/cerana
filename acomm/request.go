@@ -47,11 +47,7 @@ type RequestOptions struct {
 type ResponseHandler func(*Request, *Response)
 
 // NewRequest creates a new Request instance.
-func NewRequest(opts *RequestOptions) (*Request, error) {
-	if opts == nil {
-		return nil, errors.New("missing request options")
-	}
-
+func NewRequest(opts RequestOptions) (*Request, error) {
 	req := &Request{
 		ID:             uuid.New(),
 		Task:           opts.Task,
