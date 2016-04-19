@@ -72,6 +72,23 @@ func (c *ClusterConf) kvGetAll(key string) (map[string]kv.Value, error) {
 	return values, nil
 }
 
+func (c *ClusterConf) kvGet(key string) (*kv.Value, error) {
+	args := map[string]interface{}{
+		"key": key,
+	}
+
+	resp, err := c.kvReq("kv-get", args)
+	if err != nil {
+		return nil, err
+	}
+
+	var value kv.Value
+	if err := resp.UnmarshalResult(&value); err != nil {
+		return nil, err
+	}
+	return &value, nil
+}
+
 func (c *ClusterConf) kvDelete(key string, modIndex uint64) error {
 	args := map[string]interface{}{
 		"key":     key,
