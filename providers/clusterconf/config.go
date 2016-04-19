@@ -30,3 +30,10 @@ func (c *Config) DatasetTTL() time.Duration {
 	_ = c.UnmarshalKey("dataset_ttl", &datasetTTL)
 	return datasetTTL
 }
+
+// BundleTTL returns the TTL for bundle node heartbeats.
+func (c *Config) BundleTTL() time.Duration {
+	var datasetTTL time.Duration
+	_ = c.UnmarshalKey("bundle_ttl", &datasetTTL)
+	return datasetTTL
+}
