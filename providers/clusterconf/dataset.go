@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/pborman/uuid"
 )
 
 const datasetsPrefix string = "datasets"
@@ -19,9 +20,9 @@ type Dataset struct {
 	c *ClusterConf
 	// Nodes contains the set of nodes on which the dataset is currently in use.
 	// The map keys are IP address strings.
-	Nodes map[string]bool `json:"nodes,omitempty"`
+	Nodes map[string]bool `json:"nodes"`
 	// ModIndex should be treated as opaque, but passed back on updates.
-	ModIndex uint64 `json:"modIndex,omitempty"`
+	ModIndex uint64 `json:"modIndex"`
 }
 
 // DatasetConf is the configuration of a dataset.
@@ -74,6 +75,10 @@ func (c *ClusterConf) UpdateDataset(req *acomm.Request) (interface{}, *url.URL, 
 		return nil, nil, errors.New("missing arg: dataset")
 	}
 	args.Dataset.c = c
+
+	if args.Dataset.ID == "" {
+		args.Dataset.ID = uuid.New()
+	}
 
 	if err := args.Dataset.update(); err != nil {
 		return nil, nil, err
