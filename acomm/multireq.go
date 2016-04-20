@@ -28,7 +28,7 @@ func NewMultiRequest(tracker *Tracker, timeout time.Duration) *MultiRequest {
 // the responsibility of the caller.
 func (m *MultiRequest) AddRequest(name string, req *Request) error {
 	m.idsToNames[req.ID] = name
-
+	req.ResponseHook = m.tracker.URL()
 	req.SuccessHandler = m.responseHandler
 	req.ErrorHandler = m.responseHandler
 
