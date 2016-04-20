@@ -60,7 +60,7 @@ func (c *ClusterConf) GetService(req *acomm.Request) (interface{}, *url.URL, err
 	}
 
 	service, err := c.getService(args.ID)
-	return service, nil, err
+	return &ServicePayload{service}, nil, err
 }
 
 // UpdateService creates or updates a service config. When updating, a Get should first be performed and the modified Service passed back.
