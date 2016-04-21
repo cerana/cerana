@@ -29,6 +29,22 @@ func New(config *Config, tracker *acomm.Tracker) *ClusterConf {
 
 // RegisterTasks registers all of Systemd's task handlers with the server.
 func (c *ClusterConf) RegisterTasks(server *provider.Server) {
+	server.RegisterTask("get-bundle", c.GetBundle)
+	server.RegisterTask("update-bundle", c.UpdateBundle)
+	server.RegisterTask("delete-bundle", c.DeleteBundle)
+	server.RegisterTask("bundle-heartbeat", c.BundleHeartbeat)
+	server.RegisterTask("get-dataset", c.GetDataset)
+	server.RegisterTask("update-dataset", c.UpdateDataset)
+	server.RegisterTask("delete-dataset", c.DeleteDataset)
+	server.RegisterTask("dataset-heartbeat", c.DeleteDataset)
+	server.RegisterTask("get-default-options", c.GetDefaults)
+	server.RegisterTask("set-default-options", c.UpdateDefaults)
+	server.RegisterTask("node-heartbeat", c.NodeHeartbeat)
+	server.RegisterTask("get-node", c.GetNode)
+	server.RegisterTask("get-nodes-history", c.GetNodesHistory)
+	server.RegisterTask("get-service", c.GetService)
+	server.RegisterTask("update-service", c.UpdateService)
+	server.RegisterTask("delete-service", c.DeleteService)
 }
 
 func (c *ClusterConf) kvReq(task string, args map[string]interface{}) (*acomm.Response, error) {
