@@ -101,6 +101,20 @@ func (c *ClusterConf) GetNodesHistory(req *acomm.Request) (interface{}, *url.URL
 
 }
 
+func (c *ClusterConf) getNode(id string) (*Node, error) {
+	node := &Node{}
+	key := path.Join(nodesPrefix, id)
+	value, err := c.kvGet(key)
+	if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(value.Data, node); err != nil {
+		return nil, err
+	}
+	node.c = c
+	return node, nil
+}
+
 func nodeFilterID(ids ...string) nodeFilter {
 	return func(n Node) bool {
 		for _, id := range ids {
