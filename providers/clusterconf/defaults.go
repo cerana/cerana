@@ -57,7 +57,8 @@ func (c *ClusterConf) UpdateDefaults(req *acomm.Request) (interface{}, *url.URL,
 
 func (c *ClusterConf) getDefaults() (*Defaults, error) {
 	defaults := &Defaults{
-		c: c,
+		DefaultsConf: &DefaultsConf{},
+		c:            c,
 	}
 	if err := defaults.reload(); err != nil {
 		return nil, err
@@ -68,6 +69,9 @@ func (c *ClusterConf) getDefaults() (*Defaults, error) {
 func (d *Defaults) reload() error {
 	value, err := d.c.kvGet(defaultsPrefix)
 	if err != nil {
+		if err.Error() == "key not found" {
+			return nil
+		}
 		return err
 	}
 
