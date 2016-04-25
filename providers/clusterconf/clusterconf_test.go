@@ -46,6 +46,9 @@ func (s *clusterConf) SetupSuite() {
 	v.Set("socket_dir", s.dir)
 	v.Set("coordinator_url", "unix:///tmp/foobar")
 	v.Set("log_level", "fatal")
+	v.Set("dataset_ttl", time.Minute)
+	v.Set("bundle_ttl", time.Minute)
+	v.Set("node_ttl", time.Minute)
 	s.Require().NoError(config.LoadConfig())
 	s.Require().NoError(config.SetupLogging())
 	s.config = config
