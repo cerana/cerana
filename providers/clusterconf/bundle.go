@@ -30,29 +30,56 @@ type Bundle struct {
 // BundleConf is the configuration of a bundle
 type BundleConf struct {
 	ID         int                       `json:"id"`
-	Bundles    map[string]*BundleBundle  `json:"bundles"`
+	Datasets   map[string]*BundleDataset `json:"datasets"`
 	Services   map[string]*BundleService `json:"services"`
 	Redundancy int                       `json:"redundancy"`
-	Ports      map[int]*BundlePort       `json:"ports"`
+	Ports      BundlePorts               `json:"ports"`
 }
 
-// BundleBundle is configuration for a bundle associated with a bundle.
-type BundleBundle struct {
-	Name     string `json:"name"`
-	BundleID string `json:"bundleID"`
-	Type     int    `json:"type"` // TODO: Decide on type for this. Iota?
-	Quota    int    `json:"type"`
+type BundlePorts map[int]*BundlePort
+
+func (p BundlePorts) MarshalJSON() ([]byte, error) {
+	ports := make(map[string]*BundlePort)
+	for port, value := range p {
+		ports[strconv.Itoa(port)] = value
+	}
+	return json.Marshal(ports)
+}
+
+func (p BundlePorts) UnmarshalJSON(data []byte) error {
+	ports := make(map[string]*BundlePort)
+	if err := json.Unmarshal(data, &ports); err != nil {
+		return err
+	}
+
+	p = make(BundlePorts)
+	for port, value := range ports {
+		portI, err := strconv.Atoi(port)
+		if err != nil {
+			return err
+		}
+		p[portI] = value
+	}
+	return nil
+}
+
+// BundleDataset is configuration for a dataset associated with a bundle.
+type BundleDataset struct {
+	Name  string `json:"name"`
+	ID    string `json:"id"`
+	Type  int    `json:"type"` // TODO: Decide on type for this. Iota?
+	Quota int    `json:"type"`
 }
 
 // BundleService is configuration overrides for a service of a bundle and
 // associated bundles.
 type BundleService struct {
 	*ServiceConf
-	Bundles map[string]*ServiceBundle `json:"bundles"`
+	Datasets map[string]*ServiceDataset `json:"datasets"`
 }
 
-// ServiceBundle is configuration for mounting a bundle for a bundle service.
-type ServiceBundle struct {
+// ServiceDataset is configuration for mounting a dataset for a bundle service.
+type ServiceDataset struct {
 	Name       string `json:"name"`
 	MountPoint string `json:"mountPoint"`
 	ReadOnly   bool   `json:"readOnly"`
@@ -148,10 +175,13 @@ func (c *ClusterConf) BundleHeartbeat(req *acomm.Request) (interface{}, *url.URL
 		return nil, nil, err
 	}
 	if args.ID == 0 {
-		return nil, nil, errors.New("missing arg: ID")
+		return nil, nil, errors.New("missing arg: id")
+	}
+	if args.Serial == "" {
+		return nil, nil, errors.New("missing arg: serial")
 	}
 	if args.IP == nil {
-		return nil, nil, errors.New("missing arg: IP")
+		return nil, nil, errors.New("missing arg: ip")
 	}
 
 	bundle, err := c.getBundle(args.ID)
@@ -159,7 +189,7 @@ func (c *ClusterConf) BundleHeartbeat(req *acomm.Request) (interface{}, *url.URL
 		return nil, nil, err
 	}
 
-	if err := bundle.nodeHeartbeat(args.IP); err != nil {
+	if err := bundle.nodeHeartbeat(args.Serial, args.IP); err != nil {
 		return nil, nil, err
 	}
 
@@ -230,9 +260,9 @@ func (b *Bundle) update() error {
 	return b.reload()
 }
 
-func (b *Bundle) nodeHeartbeat(ip net.IP) error {
-	key := path.Join(bundlesPrefix, strconv.Itoa(b.ID), "nodes", ip.String())
-	if err := b.c.kvEphemeral(key, true, b.c.config.BundleTTL()); err != nil {
+func (b *Bundle) nodeHeartbeat(serial string, ip net.IP) error {
+	key := path.Join(bundlesPrefix, strconv.Itoa(b.ID), "nodes", serial)
+	if err := b.c.kvEphemeral(key, ip.String(), b.c.config.BundleTTL()); err != nil {
 		return err
 	}
 	return b.reload()
