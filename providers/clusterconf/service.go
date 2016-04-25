@@ -60,7 +60,10 @@ func (c *ClusterConf) GetService(req *acomm.Request) (interface{}, *url.URL, err
 	}
 
 	service, err := c.getService(args.ID)
-	return &ServicePayload{service}, nil, err
+	if err != nil {
+		return nil, nil, err
+	}
+	return &ServicePayload{service}, nil, nil
 }
 
 // UpdateService creates or updates a service config. When updating, a Get should first be performed and the modified Service passed back.
@@ -69,7 +72,7 @@ func (c *ClusterConf) UpdateService(req *acomm.Request) (interface{}, *url.URL, 
 	if err := req.UnmarshalArgs(&args); err != nil {
 		return nil, nil, err
 	}
-	if args.Service != nil {
+	if args.Service == nil {
 		return nil, nil, errors.New("missing arg: service")
 	}
 	args.Service.c = c
@@ -117,6 +120,9 @@ func (s *Service) reload() error {
 	key := path.Join(servicesPrefix, s.ID, "config")
 	value, err := s.c.kvGet(key)
 	if err != nil {
+		if err.Error() == "key not found" {
+			err = errors.New("service config not found")
+		}
 		return err
 	}
 

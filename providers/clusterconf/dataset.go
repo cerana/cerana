@@ -71,7 +71,7 @@ func (c *ClusterConf) UpdateDataset(req *acomm.Request) (interface{}, *url.URL, 
 	if err := req.UnmarshalArgs(&args); err != nil {
 		return nil, nil, err
 	}
-	if args.Dataset != nil {
+	if args.Dataset == nil {
 		return nil, nil, errors.New("missing arg: dataset")
 	}
 	args.Dataset.c = c
@@ -111,10 +111,10 @@ func (c *ClusterConf) DatasetHeartbeat(req *acomm.Request) (interface{}, *url.UR
 		return nil, nil, err
 	}
 	if args.ID == "" {
-		return nil, nil, errors.New("missing arg: ID")
+		return nil, nil, errors.New("missing arg: id")
 	}
 	if args.IP == nil {
-		return nil, nil, errors.New("missing arg: IP")
+		return nil, nil, errors.New("missing arg: ip")
 	}
 
 	dataset, err := c.getDataset(args.ID)
