@@ -10,7 +10,7 @@ import (
 
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/provider"
-	clusterconfp "github.com/cerana/cerana/providers/clusterconf"
+	"github.com/cerana/cerana/providers/clusterconf"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/suite"
@@ -18,8 +18,8 @@ import (
 
 type clusterConf struct {
 	suite.Suite
-	config       *clusterconfp.Config
-	clusterConf  *clusterconfp.ClusterConf
+	config       *clusterconf.Config
+	clusterConf  *clusterconf.ClusterConf
 	flagset      *pflag.FlagSet
 	viper        *viper.Viper
 	tracker      *acomm.Tracker
@@ -40,7 +40,7 @@ func (s *clusterConf) SetupSuite() {
 
 	v := viper.New()
 	flagset := pflag.NewFlagSet("clusterconf", pflag.PanicOnError)
-	config := clusterconfp.NewConfig(flagset, v)
+	config := clusterconf.NewConfig(flagset, v)
 	s.Require().NoError(flagset.Parse([]string{}))
 	v.Set("service_name", "clusterconf-provider-test")
 	v.Set("socket_dir", s.dir)
@@ -57,7 +57,11 @@ func (s *clusterConf) SetupSuite() {
 	s.Require().NoError(tracker.Start())
 	s.tracker = tracker
 
-	s.clusterConf = clusterconfp.New(config, tracker)
+	s.clusterConf = clusterconf.New(config, tracker)
+}
+
+func (s *clusterConf) TearDownTest() {
+	s.Require().NoError(clusterconf.KV.Delete("", true))
 }
 
 func (s *clusterConf) TearDownSuite() {
