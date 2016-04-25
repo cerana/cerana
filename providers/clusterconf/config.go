@@ -1,6 +1,7 @@
 package clusterconf
 
 import (
+	"errors"
 	"time"
 
 	"github.com/cerana/cerana/provider"
@@ -43,4 +44,23 @@ func (c *Config) NodeTTL() time.Duration {
 	var nodeTTL time.Duration
 	_ = c.UnmarshalKey("node_ttl", &nodeTTL)
 	return nodeTTL
+}
+
+// Validate returns whether the config is valid, containing necessary values.
+func (c *Config) Validate() error {
+	if err := c.Config.Validate(); err != nil {
+		return err
+	}
+
+	if c.DatasetTTL() <= 0 {
+		return errors.New("invalid dataset_ttl")
+	}
+	if c.BundleTTL() <= 0 {
+		return errors.New("invalid bundle_ttl")
+	}
+	if c.NodeTTL() <= 0 {
+		return errors.New("invalid node_ttl")
+	}
+
+	return nil
 }
