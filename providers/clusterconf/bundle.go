@@ -134,7 +134,7 @@ func (c *ClusterConf) UpdateBundle(req *acomm.Request) (interface{}, *url.URL, e
 	if err := req.UnmarshalArgs(&args); err != nil {
 		return nil, nil, err
 	}
-	if args.Bundle != nil {
+	if args.Bundle == nil {
 		return nil, nil, errors.New("missing arg: bundle")
 	}
 	args.Bundle.c = c
