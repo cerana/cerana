@@ -17,7 +17,9 @@ type Config struct {
 // ConfigData defines the structure of the config data (e.g. in the config file)
 type ConfigData struct {
 	provider.ConfigData
-	DatasetTTL time.Duration
+	DatasetTTL time.Duration `json:"datasetTTL"`
+	BundleTTL  time.Duration `json:"bundleTTL"`
+	NodeTTL    time.Duration `json:"NodeTTL"`
 }
 
 // NewConfig creates a new instance of Config.
