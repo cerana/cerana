@@ -6,6 +6,7 @@ import (
 
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/providers/clusterconf"
+	"github.com/mistifyio/lochness/pkg/kv"
 	"github.com/pborman/uuid"
 )
 
@@ -126,8 +127,7 @@ func (s *clusterConf) addService() *clusterconf.Service {
 	service := &clusterconf.Service{ServiceConf: &clusterconf.ServiceConf{ID: uuid.New()}}
 	sj, _ := json.Marshal(service)
 	key := path.Join("services", service.ID, "config")
-	s.Require().NoError(clusterconf.KV.Set(key, string(sj)))
-	val, _ := clusterconf.KV.Get(key)
-	service.ModIndex = val.Index
+	s.kvp.Data[key] = kv.Value{Data: sj, Index: 1}
+	service.ModIndex = 1
 	return service
 }

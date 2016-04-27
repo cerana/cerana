@@ -262,7 +262,7 @@ func (b *Bundle) update() error {
 
 func (b *Bundle) nodeHeartbeat(serial string, ip net.IP) error {
 	key := path.Join(bundlesPrefix, strconv.Itoa(b.ID), "nodes", serial)
-	if err := b.c.kvEphemeral(key, ip.String(), b.c.config.BundleTTL()); err != nil {
+	if err := b.c.kvEphemeral(key, ip, b.c.config.BundleTTL()); err != nil {
 		return err
 	}
 	return b.reload()
