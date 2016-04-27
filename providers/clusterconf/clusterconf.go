@@ -1,11 +1,13 @@
 package clusterconf
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/provider"
 	"github.com/mistifyio/lochness/pkg/kv"
+	_ "github.com/mistifyio/lochness/pkg/kv/consul"
 )
 
 // ClusterConf is a provider of cluster configuration functionality.
@@ -54,6 +56,14 @@ func (c *ClusterConf) kvReq(task string, args map[string]interface{}) (*acomm.Re
 		respChan <- resp
 	}
 
+	if val, ok := args["value"]; ok {
+		valJSON, err := json.Marshal(val)
+		if err != nil {
+			return nil, err
+		}
+		args["value"] = string(valJSON)
+	}
+
 	req, err := acomm.NewRequest(acomm.RequestOptions{
 		Task:           task,
 		ResponseHook:   c.tracker.URL(),
@@ -61,6 +71,9 @@ func (c *ClusterConf) kvReq(task string, args map[string]interface{}) (*acomm.Re
 		SuccessHandler: rh,
 		ErrorHandler:   rh,
 	})
+	if err != nil {
+		return nil, err
+	}
 	if err := c.tracker.TrackRequest(req, 0); err != nil {
 		return nil, err
 	}
@@ -69,7 +82,8 @@ func (c *ClusterConf) kvReq(task string, args map[string]interface{}) (*acomm.Re
 		return nil, err
 	}
 
-	return <-respChan, err
+	resp := <-respChan
+	return resp, resp.Error
 }
 
 func (c *ClusterConf) kvGetAll(key string) (map[string]kv.Value, error) {
@@ -82,27 +96,27 @@ func (c *ClusterConf) kvGetAll(key string) (map[string]kv.Value, error) {
 		return nil, err
 	}
 	values := make(map[string]kv.Value)
-	if err := resp.UnmarshalResult(values); err != nil {
+	if err := resp.UnmarshalResult(&values); err != nil {
 		return nil, err
 	}
 	return values, nil
 }
 
-func (c *ClusterConf) kvGet(key string) (*kv.Value, error) {
+func (c *ClusterConf) kvGet(key string) (kv.Value, error) {
+	var value kv.Value
 	args := map[string]interface{}{
 		"key": key,
 	}
 
 	resp, err := c.kvReq("kv-get", args)
 	if err != nil {
-		return nil, err
+		return value, err
 	}
 
-	var value kv.Value
 	if err := resp.UnmarshalResult(&value); err != nil {
-		return nil, err
+		return value, err
 	}
-	return &value, nil
+	return value, nil
 }
 
 func (c *ClusterConf) kvDelete(key string, modIndex uint64) error {
@@ -110,11 +124,8 @@ func (c *ClusterConf) kvDelete(key string, modIndex uint64) error {
 		"key":     key,
 		"recurse": true,
 	}
-	resp, err := c.kvReq("kv-delete", args)
-	if err != nil {
-		return err
-	}
-	return resp.Error
+	_, err := c.kvReq("kv-delete", args)
+	return err
 }
 
 func (c *ClusterConf) kvUpdate(key string, value interface{}, modIndex uint64) (uint64, error) {
@@ -128,7 +139,7 @@ func (c *ClusterConf) kvUpdate(key string, value interface{}, modIndex uint64) (
 		return 0, err
 	}
 	result := make(map[string]uint64)
-	if err := resp.UnmarshalResult(result); err != nil {
+	if err := resp.UnmarshalResult(&result); err != nil {
 		return 0, err
 	}
 	return result["index"], nil
@@ -140,9 +151,6 @@ func (c *ClusterConf) kvEphemeral(key string, value interface{}, ttl time.Durati
 		"value": value,
 		"ttl":   ttl,
 	}
-	resp, err := c.kvReq("kv-ephemeral", args)
-	if err != nil {
-		return err
-	}
-	return resp.Error
+	_, err := c.kvReq("kv-ephemeral", args)
+	return err
 }
