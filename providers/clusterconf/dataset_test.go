@@ -7,6 +7,7 @@ import (
 
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/providers/clusterconf"
+	"github.com/mistifyio/lochness/pkg/kv"
 	"github.com/pborman/uuid"
 )
 
@@ -173,14 +174,13 @@ func (s *clusterConf) addDataset() *clusterconf.Dataset {
 	dataset := &clusterconf.Dataset{DatasetConf: &clusterconf.DatasetConf{ID: uuid.New()}}
 	sj, _ := json.Marshal(dataset)
 	key := path.Join("datasets", dataset.ID, "config")
-	s.Require().NoError(clusterconf.KV.Set(key, string(sj)))
-	val, _ := clusterconf.KV.Get(key)
-	dataset.ModIndex = val.Index
+	s.kvp.Data[key] = kv.Value{Data: sj, Index: 1}
+	dataset.ModIndex = 1
 
 	// Give it a node heartbeat
 	key = path.Join("datasets", dataset.ID, "nodes", "127.0.0.1")
 	hbval, _ := json.Marshal(true)
-	s.Require().NoError(clusterconf.KV.Set(key, string(hbval)))
+	s.kvp.Data[key] = kv.Value{Data: hbval, Index: 1}
 	dataset.Nodes = map[string]bool{"127.0.0.1": true}
 	return dataset
 }
