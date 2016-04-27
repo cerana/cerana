@@ -27,7 +27,7 @@ type Bundle struct {
 	ModIndex uint64 `json:"modIndex"`
 }
 
-// BundleConf is the configuration of a bundle
+// BundleConf is the configuration of a bundle.
 type BundleConf struct {
 	ID         int                       `json:"id"`
 	Datasets   map[string]*BundleDataset `json:"datasets"`
@@ -36,8 +36,11 @@ type BundleConf struct {
 	Ports      BundlePorts               `json:"ports"`
 }
 
+// BundlePorts is a map of port numbers to port information.
 type BundlePorts map[int]*BundlePort
 
+// MarshalJSON marshals BundlePorts into a JSON map, converting int keys to
+// strings.
 func (p BundlePorts) MarshalJSON() ([]byte, error) {
 	ports := make(map[string]*BundlePort)
 	for port, value := range p {
@@ -46,6 +49,8 @@ func (p BundlePorts) MarshalJSON() ([]byte, error) {
 	return json.Marshal(ports)
 }
 
+// UnmarshalJSON unmarshals JSON into a BundlePorts, converting string keys to
+// ints.
 func (p BundlePorts) UnmarshalJSON(data []byte) error {
 	ports := make(map[string]*BundlePort)
 	if err := json.Unmarshal(data, &ports); err != nil {

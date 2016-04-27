@@ -149,7 +149,11 @@ func (s *clusterConf) TestBundleHeartbeat() {
 	for _, test := range tests {
 		req, err := acomm.NewRequest(acomm.RequestOptions{
 			Task: "bundle-heartbeat",
-			Args: &clusterconf.BundleHeartbeatArgs{test.id, test.serial, test.ip},
+			Args: &clusterconf.BundleHeartbeatArgs{
+				ID:     test.id,
+				Serial: test.serial,
+				IP:     test.ip,
+			},
 		})
 		args := string(*req.Args)
 		s.Require().NoError(err, args)
