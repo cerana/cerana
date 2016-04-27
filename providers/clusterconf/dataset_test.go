@@ -143,7 +143,7 @@ func (s *clusterConf) TestDatasetHeartbeat() {
 	for _, test := range tests {
 		req, err := acomm.NewRequest(acomm.RequestOptions{
 			Task: "dataset-heartbeat",
-			Args: &clusterconf.DatasetHeartbeatArgs{test.id, test.ip},
+			Args: &clusterconf.DatasetHeartbeatArgs{ID: test.id, IP: test.ip},
 		})
 		args := string(*req.Args)
 		s.Require().NoError(err, args)

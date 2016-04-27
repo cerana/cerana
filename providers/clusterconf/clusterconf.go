@@ -7,7 +7,6 @@ import (
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/provider"
 	"github.com/mistifyio/lochness/pkg/kv"
-	_ "github.com/mistifyio/lochness/pkg/kv/consul"
 )
 
 // ClusterConf is a provider of cluster configuration functionality.
