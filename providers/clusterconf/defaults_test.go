@@ -7,6 +7,7 @@ import (
 
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/providers/clusterconf"
+	"github.com/mistifyio/lochness/pkg/kv"
 )
 
 func (s *clusterConf) TestGetDefaults() {
@@ -87,8 +88,7 @@ func (s *clusterConf) setDefaultZFSManual(value bool) *clusterconf.Defaults {
 	defaults := &clusterconf.Defaults{DefaultsConf: &clusterconf.DefaultsConf{ZFSManual: value}}
 	sj, _ := json.Marshal(defaults)
 	key := path.Join("cluster")
-	s.Require().NoError(clusterconf.KV.Set(key, string(sj)))
-	val, _ := clusterconf.KV.Get(key)
-	defaults.ModIndex = val.Index
+	s.kvp.Data[key] = kv.Value{Data: sj, Index: 1}
+	defaults.ModIndex = 1
 	return defaults
 }
