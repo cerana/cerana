@@ -9,6 +9,7 @@ import (
 
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/providers/clusterconf"
+	"github.com/mistifyio/lochness/pkg/kv"
 	"github.com/pborman/uuid"
 )
 
@@ -186,16 +187,15 @@ func (s *clusterConf) addBundle() *clusterconf.Bundle {
 	}}
 	sj, _ := json.Marshal(bundle)
 	key := path.Join("bundles", strconv.Itoa(bundle.ID), "config")
-	s.Require().NoError(clusterconf.KV.Set(key, string(sj)))
-	val, _ := clusterconf.KV.Get(key)
-	bundle.ModIndex = val.Index
+	s.kvp.Data[key] = kv.Value{Data: sj, Index: 1}
+	bundle.ModIndex = 1
 
 	// Give it a node heartbeat
 	serial := uuid.New()
 	key = path.Join("bundles", strconv.Itoa(bundle.ID), "nodes", serial)
 	ip := net.ParseIP("127.0.0.1")
 	ipJ, _ := json.Marshal(ip)
-	s.Require().NoError(clusterconf.KV.Set(key, string(ipJ)))
+	s.kvp.Data[key] = kv.Value{Data: ipJ, Index: 1}
 	bundle.Nodes = map[string]net.IP{serial: ip}
 	return bundle
 }
