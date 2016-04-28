@@ -1,6 +1,6 @@
 # clusterconf
 
-[![clusterconf](https://godoc.org/github.com/cerana/cerana/providers/clusterconf?status.png)](https://godoc.org/github.com/cerana/cerana/providers/clusterconf)
+[![clusterconf](https://godoc.org/github.com/cerana/cerana/providers/clusterconf?status.svg)](https://godoc.org/github.com/cerana/cerana/providers/clusterconf)
 
 
 
