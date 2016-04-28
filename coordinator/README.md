@@ -1,6 +1,6 @@
 # coordinator
 
-[![coordinator](https://godoc.org/github.com/cerana/cerana/coordinator?status.png)](https://godoc.org/github.com/cerana/cerana/coordinator)
+[![coordinator](https://godoc.org/github.com/cerana/cerana/coordinator?status.svg)](https://godoc.org/github.com/cerana/cerana/coordinator)
 
 Package coordinator is a request router and proxy, to be used with Providers. It
 is the entry point for all task requests and separates local providers from

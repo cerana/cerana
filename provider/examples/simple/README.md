@@ -1,6 +1,6 @@
 # simple
 
-[![simple](https://godoc.org/github.com/cerana/cerana/provider/examples/simple?status.png)](https://godoc.org/github.com/cerana/cerana/provider/examples/simple)
+[![simple](https://godoc.org/github.com/cerana/cerana/provider/examples/simple?status.svg)](https://godoc.org/github.com/cerana/cerana/provider/examples/simple)
 
 Package simple is a simple task provider proof of concept.
 

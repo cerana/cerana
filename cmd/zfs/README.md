@@ -1,6 +1,6 @@
 # zfs
 
-[![zfs](https://godoc.org/github.com/cerana/cerana/cmd/zfs?status.png)](https://godoc.org/github.com/cerana/cerana/cmd/zfs)
+[![zfs](https://godoc.org/github.com/cerana/cerana/cmd/zfs?status.svg)](https://godoc.org/github.com/cerana/cerana/cmd/zfs)
 
 
 

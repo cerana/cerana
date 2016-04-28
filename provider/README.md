@@ -1,6 +1,6 @@
 # provider
 
-[![provider](https://godoc.org/github.com/cerana/cerana/provider?status.png)](https://godoc.org/github.com/cerana/cerana/provider)
+[![provider](https://godoc.org/github.com/cerana/cerana/provider?status.svg)](https://godoc.org/github.com/cerana/cerana/provider)
 
 Package provider is the framework for creating Providers. A Provider offers a
 set of related functionality in the form of tasks, which Coordinators use

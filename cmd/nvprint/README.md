@@ -1,6 +1,6 @@
 # nvprint
 
-[![nvprint](https://godoc.org/github.com/cerana/cerana/cmd/nvprint?status.png)](https://godoc.org/github.com/cerana/cerana/cmd/nvprint)
+[![nvprint](https://godoc.org/github.com/cerana/cerana/cmd/nvprint?status.svg)](https://godoc.org/github.com/cerana/cerana/cmd/nvprint)
 
 
 

@@ -1,6 +1,6 @@
 # systemd-provider
 
-[![systemd-provider](https://godoc.org/github.com/cerana/cerana/cmd/systemd-provider?status.png)](https://godoc.org/github.com/cerana/cerana/cmd/systemd-provider)
+[![systemd-provider](https://godoc.org/github.com/cerana/cerana/cmd/systemd-provider?status.svg)](https://godoc.org/github.com/cerana/cerana/cmd/systemd-provider)
 
 
 

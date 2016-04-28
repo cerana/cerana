@@ -1,6 +1,6 @@
 # {{ .Name }}
 
-[![{{ .Name }}](https://godoc.org/{{ .ImportPath }}?status.png)](https://godoc.org/{{ .ImportPath }})
+[![{{ .Name }}](https://godoc.org/{{ .ImportPath }}?status.svg)](https://godoc.org/{{ .ImportPath }})
 
 {{ .EmitSynopsis }}
 {{ if not .IsCommand}}

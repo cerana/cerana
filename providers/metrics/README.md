@@ -1,6 +1,6 @@
 # metrics
 
-[![metrics](https://godoc.org/github.com/cerana/cerana/providers/metrics?status.png)](https://godoc.org/github.com/cerana/cerana/providers/metrics)
+[![metrics](https://godoc.org/github.com/cerana/cerana/providers/metrics?status.svg)](https://godoc.org/github.com/cerana/cerana/providers/metrics)
 
 
 
