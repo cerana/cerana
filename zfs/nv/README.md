@@ -1,6 +1,6 @@
 # nv
 
-[![nv](https://godoc.org/github.com/cerana/cerana/zfs/nv?status.png)](https://godoc.org/github.com/cerana/cerana/zfs/nv)
+[![nv](https://godoc.org/github.com/cerana/cerana/zfs/nv?status.svg)](https://godoc.org/github.com/cerana/cerana/zfs/nv)
 
 
 

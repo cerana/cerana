@@ -1,6 +1,6 @@
 # logrusx
 
-[![logrusx](https://godoc.org/github.com/cerana/cerana/pkg/logrusx?status.png)](https://godoc.org/github.com/cerana/cerana/pkg/logrusx)
+[![logrusx](https://godoc.org/github.com/cerana/cerana/pkg/logrusx?status.svg)](https://godoc.org/github.com/cerana/cerana/pkg/logrusx)
 
 Package logrusx is a logrus formatter that adds better error value handling to
 the logrus.JSONFormatter
