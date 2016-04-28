@@ -1,5 +1,4 @@
 SHELL := /bin/bash
-IMAGE := mistifyio/mistify-os:zfs-stable-api
 
 # Recursive wildcard function
 rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) $(filter $(subst *,%,$2),$d))
@@ -45,26 +44,14 @@ test: $(testOutputs)
 .SECONDEXPANSION:
 $(testOutputs): %/test.out: $$(call testBinFromDir,%)
 	flock /dev/stdout -c 'echo "RUN   $<"'
-	tmpdir=/tmp/$(notdir $<); \
-	rm -rf $$tmpdir && \
-	mkdir $$tmpdir && \
-	cid=$(shell docker run -dti -v "$(CURDIR):/mistify:ro" -v /tmp:/tmp -v /sys/fs/cgroup:/sys/fs/cgroup:ro --cap-add=SYS_ADMIN --device /dev/zfs:/dev/zfs --name $(notdir $<) -e "TMPDIR=$(tmpdir)" $(IMAGE)) && \
-	test -n $(cid) && \
-	sleep .25 && \
-	docker exec $$cid sh -c "cd /mistify; cd $(@D); ./$(notdir $<) -test.v" &> $@; \
-	ret=$$?; \
-	docker kill $$cid  &>/dev/null && \
-	docker rm -v $$cid &>/dev/null && \
-	flock /dev/stdout -c 'echo "+++ $< +++"; cat $@'; \
-	rm -rf $$tmpdir; \
-	exit $$ret
+	./run-test.sh $<
 
 # Build a package's test binaries. Done outside the container so it can be used
 # with the base MistifyOS instead of the SDK. Always for a rebuild.
 .SECONDARY: $(testBins)
 $(testBins): %.test: FORCE
 	echo BUILD $@
-	cd $(dir $@) && flock -s /dev/stdout go test -c
+	cd $(dir $@) && flock -s /dev/stdout go test -c -i
 
 FORCE:
 
