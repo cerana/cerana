@@ -1,6 +1,6 @@
 # test
 
-[![test](https://godoc.org/github.com/cerana/cerana/pkg/test?status.png)](https://godoc.org/github.com/cerana/cerana/pkg/test)
+[![test](https://godoc.org/github.com/cerana/cerana/pkg/test?status.svg)](https://godoc.org/github.com/cerana/cerana/pkg/test)
 
 
 
