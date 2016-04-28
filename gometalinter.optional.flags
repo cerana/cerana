@@ -5,4 +5,5 @@
 --disable=vetshadow
 --deadline=60s
 --concurrency=1
+--vendor
 ./...

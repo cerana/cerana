@@ -5,6 +5,7 @@
 --enable=gofmt
 --enable=golint
 --enable=vetshadow
---deadline=30s
+--deadline=60s
 --concurrency=1
+--vendor
 ./...
