@@ -32,10 +32,10 @@ type ConfigData struct {
 	CoordinatorURL string `json:"coordinatorURL"`
 	LogLevel       string `json:"logLevel"`
 	// Timeout and TTL values are in seconds
-	RequestTimeout uint64 `json:"requestTimeout"`
-	DatasetTTL     uint64 `json:"datasetTTL"`
-	BundleTTL      uint64 `json:"bundleTTL"`
-	NodeTTL        uint64 `json:"nodeTTL"`
+	RequestTimeout uint `json:"requestTimeout"`
+	DatasetTTL     uint `json:"datasetTTL"`
+	BundleTTL      uint `json:"bundleTTL"`
+	NodeTTL        uint `json:"nodeTTL"`
 }
 
 func newConfig(flagSet *pflag.FlagSet, v *viper.Viper) *config {
@@ -57,13 +57,13 @@ func newConfig(flagSet *pflag.FlagSet, v *viper.Viper) *config {
 		fmt.Fprintln(os.Stderr, "Note: Flags can be used in either fooBar or foo[_-.]bar form.")
 	}
 
-	flagSet.StringP("config-file", "c", "", "path to config file")
-	flagSet.StringP("coordinator-url", "u", "", "url of coordinator for making requests")
-	flagSet.StringP("log-level", "l", "warning", "log level: debug/info/warn/error/fatal/panic")
-	flagSet.Uint64P("request-timeout", "r", 0, "default timeout for requests made (seconds)")
-	flagSet.Uint64P("dataset-ttl", "d", 0, "default timeout for requests made (seconds)")
-	flagSet.Uint64P("bundle-ttl", "b", 0, "default timeout for requests made (seconds)")
-	flagSet.Uint64P("node-ttl", "n", 0, "default timeout for requests made  (seconds)")
+	flagSet.StringP("configFile", "c", "", "path to config file")
+	flagSet.StringP("coordinatorURL", "u", "", "url of coordinator for making requests")
+	flagSet.StringP("logLevel", "l", "warning", "log level: debug/info/warn/error/fatal/panic")
+	flagSet.Uint64P("requestTimeout", "r", 0, "default timeout for requests made (seconds)")
+	flagSet.Uint64P("datasetTTL", "d", 0, "default timeout for requests made (seconds)")
+	flagSet.Uint64P("bundleTTL", "b", 0, "default timeout for requests made (seconds)")
+	flagSet.Uint64P("nodeTTL", "n", 0, "default timeout for requests made  (seconds)")
 
 	return &config{
 		viper:   v,
@@ -103,6 +103,31 @@ func canonicalFlagName(f *pflag.FlagSet, name string) pflag.NormalizedName {
 	return pflag.NormalizedName(strings.Join(nameParts, ""))
 }
 
+func (c *config) loadConfig() error {
+	if err := c.viper.BindPFlags(c.flagSet); err != nil {
+		logrus.WithFields(logrus.Fields{
+			"error": err,
+		}).Error("failed to bind flags")
+		return err
+	}
+
+	filePath := c.viper.GetString("configFile")
+	if filePath == "" {
+		return c.validate()
+	}
+
+	c.viper.SetConfigFile(filePath)
+	if err := c.viper.ReadInConfig(); err != nil {
+		logrus.WithFields(logrus.Fields{
+			"error":    err,
+			"filePath": filePath,
+		}).Error("failed to parse config file")
+		return err
+	}
+
+	return c.validate()
+}
+
 func (c *config) coordinatorURL() *url.URL {
 	// Error checking has been done during validation
 	u, _ := url.ParseRequestURI(c.viper.GetString("coordinatorURL"))
@@ -122,14 +147,14 @@ func (c *config) nodeTTL() time.Duration {
 }
 
 func (c *config) bundleTTL() time.Duration {
-	return c.getTTL("datasetTTL")
+	return c.getTTL("bundleTTL")
 }
 
 func (c *config) getTTL(key string) time.Duration {
 	return time.Second * time.Duration(c.viper.GetInt(key))
 }
 
-func (c *config) setLogging() error {
+func (c *config) setupLogging() error {
 	logLevel := c.viper.GetString("logLevel")
 	if err := logrusx.SetLevel(logLevel); err != nil {
 		logrus.WithFields(logrus.Fields{
@@ -155,12 +180,16 @@ func (c *config) validate() error {
 		return errors.New("request timeout must be > 0")
 	}
 
-	if _, err := url.ParseRequestURI(c.viper.GetString("coordinator url")); err != nil {
+	coordinatorURL := c.viper.GetString("coordinatorURL")
+	if coordinatorURL == "" {
+		return errors.New("missing coordinator url")
+	}
+	if _, err := url.ParseRequestURI(coordinatorURL); err != nil {
 		logrus.WithFields(logrus.Fields{
 			"coordinatorURL": c.viper.GetString("coordinatorURL"),
 			"error":          err,
 		}).Error("invalid config")
-		return err
+		return errors.New("invalid coordinator url")
 	}
 
 	return nil
