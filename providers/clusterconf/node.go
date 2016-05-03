@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/shirou/gopsutil/load"
 )
 
 const (
@@ -19,14 +20,14 @@ const (
 // Node is current information about a hardware node.
 type Node struct {
 	c           *ClusterConf
-	ID          string    `json:"id"`
-	Heartbeat   time.Time `json:"heartbeat"`
-	MemoryTotal int64     `json:"memoryTotal"`
-	MemoryFree  int64     `json:"memoryFree"`
-	CPUTotal    int       `json:"cpuTotal"`
-	CPUFree     int       `json:"cpuFree"`
-	DiskTotal   int       `json:"diskTotal"`
-	DiskFree    int       `json:"diskFree"`
+	ID          string       `json:"id"`
+	Heartbeat   time.Time    `json:"heartbeat"`
+	MemoryTotal uint64       `json:"memoryTotal"`
+	MemoryFree  uint64       `json:"memoryFree"`
+	CPUCores    int          `json:"cpuCores"`
+	CPULoad     load.AvgStat `json:"cpuLoad"`
+	DiskTotal   uint64       `json:"diskTotal"`
+	DiskFree    uint64       `json:"diskFree"`
 }
 
 // NodeHistory is a set of historical information for a node.

@@ -30,6 +30,7 @@ type config struct {
 // ConfigData defines the structure of the config data (e.g. in the config file)
 type ConfigData struct {
 	CoordinatorURL string `json:"coordinatorURL"`
+	HeartbeatURL   string `json:"heartbeatURL"`
 	LogLevel       string `json:"logLevel"`
 	// Timeout and TTL values are in seconds
 	RequestTimeout uint `json:"requestTimeout"`
@@ -58,7 +59,8 @@ func newConfig(flagSet *pflag.FlagSet, v *viper.Viper) *config {
 	}
 
 	flagSet.StringP("configFile", "c", "", "path to config file")
-	flagSet.StringP("coordinatorURL", "u", "", "url of coordinator for making requests")
+	flagSet.StringP("coordinatorURL", "u", "", "url of coordinator for information retrieval")
+	flagSet.StringP("heartbeatURL", "e", "", "url of coordinator for the heartbeat registering")
 	flagSet.StringP("logLevel", "l", "warning", "log level: debug/info/warn/error/fatal/panic")
 	flagSet.Uint64P("requestTimeout", "r", 0, "default timeout for requests made (seconds)")
 	flagSet.Uint64P("datasetTTL", "d", 0, "default timeout for requests made (seconds)")
@@ -134,6 +136,12 @@ func (c *config) coordinatorURL() *url.URL {
 	return u
 }
 
+func (c *config) heartbeatURL() *url.URL {
+	// Error checking has been done during validation
+	u, _ := url.ParseRequestURI(c.viper.GetString("heartbeatURL"))
+	return u
+}
+
 func (c *config) requestTimeout() time.Duration {
 	return time.Second * time.Duration(c.viper.GetInt("requestTimeout"))
 }
@@ -180,17 +188,27 @@ func (c *config) validate() error {
 		return errors.New("request timeout must be > 0")
 	}
 
-	coordinatorURL := c.viper.GetString("coordinatorURL")
-	if coordinatorURL == "" {
-		return errors.New("missing coordinator url")
+	if err := c.validateURL("coordinatorURL"); err != nil {
+		return err
 	}
-	if _, err := url.ParseRequestURI(coordinatorURL); err != nil {
-		logrus.WithFields(logrus.Fields{
-			"coordinatorURL": c.viper.GetString("coordinatorURL"),
-			"error":          err,
-		}).Error("invalid config")
-		return errors.New("invalid coordinator url")
+	if err := c.validateURL("heartbeatURL"); err != nil {
+		return err
 	}
 
+	return nil
+}
+
+func (c *config) validateURL(name string) error {
+	u := c.viper.GetString(name)
+	if u == "" {
+		return errors.New("missing " + name)
+	}
+	if _, err := url.ParseRequestURI(u); err != nil {
+		logrus.WithFields(logrus.Fields{
+			name:    u,
+			"error": err,
+		}).Error("invalid config")
+		return errors.New("invalid " + name)
+	}
 	return nil
 }
