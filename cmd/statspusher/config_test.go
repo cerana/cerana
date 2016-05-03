@@ -33,6 +33,7 @@ func (s *StatsPusher) SetupTest() {
 
 	s.configData = &ConfigData{
 		CoordinatorURL: "unix:///tmp/foobar",
+		HeartbeatURL:   "unix:///tmp/foobar",
 		LogLevel:       "fatal",
 		RequestTimeout: 5,
 		DatasetTTL:     4,
@@ -138,27 +139,32 @@ func (s *StatsPusher) TestSetupLogging() {
 }
 
 func (s *StatsPusher) TestValidate() {
+	u := "unix:///tmp/foobar"
 	tests := []struct {
 		description    string
 		coordinatorURL string
+		heartbeatURL   string
 		requestTimeout uint
 		datasetTTL     uint
 		bundleTTL      uint
 		nodeTTL        uint
 		expectedErr    string
 	}{
-		{"valid", "unix:///tmp/foobar", 5, 4, 3, 2, ""},
-		{"missing coord", "", 5, 4, 3, 2, "missing coordinator url"},
-		{"invalud coord", "asdf", 5, 4, 3, 2, "invalid coordinator url"},
-		{"invalid request timeout", "unix:///tmp/foobar", 0, 4, 3, 2, "request timeout must be > 0"},
-		{"invalid dataset ttl", "unix:///tmp/foobar", 5, 0, 3, 2, "dataset ttl must be > 0"},
-		{"invalid bundle ttl", "unix:///tmp/foobar", 5, 4, 0, 2, "bundle ttl must be > 0"},
-		{"invalid node ttl", "unix:///tmp/foobar", 5, 4, 3, 0, "node ttl must be > 0"},
+		{"valid", u, u, 5, 4, 3, 2, ""},
+		{"missing coord", "", u, 5, 4, 3, 2, "missing coordinatorURL"},
+		{"invalud coord", "asdf", u, 5, 4, 3, 2, "invalid coordinatorURL"},
+		{"missing heartbeat", u, "", 5, 4, 3, 2, "missing heartbeatURL"},
+		{"invalud heartbeat", u, "asdf", 5, 4, 3, 2, "invalid heartbeatURL"},
+		{"invalid request timeout", u, u, 0, 4, 3, 2, "request timeout must be > 0"},
+		{"invalid dataset ttl", u, u, 5, 0, 3, 2, "dataset ttl must be > 0"},
+		{"invalid bundle ttl", u, u, 5, 4, 0, 2, "bundle ttl must be > 0"},
+		{"invalid node ttl", u, u, 5, 4, 3, 0, "node ttl must be > 0"},
 	}
 
 	for _, test := range tests {
 		configData := &ConfigData{
 			CoordinatorURL: test.coordinatorURL,
+			HeartbeatURL:   test.heartbeatURL,
 			RequestTimeout: test.requestTimeout,
 			DatasetTTL:     test.datasetTTL,
 			BundleTTL:      test.bundleTTL,
@@ -185,6 +191,12 @@ func (s *StatsPusher) TestCoordinatorURL() {
 	u, err := url.ParseRequestURI(s.configData.CoordinatorURL)
 	s.Require().NoError(err)
 	s.Equal(u, s.config.coordinatorURL())
+}
+
+func (s *StatsPusher) TestHeartbeatURL() {
+	u, err := url.ParseRequestURI(s.configData.HeartbeatURL)
+	s.Require().NoError(err)
+	s.Equal(u, s.config.heartbeatURL())
 }
 
 func (s *StatsPusher) TestRequestTimeout() {
@@ -233,6 +245,9 @@ func newTestConfig(setFlags, writeConfig bool, configData *ConfigData) (*config,
 
 	if setFlags {
 		if err := fs.Set("coordinatorURL", configData.CoordinatorURL); err != nil {
+			return nil, nil, nil, configFile, err
+		}
+		if err := fs.Set("heartbeatURL", configData.HeartbeatURL); err != nil {
 			return nil, nil, nil, configFile, err
 		}
 		if err := fs.Set("logLevel", configData.LogLevel); err != nil {
