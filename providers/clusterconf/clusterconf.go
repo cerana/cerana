@@ -85,6 +85,22 @@ func (c *ClusterConf) kvReq(task string, args map[string]interface{}) (*acomm.Re
 	return resp, resp.Error
 }
 
+func (c *ClusterConf) kvKeys(prefix string) ([]string, error) {
+	args := map[string]interface{}{
+		"key": prefix,
+	}
+
+	resp, err := c.kvReq("kv-keys", args)
+	if err != nil {
+		return nil, err
+	}
+	var values []string
+	if err := resp.UnmarshalResult(&values); err != nil {
+		return nil, err
+	}
+	return values, nil
+}
+
 func (c *ClusterConf) kvGetAll(key string) (map[string]kv.Value, error) {
 	args := map[string]interface{}{
 		"key": key,
