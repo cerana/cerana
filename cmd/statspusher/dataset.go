@@ -6,8 +6,9 @@ import (
 	"net"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/providers/clusterconf"
 	"github.com/cerana/cerana/providers/metrics"
-	"github.com/mistifyio/go-zfs"
+	"github.com/cerana/cerana/providers/zfs"
 )
 
 func (s *statsPusher) datasetHeartbeats() error {
@@ -24,20 +25,18 @@ func (s *statsPusher) datasetHeartbeats() error {
 }
 
 func (s *statsPusher) getDatasets() ([]string, error) {
-	datasets := []string{}
-
 	requests := make(map[string]*acomm.Request)
 	localReq, err := acomm.NewRequest(acomm.RequestOptions{Task: "zfs-list"})
 	if err != nil {
-		return datasets, err
+		return nil, err
 	}
 	requests["local"] = localReq
 	knownReq, err := acomm.NewRequest(acomm.RequestOptions{
-		Task:         "get-datasets",
-		HeartbeatURL: s.config.heartbeatURL(),
+		Task:    "list-datasets",
+		TaskURL: s.config.heartbeatURL(),
 	})
 	if err != nil {
-		return datasets, err
+		return nil, err
 	}
 	requests["known"] = knownReq
 
@@ -56,21 +55,24 @@ func (s *statsPusher) getDatasets() ([]string, error) {
 	for name := range requests {
 		resp, ok := responses[name]
 		if !ok {
-			return datasets, fmt.Errorf("failed to send request: %s", name)
+			return nil, fmt.Errorf("failed to send request: %s", name)
 		}
 		if resp.Error != nil {
-			return datasets, fmt.Errorf("request failed: %s: %s", name, resp.Error)
-		}
-		if err := resp.UnmarshalResult(tasks[name]); err != nil {
-			return datasets, err
+			return nil, fmt.Errorf("request failed: %s: %s", name, resp.Error)
 		}
 	}
 
-	localDatasets := responses["local"].([]*zfs.Dataset)
-	knownDatasets := responses["known"].([]*zfs.Dataset)
-	datasets = make([]string, 0, len(localDatasets))
-	for _, known := range localDatasets {
-		for _, local := range knownDatasets {
+	var localDatasets zfs.ListResult
+	if err := responses["local"].UnmarshalResult(&localDatasets); err != nil {
+		return nil, nil
+	}
+	var knownDatasets clusterconf.DatasetListResult
+	if err := responses["known"].UnmarshalResult(&knownDatasets); err != nil {
+		return nil, nil
+	}
+	datasets := make([]string, 0, len(localDatasets.Datasets))
+	for _, local := range localDatasets.Datasets {
+		for _, known := range knownDatasets.Datasets {
 			if known.ID == local.Name {
 				datasets = append(datasets, local.Name)
 				break
@@ -80,20 +82,21 @@ func (s *statsPusher) getDatasets() ([]string, error) {
 	return datasets, nil
 }
 
-func (s *statsPusher) getIP() (*net.IP, error) {
+func (s *statsPusher) getIP() (net.IP, error) {
 	doneChan := make(chan *acomm.Response, 1)
 	rh := func(_ *acomm.Request, resp *acomm.Response) {
 		doneChan <- resp
 	}
 	req, err := acomm.NewRequest(acomm.RequestOptions{
 		Task:           "metrics-network",
+		ResponseHook:   s.tracker.URL(),
 		SuccessHandler: rh,
 		ErrorHandler:   rh,
 	})
 	if err != nil {
 		return nil, err
 	}
-	if err := req.Send(s.config.coordinatorURL()); err != nil {
+	if err := acomm.Send(s.config.coordinatorURL(), req); err != nil {
 		return nil, err
 	}
 
@@ -117,16 +120,16 @@ func (s *statsPusher) getIP() (*net.IP, error) {
 	return nil, errors.New("no suitable IP found")
 }
 
-func (s *statsPusher) sendDatasetHeartbeats(datasets []*zfs.Dataset, ip *net.IP) error {
+func (s *statsPusher) sendDatasetHeartbeats(datasets []string, ip net.IP) error {
 	var errored bool
 
-	multiRequest := acomm.NewMultirequest(s.tracker, s.config.requestTimeout())
+	multiRequest := acomm.NewMultiRequest(s.tracker, s.config.requestTimeout())
 	for _, dataset := range datasets {
 		req, err := acomm.NewRequest(acomm.RequestOptions{
 			Task:    "dataset-heartbeat",
 			TaskURL: s.config.heartbeatURL(),
-			Args: DatasetHeartbeatArgs{
-				ID: dataset.Name,
+			Args: clusterconf.DatasetHeartbeatArgs{
+				ID: dataset,
 				IP: ip,
 			},
 		})
@@ -134,7 +137,7 @@ func (s *statsPusher) sendDatasetHeartbeats(datasets []*zfs.Dataset, ip *net.IP)
 			errored = true
 			continue
 		}
-		if err := multirequest.AddRequest(dataset.Name, req); err != nil {
+		if err := multiRequest.AddRequest(dataset, req); err != nil {
 			errored = true
 			continue
 		}
@@ -145,9 +148,10 @@ func (s *statsPusher) sendDatasetHeartbeats(datasets []*zfs.Dataset, ip *net.IP)
 		}
 	}
 	responses := multiRequest.Responses()
-	for name, resp := range responses {
+	for _, resp := range responses {
 		if resp.Error != nil {
 			errored = true
+			break
 		}
 	}
 
