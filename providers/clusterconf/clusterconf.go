@@ -35,6 +35,7 @@ func (c *ClusterConf) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("delete-bundle", c.DeleteBundle)
 	server.RegisterTask("bundle-heartbeat", c.BundleHeartbeat)
 	server.RegisterTask("get-dataset", c.GetDataset)
+	server.RegisterTask("list-datasets", c.ListDatasets)
 	server.RegisterTask("update-dataset", c.UpdateDataset)
 	server.RegisterTask("delete-dataset", c.DeleteDataset)
 	server.RegisterTask("dataset-heartbeat", c.DeleteDataset)
