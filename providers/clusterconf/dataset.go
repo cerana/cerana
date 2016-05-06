@@ -72,6 +72,7 @@ func (c *ClusterConf) GetDataset(req *acomm.Request) (interface{}, *url.URL, err
 	return &DatasetPayload{dataset}, nil, nil
 }
 
+// ListDatasets returns a list of all Datasets.
 func (c *ClusterConf) ListDatasets(req *acomm.Request) (interface{}, *url.URL, error) {
 	keys, err := c.kvKeys(datasetsPrefix)
 	if err != nil {

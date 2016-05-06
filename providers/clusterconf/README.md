@@ -71,6 +71,16 @@ type BundleIDArgs struct {
 
 BundleIDArgs are args for bundle tasks that only require bundle id.
 
+#### type BundleListResult
+
+```go
+type BundleListResult struct {
+	Bundles []*Bundle `json:"bundles"`
+}
+```
+
+BundleListResult is the result from listing bundles.
+
 #### type BundlePayload
 
 ```go
@@ -224,6 +234,20 @@ func (c *ClusterConf) GetService(req *acomm.Request) (interface{}, *url.URL, err
 ```
 GetService retrieves a service.
 
+#### func (*ClusterConf) ListBundle
+
+```go
+func (c *ClusterConf) ListBundle(req *acomm.Request) (interface{}, *url.URL, error)
+```
+ListBundle retrieves a bundle.
+
+#### func (*ClusterConf) ListDatasets
+
+```go
+func (c *ClusterConf) ListDatasets(req *acomm.Request) (interface{}, *url.URL, error)
+```
+ListDatasets returns a list of all Datasets.
+
 #### func (*ClusterConf) NodeHeartbeat
 
 ```go
@@ -370,6 +394,16 @@ type DatasetHeartbeatArgs struct {
 
 DatasetHeartbeatArgs are arguments for updating a dataset node heartbeat.
 
+#### type DatasetListResult
+
+```go
+type DatasetListResult struct {
+	Datasets []*Dataset `json:"datasets"`
+}
+```
+
+DatasetListResult is the result for listing datasets.
+
 #### type DatasetPayload
 
 ```go
@@ -440,14 +474,14 @@ IDArgs are arguments for operations requiring only an ID.
 
 ```go
 type Node struct {
-	ID          string    `json:"id"`
-	Heartbeat   time.Time `json:"heartbeat"`
-	MemoryTotal int64     `json:"memoryTotal"`
-	MemoryFree  int64     `json:"memoryFree"`
-	CPUTotal    int       `json:"cpuTotal"`
-	CPUFree     int       `json:"cpuFree"`
-	DiskTotal   int       `json:"diskTotal"`
-	DiskFree    int       `json:"diskFree"`
+	ID          string       `json:"id"`
+	Heartbeat   time.Time    `json:"heartbeat"`
+	MemoryTotal uint64       `json:"memoryTotal"`
+	MemoryFree  uint64       `json:"memoryFree"`
+	CPUCores    int          `json:"cpuCores"`
+	CPULoad     load.AvgStat `json:"cpuLoad"`
+	DiskTotal   uint64       `json:"diskTotal"`
+	DiskFree    uint64       `json:"diskFree"`
 }
 ```
 

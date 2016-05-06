@@ -11,7 +11,7 @@
 ```go
 type CPUResult struct {
 	Info  []cpu.InfoStat  `json:"info"`
-	Load  *load.AvgStat   `json:"load"`
+	Load  load.AvgStat    `json:"load"`
 	Times []cpu.TimesStat `json:"times"`
 }
 ```
