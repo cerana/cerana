@@ -9,6 +9,8 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/cerana/cerana/acomm"
@@ -109,6 +111,11 @@ type BundlePayload struct {
 	Bundle *Bundle `json:"bundle"`
 }
 
+// BundleListResult is the result from listing bundles.
+type BundleListResult struct {
+	Bundles []*Bundle `json:"bundles"`
+}
+
 // BundleHeartbeatArgs are arguments for updating a dataset node heartbeat.
 type BundleHeartbeatArgs struct {
 	ID     int    `json:"id"`
@@ -131,6 +138,58 @@ func (c *ClusterConf) GetBundle(req *acomm.Request) (interface{}, *url.URL, erro
 		return nil, nil, err
 	}
 	return &BundlePayload{bundle}, nil, nil
+}
+
+// ListBundle retrieves a bundle.
+func (c *ClusterConf) ListBundle(req *acomm.Request) (interface{}, *url.URL, error) {
+	keys, err := c.kvKeys(bundlesPrefix)
+	if err != nil {
+		return nil, nil, err
+	}
+	// extract and deduplicate the bundle ids
+	ids := make(map[int]bool)
+	for _, key := range keys {
+		// keys are full paths and include all child keys.
+		// e.g. {prefix}/{id}/{rest/of/path}
+		idS := strings.Split(strings.TrimPrefix(key, bundlesPrefix), "/")[0]
+		id, err := strconv.Atoi(idS)
+		if err != nil {
+			return nil, nil, errors.New("invalid bundle id")
+		}
+		ids[id] = true
+	}
+
+	var wg sync.WaitGroup
+	dsChan := make(chan *Bundle, len(ids))
+	defer close(dsChan)
+	errChan := make(chan error, len(ids))
+	defer close(errChan)
+	for id := range ids {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+			ds, err := c.getBundle(id)
+			if err != nil {
+				errChan <- err
+				return
+			}
+			dsChan <- ds
+		}(id)
+	}
+	wg.Wait()
+
+	if len(errChan) > 0 {
+		err := <-errChan
+		return nil, nil, err
+	}
+	bundles := make([]*Bundle, 0, len(dsChan))
+	for ds := range dsChan {
+		bundles = append(bundles, ds)
+	}
+
+	return &BundleListResult{
+		Bundles: bundles,
+	}, nil, nil
 }
 
 // UpdateBundle creates or updates a bundle config. When updating, a Get should first be performed and the modified Bundle passed back.
