@@ -6,6 +6,8 @@ Building Cerana requires an install of the [Nix Package Manager](https://nixos.o
 The Jenkins Master Container
 ----------------------------
 
+**NOTE:** Building the image requires a version of Docker which supports the *ARG* instruction. It's recommended that the [latest version of Docker](https://docs.docker.com/engine/installation/) be installed.
+
 To build the Docker image:
 
 ```
