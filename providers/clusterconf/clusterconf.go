@@ -31,6 +31,7 @@ func New(config *Config, tracker *acomm.Tracker) *ClusterConf {
 // RegisterTasks registers all of Systemd's task handlers with the server.
 func (c *ClusterConf) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("get-bundle", c.GetBundle)
+	server.RegisterTask("list-bundles", c.ListBundles)
 	server.RegisterTask("update-bundle", c.UpdateBundle)
 	server.RegisterTask("delete-bundle", c.DeleteBundle)
 	server.RegisterTask("bundle-heartbeat", c.BundleHeartbeat)
