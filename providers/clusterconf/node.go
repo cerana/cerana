@@ -31,7 +31,7 @@ type Node struct {
 }
 
 // NodeHistory is a set of historical information for a node.
-type NodeHistory map[time.Time]Node
+type NodeHistory map[time.Time]*Node
 
 // NodesHistory is the historical information for multiple nodes.
 type NodesHistory map[string]NodeHistory
@@ -51,7 +51,7 @@ type NodePayload struct {
 
 // NodesHistoryResult is the result from the GetNodesHistory handler.
 type NodesHistoryResult struct {
-	History *NodesHistory `json:"history"`
+	History NodesHistory `json:"history"`
 }
 
 type nodeFilter func(Node) bool
@@ -98,7 +98,7 @@ func (c *ClusterConf) GetNodesHistory(req *acomm.Request) (interface{}, *url.URL
 	if err != nil {
 		return nil, nil, err
 	}
-	return &NodesHistoryResult{history}, nil, nil
+	return &NodesHistoryResult{*history}, nil, nil
 
 }
 
@@ -163,7 +163,7 @@ func (c *ClusterConf) getNodesHistory(filters ...nodeFilter) (*NodesHistory, err
 			nodeHistory = make(NodeHistory)
 			history[node.ID] = nodeHistory
 		}
-		nodeHistory[node.Heartbeat] = node
+		nodeHistory[node.Heartbeat] = &node
 	}
 
 	return &history, nil
