@@ -14,17 +14,20 @@ import (
 	"github.com/cerana/cerana/zfs"
 )
 
+// MockZFS is a mock ZFS provider.
 type MockZFS struct {
 	config  *provider.Config
 	tracker *acomm.Tracker
 	Data    *MockZFSData
 }
 
+// MockZFSData is the in-memory data structure for the MockZFS.
 type MockZFSData struct {
 	Datasets map[string]*Dataset
 	Data     map[string][]byte
 }
 
+// NewMockZFS creates a new instance of MockZFS.
 func NewMockZFS(config *provider.Config, tracker *acomm.Tracker) *MockZFS {
 	return &MockZFS{
 		config:  config,
@@ -36,6 +39,7 @@ func NewMockZFS(config *provider.Config, tracker *acomm.Tracker) *MockZFS {
 	}
 }
 
+// RegisterTasks registers all MockZFS tasks.
 func (z *MockZFS) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("zfs-clone", z.Clone)
 	server.RegisterTask("zfs-create", z.Create)
@@ -53,6 +57,7 @@ func (z *MockZFS) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("zfs-unmount", z.Unmount)
 }
 
+// Clone clones a mock dataset.
 func (z *MockZFS) Clone(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args CloneArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -79,6 +84,7 @@ func (z *MockZFS) Clone(req *acomm.Request) (interface{}, *url.URL, error) {
 	return &DatasetResult{z.Data.Datasets[args.Name]}, nil, nil
 }
 
+// Create creats a mock dataset.
 func (z *MockZFS) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args CreateArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -106,6 +112,7 @@ func (z *MockZFS) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 	return &DatasetResult{z.Data.Datasets[args.Name]}, nil, nil
 }
 
+// Destroy destroys a mock dataset.
 func (z *MockZFS) Destroy(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args DestroyArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -123,6 +130,7 @@ func (z *MockZFS) Destroy(req *acomm.Request) (interface{}, *url.URL, error) {
 	return nil, nil, nil
 }
 
+// Exists checks whether a mock dataset exists.
 func (z *MockZFS) Exists(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args CommonArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -137,6 +145,7 @@ func (z *MockZFS) Exists(req *acomm.Request) (interface{}, *url.URL, error) {
 	return &ExistsResult{ok}, nil, nil
 }
 
+// Get retrieves a mock dataset.
 func (z *MockZFS) Get(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args CommonArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -154,6 +163,7 @@ func (z *MockZFS) Get(req *acomm.Request) (interface{}, *url.URL, error) {
 	return &DatasetResult{dataset}, nil, nil
 }
 
+// Holds retrieves a mock dataset's holds.
 func (z *MockZFS) Holds(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args CommonArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -171,6 +181,7 @@ func (z *MockZFS) Holds(req *acomm.Request) (interface{}, *url.URL, error) {
 	return &HoldsResult{[]string{}}, nil, nil
 }
 
+// List returns all mock datasets.
 func (z *MockZFS) List(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args ListArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -193,6 +204,7 @@ func (z *MockZFS) List(req *acomm.Request) (interface{}, *url.URL, error) {
 	return &ListResult{datasets}, nil, nil
 }
 
+// Mount mounts a mock dataset.
 func (z *MockZFS) Mount(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args MountArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -209,6 +221,7 @@ func (z *MockZFS) Mount(req *acomm.Request) (interface{}, *url.URL, error) {
 	return nil, nil, nil
 }
 
+// Receive receives mock dataset data and creates a mock dataset.
 func (z *MockZFS) Receive(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args CommonArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -239,6 +252,7 @@ func (z *MockZFS) Receive(req *acomm.Request) (interface{}, *url.URL, error) {
 	return nil, nil, nil
 }
 
+// Rename renames a mock dataset.
 func (z *MockZFS) Rename(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args RenameArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -269,6 +283,7 @@ func (z *MockZFS) Rename(req *acomm.Request) (interface{}, *url.URL, error) {
 	return nil, nil, nil
 }
 
+// Rollback rolls back to a mock dataset.
 func (z *MockZFS) Rollback(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args RollbackArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -284,6 +299,7 @@ func (z *MockZFS) Rollback(req *acomm.Request) (interface{}, *url.URL, error) {
 	return nil, nil, nil
 }
 
+// Send sends mock dataset data.
 func (z *MockZFS) Send(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args CommonArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -309,6 +325,7 @@ func (z *MockZFS) Send(req *acomm.Request) (interface{}, *url.URL, error) {
 	return nil, addr, nil
 }
 
+// Snapshot snapshots a mock dataset.
 func (z *MockZFS) Snapshot(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args SnapshotArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -335,6 +352,7 @@ func (z *MockZFS) Snapshot(req *acomm.Request) (interface{}, *url.URL, error) {
 	return nil, nil, nil
 }
 
+// Unmount unmounts a mock dataset.
 func (z *MockZFS) Unmount(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args UnmountArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
