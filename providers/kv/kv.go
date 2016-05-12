@@ -34,4 +34,8 @@ func (k *KV) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("kv-getAll", k.getAll)
 	server.RegisterTask("kv-keys", k.keys)
 	server.RegisterTask("kv-set", k.set)
+
+	// cas.go
+	server.RegisterTask("kv-remove", k.remove)
+	server.RegisterTask("kv-update", k.update)
 }
