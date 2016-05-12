@@ -11,11 +11,13 @@ import (
 	"github.com/pborman/uuid"
 )
 
+// MockClusterConf is a mock ClusterConf provider.
 type MockClusterConf struct {
 	config *provider.Config
 	Data   *MockClusterData
 }
 
+// MockClusterData is the in-memory data structure for a MockClusterConf.
 type MockClusterData struct {
 	Services map[string]*Service
 	Bundles  map[int]*Bundle
@@ -25,6 +27,7 @@ type MockClusterData struct {
 	Defaults *Defaults
 }
 
+// NewMockClusterConf creates a new MockClusterConf.
 func NewMockClusterConf(config *provider.Config) *MockClusterConf {
 	return &MockClusterConf{
 		config: config,
@@ -38,7 +41,7 @@ func NewMockClusterConf(config *provider.Config) *MockClusterConf {
 	}
 }
 
-// RegisterTasks registers all of Systemd's task handlers with the server.
+// RegisterTasks registers all of MockClusterConf's tasks.
 func (c *MockClusterConf) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("get-bundle", c.GetBundle)
 	server.RegisterTask("list-bundles", c.ListBundles)
@@ -60,6 +63,7 @@ func (c *MockClusterConf) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("delete-service", c.DeleteService)
 }
 
+// GetBundle retrieves a mock bundle.
 func (c *MockClusterConf) GetBundle(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args BundleIDArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -75,6 +79,7 @@ func (c *MockClusterConf) GetBundle(req *acomm.Request) (interface{}, *url.URL, 
 	return &BundlePayload{bundle}, nil, nil
 }
 
+// ListBundles retrieves all mock bundles.
 func (c *MockClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL, error) {
 	bundles := make([]*Bundle, 0, len(c.Data.Bundles))
 	for _, bundle := range c.Data.Bundles {
@@ -83,6 +88,7 @@ func (c *MockClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL
 	return &BundleListResult{bundles}, nil, nil
 }
 
+// UpdateBundle updates a mock bundle.
 func (c *MockClusterConf) UpdateBundle(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args BundlePayload
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -102,6 +108,7 @@ func (c *MockClusterConf) UpdateBundle(req *acomm.Request) (interface{}, *url.UR
 	return &BundlePayload{args.Bundle}, nil, nil
 }
 
+// DeleteBundle removes a mock bundle.
 func (c *MockClusterConf) DeleteBundle(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args BundleIDArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -120,6 +127,7 @@ func (c *MockClusterConf) DeleteBundle(req *acomm.Request) (interface{}, *url.UR
 	return nil, nil, nil
 }
 
+// BundleHeartbeat adds a mock bundle heartbeat.
 func (c *MockClusterConf) BundleHeartbeat(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args BundleHeartbeatArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -144,6 +152,7 @@ func (c *MockClusterConf) BundleHeartbeat(req *acomm.Request) (interface{}, *url
 	return &BundlePayload{bundle}, nil, nil
 }
 
+// GetDataset retrieves a mock dataset.
 func (c *MockClusterConf) GetDataset(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args IDArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -158,6 +167,8 @@ func (c *MockClusterConf) GetDataset(req *acomm.Request) (interface{}, *url.URL,
 	}
 	return &DatasetPayload{dataset}, nil, nil
 }
+
+// ListDatasets lists all mock datasets.
 func (c *MockClusterConf) ListDatasets(req *acomm.Request) (interface{}, *url.URL, error) {
 	datasets := make([]*Dataset, 0, len(c.Data.Datasets))
 	for _, dataset := range c.Data.Datasets {
@@ -165,6 +176,8 @@ func (c *MockClusterConf) ListDatasets(req *acomm.Request) (interface{}, *url.UR
 	}
 	return &DatasetListResult{datasets}, nil, nil
 }
+
+// UpdateDataset updates a mock dataset.
 func (c *MockClusterConf) UpdateDataset(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args DatasetPayload
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -182,6 +195,8 @@ func (c *MockClusterConf) UpdateDataset(req *acomm.Request) (interface{}, *url.U
 	c.Data.Datasets[args.Dataset.ID] = args.Dataset
 	return &DatasetPayload{args.Dataset}, nil, nil
 }
+
+// DeleteDataset removes a mock dataset.
 func (c *MockClusterConf) DeleteDataset(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args IDArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -199,6 +214,8 @@ func (c *MockClusterConf) DeleteDataset(req *acomm.Request) (interface{}, *url.U
 	delete(c.Data.Datasets, args.ID)
 	return nil, nil, nil
 }
+
+// DatasetHeartbeat adds a mock dataset heartbeat.
 func (c *MockClusterConf) DatasetHeartbeat(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args DatasetHeartbeatArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -218,10 +235,12 @@ func (c *MockClusterConf) DatasetHeartbeat(req *acomm.Request) (interface{}, *ur
 	return &DatasetPayload{dataset}, nil, nil
 }
 
+// GetDefaults retrieves the mock default values.
 func (c *MockClusterConf) GetDefaults(req *acomm.Request) (interface{}, *url.URL, error) {
 	return &DefaultsPayload{c.Data.Defaults}, nil, nil
 }
 
+// UpdateDefaults updates the mock default values.
 func (c *MockClusterConf) UpdateDefaults(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args DefaultsPayload
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -236,6 +255,7 @@ func (c *MockClusterConf) UpdateDefaults(req *acomm.Request) (interface{}, *url.
 	return &DefaultsPayload{args.Defaults}, nil, nil
 }
 
+// NodeHeartbeat adds a mock node heartbeat.
 func (c *MockClusterConf) NodeHeartbeat(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args NodePayload
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -256,6 +276,8 @@ func (c *MockClusterConf) NodeHeartbeat(req *acomm.Request) (interface{}, *url.U
 	}
 	return nil, nil, nil
 }
+
+// GetNode retrieves a mock node.
 func (c *MockClusterConf) GetNode(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args IDArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -271,6 +293,8 @@ func (c *MockClusterConf) GetNode(req *acomm.Request) (interface{}, *url.URL, er
 	}
 	return &NodePayload{node}, nil, nil
 }
+
+// GetNodesHistory retrieves mock nodes history.
 func (c *MockClusterConf) GetNodesHistory(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args NodeHistoryArgs
 	if err := req.UnmarshalArgs(args); err != nil {
@@ -303,6 +327,7 @@ func (c *MockClusterConf) GetNodesHistory(req *acomm.Request) (interface{}, *url
 	return &NodesHistoryResult{history}, nil, nil
 }
 
+// GetService retrieves a mock service.
 func (c *MockClusterConf) GetService(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args IDArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -318,6 +343,8 @@ func (c *MockClusterConf) GetService(req *acomm.Request) (interface{}, *url.URL,
 	}
 	return &ServicePayload{service}, nil, nil
 }
+
+// UpdateService updates a mock service.
 func (c *MockClusterConf) UpdateService(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args ServicePayload
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -335,6 +362,8 @@ func (c *MockClusterConf) UpdateService(req *acomm.Request) (interface{}, *url.U
 	c.Data.Services[args.Service.ID] = args.Service
 	return &ServicePayload{args.Service}, nil, nil
 }
+
+// DeleteService removes a mock service.
 func (c *MockClusterConf) DeleteService(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args IDArgs
 	if err := req.UnmarshalArgs(&args); err != nil {

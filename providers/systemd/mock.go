@@ -9,22 +9,26 @@ import (
 	"github.com/coreos/go-systemd/dbus"
 )
 
+// MockSystemd is a mock version of the Systemd provider.
 type MockSystemd struct {
 	config *provider.Config
 	Data   *MockSystemdData
 }
 
+// MockSystemdData is the in-memory data structure for the MockSystemd.
 type MockSystemdData struct {
 	Statuses  map[string]dbus.UnitStatus
 	UnitFiles map[string]bool
 }
 
+// NewMockSystemd creates a new MockSystemd.
 func NewMockSystemd(config *provider.Config) *MockSystemd {
 	return &MockSystemd{
 		config: config,
 	}
 }
 
+// RegisterTasks registers the MockSystemd tasks.
 func (s *MockSystemd) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("systemd-create", s.Create)
 	server.RegisterTask("systemd-disable", s.Disable)
@@ -37,6 +41,7 @@ func (s *MockSystemd) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("systemd-stop", s.Stop)
 }
 
+// Create creates a mock unit file.
 func (s *MockSystemd) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args CreateArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -54,6 +59,7 @@ func (s *MockSystemd) Create(req *acomm.Request) (interface{}, *url.URL, error) 
 	return nil, nil, nil
 }
 
+// Disable disables a mock service.
 func (s *MockSystemd) Disable(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args DisableArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -68,6 +74,7 @@ func (s *MockSystemd) Disable(req *acomm.Request) (interface{}, *url.URL, error)
 	return nil, nil, nil
 }
 
+// Enable enables a mock service.
 func (s *MockSystemd) Enable(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args EnableArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -89,6 +96,7 @@ func (s *MockSystemd) Enable(req *acomm.Request) (interface{}, *url.URL, error) 
 	return nil, nil, nil
 }
 
+// Get retrieves a mock service.
 func (s *MockSystemd) Get(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args GetArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -106,6 +114,7 @@ func (s *MockSystemd) Get(req *acomm.Request) (interface{}, *url.URL, error) {
 	return &GetResult{status}, nil, nil
 }
 
+// List lists mock services.
 func (s *MockSystemd) List(req *acomm.Request) (interface{}, *url.URL, error) {
 	list := make([]dbus.UnitStatus, 0, len(s.Data.Statuses))
 	for _, status := range list {
@@ -114,6 +123,7 @@ func (s *MockSystemd) List(req *acomm.Request) (interface{}, *url.URL, error) {
 	return &ListResult{list}, nil, nil
 }
 
+// Remove removes a mock unit file.
 func (s *MockSystemd) Remove(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args RemoveArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -146,14 +156,17 @@ func (s *MockSystemd) action(req *acomm.Request) (interface{}, *url.URL, error) 
 	return nil, nil, nil
 }
 
+// Restart restarts a mock service.
 func (s *MockSystemd) Restart(req *acomm.Request) (interface{}, *url.URL, error) {
 	return s.action(req)
 }
 
+// Start starts a mock service.
 func (s *MockSystemd) Start(req *acomm.Request) (interface{}, *url.URL, error) {
 	return s.action(req)
 }
 
+// Stop stops a mock service.
 func (s *MockSystemd) Stop(req *acomm.Request) (interface{}, *url.URL, error) {
 	return s.action(req)
 }
