@@ -13,8 +13,7 @@ import (
 
 // MockClusterConf is a mock ClusterConf provider.
 type MockClusterConf struct {
-	config *provider.Config
-	Data   *MockClusterData
+	Data *MockClusterData
 }
 
 // MockClusterData is the in-memory data structure for a MockClusterConf.
@@ -28,9 +27,8 @@ type MockClusterData struct {
 }
 
 // NewMockClusterConf creates a new MockClusterConf.
-func NewMockClusterConf(config *provider.Config) *MockClusterConf {
+func NewMockClusterConf() *MockClusterConf {
 	return &MockClusterConf{
-		config: config,
 		Data: &MockClusterData{
 			Services: make(map[string]*Service),
 			Bundles:  make(map[int]*Bundle),

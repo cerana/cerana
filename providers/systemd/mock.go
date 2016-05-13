@@ -11,8 +11,7 @@ import (
 
 // MockSystemd is a mock version of the Systemd provider.
 type MockSystemd struct {
-	config *provider.Config
-	Data   *MockSystemdData
+	Data *MockSystemdData
 }
 
 // MockSystemdData is the in-memory data structure for the MockSystemd.
@@ -22,9 +21,12 @@ type MockSystemdData struct {
 }
 
 // NewMockSystemd creates a new MockSystemd.
-func NewMockSystemd(config *provider.Config) *MockSystemd {
+func NewMockSystemd() *MockSystemd {
 	return &MockSystemd{
-		config: config,
+		Data: &MockSystemdData{
+			Statuses:  make(map[string]dbus.UnitStatus),
+			UnitFiles: make(map[string]bool),
+		},
 	}
 }
 
