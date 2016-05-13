@@ -91,6 +91,10 @@ func (c *Coordinator) NewProviderViper() *viper.Viper {
 	return v
 }
 
+func (c *Coordinator) ProviderTracker() *acomm.Tracker {
+	return c.providerServer.Tracker()
+}
+
 // RegisterProvider registers a Provider's tasks with the internal Provider
 // server.
 func (c *Coordinator) RegisterProvider(p provider.Provider) {
