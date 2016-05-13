@@ -23,7 +23,7 @@ func NewKVP(config *provider.Config) *KVP {
 	}
 }
 
-func (k *KVP) RegisterTasks(server provider.Server) {
+func (k *KVP) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("kv-getAll", k.GetAll)
 	server.RegisterTask("kv-get", k.Get)
 	server.RegisterTask("kv-delete", k.Delete)

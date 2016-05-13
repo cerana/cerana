@@ -93,7 +93,7 @@ func (c *Coordinator) NewProviderViper() *viper.Viper {
 // RegisterProvider registers a Provider's tasks with the internal Provider
 // server.
 func (c *Coordinator) RegisterProvider(p provider.Provider) {
-	p.RegisterTasks(*c.providerServer)
+	p.RegisterTasks(c.providerServer)
 }
 
 // Start starts the Coordinator and Provider servers.
