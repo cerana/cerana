@@ -191,7 +191,7 @@ func (z *MockZFS) List(req *acomm.Request) (interface{}, *url.URL, error) {
 	if len(args.Types) == 0 {
 		args.Types = []string{"all"}
 	}
-	datasets := make([]*Dataset, len(z.Data.Datasets))
+	datasets := make([]*Dataset, 0, len(z.Data.Datasets))
 	for _, dataset := range z.Data.Datasets {
 		for _, t := range args.Types {
 			if t == dataset.Properties.Type || t == "all" {
