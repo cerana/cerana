@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/cerana/cerana/pkg/logrusx"
 	"github.com/cerana/cerana/zfs"
-	"github.com/mistifyio/mistify-logrus-ext"
 	cobra "github.com/spf13/cobra"
 )
 
