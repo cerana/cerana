@@ -13,7 +13,7 @@ ARG JENKINS_HOME=/home/cerana/.jenkins
 
 USER root
 RUN apt-get update && \
-  apt-get install -y git curl zip bzip2 adduser graphviz sudo time nano
+  apt-get install -y git curl zip bzip2 adduser graphviz sudo time nano man
 
 #+
 # Normally Jenkins runs as the jenkins user. In this case it defaults to
