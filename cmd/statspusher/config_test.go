@@ -7,49 +7,13 @@ import (
 	"net/url"
 	"os"
 	"strconv"
-	"testing"
 	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/pborman/uuid"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"github.com/stretchr/testify/suite"
 )
-
-type StatsPusher struct {
-	suite.Suite
-	config     *config
-	configData *ConfigData
-	configFile *os.File
-}
-
-func TestStatsPusher(t *testing.T) {
-	suite.Run(t, new(StatsPusher))
-}
-
-func (s *StatsPusher) SetupTest() {
-	logrus.SetLevel(logrus.FatalLevel)
-
-	s.configData = &ConfigData{
-		CoordinatorURL: "unix:///tmp/foobar",
-		HeartbeatURL:   "unix:///tmp/foobar",
-		LogLevel:       "fatal",
-		RequestTimeout: 5,
-		DatasetTTL:     4,
-		BundleTTL:      3,
-		NodeTTL:        2,
-	}
-
-	var err error
-	s.config, _, _, s.configFile, err = newTestConfig(false, true, s.configData)
-	s.Require().NoError(err, "failed to create config")
-	s.Require().NoError(s.config.loadConfig(), "failed to load config")
-}
-
-func (s *StatsPusher) TearDownTest() {
-	_ = os.Remove(s.configFile.Name())
-}
 
 func (s *StatsPusher) TestCanonicalFlagName() {
 	tests := []struct {
