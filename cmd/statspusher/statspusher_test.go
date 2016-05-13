@@ -2,9 +2,7 @@ package main
 
 import (
 	"os"
-	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/acomm"
@@ -22,8 +20,9 @@ type StatsPusher struct {
 	config      *config
 	configData  *ConfigData
 	configFile  *os.File
-	coordinator *test.Coordinator
+	statsPusher *statsPusher
 	tracker     *acomm.Tracker
+	coordinator *test.Coordinator
 	systemd     *systemd.MockSystemd
 	zfs         *zfs.MockZFS
 	clusterConf *clusterconf.MockClusterConf
@@ -58,11 +57,11 @@ func (s *StatsPusher) SetupSuite() {
 	noError(err, "failed to create config")
 	noError(s.config.loadConfig(), "failed to load config")
 
-	// Setup mock coordinator and providers
-	s.coordinator, err = test.NewCoordinator("")
+	s.statsPusher, err = newStatsPusher(s.config)
 	noError(err)
+	noError(s.statsPusher.tracker.Start())
 
-	s.tracker, err = acomm.NewTracker(filepath.Join(s.coordinator.SocketDir, "tracker.sock"), nil, nil, 5*time.Second)
+	// Setup mock providers
 	noError(err)
 
 	s.setupSystemd()
@@ -83,7 +82,7 @@ func (s *StatsPusher) setupZFS() {
 	config := provider.NewConfig(flagset, v)
 	s.Require().NoError(flagset.Parse([]string{}))
 	s.Require().NoError(config.LoadConfig())
-	s.zfs = zfs.NewMockZFS(config, s.tracker)
+	s.zfs = zfs.NewMockZFS(config, s.coordinator.ProviderTracker())
 	s.coordinator.RegisterProvider(s.zfs)
 }
 
@@ -96,4 +95,5 @@ func (s *StatsPusher) TearDownSuite() {
 	s.coordinator.Stop()
 	s.Require().NoError(s.coordinator.Cleanup())
 	_ = os.Remove(s.configFile.Name())
+	s.statsPusher.tracker.Stop()
 }
