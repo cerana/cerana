@@ -19,13 +19,35 @@ The Dockerfile installs Jenkins and configures it to run as the "cerana" user ra
 To run the Docker image *cd* to the directory where you'd like the Jenkins home directory to reside and:
 
 ```
-mkdir -p -m 777 ${PWD}/cerana
+mkdir -m 777 ${PWD}/cerana
+mkdir -m 777 ${PWD}/cerana/nix
 docker run -p 8080:8080 -p 50000:50000 \
   -v ${PWD}/cerana:/home/cerana/.jenkins \
+  -v ${PWD}/cerana/nix:/nix \
   cerana-jenkins:1
 ```
 
-When running the Jenkins server can be accessed as http://localhost:8080. **NOTE:** The first time you run Jenkins a default administrator key will be displayed in the console output and Jenkins will prompt for this key. Once the key has been entered the key is no longer needed and Jenkins will prompt to create the admin user.
+When running, the Jenkins server can be accessed as http://localhost:8080. **NOTE:** The first time you run Jenkins, a default administrator key will be displayed in the console output and Jenkins will prompt for this key. Once the key has been entered the key is no longer needed and Jenkins will prompt to create the admin user.
+
+Console Mode
+------------
+
+If you prefer you can instead use the container in console mode. The command is very similar to running in server mode.
+
+```
+docker run -p 8080:8080 -p 50000:50000 \
+  -v ${PWD}/cerana:/home/cerana/.jenkins \
+  -v ${PWD}/cerana/nix:/nix \
+  -it cerana-jenkins:1 /bin/bash
+```
+
+Once the container has started and you see the prompt you will need to initialize the Nix environment.
+
+```
+. ~/.nix-profile/etc/profile.d/nix.sh
+```
+
+All of the nix commands are now available from the command line.
 
 Running the Build
 -----------------
