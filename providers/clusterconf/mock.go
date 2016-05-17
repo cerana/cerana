@@ -50,7 +50,7 @@ func (c *MockClusterConf) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("list-datasets", c.ListDatasets)
 	server.RegisterTask("update-dataset", c.UpdateDataset)
 	server.RegisterTask("delete-dataset", c.DeleteDataset)
-	server.RegisterTask("dataset-heartbeat", c.DeleteDataset)
+	server.RegisterTask("dataset-heartbeat", c.DatasetHeartbeat)
 	server.RegisterTask("get-default-options", c.GetDefaults)
 	server.RegisterTask("set-default-options", c.UpdateDefaults)
 	server.RegisterTask("node-heartbeat", c.NodeHeartbeat)
@@ -228,6 +228,9 @@ func (c *MockClusterConf) DatasetHeartbeat(req *acomm.Request) (interface{}, *ur
 	dataset, ok := c.Data.Datasets[args.ID]
 	if !ok {
 		return nil, nil, errors.New("dataset config not found")
+	}
+	if dataset.Nodes == nil {
+		dataset.Nodes = make(map[string]bool)
 	}
 	dataset.Nodes[args.IP.String()] = true
 	return &DatasetPayload{dataset}, nil, nil
