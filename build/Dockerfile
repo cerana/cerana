@@ -20,6 +20,7 @@ RUN apt-get update && \
 # cerana.
 #-
 RUN adduser --disabled-password --gecos '' --uid ${UID} ${USER}
+ENV USER ${USER}
 
 # Use tini as subreaper in Docker container to adopt zombie processes
 ENV TINI_SHA 066ad710107dc7ee05d3aa6e4974f01dc98f3888
@@ -27,6 +28,15 @@ ENV TINI_SHA 066ad710107dc7ee05d3aa6e4974f01dc98f3888
 RUN curl -fsSL https://github.com/krallin/tini/releases/download/v0.5.0/tini-static \
   -o /bin/tini && chmod +x /bin/tini \
   && echo "$TINI_SHA  /bin/tini" | sha1sum -c -
+
+#+++++++++++++++
+# For builds using Nix.
+#+++++++++++++++
+VOLUME /nix
+
+ENV LC_ALL C
+WORKDIR /home/${USER}
+# RUN curl https://nixos.org/nix/install | sh
 
 #+++++++++++++++
 # For Jenkins
@@ -62,17 +72,7 @@ ENV JENKINS_VERSION ${JENKINS_VERSION}
 ENV JENKINS_SHA ${JENKINS_SHA}
 ENV COPY_REFERENCE_FILE_LOG ${JENKINS_HOME}/copy_reference_file.log
 
-#+++++++++++++++
-# For builds using Nix.
-#+++++++++++++++
-RUN mkdir -m 777 /nix
-COPY nix-builder.sh /home/${USER}/
-
 USER ${USER}
-ENV LC_ALL C
-ENV USER ${USER}
-WORKDIR /home/${USER}
-RUN curl https://nixos.org/nix/install | sh
 
 #+
 # For container startup.

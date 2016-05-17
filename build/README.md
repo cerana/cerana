@@ -19,10 +19,10 @@ The Dockerfile installs Jenkins and configures it to run as the "cerana" user ra
 To run the Docker image *cd* to the directory where you'd like the Jenkins home directory to reside and:
 
 ```
-mkdir -m 777 ${PWD}/cerana
+mkdir -m 777 ${PWD}/cerana/jenkins_home
 mkdir -m 777 ${PWD}/cerana/nix
 docker run -p 8080:8080 -p 50000:50000 \
-  -v ${PWD}/cerana:/home/cerana/.jenkins \
+  -v ${PWD}/cerana/workspace:/home/cerana/.jenkins \
   -v ${PWD}/cerana/nix:/nix \
   cerana-jenkins:1
 ```
@@ -36,7 +36,7 @@ If you prefer you can instead use the container in console mode. The command is 
 
 ```
 docker run -p 8080:8080 -p 50000:50000 \
-  -v ${PWD}/cerana:/home/cerana/.jenkins \
+  -v ${PWD}/cerana/workspace:/home/cerana/.jenkins \
   -v ${PWD}/cerana/nix:/nix \
   -it cerana-jenkins:1 /bin/bash
 ```
