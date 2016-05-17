@@ -9,6 +9,7 @@ import (
 	"github.com/cerana/cerana/pkg/test"
 	"github.com/cerana/cerana/provider"
 	"github.com/cerana/cerana/providers/clusterconf"
+	"github.com/cerana/cerana/providers/metrics"
 	"github.com/cerana/cerana/providers/systemd"
 	"github.com/cerana/cerana/providers/zfs"
 	"github.com/spf13/pflag"
@@ -26,6 +27,7 @@ type StatsPusher struct {
 	systemd     *systemd.MockSystemd
 	zfs         *zfs.MockZFS
 	clusterConf *clusterconf.MockClusterConf
+	metrics     *metrics.MockMetrics
 }
 
 func TestStatsPusher(t *testing.T) {
@@ -67,6 +69,7 @@ func (s *StatsPusher) SetupSuite() {
 	s.setupSystemd()
 	s.setupZFS()
 	s.setupClusterConf()
+	s.setupMetrics()
 
 	noError(s.coordinator.Start())
 }
@@ -89,6 +92,11 @@ func (s *StatsPusher) setupZFS() {
 func (s *StatsPusher) setupSystemd() {
 	s.systemd = systemd.NewMockSystemd()
 	s.coordinator.RegisterProvider(s.systemd)
+}
+
+func (s *StatsPusher) setupMetrics() {
+	s.metrics = metrics.NewMockMetrics()
+	s.coordinator.RegisterProvider(s.metrics)
 }
 
 func (s *StatsPusher) TearDownSuite() {
