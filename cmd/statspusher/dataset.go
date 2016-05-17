@@ -84,6 +84,8 @@ func (s *statsPusher) getDatasets() ([]string, error) {
 
 func (s *statsPusher) getIP() (net.IP, error) {
 	doneChan := make(chan *acomm.Response, 1)
+	defer close(doneChan)
+
 	rh := func(_ *acomm.Request, resp *acomm.Response) {
 		doneChan <- resp
 	}
@@ -94,6 +96,9 @@ func (s *statsPusher) getIP() (net.IP, error) {
 		ErrorHandler:   rh,
 	})
 	if err != nil {
+		return nil, err
+	}
+	if err := s.tracker.TrackRequest(req, s.config.requestTimeout()); err != nil {
 		return nil, err
 	}
 	if err := acomm.Send(s.config.coordinatorURL(), req); err != nil {
@@ -122,7 +127,6 @@ func (s *statsPusher) getIP() (net.IP, error) {
 
 func (s *statsPusher) sendDatasetHeartbeats(datasets []string, ip net.IP) error {
 	var errored bool
-
 	multiRequest := acomm.NewMultiRequest(s.tracker, s.config.requestTimeout())
 	for _, dataset := range datasets {
 		req, err := acomm.NewRequest(acomm.RequestOptions{
