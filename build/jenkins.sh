@@ -22,8 +22,9 @@ copy_reference_file() {
 		[[ ${rel} == plugins/*.jpi ]] && touch "$JENKINS_HOME/${rel}.pinned"
 	fi;
 }
-: ${JENKINS_HOME:="/var/jenkins_home"}
+# : ${JENKINS_HOME:="/var/jenkins_home"}
 export -f copy_reference_file
+mkdir -p ${JENKINS_HOME}
 touch "${COPY_REFERENCE_FILE_LOG}" || (echo "Can not write to ${COPY_REFERENCE_FILE_LOG}. Wrong volume permissions?" && exit 1)
 echo "--- Copying files at $(date)" >> "$COPY_REFERENCE_FILE_LOG"
 find /usr/share/jenkins/ref/ -type f -exec bash -c "copy_reference_file '{}'" \;
@@ -32,8 +33,8 @@ find /usr/share/jenkins/ref/ -type f -exec bash -c "copy_reference_file '{}'" \;
 if [[ $# -lt 1 ]] || [[ "$1" == "--"* ]]; then
 	# Much of this depends upon nix so be sure it's installed before running
 	# Jenkins.
-	if [ "`which nix-build`" == "" ]; then
-		curl https://nixos.org/nix/install | sh
+	if [ ! -f  ~/.nix-profile/etc/profile.d/nix.sh ]; then
+		cd ~ && curl https://nixos.org/nix/install | sh
 	fi
 	eval "exec java $JAVA_OPTS -jar /usr/share/jenkins/jenkins.war $JENKINS_OPTS \"\$@\""
 fi

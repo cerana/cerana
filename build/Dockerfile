@@ -4,12 +4,13 @@ ARG USER=cerana
 ARG GROUP=cerana
 ARG UID=10000
 ARG GID=10000
+ARG HOME=/home/$USER
 
 ARG JENKINS_VERSION=2.4
 ARG JENKINS_SHA=c33df09d0310fc2f62c9d14b84d06fe8529307ea
 ARG JENKINS_WEB_PORT=8080
 ARG JENKINS_SLAVE_PORT=50000
-ARG JENKINS_HOME=/home/${USER}/.jenkins
+ARG JENKINS_HOME=${HOME}/.jenkins
 
 USER root
 RUN apt-get update && \
@@ -35,8 +36,6 @@ RUN curl -fsSL https://github.com/krallin/tini/releases/download/v0.5.0/tini-sta
 VOLUME /nix
 
 ENV LC_ALL C
-WORKDIR /home/${USER}
-# RUN curl https://nixos.org/nix/install | sh
 
 #+++++++++++++++
 # For Jenkins
@@ -47,7 +46,7 @@ WORKDIR /home/${USER}
 # Jenkins home directory is a volume, so configuration and build history
 # can be persisted and survive image upgrades
 #-
-VOLUME ${JENKINS_HOME}
+VOLUME ${HOME}
 
 #+
 # Plugins and config for this are here.
@@ -62,7 +61,7 @@ RUN curl -fsSL \
   -o /usr/share/jenkins/jenkins.war && \
   echo "$JENKINS_SHA  /usr/share/jenkins/jenkins.war" | sha1sum -c -
 
-RUN chown -R ${USER} ${JENKINS_HOME} /usr/share/jenkins/ref
+RUN chown -R ${USER} /usr/share/jenkins/ref
 
 EXPOSE ${JENKINS_WEB_PORT}
 EXPOSE ${JENKINS_SLAVE_PORT}
@@ -71,6 +70,7 @@ ENV JENKINS_UC https://updates.jenkins.io
 ENV JENKINS_VERSION ${JENKINS_VERSION}
 ENV JENKINS_SHA ${JENKINS_SHA}
 ENV COPY_REFERENCE_FILE_LOG ${JENKINS_HOME}/copy_reference_file.log
+ENV JENKINS_HOME ${JENKINS_HOME}
 
 USER ${USER}
 
