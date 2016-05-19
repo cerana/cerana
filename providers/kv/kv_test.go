@@ -2,8 +2,11 @@ package kv
 
 import (
 	"io/ioutil"
+	"path/filepath"
 	"testing"
+	"time"
 
+	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/internal/tests/common"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -42,7 +45,10 @@ func (s *KVS) SetupSuite() {
 
 	s.keys = []string{"fee", "fi", "fo", "fum"}
 
-	s.KV, err = New(s.config)
+	tracker, err := acomm.NewTracker(filepath.Join(dir, "tracker.sock"), nil, nil, 5*time.Second)
+	s.Require().NoError(err)
+
+	s.KV, err = New(s.config, tracker)
 	s.Require().NoError(err)
 }
 
