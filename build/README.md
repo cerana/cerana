@@ -117,9 +117,11 @@ All of the nix commands are now available from the command line.
 Running the Build
 -----------------
 
-TBD -- a default job is being created and packaged in a tar file which can then be unpacked into the Jenkins home directory. This job will pull Cerana from github and then start the Nix package manager to run the build.
+The default job is configured to poll every 15 minutes for changes to the *cerana* repository and will run automatically shortly after you load the job configuration.
+
+**NOTE:** If you have a slow network connection you may encounter one or more timeouts when the job initially runs. This is because some fairly large components are downloaded from the repository and Jenkins is configured to timeout after 10 minutes by default and *Nix* may also timeout. Because of this it may be necessary to restart the job. Once the first build finishes this will no longer be a problem.
 
 Accessing Your Build Output
 ---------------------------
 
-TBD
+The build output (e.g. kernel image and ram disk image) can be downloaded using the Jenkins web interface. If you've been using the above examples the URL is: http://localhost:8080/job/build-cerana/ws/result/
