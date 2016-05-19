@@ -31,7 +31,7 @@ func (s *statsPusher) getNodeInfo() (*clusterconf.Node, error) {
 	}
 	requests := make(map[string]*acomm.Request)
 	for task := range tasks {
-		requests[task], err = acomm.NewRequest(acomm.RequestOptions{Task: "task"})
+		requests[task], err = acomm.NewRequest(acomm.RequestOptions{Task: task})
 		if err != nil {
 			return nil, err
 		}
@@ -40,9 +40,11 @@ func (s *statsPusher) getNodeInfo() (*clusterconf.Node, error) {
 	multiRequest := acomm.NewMultiRequest(s.tracker, s.config.requestTimeout())
 	for name, req := range requests {
 		if err := multiRequest.AddRequest(name, req); err != nil {
+			fmt.Println("failed to add")
 			break
 		}
 		if err := acomm.Send(s.config.coordinatorURL(), req); err != nil {
+			fmt.Println(name, err)
 			multiRequest.RemoveRequest(req)
 			break
 		}
@@ -95,7 +97,7 @@ func (s *statsPusher) sendNodeHeartbeat(data *clusterconf.Node) error {
 		Task:           "node-heartbeat",
 		TaskURL:        s.config.heartbeatURL(),
 		ResponseHook:   s.tracker.URL(),
-		Args:           data,
+		Args:           &clusterconf.NodePayload{data},
 		SuccessHandler: rh,
 		ErrorHandler:   rh,
 	})
