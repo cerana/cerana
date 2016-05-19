@@ -36,13 +36,13 @@ func (s *statsPusher) bundleHeartbeats() error {
 
 func (s *statsPusher) getBundles() ([]*clusterconf.Bundle, error) {
 	requests := make(map[string]*acomm.Request)
-	localReq, err := acomm.NewRequest(acomm.RequestOptions{Task: "service-bundles"})
+	localReq, err := acomm.NewRequest(acomm.RequestOptions{Task: "systemd-list"})
 	if err != nil {
 		return nil, err
 	}
 	requests["local"] = localReq
 	knownReq, err := acomm.NewRequest(acomm.RequestOptions{
-		Task:    "systemd-list",
+		Task:    "list-bundles",
 		TaskURL: s.config.heartbeatURL(),
 	})
 	requests["known"] = knownReq
@@ -70,7 +70,7 @@ func (s *statsPusher) getBundles() ([]*clusterconf.Bundle, error) {
 		return nil, err
 	}
 
-	bundles := make([]*clusterconf.Bundle, len(localBundles))
+	bundles := make([]*clusterconf.Bundle, 0, len(localBundles))
 	for _, local := range localBundles {
 		for _, known := range knownBundles.Bundles {
 			if known.ID == local {
@@ -95,6 +95,9 @@ func (s *statsPusher) getSerial() (string, error) {
 		ErrorHandler:   rh,
 	})
 	if err != nil {
+		return "", err
+	}
+	if err := s.tracker.TrackRequest(req, s.config.requestTimeout()); err != nil {
 		return "", err
 	}
 	if err := acomm.Send(s.config.coordinatorURL(), req); err != nil {
@@ -171,7 +174,7 @@ func extractBundles(units []dbus.UnitStatus) []int {
 		// bundleID:serviceID
 		parts := strings.Split(unit.Name, ":")
 		bundleID, err := strconv.Atoi(parts[0])
-		if err != nil && len(parts) == 2 && uuid.Parse(parts[1]) != nil {
+		if err == nil && len(parts) == 2 && uuid.Parse(parts[1]) != nil {
 			dedupe[bundleID] = true
 		}
 	}
