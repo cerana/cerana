@@ -3,6 +3,7 @@ package clusterconf
 import (
 	"errors"
 	"math/rand"
+	"net"
 	"net/url"
 	"time"
 
@@ -146,6 +147,9 @@ func (c *MockClusterConf) BundleHeartbeat(req *acomm.Request) (interface{}, *url
 		return nil, nil, errors.New("bundle config not found")
 	}
 
+	if bundle.Nodes == nil {
+		bundle.Nodes = make(map[string]net.IP)
+	}
 	bundle.Nodes[args.Serial] = args.IP
 	return &BundlePayload{bundle}, nil, nil
 }

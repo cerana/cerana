@@ -119,7 +119,7 @@ func (s *MockSystemd) Get(req *acomm.Request) (interface{}, *url.URL, error) {
 // List lists mock services.
 func (s *MockSystemd) List(req *acomm.Request) (interface{}, *url.URL, error) {
 	list := make([]dbus.UnitStatus, 0, len(s.Data.Statuses))
-	for _, status := range list {
+	for _, status := range s.Data.Statuses {
 		list = append(list, status)
 	}
 	return &ListResult{list}, nil, nil
