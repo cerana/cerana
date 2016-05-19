@@ -151,12 +151,6 @@ var typeE2KV = map[string]kv.EventType{
 }
 
 func (e *ekv) Watch(prefix string, index uint64, stop chan struct{}) (chan kv.Event, chan error, error) {
-	bStop := make(chan bool)
-	go func() {
-		<-stop
-		bStop <- true
-	}()
-
 	responses := make(chan *etcd.Response)
 	events := make(chan kv.Event)
 	go func() {
@@ -173,8 +167,16 @@ func (e *ekv) Watch(prefix string, index uint64, stop chan struct{}) (chan kv.Ev
 	}()
 
 	errors := make(chan error)
+	stopEtcd := make(chan bool)
 	go func() {
-		_, err := e.e.Watch(prefix, index, true, responses, bStop)
+		<-stop
+		stopEtcd <- true
+		close(events)
+		close(errors)
+	}()
+
+	go func() {
+		_, err := e.e.Watch(prefix, index, true, responses, stopEtcd)
 		if err != nil && err != etcd.ErrWatchStoppedByUser {
 			errors <- err
 		}

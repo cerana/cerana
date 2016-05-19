@@ -342,12 +342,11 @@ func (s *KVSuite) TestWatch() {
 	close(stop)
 	s.Require().NoError(s.KV.Set(key, ""))
 
-	select {
-	case event := <-events:
+	for event := range events {
 		s.Require().FailNow("unexpected event", "%v", event)
-	case err := <-errors:
+	}
+	for err := range errors {
 		s.Require().FailNow("unexpected error", "%v", err)
-	case <-time.After(100 * time.Millisecond):
 	}
 }
 

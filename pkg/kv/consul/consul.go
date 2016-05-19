@@ -211,6 +211,8 @@ func (c *ckv) Watch(prefix string, lastIndex uint64, stop chan struct{}) (chan k
 	go func() {
 		<-stop
 		wp.Stop()
+		close(events)
+		close(errs)
 	}()
 	go func() {
 		err = wp.Run(c.config.Address)
