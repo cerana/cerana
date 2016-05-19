@@ -1,6 +1,7 @@
 package kv
 
 import (
+	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/pkg/kv"
 	_ "github.com/cerana/cerana/pkg/kv/consul" // register consul with pkg/kv
 	"github.com/cerana/cerana/provider"
@@ -8,11 +9,13 @@ import (
 
 // KV is a provider of kv functionality.
 type KV struct {
-	kv kv.KV
+	kv      kv.KV
+	config  *Config
+	tracker *acomm.Tracker
 }
 
 // New creates a new instance of KV.
-func New(config *Config) (*KV, error) {
+func New(config *Config, tracker *acomm.Tracker) (*KV, error) {
 	addr, err := config.Address()
 	if err != nil {
 		return nil, err
@@ -23,7 +26,7 @@ func New(config *Config) (*KV, error) {
 		return nil, err
 	}
 
-	return &KV{kv: k}, nil
+	return &KV{kv: k, config: config, tracker: tracker}, nil
 }
 
 // RegisterTasks registers all of KV's task handlers with the server.
