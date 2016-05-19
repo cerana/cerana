@@ -100,7 +100,16 @@ func NewMockMetrics() *MockMetrics {
 			Disk: &DiskResult{
 				IO:         make(map[string]disk.IOCountersStat),
 				Partitions: []disk.PartitionStat{},
-				Usage:      []*disk.UsageStat{},
+				Usage: []*disk.UsageStat{
+					{
+						Path:        "/",
+						Fstype:      "zfs",
+						Total:       100000,
+						Free:        50000,
+						Used:        50000,
+						UsedPercent: 0.5,
+					},
+				},
 			},
 			Hardware: struct{}{},
 			Host: &host.InfoStat{
