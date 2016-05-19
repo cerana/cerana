@@ -73,7 +73,7 @@ docker logs cerana-jenkins
 Installing the Default Job
 --------------------------
 
-If you want you can now install the default job named `build-cerana` into the Jenkins home directory. Simply copy the default job from the `cerana/build` directory to the Jenkins `jobs` directory. **NOTE:** It's necessary to do this step after starting Jenkins because the job may require one or more of the plugins which are installed the first timne Jenkins is run.
+If you want you can now install the default job named `build-cerana` into the Jenkins home directory. Simply copy the default job from the `cerana/build` directory to the Jenkins `jobs` directory. **NOTE:** It's necessary to do this step after starting Jenkins because the job may require one or more of the plugins which are installed the first time Jenkins is run.
 
 ```
 cp -r <ceranaGitDirectory>/build/jobs ${PWD}/cerana/jenkins_home/.jenkins/jobs
