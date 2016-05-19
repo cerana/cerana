@@ -41,4 +41,8 @@ func (k *KV) RegisterTasks(server *provider.Server) {
 	// cas.go
 	server.RegisterTask("kv-remove", k.remove)
 	server.RegisterTask("kv-update", k.update)
+
+	// watch.go
+	server.RegisterTask("kv-watch", k.watch)
+	server.RegisterTask("kv-stop", k.stop)
 }
