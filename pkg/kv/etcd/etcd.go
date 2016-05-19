@@ -224,7 +224,7 @@ func (e *ekv) Lock(key string, ttl time.Duration) (kv.Lock, error) {
 	}
 
 	value := string(v.Data)
-	if value != "locked=true" || value != "locked=false" {
+	if value != "locked=true" && value != "locked=false" {
 		return nil, errors.New("key does not contain a valid Lock value")
 	}
 
