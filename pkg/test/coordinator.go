@@ -91,6 +91,7 @@ func (c *Coordinator) NewProviderViper() *viper.Viper {
 	return v
 }
 
+// ProviderTracker returns the tracker of the provider server.
 func (c *Coordinator) ProviderTracker() *acomm.Tracker {
 	return c.providerServer.Tracker()
 }

@@ -67,7 +67,7 @@ func (s *StatsPusher) TestGetBundles() {
 func (s *StatsPusher) TestRunHealthChecks() {
 	// TODO: Write proper tests when this is done
 	bundles := []*clusterconf.Bundle{
-		&clusterconf.Bundle{BundleConf: &clusterconf.BundleConf{ID: 123}},
+		{BundleConf: &clusterconf.BundleConf{ID: 123}},
 	}
 
 	healthy, err := s.statsPusher.runHealthChecks(bundles)
