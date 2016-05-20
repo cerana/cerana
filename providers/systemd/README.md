@@ -141,6 +141,104 @@ type ListResult struct {
 
 ListResult is the result of the List handler.
 
+#### type MockSystemd
+
+```go
+type MockSystemd struct {
+	Data *MockSystemdData
+}
+```
+
+MockSystemd is a mock version of the Systemd provider.
+
+#### func  NewMockSystemd
+
+```go
+func NewMockSystemd() *MockSystemd
+```
+NewMockSystemd creates a new MockSystemd.
+
+#### func (*MockSystemd) Create
+
+```go
+func (s *MockSystemd) Create(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Create creates a mock unit file.
+
+#### func (*MockSystemd) Disable
+
+```go
+func (s *MockSystemd) Disable(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Disable disables a mock service.
+
+#### func (*MockSystemd) Enable
+
+```go
+func (s *MockSystemd) Enable(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Enable enables a mock service.
+
+#### func (*MockSystemd) Get
+
+```go
+func (s *MockSystemd) Get(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Get retrieves a mock service.
+
+#### func (*MockSystemd) List
+
+```go
+func (s *MockSystemd) List(req *acomm.Request) (interface{}, *url.URL, error)
+```
+List lists mock services.
+
+#### func (*MockSystemd) RegisterTasks
+
+```go
+func (s *MockSystemd) RegisterTasks(server *provider.Server)
+```
+RegisterTasks registers the MockSystemd tasks.
+
+#### func (*MockSystemd) Remove
+
+```go
+func (s *MockSystemd) Remove(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Remove removes a mock unit file.
+
+#### func (*MockSystemd) Restart
+
+```go
+func (s *MockSystemd) Restart(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Restart restarts a mock service.
+
+#### func (*MockSystemd) Start
+
+```go
+func (s *MockSystemd) Start(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Start starts a mock service.
+
+#### func (*MockSystemd) Stop
+
+```go
+func (s *MockSystemd) Stop(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Stop stops a mock service.
+
+#### type MockSystemdData
+
+```go
+type MockSystemdData struct {
+	Statuses  map[string]dbus.UnitStatus
+	UnitFiles map[string]bool
+}
+```
+
+MockSystemdData is the in-memory data structure for the MockSystemd.
+
 #### type RemoveArgs
 
 ```go

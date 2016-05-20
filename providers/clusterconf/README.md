@@ -234,12 +234,12 @@ func (c *ClusterConf) GetService(req *acomm.Request) (interface{}, *url.URL, err
 ```
 GetService retrieves a service.
 
-#### func (*ClusterConf) ListBundle
+#### func (*ClusterConf) ListBundles
 
 ```go
-func (c *ClusterConf) ListBundle(req *acomm.Request) (interface{}, *url.URL, error)
+func (c *ClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL, error)
 ```
-ListBundle retrieves a bundle.
+ListBundles retrieves a bundle.
 
 #### func (*ClusterConf) ListDatasets
 
@@ -470,6 +470,171 @@ type IDArgs struct {
 
 IDArgs are arguments for operations requiring only an ID.
 
+#### type MockClusterConf
+
+```go
+type MockClusterConf struct {
+	Data *MockClusterData
+}
+```
+
+MockClusterConf is a mock ClusterConf provider.
+
+#### func  NewMockClusterConf
+
+```go
+func NewMockClusterConf() *MockClusterConf
+```
+NewMockClusterConf creates a new MockClusterConf.
+
+#### func (*MockClusterConf) BundleHeartbeat
+
+```go
+func (c *MockClusterConf) BundleHeartbeat(req *acomm.Request) (interface{}, *url.URL, error)
+```
+BundleHeartbeat adds a mock bundle heartbeat.
+
+#### func (*MockClusterConf) DatasetHeartbeat
+
+```go
+func (c *MockClusterConf) DatasetHeartbeat(req *acomm.Request) (interface{}, *url.URL, error)
+```
+DatasetHeartbeat adds a mock dataset heartbeat.
+
+#### func (*MockClusterConf) DeleteBundle
+
+```go
+func (c *MockClusterConf) DeleteBundle(req *acomm.Request) (interface{}, *url.URL, error)
+```
+DeleteBundle removes a mock bundle.
+
+#### func (*MockClusterConf) DeleteDataset
+
+```go
+func (c *MockClusterConf) DeleteDataset(req *acomm.Request) (interface{}, *url.URL, error)
+```
+DeleteDataset removes a mock dataset.
+
+#### func (*MockClusterConf) DeleteService
+
+```go
+func (c *MockClusterConf) DeleteService(req *acomm.Request) (interface{}, *url.URL, error)
+```
+DeleteService removes a mock service.
+
+#### func (*MockClusterConf) GetBundle
+
+```go
+func (c *MockClusterConf) GetBundle(req *acomm.Request) (interface{}, *url.URL, error)
+```
+GetBundle retrieves a mock bundle.
+
+#### func (*MockClusterConf) GetDataset
+
+```go
+func (c *MockClusterConf) GetDataset(req *acomm.Request) (interface{}, *url.URL, error)
+```
+GetDataset retrieves a mock dataset.
+
+#### func (*MockClusterConf) GetDefaults
+
+```go
+func (c *MockClusterConf) GetDefaults(req *acomm.Request) (interface{}, *url.URL, error)
+```
+GetDefaults retrieves the mock default values.
+
+#### func (*MockClusterConf) GetNode
+
+```go
+func (c *MockClusterConf) GetNode(req *acomm.Request) (interface{}, *url.URL, error)
+```
+GetNode retrieves a mock node.
+
+#### func (*MockClusterConf) GetNodesHistory
+
+```go
+func (c *MockClusterConf) GetNodesHistory(req *acomm.Request) (interface{}, *url.URL, error)
+```
+GetNodesHistory retrieves mock nodes history.
+
+#### func (*MockClusterConf) GetService
+
+```go
+func (c *MockClusterConf) GetService(req *acomm.Request) (interface{}, *url.URL, error)
+```
+GetService retrieves a mock service.
+
+#### func (*MockClusterConf) ListBundles
+
+```go
+func (c *MockClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL, error)
+```
+ListBundles retrieves all mock bundles.
+
+#### func (*MockClusterConf) ListDatasets
+
+```go
+func (c *MockClusterConf) ListDatasets(req *acomm.Request) (interface{}, *url.URL, error)
+```
+ListDatasets lists all mock datasets.
+
+#### func (*MockClusterConf) NodeHeartbeat
+
+```go
+func (c *MockClusterConf) NodeHeartbeat(req *acomm.Request) (interface{}, *url.URL, error)
+```
+NodeHeartbeat adds a mock node heartbeat.
+
+#### func (*MockClusterConf) RegisterTasks
+
+```go
+func (c *MockClusterConf) RegisterTasks(server *provider.Server)
+```
+RegisterTasks registers all of MockClusterConf's tasks.
+
+#### func (*MockClusterConf) UpdateBundle
+
+```go
+func (c *MockClusterConf) UpdateBundle(req *acomm.Request) (interface{}, *url.URL, error)
+```
+UpdateBundle updates a mock bundle.
+
+#### func (*MockClusterConf) UpdateDataset
+
+```go
+func (c *MockClusterConf) UpdateDataset(req *acomm.Request) (interface{}, *url.URL, error)
+```
+UpdateDataset updates a mock dataset.
+
+#### func (*MockClusterConf) UpdateDefaults
+
+```go
+func (c *MockClusterConf) UpdateDefaults(req *acomm.Request) (interface{}, *url.URL, error)
+```
+UpdateDefaults updates the mock default values.
+
+#### func (*MockClusterConf) UpdateService
+
+```go
+func (c *MockClusterConf) UpdateService(req *acomm.Request) (interface{}, *url.URL, error)
+```
+UpdateService updates a mock service.
+
+#### type MockClusterData
+
+```go
+type MockClusterData struct {
+	Services map[string]*Service
+	Bundles  map[int]*Bundle
+	Datasets map[string]*Dataset
+	Nodes    map[string]*Node
+	History  NodesHistory
+	Defaults *Defaults
+}
+```
+
+MockClusterData is the in-memory data structure for a MockClusterConf.
+
 #### type Node
 
 ```go
@@ -490,7 +655,7 @@ Node is current information about a hardware node.
 #### type NodeHistory
 
 ```go
-type NodeHistory map[time.Time]Node
+type NodeHistory map[time.Time]*Node
 ```
 
 NodeHistory is a set of historical information for a node.
@@ -530,7 +695,7 @@ NodesHistory is the historical information for multiple nodes.
 
 ```go
 type NodesHistoryResult struct {
-	History *NodesHistory `json:"history"`
+	History NodesHistory `json:"history"`
 }
 ```
 
