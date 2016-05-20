@@ -138,7 +138,7 @@ func NewMockMetrics() *MockMetrics {
 			},
 			Network: &NetworkResult{
 				IO: []net.IOCountersStat{
-					net.IOCountersStat{
+					{
 						Name:        "fooIface",
 						BytesSent:   12345,
 						BytesRecv:   54321,
@@ -147,12 +147,12 @@ func NewMockMetrics() *MockMetrics {
 					},
 				},
 				Interfaces: []net.InterfaceStat{
-					net.InterfaceStat{
+					{
 						Name:         "fooIface",
 						MTU:          1500,
 						HardwareAddr: "en0",
 						Addrs: []net.InterfaceAddr{
-							net.InterfaceAddr{"123.123.123.123"},
+							{"123.123.123.123"},
 						},
 					},
 				},
@@ -170,26 +170,32 @@ func (m *MockMetrics) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("metrics-network", m.Network)
 }
 
+// CPU returns mock CPU information.
 func (m *MockMetrics) CPU(req *acomm.Request) (interface{}, *url.URL, error) {
 	return m.Data.CPU, nil, nil
 }
 
+// Disk returns mock disk information.
 func (m *MockMetrics) Disk(req *acomm.Request) (interface{}, *url.URL, error) {
 	return m.Data.Disk, nil, nil
 }
 
+// Hardware returns mock hardware information.
 func (m *MockMetrics) Hardware(req *acomm.Request) (interface{}, *url.URL, error) {
 	return m.Data.Hardware, nil, nil
 }
 
+// Host returns mock host information.
 func (m *MockMetrics) Host(req *acomm.Request) (interface{}, *url.URL, error) {
 	return m.Data.Host, nil, nil
 }
 
+// Memory returns mock memory information.
 func (m *MockMetrics) Memory(req *acomm.Request) (interface{}, *url.URL, error) {
 	return m.Data.Memory, nil, nil
 }
 
+// Network returns mock network information.
 func (m *MockMetrics) Network(req *acomm.Request) (interface{}, *url.URL, error) {
 	return m.Data.Network, nil, nil
 }

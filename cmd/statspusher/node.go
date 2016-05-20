@@ -97,7 +97,7 @@ func (s *statsPusher) sendNodeHeartbeat(data *clusterconf.Node) error {
 		Task:           "node-heartbeat",
 		TaskURL:        s.config.heartbeatURL(),
 		ResponseHook:   s.tracker.URL(),
-		Args:           &clusterconf.NodePayload{data},
+		Args:           &clusterconf.NodePayload{Node: data},
 		SuccessHandler: rh,
 		ErrorHandler:   rh,
 	})
