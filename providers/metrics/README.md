@@ -98,6 +98,87 @@ func (m *Metrics) RegisterTasks(server *provider.Server)
 ```
 RegisterTasks registers all of Metric's task handlers with the server.
 
+#### type MockMetrics
+
+```go
+type MockMetrics struct {
+	Data *MockMetricsData
+}
+```
+
+MockMetrics is a mock Metrics provider.
+
+#### func  NewMockMetrics
+
+```go
+func NewMockMetrics() *MockMetrics
+```
+NewMockMetrics creates a new MockMetrics and populates default data.
+
+#### func (*MockMetrics) CPU
+
+```go
+func (m *MockMetrics) CPU(req *acomm.Request) (interface{}, *url.URL, error)
+```
+CPU returns mock CPU information.
+
+#### func (*MockMetrics) Disk
+
+```go
+func (m *MockMetrics) Disk(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Disk returns mock disk information.
+
+#### func (*MockMetrics) Hardware
+
+```go
+func (m *MockMetrics) Hardware(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Hardware returns mock hardware information.
+
+#### func (*MockMetrics) Host
+
+```go
+func (m *MockMetrics) Host(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Host returns mock host information.
+
+#### func (*MockMetrics) Memory
+
+```go
+func (m *MockMetrics) Memory(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Memory returns mock memory information.
+
+#### func (*MockMetrics) Network
+
+```go
+func (m *MockMetrics) Network(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Network returns mock network information.
+
+#### func (*MockMetrics) RegisterTasks
+
+```go
+func (m *MockMetrics) RegisterTasks(server *provider.Server)
+```
+RegisterTasks registes all MockMetric task handlers.
+
+#### type MockMetricsData
+
+```go
+type MockMetricsData struct {
+	CPU      *CPUResult
+	Disk     *DiskResult
+	Hardware interface{}
+	Host     *host.InfoStat
+	Memory   *MemoryResult
+	Network  *NetworkResult
+}
+```
+
+MockMetricsData is the in-memory data structure for the MockMetrics.
+
 #### type NetworkResult
 
 ```go
