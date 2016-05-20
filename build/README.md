@@ -14,33 +14,28 @@ To build the Docker image:
 docker build --rm=true --tag cerana-jenkins:1 .
 ```
 
-In this case `<user>` in the examples below is "cerana".
-
 The Dockerfile installs Jenkins and configures it to run as the "cerana" user rather than the typical "jenkins" user. The Jenkins home directory is setup to be a volume which can be accessed from outside the running container. This is handy for both using pre-configured jobs and to retrieve build results.
 
-If you prefer you can override the Jenkins user to be you. This simplifies accessing the directories shared with the container. This also helps maintain job configurations outside of Jenkins.
+If you prefer you can override the Jenkins UID and GID to match yours. This simplifies accessing the directories shared with the container. This also helps maintain job configurations outside of Jenkins.
 
 ```
 docker build --rm=true --tag cerana-jenkins:1 \
-  --build-arg USER=$USER --build-arg GROUP=$USER \
   --build-arg UID=`id -u` --build-arg GID=`id -g` .
 ```
-
-In this case `<user>` in the examples below is "$USER".
 
 To run the Docker image *cd* to the directory where you'd like the Jenkins home directory and the Nix store to reside and create directories to be shared. If you are running Jenkins as your user then the permissions do not need to be modified (e.g. do not use `-m 777`).
 
 ```
-mkdir -p -m 777 ${PWD}/cerana/jenkins_home
-mkdir -p -m 777 ${PWD}/cerana/nix
+mkdir -p -m 777 ${PWD}/cerana/{jenkins_home,nix}
 ```
 
 Then to run Jenkins:
 
 ```
 docker run -p 8080:8080 -p 50000:50000 \
-  -v ${PWD}/cerana/jenkins_home:/home/<user> \
+  -v ${PWD}/cerana/jenkins_home:/home/cerana \
   -v ${PWD}/cerana/nix:/nix \
+  --name cerana-jenkins \
   cerana-jenkins:1
 ```
 
@@ -58,7 +53,7 @@ In most cases you will want to run Jenkins in the background. e.g.:
 
 ```
 docker run -d -p 8080:8080 -p 50000:50000 \
-  -v ${PWD}/cerana/jenkins_home:/home/<user> \
+  -v ${PWD}/cerana/jenkins_home:/home/cerana \
   -v ${PWD}/cerana/nix:/nix \
   --name cerana-jenkins \
   cerana-jenkins:1
@@ -76,7 +71,7 @@ Installing the Default Job
 If you want you can now install the default job named `build-cerana` into the Jenkins home directory. Simply copy the default job from the `cerana/build` directory to the Jenkins `jobs` directory. **NOTE:** It's necessary to do this step after starting Jenkins because the job may require one or more of the plugins which are installed the first time Jenkins is run.
 
 ```
-cp -r <ceranaGitDirectory>/build/jobs ${PWD}/cerana/jenkins_home/.jenkins/jobs
+cp -r <ceranaGitDirectory>/build/jobs/* ${PWD}/cerana/jenkins_home/.jenkins/jobs/
 ```
 
 To activate the job you need to tell Jenkins to reload the configuration files (Manage Jenkins -> Reload Configuration from Disk).
@@ -87,7 +82,7 @@ Connect to a Running Jenkins Container
 At times you may want to check the state of a running container. Here's an example for how to connect:
 
 ```
-docker exec -it <containerID> /bin/bash -i -l
+docker exec -it cerana-jenkins /bin/bash -i -l
 ```
 
 NOTE: The `-l` is the letter `l` -- not the number `1`.
@@ -101,7 +96,7 @@ If you prefer you can instead use the container in console mode. The command is 
 
 ```
 docker run -p 8080:8080 -p 50000:50000 \
-  -v ${PWD}/cerana/jenkins_home:/home/<user> \
+  -v ${PWD}/cerana/jenkins_home:/home/cerana \
   -v ${PWD}/cerana/nix:/nix \
   -it cerana-jenkins:1 /bin/bash
 ```
