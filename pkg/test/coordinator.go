@@ -9,7 +9,6 @@ import (
 
 	"github.com/cerana/cerana/coordinator"
 	"github.com/cerana/cerana/provider"
-	"github.com/pborman/uuid"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -27,7 +26,7 @@ type Coordinator struct {
 // NewCoordinator creates a new Coordinator. The coordinator sever will be
 // given a temporary socket directory and external port.
 func NewCoordinator(baseDir string) (*Coordinator, error) {
-	coordinatorName := uuid.New()
+	coordinatorName := "testCoordinator"
 	socketDir, err := ioutil.TempDir(baseDir, coordinatorName)
 	if err != nil {
 		return nil, err
@@ -63,7 +62,7 @@ func NewCoordinator(baseDir string) (*Coordinator, error) {
 		coordinator:    coordinatorServer,
 	}
 
-	c.providerName = uuid.New()
+	c.providerName = "testProvider"
 	providerFlags := pflag.NewFlagSet(c.providerName, pflag.ContinueOnError)
 	providerConfig := provider.NewConfig(providerFlags, c.NewProviderViper())
 	if err = providerFlags.Parse([]string{}); err != nil {
