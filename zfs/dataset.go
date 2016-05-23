@@ -10,6 +10,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/cerana/cerana/pkg/errorutils"
 	"github.com/cerana/cerana/zfs/nv"
 	gzfs "github.com/mistifyio/go-zfs"
 )
@@ -482,13 +483,7 @@ func (pfc *pipeFdCloser) Fd() uintptr {
 }
 
 func (pfc *pipeFdCloser) Close() error {
-	var err error
-	for _, theErr := range []error{<-pfc.done, pfc.r.Close(), pfc.w.Close()} {
-		if err == nil {
-			err = theErr
-		}
-	}
-	return err
+	return errorutils.First(<-pfc.done, pfc.r.Close(), pfc.w.Close())
 }
 
 func (pfc *pipeFdCloser) Copy(output io.Writer) {
