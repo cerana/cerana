@@ -1,0 +1,78 @@
+#!/bin/bash
+
+CERANA_BOOTCFG=/tmp/cerana_bootcfg
+
+. init_logging
+
+/bin/mount -t devtmpfs devtmpfs /dev
+/bin/mount -t proc -o nodev,noexec,nosuid proc /proc
+/bin/mount -t sysfs -o nodev,noexec,nosuid sysfs /sys
+/bin/mount -t tmpfs -o mode=755,nodev tmpfs /run
+/bin/mount -t tmpfs -o mode=1777 tmpfs /tmp
+/bin/mount -t tmpfs -o mode=1777 tmpfs /var/tmp
+
+# parse the kernel command line
+parse_logging_params </proc/cmdline
+
+# Turn on logging
+start_logging
+
+/bin/systemd-tmpfiles --create
+/lib/systemd/systemd-modules-load
+/lib/systemd/systemd-udevd --daemon
+
+/bin/udevadm trigger
+/bin/udevadm settle
+
+/etc/pre-init.d/gen-hostid.sh
+
+/etc/pre-init.d/net-init.sh start
+
+# Source the boot configuration that was generated with net-init.sh
+if [ -f $CERANA_BOOTCFG ]; then
+	. $CERANA_BOOTCFG
+fi
+
+# Check for rescue mode, and drop to a shell prompt if so. This is to give
+# the user the opportunity to fix a zpool or other things early in the boot process.
+if [ -n "$CERANA_RESCUE" ]; then
+	echo "Entering RESCUE MODE..."
+	/bin/bash
+	reboot
+else
+	# Turn off logging
+	stop_logging
+	/etc/pre-init.d/init-zpools.sh
+	# Turn on logging
+	start_logging
+fi
+
+/etc/pre-init.d/mount-aufs.sh
+
+if [ -f /tmp/.ifstate ]; then
+    /etc/pre-init.d/net-init.sh stop
+fi
+
+if [ -f /etc/timezone ]; then
+  TZ=`cat /etc/timezone`
+  export TZ
+  echo "Setting system time zone to $TZ"
+  ln -sf ../usr/share/zoneinfo/${TZ} /etc/localtime
+fi
+
+if [ -f /etc/machine-id ]; then
+  cp /etc/machine-id /tmp
+  mv /tmp/machine-id /etc/machine-id
+fi
+
+if [ -f /etc/hostid ]; then
+  cp /etc/hostid /tmp
+  mv /tmp/hostid /etc/hostid
+fi
+
+kill `pgrep systemd-udevd`
+
+# Turn off logging
+stop_logging
+
+exec /sbin/init $*
