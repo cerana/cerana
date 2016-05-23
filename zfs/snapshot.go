@@ -30,7 +30,7 @@ func snapshot(pool string, snapNames []string, props map[string]string) (map[str
 	}
 
 	out := make([]byte, 1024)
-	err = ioctl(zfs, pool, encoded.Bytes(), out)
+	err = ioctl(zfs(), pool, encoded.Bytes(), out)
 
 	var errlist map[string]syscall.Errno
 	if errno, ok := err.(syscall.Errno); ok && errno == syscall.EEXIST {

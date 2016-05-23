@@ -35,5 +35,5 @@ func send(name string, outputFD uintptr, fromSnap string, largeBlockOK, embedOK 
 		return err
 	}
 
-	return ioctl(zfs, name, encoded.Bytes(), nil)
+	return ioctl(zfs(), name, encoded.Bytes(), nil)
 }

@@ -23,7 +23,7 @@ func rename(name, newName string, recursive bool) (string, error) {
 	}
 
 	out := make([]byte, 1024)
-	err = ioctl(zfs, name, encoded.Bytes(), out)
+	err = ioctl(zfs(), name, encoded.Bytes(), out)
 
 	var failedName string
 	if err != nil && recursive {

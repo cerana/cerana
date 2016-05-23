@@ -19,5 +19,5 @@ func destroy(name string, deferFlag bool) error {
 		return err
 	}
 
-	return ioctl(zfs, name, encoded.Bytes(), nil)
+	return ioctl(zfs(), name, encoded.Bytes(), nil)
 }

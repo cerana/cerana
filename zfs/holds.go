@@ -23,7 +23,7 @@ func holds(name string) ([]string, error) {
 	out := make([]byte, 1024)
 	copy(out, emptyList)
 
-	err = ioctl(zfs, name, encoded.Bytes(), out)
+	err = ioctl(zfs(), name, encoded.Bytes(), out)
 	if err != nil {
 		return nil, err
 	}
