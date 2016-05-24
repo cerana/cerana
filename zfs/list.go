@@ -9,6 +9,7 @@ import (
 	"os"
 	"syscall"
 
+	"github.com/cerana/cerana/pkg/errorutils"
 	"github.com/cerana/cerana/zfs/nv"
 )
 
@@ -74,11 +75,7 @@ func list(name string, types map[string]bool, recurse bool, depth uint64) (ret [
 		return
 	}
 	defer func() {
-		for _, theErr := range []error{writer.Close(), pipeReader.Close()} {
-			if err == nil {
-				err = theErr
-			}
-		}
+		err = errorutils.First(err, writer.Close(), pipeReader.Close())
 	}()
 
 	opts := map[string]interface{}{
