@@ -25,8 +25,6 @@ func TestHealth(t *testing.T) {
 func (s *health) SetupSuite() {
 	s.responseHook, _ = url.ParseRequestURI("unix:///tmp/foobar")
 
-	s.health = &healthp.Health{}
-
 	v := viper.New()
 	flagset := pflag.NewFlagSet("go-health", pflag.PanicOnError)
 	config := provider.NewConfig(flagset, v)
@@ -38,6 +36,8 @@ func (s *health) SetupSuite() {
 	s.Require().NoError(config.LoadConfig())
 	s.Require().NoError(config.SetupLogging())
 	s.config = config
+
+	s.health = healthp.New(config)
 }
 
 func (s *health) TestRegisterTasks() {
