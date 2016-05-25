@@ -2,7 +2,7 @@ package health_test
 
 import (
 	"encoding/binary"
-	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -44,8 +44,7 @@ func (s *health) TestHTTPStatus() {
 	}
 
 	for _, test := range tests {
-		t, _ := json.Marshal(test)
-		desc := string(t)
+		desc := fmt.Sprintf("%+v", test)
 		args := &healthp.HTTPStatusArgs{
 			URL:        test.url,
 			Method:     test.method,
@@ -62,6 +61,7 @@ func (s *health) TestHTTPStatus() {
 			ResponseHook: s.responseHook,
 			Args:         args,
 		})
+		s.Require().NoError(err, desc)
 
 		resp, stream, err := s.health.HTTPStatus(req)
 		s.Nil(resp, desc)
