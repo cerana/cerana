@@ -2,66 +2,50 @@
 
 CERANA_BOOTCFG=/tmp/cerana-bootcfg
 CERANA_KOPT_PREFIX="cerana"
-
-CERANA_KOPT_ZFS_CONFIG=""
-CERANA_KOPT_CLUSTER_IPS=""
-CERANA_KOPT_CLUSTER_BOOTSTRAP=""
-CERANA_KOPT_RESCUE=""
-CERANA_KOPT_MGMT_MAC=""
-CERANA_KOPT_MGMT_IP=""
-CERANA_KOPT_MGMT_GW=""
-CERANA_KOPT_MGMT_IFACE=""
+CMDLINE=$(cat /proc/cmdline)
 
 # Parse the kernel boot arguments and look for our arguments and
 # pick out their values.
 function parse_boot_args() {
-    local cmdline=$(cat /proc/cmdline)
-    grep -q $CERANA_KOPT_PREFIX <<<$cmdline || return
+    > $CERANA_BOOTCFG
 
-    cp /dev/null $CERANA_BOOTCFG
+    [[ $CERANA_KOPT_PREFIX == *"$cmdline"* ]] || return
 
-    for kopt in $cmdline; do
-        k=`echo $kopt | awk -F= '{print $1}'`
-        v=`echo $kopt | awk -F= '{print $2}'`
+    for kopt in $CMDLINE; do
+        IFS== read k v <<< $kopt
         case $k in
             $CERANA_KOPT_PREFIX.zfs_config)
-                CERANA_KOPT_ZFS_CONFIG="$v"
-		echo "CERANA_KOPT_ZFS_CONFIG=1" >> $CERANA_BOOTCFG
+		echo "CERANA_KOPT_ZFS_CONFIG=$v" >> $CERANA_BOOTCFG
                 ;;
             $CERANA_KOPT_PREFIX.cluster_ips)
-                CERANA_KOPT_CLUSTER_IPS="$v"
-		echo "CERANA_KOPT_CLUSTER_IPS=1" >> $CERANA_BOOTCFG
+		echo "CERANA_KOPT_CLUSTER_IPS=$v" >> $CERANA_BOOTCFG
                 ;;
             $CERANA_KOPT_PREFIX.cluster_bootstrap)
-                CERANA_KOPT_CLUSTER_BOOTSTRAP="$v"
+		# No argument expected. If present, just set to 1.
 		echo "CERANA_KOPT_CLUSTER_BOOTSTRAP=1" >> $CERANA_BOOTCFG
                 ;;
             $CERANA_KOPT_PREFIX.rescue)
 		# No argument expected. If present, just set to 1.
 		echo "CERANA_KOPT_RESCUE=1" >> $CERANA_BOOTCFG
                 ;;
-            $CERANA_KOPT_PREFIX.install)
-		# No argument expected. If present, just set to 1.
-		echo "CERANA_KOPT_INSTALL=1" >> $CERANA_BOOTCFG
-                ;;
             $CERANA_KOPT_PREFIX.mgmt_mac)
-                CERANA_KOPT_MGMT_MAC="$v"
 		echo "CERANA_KOPT_MGMT_MAC=$v" >> $CERANA_BOOTCFG
                 ;;
             $CERANA_KOPT_PREFIX.mgmt_ip)
-                CERANA_KOPT_MGMT_IP="$v"
 		echo "CERANA_KOPT_MGMT_IP=$v" >> $CERANA_BOOTCFG
                 ;;
             $CERANA_KOPT_PREFIX.mgmt_gw)
-                CERANA_KOPT_MGMT_GW="$v"
 		echo "CERANA_KOPT_MGMT_GW=$v" >> $CERANA_BOOTCFG
-                ;;
-            $CERANA_KOPT_PREFIX.mgmt_iface)
-                CERANA_KOPT_MGMT_IFACE="$v"
-		echo "CERANA_KOPT_MGMT_IFACE=$v" >> $CERANA_BOOTCFG
                 ;;
         esac
     done
 }
+
+#if manually invoked with argument "test" do a quick sanity check to stdout
+if [[ "test" == $1 ]]
+then
+    CERANA_BOOTCFG=/dev/stdout
+    CMDLINE="cerana.zfs_config=auto cerana.cluster_ips=10.2.3.4,10.2.3.5 cerana.cluster_bootstrap cerana.rescue cerana.mgmt_mac=00:00:00:00 cerana.mgmt_ip=10.2.3.6 cerana.mgmt_gw=10.2.3.1"
+fi
 
 parse_boot_args
