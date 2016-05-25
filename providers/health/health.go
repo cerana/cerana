@@ -19,7 +19,7 @@ func (h *Health) RegisterTasks(server *provider.Server) {
 	/*
 		server.RegisterTask("health-uptime", h.Uptime)
 		server.Registertask("health-file-exists", h.FileExists)
-		server.RegisterTask("health-resp-contains", h.RespContains)
 	*/
+	server.RegisterTask("health-tcp-response", h.TCPResponse)
 	server.RegisterTask("health-http-status", h.HTTPStatus)
 }
