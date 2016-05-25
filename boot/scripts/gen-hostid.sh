@@ -2,19 +2,16 @@
 # Get the SMBIOS product_uuid and use it for the basis of hostid and machine-id
 # Parts of this script is based on one from Fazle Arefin
 
-if [ -f /sys/class/dmi/id/product_uuid ]; then
-  uuid_file=/sys/class/dmi/id/product_uuid
-else
-  uuid_file=`uuidgen`
-fi
+uuid_file=/sys/class/dmi/id/product_uuid
 
 if [ -f $uuid_file ]; then
-  uuid=`cat $uuid_file | tr '[:upper:]' '[:lower:]'`
-  host_id=${uuid:0:8}
-  machine_id=`sed 's/-//g' <<< $uuid`
+  uuid=$(tr '[:upper:]' '[:lower:]' < $uuid_file)
 else
-  host_id=$(hostid)
+  uuid=$(uuidgen)
 fi
+
+host_id=${uuid:0:8}
+machine_id=$(tr -d - <<< $uuid)
 
 a=${host_id:6:2}
 b=${host_id:4:2}
