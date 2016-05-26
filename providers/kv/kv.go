@@ -50,4 +50,8 @@ func (k *KV) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("kv-lock", k.lock)
 	server.RegisterTask("kv-renew", k.renew)
 	server.RegisterTask("kv-unlock", k.unlock)
+
+	// ekey.go
+	server.RegisterTask("kv-ephemeral-set", k.eset)
+	server.RegisterTask("kv-ephemeral-destroy", k.edestroy)
 }

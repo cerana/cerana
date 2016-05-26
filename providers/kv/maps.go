@@ -63,6 +63,50 @@ func (c *chanMap) Peek(cookie uint64) (chan struct{}, error) {
 	return ch, nil
 }
 
+type eKeyMap struct {
+	sync.Mutex
+	keys map[string]kv.EphemeralKey
+}
+
+func newEKeyMap() *eKeyMap {
+	return &eKeyMap{
+		keys: map[string]kv.EphemeralKey{},
+	}
+}
+
+func (e *eKeyMap) Destroy(key string) error {
+	e.Lock()
+	defer e.Unlock()
+
+	eKey, ok := e.keys[key]
+	if !ok {
+		return errors.New("unknown ephemeral key")
+	}
+
+	if err := eKey.Destroy(); err != nil {
+		return err
+	}
+
+	delete(e.keys, key)
+
+	return nil
+}
+
+func (e *eKeyMap) Get(key string) kv.EphemeralKey {
+	e.Lock()
+	defer e.Unlock()
+
+	return e.keys[key]
+}
+
+// Add stores the EphemeralKey in the map, overwriting existent values
+func (e *eKeyMap) Add(key string, eKey kv.EphemeralKey) {
+	e.Lock()
+	defer e.Unlock()
+
+	e.keys[key] = eKey
+}
+
 type lockMap struct {
 	sync.Mutex
 	cookies map[uint64]kv.Lock
