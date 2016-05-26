@@ -45,4 +45,9 @@ func (k *KV) RegisterTasks(server *provider.Server) {
 	// watch.go
 	server.RegisterTask("kv-watch", k.watch)
 	server.RegisterTask("kv-stop", k.stop)
+
+	// lock.go
+	server.RegisterTask("kv-lock", k.lock)
+	server.RegisterTask("kv-renew", k.renew)
+	server.RegisterTask("kv-unlock", k.unlock)
 }
