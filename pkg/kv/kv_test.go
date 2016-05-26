@@ -410,6 +410,7 @@ func (s *KVSuite) TestEphemeralRenew() {
 	s.Require().True(s.KV.IsKeyNotFound(err))
 }
 
+// this test has been ported to providers/kv, any change here should probably be reflected there too
 func (s *KVSuite) TestLock() {
 	s.T().Parallel()
 
