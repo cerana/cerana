@@ -48,9 +48,16 @@
       <command>. ~/.nix-profile/etc/profile.d/nix.sh
 
 time nix-build  --cores 0 --max-jobs 3 -A netboot nixos/release.nix
-if [ -h result/etc ]; then echo Error: Build resulted /etc as symlink &amp;&amp; exit 1; fi
-nix-store -q result --graph | sed &apos;s/#ff0000/#ffffff/&apos; | dot -Nstyle=bold -Tpng &gt; dependencies.png
-nix-store -q result --tree &gt; dependencies.txt</command>
+if [ -h result/etc ]; then echo Error: Build resulted /etc as symlink && exit 1; fi
+
+# Copy results to a location that doesn't rely upon the nix symlinks.
+known_location=artifacts
+mkdir -p $known_location
+rm -f $known_location/*
+cp result/bzImage $known_location
+cp result/initrd $known_location
+nix-store -q result --graph | sed 's/#ff0000/#ffffff/' | dot -Nstyle=bold -Tpng > $known_location/dependencies.png
+nix-store -q result --tree > $known_location/dependencies.txt
     </hudson.tasks.Shell>
   </builders>
   <publishers/>
