@@ -37,7 +37,8 @@ func (s *health) SetupSuite() {
 	s.Require().NoError(config.SetupLogging())
 	s.config = config
 
-	s.health = healthp.New(config)
+	// TODO: fix tracker
+	s.health = healthp.New(config, nil)
 }
 
 func (s *health) TestRegisterTasks() {
