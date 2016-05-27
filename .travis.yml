@@ -19,15 +19,12 @@ go:
   - 1.5.2
   - 1.6
 
-before_install:
-  - go get github.com/alecthomas/gometalinter
-  - gometalinter --install --update
-
 install:
   - mkdir -p $HOME/bin
-  - .travis/install.sh
-  - sudo modprobe zfs
+  - .travis/deps.sh fetch
   - go get -t -v ./...
+  - .travis/deps.sh install
+  - sudo modprobe zfs
 
 before_script:
   - make lint-required
