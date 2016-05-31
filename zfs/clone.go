@@ -22,5 +22,5 @@ func clone(name, origin string, props map[string]interface{}) error {
 		return err
 	}
 
-	return ioctl(zfs, name, encoded.Bytes(), nil)
+	return ioctl(zfs(), name, encoded.Bytes(), nil)
 }

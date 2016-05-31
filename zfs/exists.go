@@ -19,7 +19,7 @@ func exists(name string) error {
 		return err
 	}
 
-	return ioctl(zfs, name, encoded.Bytes(), nil)
+	return ioctl(zfs(), name, encoded.Bytes(), nil)
 }
 
 // Exists determines whether a dataset exists or not.

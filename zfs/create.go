@@ -22,5 +22,5 @@ func create(name string, createType dmuType, props map[string]interface{}) error
 		return err
 	}
 
-	return ioctl(zfs, name, encoded.Bytes(), nil)
+	return ioctl(zfs(), name, encoded.Bytes(), nil)
 }
