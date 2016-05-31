@@ -21,7 +21,7 @@ type Bundle struct {
 	*BundleConf
 	c *ClusterConf
 	// Nodes contains the set of nodes on which the dataset is currently in use.
-	// THe map keys are serials.
+	// The map keys are serials.
 	Nodes map[string]net.IP `json:"nodes"`
 	// ModIndex should be treated as opaque, but passed back on updates.
 	ModIndex uint64 `json:"modIndex"`
@@ -133,7 +133,8 @@ func (c *ClusterConf) GetBundle(req *acomm.Request) (interface{}, *url.URL, erro
 	return &BundlePayload{bundle}, nil, nil
 }
 
-// UpdateBundle creates or updates a bundle config. When updating, a Get should first be performed and the modified Bundle passed back.
+// UpdateBundle creates or updates a bundle config.
+// When updating, a Get should first be performed and the modified Bundle passed back.
 func (c *ClusterConf) UpdateBundle(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args BundlePayload
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -252,7 +253,8 @@ func (b *Bundle) delete() error {
 	return b.c.kvDelete(key, b.ModIndex)
 }
 
-// update saves the core bundle config. It will not modify nodes.
+// update saves the core bundle config.
+// It will not modify nodes.
 func (b *Bundle) update() error {
 	key := path.Join(bundlesPrefix, strconv.Itoa(b.ID), "config")
 
