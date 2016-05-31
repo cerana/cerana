@@ -69,8 +69,8 @@ func tcpEchoer() (net.Listener, error) {
 			}
 
 			go func(c net.Conn) {
-				io.Copy(c, c)
-				c.Close()
+				_ = io.Copy(c, c)
+				_ = c.Close()
 			}(conn)
 		}
 	}()

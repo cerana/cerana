@@ -8,6 +8,7 @@ import (
 	"github.com/cerana/cerana/acomm"
 )
 
+// FileArgs are arguments for the File health check.
 type FileArgs struct {
 	Path     string      `json:"path"`
 	NotExist bool        `json:"notExist"`
@@ -16,6 +17,7 @@ type FileArgs struct {
 	MaxSize  int64       `json:"maxSize"`
 }
 
+// File checks one or more attributes against supplied constraints.
 func (h *Health) File(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args FileArgs
 	if err := req.UnmarshalArgs(&args); err != nil {

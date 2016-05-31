@@ -9,11 +9,13 @@ import (
 	"github.com/cerana/cerana/providers/systemd"
 )
 
+// UptimeArgs are arguments for the uptime health check.
 type UptimeArgs struct {
 	Name      string        `json:"name"`
 	MinUptime time.Duration `json:"minUptime"`
 }
 
+// Uptime checks a process's uptime against a minimum value.
 func (h *Health) Uptime(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args UptimeArgs
 	if err := req.UnmarshalArgs(&args); err != nil {

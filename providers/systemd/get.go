@@ -10,6 +10,7 @@ import (
 	"github.com/coreos/go-systemd/dbus"
 )
 
+// UnitStatus contains information about a systemd unit.
 type UnitStatus struct {
 	dbus.UnitStatus
 	Uptime time.Duration
@@ -46,7 +47,8 @@ func (s *Systemd) Get(req *acomm.Request) (interface{}, *url.URL, error) {
 	for _, unit := range list {
 		if unit.Name == args.Name {
 			err = nil
-			unitStatus, err := s.unitStatus(unit)
+			var unitStatus UnitStatus
+			unitStatus, err = s.unitStatus(unit)
 			if err != nil {
 				break
 			}

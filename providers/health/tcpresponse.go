@@ -43,10 +43,10 @@ func (h *Health) TCPResponse(req *acomm.Request) (interface{}, *url.URL, error) 
 	}
 	defer logrusx.LogReturnedErr(conn.Close, nil, "failed to close tcp conn")
 	if len(args.Body) > 0 {
-		if _, err := conn.Write(args.Body); err != nil {
+		if _, err = conn.Write(args.Body); err != nil {
 			return nil, nil, err
 		}
-		if err := conn.(*net.TCPConn).CloseWrite(); err != nil {
+		if err = conn.(*net.TCPConn).CloseWrite(); err != nil {
 			return nil, nil, err
 		}
 	}

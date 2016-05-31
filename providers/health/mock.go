@@ -8,10 +8,12 @@ import (
 	"github.com/cerana/cerana/provider"
 )
 
+// Mock is a mock Health provider.
 type Mock struct {
 	Data MockData
 }
 
+// MockData is mock data for the Mock provider.
 type MockData struct {
 	Uptime      bool
 	File        bool
@@ -19,6 +21,7 @@ type MockData struct {
 	HTTPStatus  bool
 }
 
+// NewMock creates a new mock provider and initializes data.
 func NewMock() *Mock {
 	return &Mock{
 		Data: MockData{
@@ -38,6 +41,7 @@ func (m *Mock) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("health-http-status", m.HTTPStatus)
 }
 
+// Uptime is a mock uptime health check.
 func (m *Mock) Uptime(req *acomm.Request) (interface{}, *url.URL, error) {
 	var err error
 	if !m.Data.Uptime {
@@ -46,6 +50,7 @@ func (m *Mock) Uptime(req *acomm.Request) (interface{}, *url.URL, error) {
 	return nil, nil, err
 }
 
+// File is a mock file health check.
 func (m *Mock) File(req *acomm.Request) (interface{}, *url.URL, error) {
 	var err error
 	if !m.Data.File {
@@ -54,6 +59,7 @@ func (m *Mock) File(req *acomm.Request) (interface{}, *url.URL, error) {
 	return nil, nil, err
 }
 
+// TCPResponse is a mock tcp response health check.
 func (m *Mock) TCPResponse(req *acomm.Request) (interface{}, *url.URL, error) {
 	var err error
 	if !m.Data.TCPResponse {
@@ -62,6 +68,7 @@ func (m *Mock) TCPResponse(req *acomm.Request) (interface{}, *url.URL, error) {
 	return nil, nil, err
 }
 
+// HTTPStatus is a mock http status health check.
 func (m *Mock) HTTPStatus(req *acomm.Request) (interface{}, *url.URL, error) {
 	var err error
 	if !m.Data.HTTPStatus {
