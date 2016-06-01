@@ -100,7 +100,7 @@ func (s *KVS) TestGet() {
 			continue
 		}
 
-		result, ok := res.(GetReturn)
+		result, ok := res.(kv.Value)
 		if !s.True(ok, test.name) {
 			continue
 		}
@@ -108,7 +108,7 @@ func (s *KVS) TestGet() {
 			continue
 		}
 
-		s.Equal(test.key, string(result.Value))
+		s.Equal(test.key, string(result.Data))
 		s.Equal(s.getIndex(s.KVURL, test.key), result.Index)
 	}
 }

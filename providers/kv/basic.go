@@ -18,12 +18,6 @@ type GetArgs struct {
 	Key string `json:"key"`
 }
 
-// GetReturn specifies the return value from the "kv-get" endpoint.
-type GetReturn struct {
-	Value []byte `json:"value"`
-	Index uint64 `json:"index"`
-}
-
 // SetArgs specify the arguments to the "kv-set" endpoint.
 type SetArgs struct {
 	Key  string `json:"key"`
@@ -58,10 +52,7 @@ func (k *KV) get(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 
-	return GetReturn{
-		Value: kvp.Data,
-		Index: kvp.Index,
-	}, nil, nil
+	return kvp, nil, nil
 }
 
 func (k *KV) getAll(req *acomm.Request) (interface{}, *url.URL, error) {
@@ -74,12 +65,12 @@ func (k *KV) getAll(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.New("missing arg: key")
 	}
 
-	kvp, err := k.kv.GetAll(args.Key)
+	kvps, err := k.kv.GetAll(args.Key)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return kvp, nil, nil
+	return kvps, nil, nil
 }
 
 func (k *KV) keys(req *acomm.Request) (interface{}, *url.URL, error) {
