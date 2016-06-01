@@ -1,0 +1,30 @@
+package consul
+
+import (
+	"fmt"
+	"testing"
+)
+
+func TestNew(t *testing.T) {
+	tests := []struct {
+		addr string
+		err  bool
+	}{
+		{"", false},
+		{"http://127.0.0.1:8500", false},
+		{"https://127.0.0.1:8500", true},
+		{"http://127.0.0.1:4001", true},
+		{"consul://127.0.0.1:8500", false},
+		{"consul://127.0.0.1:4001", true},
+	}
+
+	for _, test := range tests {
+		fmt.Println("test.addr:", test.addr)
+		kv, _ := New(test.addr)
+		err := kv.Ping()
+		if err != nil != test.err {
+			t.Log(test.addr)
+			t.Fatal("error mismatch, expected error:", test.err, "got:", err)
+		}
+	}
+}
