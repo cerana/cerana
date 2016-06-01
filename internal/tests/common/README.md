@@ -104,7 +104,6 @@ type Suite struct {
 	KVCmd      *exec.Cmd
 	KVCmdMaker func(uint16, string, string) *exec.Cmd
 	TestPrefix string
-	Context    *lochness.Context
 }
 ```
 
@@ -125,76 +124,12 @@ func (s *Suite) Messager(prefix string) func(...interface{}) string
 ```
 Messager generates a function for creating a string message with a prefix.
 
-#### func (*Suite) NewFWGroup
-
-```go
-func (s *Suite) NewFWGroup() *lochness.FWGroup
-```
-NewFWGroup creates and saves a new FWGroup.
-
-#### func (*Suite) NewFlavor
-
-```go
-func (s *Suite) NewFlavor() *lochness.Flavor
-```
-NewFlavor creates and saves a new Flavor.
-
-#### func (*Suite) NewGuest
-
-```go
-func (s *Suite) NewGuest() *lochness.Guest
-```
-NewGuest creates and saves a new Guest. Creates any necessary resources.
-
-#### func (*Suite) NewHypervisor
-
-```go
-func (s *Suite) NewHypervisor() *lochness.Hypervisor
-```
-NewHypervisor creates and saves a new Hypervisor.
-
-#### func (*Suite) NewHypervisorWithGuest
-
-```go
-func (s *Suite) NewHypervisorWithGuest() (*lochness.Hypervisor, *lochness.Guest)
-```
-NewHypervisorWithGuest creates and saves a new Hypervisor and Guest, with the
-Guest added to the Hypervisor.
-
-#### func (*Suite) NewNetwork
-
-```go
-func (s *Suite) NewNetwork() *lochness.Network
-```
-NewNetwork creates and saves a new Netework.
-
-#### func (*Suite) NewSubnet
-
-```go
-func (s *Suite) NewSubnet() *lochness.Subnet
-```
-NewSubnet creates and saves a new Subnet.
-
-#### func (*Suite) NewVLAN
-
-```go
-func (s *Suite) NewVLAN() *lochness.VLAN
-```
-NewVLAN creates and saves a new VLAN.
-
-#### func (*Suite) NewVLANGroup
-
-```go
-func (s *Suite) NewVLANGroup() *lochness.VLANGroup
-```
-NewVLANGroup creates and saves a new VLANGroup.
-
 #### func (*Suite) PrefixKey
 
 ```go
 func (s *Suite) PrefixKey(key string) string
 ```
-PrefixKey generates an kv key using the set prefix
+PrefixKey generates a kv key using the set prefix
 
 #### func (*Suite) SetupSuite
 
