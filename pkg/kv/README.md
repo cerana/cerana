@@ -21,22 +21,24 @@ New
 
 ```go
 type EphemeralKey interface {
-	// Set will first renew the tll then set the value of key, it is an error if the ttl has expired since last renewal
+	// Set will first renew the ttl then set the value of key, it is an error if the ttl has expired since last renewal
 	Set(value string) error
-	// Renew renews the key tll
+	// Renew renews the key ttl
 	Renew() error
 	// Destroy will delete the key without having to wait for expiration via TTL
 	Destroy() error
 }
 ```
 
+EphemeralKey represents a key that will disappear once the timeout used to
+instantiate it has lapsed.
 
 #### type Event
 
 ```go
 type Event struct {
-	Key  string
-	Type EventType
+	Key  string    `json:"key"`
+	Type EventType `json:"type"`
 	Value
 }
 ```
@@ -89,8 +91,9 @@ type KV interface {
 	// IsKeyNotFound is a helper to determine if the error is a key not found error
 	IsKeyNotFound(error) bool
 
-	// Watch returns channels for watching prefixes.
+	// Watch returns channels for watching prefixes for _future_ events.
 	// stop *must* always be closed by callers
+	// Note: replaying events in history is not guaranteed to be possible.
 	Watch(string, uint64, chan struct{}) (chan Event, chan error, error)
 
 	// EphemeralKey creates a key that will be deleted if the ttl expires
@@ -136,8 +139,8 @@ should not be fetched out-of-band
 
 ```go
 type Value struct {
-	Data  []byte
-	Index uint64
+	Data  []byte `json:"data"`
+	Index uint64 `json:"index"`
 }
 ```
 

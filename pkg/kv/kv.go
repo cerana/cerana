@@ -13,8 +13,8 @@ import (
 
 // Value represents the value stored in a key, including the last modification index of the key
 type Value struct {
-	Data  []byte
-	Index uint64
+	Data  []byte `json:"data"`
+	Index uint64 `json:"index"`
 }
 
 // EventType is used to describe actions on watch events
@@ -42,8 +42,8 @@ var types = map[EventType]string{
 
 // Event represents an action occurring to a watched key or prefix
 type Event struct {
-	Key  string
-	Type EventType
+	Key  string    `json:"key"`
+	Type EventType `json:"type"`
 	Value
 }
 
