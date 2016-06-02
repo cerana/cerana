@@ -1,6 +1,7 @@
 #!/bin/bash
 
 source /tmp/cerana-bootcfg
+[[ -n $CERANA_KOPT_RESCUE ]] && exit 0
 
 ## The name of the zpool we're concerned with. Everything revolves around this
 ## being configured and present. Set name accordingly.
