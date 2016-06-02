@@ -1,7 +1,6 @@
 package clusterconf_test
 
 import (
-	"encoding/json"
 	"math/rand"
 	"net"
 	"path"
@@ -9,12 +8,12 @@ import (
 
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/providers/clusterconf"
-	"github.com/mistifyio/lochness/pkg/kv"
 	"github.com/pborman/uuid"
 )
 
 func (s *clusterConf) TestGetBundle() {
-	bundle := s.addBundle()
+	bundle, err := s.addBundle()
+	s.Require().NoError(err)
 
 	tests := []struct {
 		desc  string
@@ -52,8 +51,11 @@ func (s *clusterConf) TestGetBundle() {
 }
 
 func (s *clusterConf) TestUpdateBundle() {
-	bundle := s.addBundle()
-	bundle2 := s.addBundle()
+	bundle, err := s.addBundle()
+	s.Require().NoError(err)
+	bundle2, err := s.addBundle()
+	s.Require().NoError(err)
+
 	tests := []struct {
 		desc     string
 		id       int
@@ -100,7 +102,8 @@ func (s *clusterConf) TestUpdateBundle() {
 }
 
 func (s *clusterConf) TestDeleteBundle() {
-	bundle := s.addBundle()
+	bundle, err := s.addBundle()
+	s.Require().NoError(err)
 
 	tests := []struct {
 		id  int
@@ -130,7 +133,8 @@ func (s *clusterConf) TestDeleteBundle() {
 }
 
 func (s *clusterConf) TestBundleHeartbeat() {
-	bundle := s.addBundle()
+	bundle, err := s.addBundle()
+	s.Require().NoError(err)
 
 	tests := []struct {
 		id     int
@@ -179,8 +183,7 @@ func (s *clusterConf) TestBundleHeartbeat() {
 	}
 }
 
-func (s *clusterConf) addBundle() *clusterconf.Bundle {
-	// Populate a bundle
+func (s *clusterConf) addBundle() (*clusterconf.Bundle, error) {
 	bundle := &clusterconf.Bundle{BundleConf: &clusterconf.BundleConf{
 		ID: rand.Intn(100),
 		Ports: clusterconf.BundlePorts{
@@ -189,17 +192,23 @@ func (s *clusterConf) addBundle() *clusterconf.Bundle {
 			},
 		},
 	}}
-	sj, _ := json.Marshal(bundle)
-	key := path.Join("bundles", strconv.Itoa(bundle.ID), "config")
-	s.kvp.Data[key] = kv.Value{Data: sj, Index: 1}
-	bundle.ModIndex = 1
+	bundleKey := path.Join("bundles", strconv.Itoa(bundle.ID), "config")
 
-	// Give it a node heartbeat
 	serial := uuid.New()
-	key = path.Join("bundles", strconv.Itoa(bundle.ID), "nodes", serial)
 	ip := net.ParseIP("127.0.0.1")
-	ipJ, _ := json.Marshal(ip)
-	s.kvp.Data[key] = kv.Value{Data: ipJ, Index: 1}
+	nodeKey := path.Join("bundles", strconv.Itoa(bundle.ID), "nodes", serial)
+
+	data := map[string]interface{}{
+		bundleKey: bundle,
+		nodeKey:   ip,
+	}
+	indexes, err := s.loadData(data)
+	if err != nil {
+		return nil, err
+	}
+
+	bundle.ModIndex = indexes[bundleKey]
 	bundle.Nodes = map[string]net.IP{serial: ip}
-	return bundle
+
+	return bundle, nil
 }

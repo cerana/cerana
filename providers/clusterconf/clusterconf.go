@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/kv"
 	"github.com/cerana/cerana/provider"
-	"github.com/mistifyio/lochness/pkg/kv"
 )
 
 // ClusterConf is a provider of cluster configuration functionality.
@@ -150,6 +150,6 @@ func (c *ClusterConf) kvEphemeral(key string, value interface{}, ttl time.Durati
 		"value": value,
 		"ttl":   ttl,
 	}
-	_, err := c.kvReq("kv-ephemeral", args)
+	_, err := c.kvReq("kv-ephemeral-set", args)
 	return err
 }

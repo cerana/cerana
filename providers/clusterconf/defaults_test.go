@@ -1,40 +1,29 @@
 package clusterconf_test
 
 import (
-	"encoding/json"
 	"path"
-	"strconv"
 
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/providers/clusterconf"
-	"github.com/mistifyio/lochness/pkg/kv"
 )
 
 func (s *clusterConf) TestGetDefaults() {
-	tests := []struct {
-		zfsManual bool
-	}{
-		{true},
-		{false},
-	}
+	_, err := s.setDefaultZFSManual(true)
+	s.Require().NoError(err)
 
-	for _, test := range tests {
-		desc := strconv.FormatBool(test.zfsManual)
-		_ = s.setDefaultZFSManual(test.zfsManual)
-		req, err := acomm.NewRequest(acomm.RequestOptions{
-			Task: "get-defaults",
-		})
-		s.Require().NoError(err, desc)
-		result, streamURL, err := s.clusterConf.GetDefaults(req)
-		s.Nil(streamURL, desc)
-		s.NoError(err, desc)
-		if !s.NotNil(result, desc) {
-			continue
-		}
-		defaultsPayload, ok := result.(*clusterconf.DefaultsPayload)
-		s.True(ok, desc)
-		s.Equal(test.zfsManual, defaultsPayload.Defaults.ZFSManual)
+	req, err := acomm.NewRequest(acomm.RequestOptions{
+		Task: "get-defaults",
+	})
+	s.Require().NoError(err)
+	result, streamURL, err := s.clusterConf.GetDefaults(req)
+	s.Nil(streamURL)
+	s.NoError(err)
+	if !s.NotNil(result) {
+		return
 	}
+	defaultsPayload, ok := result.(*clusterconf.DefaultsPayload)
+	s.True(ok)
+	s.True(defaultsPayload.Defaults.ZFSManual)
 }
 
 func (s *clusterConf) TestUpdateDefaults() {
@@ -84,11 +73,16 @@ func (s *clusterConf) TestUpdateDefaults() {
 	}
 }
 
-func (s *clusterConf) setDefaultZFSManual(value bool) *clusterconf.Defaults {
+func (s *clusterConf) setDefaultZFSManual(value bool) (*clusterconf.Defaults, error) {
 	defaults := &clusterconf.Defaults{DefaultsConf: &clusterconf.DefaultsConf{ZFSManual: value}}
-	sj, _ := json.Marshal(defaults)
 	key := path.Join("cluster")
-	s.kvp.Data[key] = kv.Value{Data: sj, Index: 1}
-	defaults.ModIndex = 1
-	return defaults
+	data := map[string]interface{}{
+		key: defaults,
+	}
+	indexes, err := s.loadData(data)
+	if err != nil {
+		return nil, err
+	}
+	defaults.ModIndex = indexes[key]
+	return defaults, nil
 }
