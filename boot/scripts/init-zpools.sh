@@ -1,8 +1,11 @@
 #!/bin/bash
 
+source /tmp/cerana-bootcfg
+
 ## The name of the zpool we're concerned with. Everything revolves around this
 ## being configured and present. Set name accordingly.
-ZPOOL=mistify
+ZPOOL=data
+FILESYSTEMS="datasets datasets/ro datasets/rw running-clones config services logs platform"
 
 # Create the expected filesystems on the configured zpool
 configure_filesystems()
@@ -15,11 +18,11 @@ configure_filesystems()
 	fi
 
 	# Create base ZFS filesystems and set their properies
-	for fs in data private images guests; do
+	for fs in $FILESYSTEMS; do
 		zfs list $ZPOOL/$fs > /dev/null 2>&1 || zfs create $ZPOOL/$fs
 	done
 
-	local compression=$(zfs get compression -Ho value mistify)
+	local compression=$(zfs get compression -Ho value $ZPOOL)
 	if [ "$compression" = "off" ]; then
 		zfs set compression=lz4 $ZPOOL
 	fi
@@ -52,7 +55,7 @@ get_disklist()
 prompt_user()
 {
 	echo
-	echo "No existing $ZPOOL zpool detected."
+	echo "No existing \"$ZPOOL\" zpool detected."
 	echo "In order to proceed, you must configure the underlying ZFS"
 	echo "storage for this node. The following disks have been detected:"
 	echo
@@ -65,27 +68,32 @@ prompt_user()
 		exit
 	elif [ ${#DISKARRAY[@]} -eq 1 ]; then
 		echo " stripe (${#DISKARRAY[@]} disk) *"
+		AUTO="stripe"
 	elif [ ${#DISKARRAY[@]} -eq 2 ]; then
 		echo " stripe (${#DISKARRAY[@]} disks) *"
 		echo " mirror (${#DISKARRAY[@]} disks)"
+		AUTO="mirror"
 	elif [ ${#DISKARRAY[@]} -eq 3 ]; then
 		echo " stripe (${#DISKARRAY[@]} disks) *"
 		echo " raidz (${#DISKARRAY[@]} disks)"
-	elif [ ${#DISKARRAY[@]} -eq 3 ]; then
+		AUTO="raidz"
+	elif [ ${#DISKARRAY[@]} -eq 4 ]; then
 		echo " stripe (${#DISKARRAY[@]} disks) *"
 		echo " raidz (${#DISKARRAY[@]} disks)"
 		echo " raidz2 (${#DISKARRAY[@]} disks)"
-	elif [ ${#DISKARRAY[@]} -gt 3 ]; then
+		AUTO="raidz"
+	elif [ ${#DISKARRAY[@]} -gt 4 ]; then
 		echo " stripe (${#DISKARRAY[@]} disks) *"
 		echo " raidz (${#DISKARRAY[@]} disks)"
 		echo " raidz2 (${#DISKARRAY[@]} disks)"
 		echo " raidz3 (${#DISKARRAY[@]} disks)"
+		AUTO="raidz2"
 	fi
 	echo
 	echo "* = not suggested for production purposes"
 	echo
 	echo "You may also type \"manual\" to enter a shell to perform a manual"
-	echo "configuration of the \"mistify\" zpool using command-line tools."
+	echo "configuration of the \"${ZPOOL}\" zpool using command-line tools."
 	echo "This is preferable if an exact ZFS pool configuration is desired,"
 	echo "such as one that contains hot spares, or slog/L2ARC devices."
 	echo
@@ -93,32 +101,27 @@ prompt_user()
 	echo "http://zfsonlinux.org/faq.html"
 	echo
 
-	answer=""
+	answer=${CERANA_KOPT_ZFS_CONFIG}
 	while [ ! $answer ]; do
 		echo -n "Selection: "
 		read answer
 	done
 
 	case $answer in
+	'auto')
+		answer=${AUTO}
+		;&
 	'raidz')
-		POOLTYPE="raidz"
-		echo "Using all disks to create a raidz zpool..."
-		;;
+		;&
 	'raidz2')
-		POOLTYPE="raidz2"
-		echo "Using all disks to create a raidz2 zpool..."
-		;;
+		;&
 	'raidz3')
-		POOLTYPE="raidz3"
-		echo "Using all disks to create a raidz3 zpool..."
-		;;
+		;&
 	'mirror')
-		POOLTYPE="mirror"
-		echo "Using all disks to create a mirrored zpool..."
-		;;
+		;&
 	'stripe')
-		POOLTYPE="stripe"
-		echo "Using all disks to create a striped zpool..."
+		POOLTYPE="$answer"
+		echo "Using all disks to create a $answer zpool..."
 		;;
 	'manual')
 		POOLTYPE="manual"
