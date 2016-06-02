@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	log.SetFormatter(&logx.MistifyFormatter{})
+	log.SetFormatter(&logx.JSONFormatter{})
 
 	config := systemd.NewConfig(nil, nil)
 	flag.StringP("unit-file-dir", "d", "", "directory in which to create unit files")

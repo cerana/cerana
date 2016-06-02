@@ -66,7 +66,7 @@ func (s *ExtTestSuite) TestDefaultSetup() {
 	std := log.StandardLogger()
 	s.NoError(logx.DefaultSetup("debug"))
 	s.Equal(log.DebugLevel, log.GetLevel())
-	s.IsType(&logx.MistifyFormatter{}, std.Formatter)
+	s.IsType(&logx.JSONFormatter{}, std.Formatter)
 }
 
 func (s *ExtTestSuite) TestLogReturnedErr() {

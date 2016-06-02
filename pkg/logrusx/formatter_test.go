@@ -24,7 +24,7 @@ func (s *FormatterTestSuite) SetupTest() {
 	// Setup a new Logger instance
 	s.Log = log.New()
 	s.Log.Out = s.Buffer
-	s.Log.Formatter = &logx.MistifyFormatter{}
+	s.Log.Formatter = &logx.JSONFormatter{}
 }
 
 func TestFormatterTestSuite(t *testing.T) {
@@ -43,7 +43,7 @@ func (s *FormatterTestSuite) TestMistifyFormatterFormat() {
 		Message: "test error message",
 	}
 
-	mf := &logx.MistifyFormatter{}
+	mf := &logx.JSONFormatter{}
 	jsonBytes, err := mf.Format(entry)
 	s.NoError(err)
 	var loggedEntry map[string]interface{}

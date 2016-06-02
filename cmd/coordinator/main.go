@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	log.SetFormatter(&logx.MistifyFormatter{})
+	log.SetFormatter(&logx.JSONFormatter{})
 
 	config := coordinator.NewConfig(nil, nil)
 	flag.Parse()
