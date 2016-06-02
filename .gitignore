@@ -1,11 +1,11 @@
 # Compiled cmds
 cmd/coordinator-cli/coordinator-cli
 cmd/coordinator/coordinator
+cmd/metrics-provider/metrics-provider
+cmd/nvprint/nvprint
 cmd/systemd-provider/systemd-provider
 cmd/zfs-provider/zfs-provider
-cmd/metrics-provider/metrics-provider
 cmd/zfs/zfs
-cmd/nvprint/nvprint
 
 # Temporary files
 *.swp
