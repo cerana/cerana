@@ -58,6 +58,7 @@ cp result/bzImage $known_location
 cp result/initrd $known_location
 nix-store -q result --graph | sed 's/#ff0000/#ffffff/' | dot -Nstyle=bold -Tpng > $known_location/dependencies.png
 nix-store -q result --tree > $known_location/dependencies.txt
+      </command>
     </hudson.tasks.Shell>
   </builders>
   <publishers/>
