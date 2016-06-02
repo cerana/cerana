@@ -34,7 +34,8 @@ rm -f $known_location/*
 cp result/bzImage $known_location/bzImage.cerana
 cp result/initrd $known_location/initrd.cerana
 nix-store -q result --graph | sed &apos;s/#ff0000/#ffffff/&apos; | dot -Nstyle=bold -Tpng &gt; $known_location/dependencies.png
-nix-store -q result --tree &gt; $known_location/dependencies.txt</command>
+nix-store -q result --tree &gt; $known_location/dependencies.txt
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers/>
