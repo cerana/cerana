@@ -13,7 +13,7 @@ configure_filesystems()
 	# Do we have the zpool?
 	zpool list $ZPOOL > /dev/null 2>&1
 	if [ $? -ne 0 ]; then
-	    echo "ERROR: $ZPOOL zpool is not present!"
+	    echo "ERROR: \"$ZPOOL\" pool is not present!"
 	    return 1
 	fi
 
@@ -50,12 +50,12 @@ get_disklist()
 	readarray DISKARRAY <<< "$DISKDEVS"
 }
 
-# Prompt the user for the type of zpool they desire. Offer a command shell
+# Prompt the user for the type of pool they desire. Offer a command shell
 # to allow manual configuration using the zpool command directly.
 prompt_user()
 {
 	echo
-	echo "No existing \"$ZPOOL\" zpool detected."
+	echo "No existing \"$ZPOOL\" pool detected."
 	echo "In order to proceed, you must configure the underlying ZFS"
 	echo "storage for this node. The following disks have been detected:"
 	echo
@@ -93,7 +93,7 @@ prompt_user()
 	echo "* = not suggested for production purposes"
 	echo
 	echo "You may also type \"manual\" to enter a shell to perform a manual"
-	echo "configuration of the \"${ZPOOL}\" zpool using command-line tools."
+	echo "configuration of the \"${ZPOOL}\" pool using command-line tools."
 	echo "This is preferable if an exact ZFS pool configuration is desired,"
 	echo "such as one that contains hot spares, or slog/L2ARC devices."
 	echo
@@ -121,12 +121,12 @@ prompt_user()
 		;&
 	'stripe')
 		POOLTYPE="$answer"
-		echo "Using all disks to create a $answer zpool..."
+		echo "Using all disks to create a $answer pool..."
 		;;
 	'manual')
 		POOLTYPE="manual"
 		echo "Entering shell to perform manual pool configuration."
-		echo "You must configure a zpool with the name of \"$ZPOOL\"."
+		echo "You must configure a pool with the name of \"$ZPOOL\"."
 		;;
 	*)
 		return 1
@@ -135,7 +135,7 @@ prompt_user()
 }
 
 # Create the zpool using user input
-configure_zpool()
+configure_pool()
 {
 	# If manual pool creation was selected, run a sub-shell and check
 	# to make sure the pool was actually created after the sub-shell
@@ -171,7 +171,7 @@ configure_zpool()
 	# Be sure the drives are starting fresh. Zero out any existing partition
 	for d in "${DISKARRAY[@]}"; do
 	    echo "Clearing $d"
-	    sgdisk -Z $d > /dev/null 2>&1
+	    sgdisk -Z $d #> /dev/null 2>&1
 	done
 
 	# Block until Linux figures itself out w.r.t. paritions
@@ -209,7 +209,7 @@ if [ $? -ne 0 ]; then
 		while [ ! "$POOLTYPE" ]; do
 			prompt_user
 		done
-		configure_zpool
+		configure_pool
 	done
 fi
 
