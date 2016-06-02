@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/coordinator"
 	"github.com/cerana/cerana/provider"
 	"github.com/spf13/pflag"
@@ -93,7 +94,12 @@ func (c *Coordinator) NewProviderViper() *viper.Viper {
 // RegisterProvider registers a Provider's tasks with the internal Provider
 // server.
 func (c *Coordinator) RegisterProvider(p provider.Provider) {
-	p.RegisterTasks(*c.providerServer)
+	p.RegisterTasks(c.providerServer)
+}
+
+// ProviderTracker exposes the provider server tracker.
+func (c *Coordinator) ProviderTracker() *acomm.Tracker {
+	return c.providerServer.Tracker()
 }
 
 // Start starts the Coordinator and Provider servers.
