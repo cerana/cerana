@@ -31,7 +31,7 @@ func TestFormatterTestSuite(t *testing.T) {
 	suite.Run(t, new(FormatterTestSuite))
 }
 
-func (s *FormatterTestSuite) TestMistifyFormatterFormat() {
+func (s *FormatterTestSuite) TestJSONFormatterFormat() {
 	testErr := errors.New("test error message")
 	entry := &log.Entry{
 		Logger: s.Log,
@@ -53,7 +53,7 @@ func (s *FormatterTestSuite) TestMistifyFormatterFormat() {
 	s.Equal(errMap["Message"], testErr.Error())
 }
 
-func (s *FormatterTestSuite) TestMistifyFormatterWithLogrus() {
+func (s *FormatterTestSuite) TestJSONFormatterWithLogrus() {
 	fieldNames := []string{"error", "asdf"}
 	testErr := errors.New("test error message")
 
