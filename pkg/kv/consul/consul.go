@@ -54,7 +54,7 @@ func New(addr string) (kv.KV, error) {
 func (c *ckv) Delete(key string, recurse bool) error {
 	var err error
 	if recurse {
-		if !strings.HasSuffix(key, "/") {
+		if key != "" && !strings.HasSuffix(key, "/") {
 			key += "/"
 		}
 		_, err = c.c.DeleteTree(key, nil)
