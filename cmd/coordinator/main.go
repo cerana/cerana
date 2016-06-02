@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/coordinator"
 	logx "github.com/cerana/cerana/pkg/logrusx"
