@@ -1,17 +1,16 @@
 package clusterconf_test
 
 import (
-	"encoding/json"
 	"path"
 
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/providers/clusterconf"
-	"github.com/mistifyio/lochness/pkg/kv"
 	"github.com/pborman/uuid"
 )
 
 func (s *clusterConf) TestGetService() {
-	service := s.addService()
+	service, err := s.addService()
+	s.Require().NoError(err)
 
 	tests := []struct {
 		id  string
@@ -46,8 +45,11 @@ func (s *clusterConf) TestGetService() {
 }
 
 func (s *clusterConf) TestUpdateService() {
-	service := s.addService()
-	service2 := s.addService()
+	service, err := s.addService()
+	s.Require().NoError(err)
+	service2, err := s.addService()
+	s.Require().NoError(err)
+
 	tests := []struct {
 		desc     string
 		id       string
@@ -94,7 +96,8 @@ func (s *clusterConf) TestUpdateService() {
 }
 
 func (s *clusterConf) TestDeleteService() {
-	service := s.addService()
+	service, err := s.addService()
+	s.Require().NoError(err)
 
 	tests := []struct {
 		id  string
@@ -122,12 +125,18 @@ func (s *clusterConf) TestDeleteService() {
 	}
 }
 
-func (s *clusterConf) addService() *clusterconf.Service {
+func (s *clusterConf) addService() (*clusterconf.Service, error) {
 	// Populate a service
 	service := &clusterconf.Service{ServiceConf: &clusterconf.ServiceConf{ID: uuid.New()}}
-	sj, _ := json.Marshal(service)
 	key := path.Join("services", service.ID, "config")
-	s.kvp.Data[key] = kv.Value{Data: sj, Index: 1}
-	service.ModIndex = 1
-	return service
+	data := map[string]interface{}{
+		key: service,
+	}
+	indexes, err := s.loadData(data)
+	if err != nil {
+		return nil, err
+	}
+
+	service.ModIndex = indexes[key]
+	return service, nil
 }

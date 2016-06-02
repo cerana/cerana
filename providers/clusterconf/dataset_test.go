@@ -1,18 +1,17 @@
 package clusterconf_test
 
 import (
-	"encoding/json"
 	"net"
 	"path"
 
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/providers/clusterconf"
-	"github.com/mistifyio/lochness/pkg/kv"
 	"github.com/pborman/uuid"
 )
 
 func (s *clusterConf) TestGetDataset() {
-	dataset := s.addDataset()
+	dataset, err := s.addDataset()
+	s.Require().NoError(err)
 
 	tests := []struct {
 		id    string
@@ -49,8 +48,11 @@ func (s *clusterConf) TestGetDataset() {
 }
 
 func (s *clusterConf) TestUpdateDataset() {
-	dataset := s.addDataset()
-	dataset2 := s.addDataset()
+	dataset, err := s.addDataset()
+	s.Require().NoError(err)
+	dataset2, err := s.addDataset()
+	s.Require().NoError(err)
+
 	tests := []struct {
 		desc     string
 		id       string
@@ -97,7 +99,8 @@ func (s *clusterConf) TestUpdateDataset() {
 }
 
 func (s *clusterConf) TestDeleteDataset() {
-	dataset := s.addDataset()
+	dataset, err := s.addDataset()
+	s.Require().NoError(err)
 
 	tests := []struct {
 		id  string
@@ -126,7 +129,8 @@ func (s *clusterConf) TestDeleteDataset() {
 }
 
 func (s *clusterConf) TestDatasetHeartbeat() {
-	dataset := s.addDataset()
+	dataset, err := s.addDataset()
+	s.Require().NoError(err)
 
 	tests := []struct {
 		id  string
@@ -169,18 +173,22 @@ func (s *clusterConf) TestDatasetHeartbeat() {
 	}
 }
 
-func (s *clusterConf) addDataset() *clusterconf.Dataset {
-	// Populate a dataset
+func (s *clusterConf) addDataset() (*clusterconf.Dataset, error) {
 	dataset := &clusterconf.Dataset{DatasetConf: &clusterconf.DatasetConf{ID: uuid.New()}}
-	sj, _ := json.Marshal(dataset)
-	key := path.Join("datasets", dataset.ID, "config")
-	s.kvp.Data[key] = kv.Value{Data: sj, Index: 1}
-	dataset.ModIndex = 1
+	datasetKey := path.Join("datasets", dataset.ID, "config")
+	hbKey := path.Join("datasets", dataset.ID, "nodes", "127.0.0.1")
 
-	// Give it a node heartbeat
-	key = path.Join("datasets", dataset.ID, "nodes", "127.0.0.1")
-	hbval, _ := json.Marshal(true)
-	s.kvp.Data[key] = kv.Value{Data: hbval, Index: 1}
+	data := map[string]interface{}{
+		datasetKey: dataset,
+		hbKey:      true,
+	}
+	indexes, err := s.loadData(data)
+	if err != nil {
+		return nil, err
+	}
+
+	dataset.ModIndex = indexes[datasetKey]
 	dataset.Nodes = map[string]bool{"127.0.0.1": true}
-	return dataset
+
+	return dataset, nil
 }
