@@ -10,7 +10,7 @@ func DefaultSetup(logLevel string) error {
 	if err != nil {
 		return err
 	}
-	log.SetFormatter(&MistifyFormatter{})
+	log.SetFormatter(&JSONFormatter{})
 	return nil
 }
 
