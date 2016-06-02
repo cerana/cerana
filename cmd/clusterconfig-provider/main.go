@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	log.SetFormatter(&logx.MistifyFormatter{})
+	log.SetFormatter(&logx.JSONFormatter{})
 
 	config := clusterconf.NewConfig(nil, nil)
 	flag.DurationP("dataset-ttl", "d", time.Minute, "ttl for dataset usage heartbeats")
