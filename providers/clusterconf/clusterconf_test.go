@@ -1,6 +1,8 @@
 package clusterconf_test
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/url"
 	"path/filepath"
 	"testing"
@@ -10,7 +12,7 @@ import (
 	"github.com/cerana/cerana/pkg/test"
 	"github.com/cerana/cerana/provider"
 	"github.com/cerana/cerana/providers/clusterconf"
-	"github.com/mistifyio/lochness/pkg/kv"
+	kvp "github.com/cerana/cerana/providers/kv"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/suite"
@@ -21,9 +23,10 @@ type clusterConf struct {
 	coordinator  *test.Coordinator
 	config       *clusterconf.Config
 	clusterConf  *clusterconf.ClusterConf
+	tracker      *acomm.Tracker
 	viper        *viper.Viper
 	responseHook *url.URL
-	kvp          *KVP
+	kvp          *kvp.Mock
 }
 
 func TestClusterConf(t *testing.T) {
@@ -49,29 +52,32 @@ func (s *clusterConf) SetupSuite() {
 	s.config = config
 	s.viper = v
 
-	tracker, err := acomm.NewTracker(filepath.Join(s.coordinator.SocketDir, "tracker.sock"), nil, nil, 5*time.Second)
+	s.tracker, err = acomm.NewTracker(filepath.Join(s.coordinator.SocketDir, "tracker.sock"), nil, nil, 5*time.Second)
 	s.Require().NoError(err)
-	s.Require().NoError(tracker.Start())
+	s.Require().NoError(s.tracker.Start())
 
-	s.clusterConf = clusterconf.New(config, tracker)
+	s.clusterConf = clusterconf.New(config, s.tracker)
 
 	v = s.coordinator.NewProviderViper()
-	flagset = pflag.NewFlagSet("clusterconf", pflag.PanicOnError)
-	config = clusterconf.NewConfig(flagset, v)
+	flagset = pflag.NewFlagSet("kv", pflag.PanicOnError)
+	kvpConfig := provider.NewConfig(flagset, v)
 	s.Require().NoError(flagset.Parse([]string{}))
-	s.Require().NoError(config.LoadConfig())
-	s.kvp = NewKVP(config.Config)
+	s.Require().NoError(kvpConfig.LoadConfig())
+	s.kvp, err = kvp.NewMock(kvpConfig, s.coordinator.ProviderTracker())
+	s.Require().NoError(err)
 	s.coordinator.RegisterProvider(s.kvp)
 
 	s.Require().NoError(s.coordinator.Start())
 }
 
 func (s *clusterConf) TearDownTest() {
-	s.kvp.Data = make(map[string]kv.Value)
+	s.Require().NoError(s.clearData())
 }
 
 func (s *clusterConf) TearDownSuite() {
 	s.coordinator.Stop()
+	s.kvp.Stop()
+	s.tracker.Stop()
 	s.Require().NoError(s.coordinator.Cleanup())
 }
 
@@ -82,4 +88,87 @@ func (s *clusterConf) TestRegisterTasks() {
 	s.clusterConf.RegisterTasks(server)
 
 	s.True(len(server.RegisteredTasks()) > 0)
+}
+
+func (s *clusterConf) loadData(data map[string]interface{}) (map[string]uint64, error) {
+	multiRequest := acomm.NewMultiRequest(s.tracker, 0)
+	requests := make(map[string]*acomm.Request)
+	for key, v := range data {
+		value, err := json.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+		req, err := acomm.NewRequest(acomm.RequestOptions{
+			Task: "kv-update",
+			Args: kvp.UpdateArgs{
+				Key:   key,
+				Value: string(value),
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+		requests[key] = req
+	}
+
+	for name, req := range requests {
+		if err := multiRequest.AddRequest(name, req); err != nil {
+			continue
+		}
+		if err := acomm.Send(s.config.CoordinatorURL(), req); err != nil {
+			multiRequest.RemoveRequest(req)
+			continue
+		}
+	}
+
+	responses := multiRequest.Responses()
+	indexes := make(map[string]uint64)
+	for name := range requests {
+		resp, ok := responses[name]
+		if !ok {
+			return nil, fmt.Errorf("failed to send request: %s", name)
+		}
+		if resp.Error != nil {
+			return nil, fmt.Errorf("request failed: %s: %s", name, resp.Error)
+		}
+		var result kvp.UpdateReturn
+		if err := resp.UnmarshalResult(&result); err != nil {
+			return nil, err
+		}
+		indexes[name] = result.Index
+	}
+
+	return indexes, nil
+}
+
+func (s *clusterConf) clearData() error {
+	respChan := make(chan *acomm.Response, 1)
+	defer close(respChan)
+	rh := func(_ *acomm.Request, resp *acomm.Response) {
+		respChan <- resp
+	}
+
+	req, err := acomm.NewRequest(acomm.RequestOptions{
+		Task:         "kv-delete",
+		ResponseHook: s.tracker.URL(),
+		Args: kvp.DeleteArgs{
+			Key:       "",
+			Recursive: true,
+		},
+		SuccessHandler: rh,
+		ErrorHandler:   rh,
+	})
+	if err != nil {
+		return err
+	}
+	if err := s.tracker.TrackRequest(req, 0); err != nil {
+		return err
+	}
+	if err := acomm.Send(s.config.CoordinatorURL(), req); err != nil {
+		s.tracker.RemoveRequest(req)
+		return err
+	}
+
+	resp := <-respChan
+	return resp.Error
 }
