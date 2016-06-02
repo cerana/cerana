@@ -13,7 +13,7 @@ import (
 
 // Mock is a mock KV provider
 type Mock struct {
-	kv  *KV
+	*KV
 	dir string
 	cmd *exec.Cmd
 }
@@ -44,7 +44,7 @@ func NewMock(config *provider.Config, tracker *acomm.Tracker) (*Mock, error) {
 		return nil, err
 	}
 
-	return &Mock{kv: kv, cmd: s.KVCmd, dir: s.KVDir}, nil
+	return &Mock{KV: kv, cmd: s.KVCmd, dir: s.KVDir}, nil
 }
 
 // Stop will stop the kv and remove the temporary directory used for it's data
