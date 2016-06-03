@@ -12,7 +12,7 @@ import (
 	"github.com/cerana/cerana/pkg/test"
 	"github.com/cerana/cerana/provider"
 	"github.com/cerana/cerana/providers/clusterconf"
-	kvp "github.com/cerana/cerana/providers/kv"
+	"github.com/cerana/cerana/providers/kv"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/suite"
@@ -26,7 +26,7 @@ type clusterConf struct {
 	tracker      *acomm.Tracker
 	viper        *viper.Viper
 	responseHook *url.URL
-	kvp          *kvp.Mock
+	kv           *kv.Mock
 }
 
 func TestClusterConf(t *testing.T) {
@@ -60,12 +60,12 @@ func (s *clusterConf) SetupSuite() {
 
 	v = s.coordinator.NewProviderViper()
 	flagset = pflag.NewFlagSet("kv", pflag.PanicOnError)
-	kvpConfig := provider.NewConfig(flagset, v)
+	kvConfig := provider.NewConfig(flagset, v)
 	s.Require().NoError(flagset.Parse([]string{}))
-	s.Require().NoError(kvpConfig.LoadConfig())
-	s.kvp, err = kvp.NewMock(kvpConfig, s.coordinator.ProviderTracker())
+	s.Require().NoError(kvConfig.LoadConfig())
+	s.kv, err = kv.NewMock(kvConfig, s.coordinator.ProviderTracker())
 	s.Require().NoError(err)
-	s.coordinator.RegisterProvider(s.kvp)
+	s.coordinator.RegisterProvider(s.kv)
 
 	s.Require().NoError(s.coordinator.Start())
 }
@@ -76,7 +76,7 @@ func (s *clusterConf) TearDownTest() {
 
 func (s *clusterConf) TearDownSuite() {
 	s.coordinator.Stop()
-	s.kvp.Stop()
+	s.kv.Stop()
 	s.tracker.Stop()
 	s.Require().NoError(s.coordinator.Cleanup())
 }
@@ -100,7 +100,7 @@ func (s *clusterConf) loadData(data map[string]interface{}) (map[string]uint64, 
 		}
 		req, err := acomm.NewRequest(acomm.RequestOptions{
 			Task: "kv-update",
-			Args: kvp.UpdateArgs{
+			Args: kv.UpdateArgs{
 				Key:   key,
 				Value: string(value),
 			},
@@ -131,7 +131,7 @@ func (s *clusterConf) loadData(data map[string]interface{}) (map[string]uint64, 
 		if resp.Error != nil {
 			return nil, fmt.Errorf("request failed: %s: %s", name, resp.Error)
 		}
-		var result kvp.UpdateReturn
+		var result kv.UpdateReturn
 		if err := resp.UnmarshalResult(&result); err != nil {
 			return nil, err
 		}
@@ -151,7 +151,7 @@ func (s *clusterConf) clearData() error {
 	req, err := acomm.NewRequest(acomm.RequestOptions{
 		Task:         "kv-delete",
 		ResponseHook: s.tracker.URL(),
-		Args: kvp.DeleteArgs{
+		Args: kv.DeleteArgs{
 			Key:       "",
 			Recursive: true,
 		},
