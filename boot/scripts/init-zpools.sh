@@ -13,7 +13,7 @@ configure_filesystems()
 {
 	# Do we have the zpool?
 	zpool list $ZPOOL > /dev/null 2>&1
-	if [ $? -ne 0 ]; then
+	if [[ $? -ne 0 ]];then
 	    echo "ERROR: \"$ZPOOL\" pool is not present!"
 	    return 1
 	fi
@@ -23,15 +23,7 @@ configure_filesystems()
 		zfs list $ZPOOL/$fs > /dev/null 2>&1 || zfs create $ZPOOL/$fs
 	done
 
-	local compression=$(zfs get compression -Ho value $ZPOOL)
-	if [ "$compression" = "off" ]; then
-		zfs set compression=lz4 $ZPOOL
-	fi
-
-	local quota=$(zfs get quota -Ho value $ZPOOL/private)
-	if [ "$quota" = "none" ]; then
-		zfs set quota=32G $ZPOOL/private
-	fi
+	[[ "off" = $(zfs get compression -Ho value $ZPOOL) ]] && zfs set compression=lz4 $ZPOOL
 }
 
 # Gather a list of disk devices into an array
@@ -64,26 +56,26 @@ prompt_user()
 	echo
 	echo "The available automatic configuration options are:"
 	echo
-	if [ ${#DISKARRAY[@]} -eq 0 ]; then
+	if [[ ${#DISKARRAY[@]} -eq 0 ]];then
 		echo "ERROR: This server has no disks!"
 		exit
-	elif [ ${#DISKARRAY[@]} -eq 1 ]; then
+	elif [[ ${#DISKARRAY[@]} -eq 1 ]];then
 		echo " stripe (${#DISKARRAY[@]} disk) *"
 		AUTO="stripe"
-	elif [ ${#DISKARRAY[@]} -eq 2 ]; then
+	elif [[ ${#DISKARRAY[@]} -eq 2 ]];then
 		echo " stripe (${#DISKARRAY[@]} disks) *"
 		echo " mirror (${#DISKARRAY[@]} disks)"
 		AUTO="mirror"
-	elif [ ${#DISKARRAY[@]} -eq 3 ]; then
+	elif [[ ${#DISKARRAY[@]} -eq 3 ]];then
 		echo " stripe (${#DISKARRAY[@]} disks) *"
 		echo " raidz (${#DISKARRAY[@]} disks)"
 		AUTO="raidz"
-	elif [ ${#DISKARRAY[@]} -eq 4 ]; then
+	elif [[ ${#DISKARRAY[@]} -eq 4 ]];then
 		echo " stripe (${#DISKARRAY[@]} disks) *"
 		echo " raidz (${#DISKARRAY[@]} disks)"
 		echo " raidz2 (${#DISKARRAY[@]} disks)"
 		AUTO="raidz"
-	elif [ ${#DISKARRAY[@]} -gt 4 ]; then
+	elif [[ ${#DISKARRAY[@]} -gt 4 ]];then
 		echo " stripe (${#DISKARRAY[@]} disks) *"
 		echo " raidz (${#DISKARRAY[@]} disks)"
 		echo " raidz2 (${#DISKARRAY[@]} disks)"
@@ -103,7 +95,7 @@ prompt_user()
 	echo
 
 	answer=${CERANA_KOPT_ZFS_CONFIG}
-	while [ ! $answer ]; do
+	while [[ ! $answer ]];do
 		echo -n "Selection: "
 		read answer
 	done
@@ -141,7 +133,7 @@ configure_pool()
 	# If manual pool creation was selected, run a sub-shell and check
 	# to make sure the pool was actually created after the sub-shell
 	# was exited. If not, run the shell again.
-	if [ "$POOLTYPE" = "manual" ]; then
+	if [[ "$POOLTYPE" = "manual" ]];then
 		# Execute shell for manual zpool config; then create zfs FSs
 		echo "When finished, type \"exit\" or Ctrl-D"
 		echo "The option \"-o cachefile=none\" MUST be specified"
@@ -150,7 +142,7 @@ configure_pool()
 	fi
 
 	# Stripes are easy
-	if [ "$POOLTYPE" == "stripe" ]; then
+	if [[ "$POOLTYPE" == "stripe" ]];then
 		ZPOOLARGS="${DISKARRAY[*]}"
 	fi
 
@@ -160,7 +152,7 @@ configure_pool()
 	# TODO: Works for 1 pair of disks. If we have an even number of disks,
 	# 2 pairs or more, we should do the math and go through the effort to
 	# make that an option.
-	if [ "$POOLTYPE" == "mirror" ]; then
+	if [[ "$POOLTYPE" == "mirror" ]];then
 		ZPOOLARGS="mirror ${DISKARRAY[*]}"
 	fi
 
@@ -183,12 +175,12 @@ configure_pool()
 		-o cachefile=none \
 		$ZPOOL $ZPOOLARGS
 
-	if [ $? -ne 0 ]; then
+	if [[ $? -ne 0 ]];then
 	    return 1
 	fi
 
 	# Pause until the zpool is imported and mounted
-	while [ ! -d /$ZPOOL ]
+	while [[ ! -d /$ZPOOL ]]
 	do
 		sleep 2
 	done
@@ -204,10 +196,10 @@ zpool import -f $ZPOOL > /dev/null 2>&1
 
 # We did not detect a zpool by the name of $ZPOOL, so start the process to
 # create one.
-if [ $? -ne 0 ]; then
-	while [ ! -d /$ZPOOL ]; do
+if [[ $? -ne 0 ]];then
+	while [[ ! -d /$ZPOOL ]];do
 		get_disklist
-		while [ ! "$POOLTYPE" ]; do
+		while [[ ! "$POOLTYPE" ]];do
 			prompt_user
 		done
 		configure_pool
