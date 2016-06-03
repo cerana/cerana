@@ -24,9 +24,9 @@ func (s *clusterConf) TestValidate() {
 	datasetTTL := s.config.DatasetTTL()
 	bundleTTL := s.config.DatasetTTL()
 	nodeTTL := s.config.DatasetTTL()
-	defer s.viper.Set("dataset_ttl", datasetTTL)
-	defer s.viper.Set("bundle_ttl", bundleTTL)
-	defer s.viper.Set("node_ttl", nodeTTL)
+	defer s.viper.Set("dataset_ttl", datasetTTL.String())
+	defer s.viper.Set("bundle_ttl", bundleTTL.String())
+	defer s.viper.Set("node_ttl", nodeTTL.String())
 
 	ttlTypes := []string{
 		"dataset_ttl",
@@ -35,15 +35,15 @@ func (s *clusterConf) TestValidate() {
 	}
 
 	tests := []struct {
-		duration time.Duration
+		duration string
 		valid    bool
 	}{
-		{0, false},
-		{-1, false},
-		{-1 * time.Second, false},
-		{time.Second, true},
-		{time.Minute, true},
-		{time.Hour, true},
+		{"0", false},
+		{"1", false},
+		{"-1s", false},
+		{"1s", true},
+		{"1m", true},
+		{"1h", true},
 	}
 
 	for _, ttlType := range ttlTypes {

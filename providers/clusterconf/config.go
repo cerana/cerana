@@ -17,9 +17,9 @@ type Config struct {
 // ConfigData defines the structure of the config data (e.g. in the config file)
 type ConfigData struct {
 	provider.ConfigData
-	DatasetTTL time.Duration `json:"datasetTTL"`
-	BundleTTL  time.Duration `json:"bundleTTL"`
-	NodeTTL    time.Duration `json:"NodeTTL"`
+	DatasetTTL string `json:"datasetTTL"`
+	BundleTTL  string `json:"bundleTTL"`
+	NodeTTL    string `json:"nodeTTL"`
 }
 
 // NewConfig creates a new instance of Config.
@@ -29,23 +29,32 @@ func NewConfig(flagSet *pflag.FlagSet, v *viper.Viper) *Config {
 
 // DatasetTTL returns the TTL for dataset node heartbeats.
 func (c *Config) DatasetTTL() time.Duration {
-	var datasetTTL time.Duration
-	_ = c.UnmarshalKey("dataset_ttl", &datasetTTL)
-	return datasetTTL
+	var ttlString string
+	_ = c.UnmarshalKey("dataset_ttl", &ttlString)
+	// Since errors lead to a 0 value and 0 is considered invalid, safe to
+	// ignore the error.
+	ttl, _ := time.ParseDuration(ttlString)
+	return ttl
 }
 
 // BundleTTL returns the TTL for bundle node heartbeats.
 func (c *Config) BundleTTL() time.Duration {
-	var datasetTTL time.Duration
-	_ = c.UnmarshalKey("bundle_ttl", &datasetTTL)
-	return datasetTTL
+	var ttlString string
+	_ = c.UnmarshalKey("bundle_ttl", &ttlString)
+	// Since errors lead to a 0 value and 0 is considered invalid, safe to
+	// ignore the error.
+	ttl, _ := time.ParseDuration(ttlString)
+	return ttl
 }
 
 // NodeTTL returns the TTL for node heartbeats.
 func (c *Config) NodeTTL() time.Duration {
-	var nodeTTL time.Duration
-	_ = c.UnmarshalKey("node_ttl", &nodeTTL)
-	return nodeTTL
+	var ttlString string
+	_ = c.UnmarshalKey("node_ttl", &ttlString)
+	// Since errors lead to a 0 value and 0 is considered invalid, safe to
+	// ignore the error.
+	ttl, _ := time.ParseDuration(ttlString)
+	return ttl
 }
 
 // Validate returns whether the config is valid, containing necessary values.

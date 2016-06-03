@@ -41,9 +41,9 @@ func (s *clusterConf) SetupSuite() {
 	s.responseHook, _ = url.ParseRequestURI("unix:///tmp/foobar")
 
 	v := s.coordinator.NewProviderViper()
-	v.Set("dataset_ttl", time.Minute)
-	v.Set("bundle_ttl", time.Minute)
-	v.Set("node_ttl", time.Minute)
+	v.Set("dataset_ttl", time.Minute.String())
+	v.Set("bundle_ttl", time.Minute.String())
+	v.Set("node_ttl", time.Minute.String())
 	flagset := pflag.NewFlagSet("clusterconf", pflag.PanicOnError)
 	config := clusterconf.NewConfig(flagset, v)
 	s.Require().NoError(flagset.Parse([]string{}))
