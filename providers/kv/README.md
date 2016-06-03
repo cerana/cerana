@@ -147,6 +147,7 @@ LockArgs specifies the arguments to the "kv-lock" endpoint.
 
 ```go
 type Mock struct {
+	*KV
 }
 ```
 

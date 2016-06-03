@@ -1,0 +1,7 @@
+{
+    "service_name": "systemd-provider",
+    "coordinator_url": "unix:///tmp/mistify/coordinator/coordinator.sock",
+    "dataset-ttl": "1m",
+    "bundle-ttl": "1m",
+    "node-ttl": "1m"
+}
