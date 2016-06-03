@@ -45,7 +45,7 @@ function parse_boot_args() {
 if [[ "test" == $1 ]]
 then
     CERANA_BOOTCFG=/dev/stdout
-    CMDLINE="cerana.zfs_config=auto cerana.cluster_ips=10.2.3.4,10.2.3.5 cerana.cluster_bootstrap cerana.rescue cerana.mgmt_mac=00:00:00:00 cerana.mgmt_ip=10.2.3.6 cerana.mgmt_gw=10.2.3.1"
+    CMDLINE="cerana.zfs_config=auto cerana.cluster_ips=10.2.3.4,10.2.3.5 cerana.cluster_bootstrap cerana.rescue cerana.mgmt_mac=00:00:00:00 cerana.mgmt_ip=10.2.3.6/24 cerana.mgmt_gw=10.2.3.1"
 fi
 
 parse_boot_args
