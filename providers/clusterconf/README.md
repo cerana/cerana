@@ -625,7 +625,7 @@ UpdateService updates a mock service.
 ```go
 type MockClusterData struct {
 	Services map[string]*Service
-	Bundles  map[int]*Bundle
+	Bundles  map[uint64]*Bundle
 	Datasets map[string]*Dataset
 	Nodes    map[string]*Node
 	History  NodesHistory
