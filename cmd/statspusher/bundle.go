@@ -117,7 +117,7 @@ func (s *statsPusher) getSerial() (string, error) {
 	return data.Hostname, nil
 }
 
-func (s *statsPusher) sendBundleHeartbeats(bundles []int, serial string, ip net.IP) error {
+func (s *statsPusher) sendBundleHeartbeats(bundles []uint64, serial string, ip net.IP) error {
 	var errored bool
 
 	multiRequest := acomm.NewMultiRequest(s.tracker, s.config.requestTimeout())
@@ -135,7 +135,7 @@ func (s *statsPusher) sendBundleHeartbeats(bundles []int, serial string, ip net.
 			errored = true
 			continue
 		}
-		if err := multiRequest.AddRequest(strconv.Itoa(bundle), req); err != nil {
+		if err := multiRequest.AddRequest(strconv.FormatUint(bundle, 10), req); err != nil {
 			errored = true
 			continue
 		}
@@ -160,25 +160,25 @@ func (s *statsPusher) sendBundleHeartbeats(bundles []int, serial string, ip net.
 }
 
 // TODO: Make this actually run health checks
-func (s *statsPusher) runHealthChecks(bundles []*clusterconf.Bundle) ([]int, error) {
-	healthy := make([]int, len(bundles))
+func (s *statsPusher) runHealthChecks(bundles []*clusterconf.Bundle) ([]uint64, error) {
+	healthy := make([]uint64, len(bundles))
 	for i, bundle := range bundles {
 		healthy[i] = bundle.ID
 	}
 	return healthy, nil
 }
 
-func extractBundles(units []dbus.UnitStatus) []int {
-	dedupe := make(map[int]bool)
+func extractBundles(units []dbus.UnitStatus) []uint64 {
+	dedupe := make(map[uint64]bool)
 	for _, unit := range units {
 		// bundleID:serviceID
 		parts := strings.Split(unit.Name, ":")
-		bundleID, err := strconv.Atoi(parts[0])
+		bundleID, err := strconv.ParseUint(parts[0], 10, 64)
 		if err == nil && len(parts) == 2 && uuid.Parse(parts[1]) != nil {
 			dedupe[bundleID] = true
 		}
 	}
-	ids := make([]int, 0, len(dedupe))
+	ids := make([]uint64, 0, len(dedupe))
 	for id := range dedupe {
 		ids = append(ids, id)
 	}

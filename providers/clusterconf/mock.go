@@ -20,7 +20,7 @@ type MockClusterConf struct {
 // MockClusterData is the in-memory data structure for a MockClusterConf.
 type MockClusterData struct {
 	Services map[string]*Service
-	Bundles  map[int]*Bundle
+	Bundles  map[uint64]*Bundle
 	Datasets map[string]*Dataset
 	Nodes    map[string]*Node
 	History  NodesHistory
@@ -32,7 +32,7 @@ func NewMockClusterConf() *MockClusterConf {
 	return &MockClusterConf{
 		Data: &MockClusterData{
 			Services: make(map[string]*Service),
-			Bundles:  make(map[int]*Bundle),
+			Bundles:  make(map[uint64]*Bundle),
 			Datasets: make(map[string]*Dataset),
 			Nodes:    make(map[string]*Node),
 			History:  make(NodesHistory),
@@ -99,7 +99,7 @@ func (c *MockClusterConf) UpdateBundle(req *acomm.Request) (interface{}, *url.UR
 
 	if args.Bundle.ID == 0 {
 		rand.Seed(time.Now().UnixNano())
-		args.Bundle.ID = rand.Int()
+		args.Bundle.ID = uint64(rand.Int63())
 	}
 
 	args.Bundle.ModIndex++

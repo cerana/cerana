@@ -147,12 +147,12 @@ func (c *ClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL, er
 		return nil, nil, err
 	}
 	// extract and deduplicate the bundle ids
-	ids := make(map[int]bool)
+	ids := make(map[uint64]bool)
 	for _, key := range keys {
 		// keys are full paths and include all child keys.
 		// e.g. {prefix}/{id}/{rest/of/path}
 		idS := strings.Split(strings.TrimPrefix(key, bundlesPrefix), "/")[0]
-		id, err := strconv.Atoi(idS)
+		id, err := strconv.ParseUint(idS, 10, 64)
 		if err != nil {
 			return nil, nil, errors.New("invalid bundle id")
 		}
@@ -166,7 +166,7 @@ func (c *ClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL, er
 	defer close(errChan)
 	for id := range ids {
 		wg.Add(1)
-		go func(id int) {
+		go func(id uint64) {
 			defer wg.Done()
 			ds, err := c.getBundle(id)
 			if err != nil {

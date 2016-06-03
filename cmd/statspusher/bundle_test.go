@@ -10,6 +10,12 @@ import (
 	"github.com/pborman/uuid"
 )
 
+type uint64s []uint64
+
+func (u uint64s) Len() int           { return len(u) }
+func (u uint64s) Swap(i, j int)      { u[i], u[j] = u[j], u[i] }
+func (u uint64s) Less(i, j int) bool { return u[i] < u[j] }
+
 func (s *StatsPusher) TestGetSerial() {
 	serial, err := s.statsPusher.getSerial()
 	if !s.NoError(err) {
@@ -25,17 +31,17 @@ func (s *StatsPusher) extractBundles() {
 func (s *StatsPusher) TestGetBundles() {
 	tests := []struct {
 		desc   string
-		known  []int
-		local  []int
-		result []int
+		known  []uint64
+		local  []uint64
+		result uint64s
 	}{
-		{"empty", []int{}, []int{}, []int{}},
-		{"known only", []int{123}, []int{}, []int{}},
-		{"local only", []int{}, []int{123}, []int{}},
-		{"both, single", []int{123}, []int{123}, []int{123}},
-		{"extra local", []int{123}, []int{123, 456}, []int{123}},
-		{"extra known", []int{123, 456}, []int{123}, []int{123}},
-		{"both, multiple", []int{123, 456}, []int{123, 456}, []int{123, 456}},
+		{"empty", []uint64{}, []uint64{}, []uint64{}},
+		{"known only", []uint64{123}, []uint64{}, []uint64{}},
+		{"local only", []uint64{}, []uint64{123}, []uint64{}},
+		{"both, single", []uint64{123}, []uint64{123}, []uint64{123}},
+		{"extra local", []uint64{123}, []uint64{123, 456}, []uint64{123}},
+		{"extra known", []uint64{123, 456}, []uint64{123}, []uint64{123}},
+		{"both, multiple", []uint64{123, 456}, []uint64{123, 456}, []uint64{123, 456}},
 	}
 
 	for _, test := range tests {
@@ -46,7 +52,7 @@ func (s *StatsPusher) TestGetBundles() {
 				s.systemd.Data.Statuses[serviceName] = dbus.UnitStatus{Name: serviceName}
 			}
 		}
-		s.clusterConf.Data.Bundles = make(map[int]*clusterconf.Bundle)
+		s.clusterConf.Data.Bundles = make(map[uint64]*clusterconf.Bundle)
 		for _, id := range test.known {
 			s.clusterConf.Data.Bundles[id] = &clusterconf.Bundle{BundleConf: &clusterconf.BundleConf{ID: id}}
 		}
@@ -54,12 +60,12 @@ func (s *StatsPusher) TestGetBundles() {
 		if !s.NoError(err, test.desc) {
 			continue
 		}
-		bundleIDs := make([]int, 0, len(bundles))
+		bundleIDs := make(uint64s, 0, len(bundles))
 		for _, bundle := range bundles {
 			bundleIDs = append(bundleIDs, bundle.ID)
 		}
-		sort.Ints(test.result)
-		sort.Ints(bundleIDs)
+		sort.Sort(uint64s(test.result))
+		sort.Sort(uint64s(bundleIDs))
 		s.Equal(test.result, bundleIDs, test.desc)
 	}
 }
@@ -78,7 +84,7 @@ func (s *StatsPusher) TestRunHealthChecks() {
 func (s *StatsPusher) TestSendBundleHeartbeats() {
 	serial := "foobar"
 	ip := net.ParseIP("123.123.123.123")
-	bundles := []int{123, 456}
+	bundles := []uint64{123, 456}
 	for _, id := range bundles {
 		s.clusterConf.Data.Bundles[id] = &clusterconf.Bundle{BundleConf: &clusterconf.BundleConf{ID: id}}
 	}
