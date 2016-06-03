@@ -17,12 +17,12 @@ func (s *clusterConf) TestGetBundle() {
 
 	tests := []struct {
 		desc  string
-		id    int
+		id    uint64
 		nodes map[string]net.IP
 		err   string
 	}{
 		{"zero id", 0, make(map[string]net.IP), "missing arg: id"},
-		{"nonexistent id", rand.Intn(100), make(map[string]net.IP), "bundle config not found"},
+		{"nonexistent id", uint64(rand.Uint32()), make(map[string]net.IP), "bundle config not found"},
 		{"existent id", bundle.ID, bundle.Nodes, ""},
 	}
 
@@ -58,12 +58,12 @@ func (s *clusterConf) TestUpdateBundle() {
 
 	tests := []struct {
 		desc     string
-		id       int
+		id       uint64
 		modIndex uint64
 		err      string
 	}{
 		{"no id", 0, 0, ""},
-		{"new id", rand.Intn(100), 0, ""},
+		{"new id", uint64(rand.Uint32()), 0, ""},
 		{"create existing id", bundle.ID, 0, "CAS failed"},
 		{"update existing id", bundle2.ID, bundle2.ModIndex, ""},
 	}
@@ -106,16 +106,16 @@ func (s *clusterConf) TestDeleteBundle() {
 	s.Require().NoError(err)
 
 	tests := []struct {
-		id  int
+		id  uint64
 		err string
 	}{
 		{0, "missing arg: id"},
-		{rand.Intn(100), "bundle config not found"},
+		{uint64(rand.Uint32()), "bundle config not found"},
 		{bundle.ID, ""},
 	}
 
 	for _, test := range tests {
-		desc := strconv.Itoa(test.id)
+		desc := strconv.FormatUint(test.id, 10)
 		req, err := acomm.NewRequest(acomm.RequestOptions{
 			Task: "delete-bundle",
 			Args: &clusterconf.BundleIDArgs{ID: test.id},
@@ -137,7 +137,7 @@ func (s *clusterConf) TestBundleHeartbeat() {
 	s.Require().NoError(err)
 
 	tests := []struct {
-		id     int
+		id     uint64
 		serial string
 		ip     net.IP
 		err    string
@@ -146,7 +146,7 @@ func (s *clusterConf) TestBundleHeartbeat() {
 		{0, "", net.ParseIP("127.0.0.2"), "missing arg: id"},
 		{bundle.ID, "", net.IP{}, "missing arg: serial"},
 		{bundle.ID, uuid.New(), net.IP{}, "missing arg: ip"},
-		{rand.Intn(100), uuid.New(), net.ParseIP("127.0.0.3"), "bundle config not found"},
+		{uint64(rand.Uint32()), uuid.New(), net.ParseIP("127.0.0.3"), "bundle config not found"},
 		{bundle.ID, uuid.New(), net.ParseIP("127.0.0.4"), ""},
 	}
 
@@ -185,18 +185,18 @@ func (s *clusterConf) TestBundleHeartbeat() {
 
 func (s *clusterConf) addBundle() (*clusterconf.Bundle, error) {
 	bundle := &clusterconf.Bundle{BundleConf: &clusterconf.BundleConf{
-		ID: rand.Intn(100),
+		ID: uint64(rand.Uint32()),
 		Ports: clusterconf.BundlePorts{
 			1: &clusterconf.BundlePort{
 				Port: 1,
 			},
 		},
 	}}
-	bundleKey := path.Join("bundles", strconv.Itoa(bundle.ID), "config")
+	bundleKey := path.Join("bundles", strconv.FormatUint(bundle.ID, 10), "config")
 
 	serial := uuid.New()
 	ip := net.ParseIP("127.0.0.1")
-	nodeKey := path.Join("bundles", strconv.Itoa(bundle.ID), "nodes", serial)
+	nodeKey := path.Join("bundles", strconv.FormatUint(bundle.ID, 10), "nodes", serial)
 
 	data := map[string]interface{}{
 		bundleKey: bundle,

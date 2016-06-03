@@ -29,7 +29,7 @@ type Bundle struct {
 
 // BundleConf is the configuration of a bundle.
 type BundleConf struct {
-	ID         int                       `json:"id"`
+	ID         uint64                    `json:"id"`
 	Datasets   map[string]*BundleDataset `json:"datasets"`
 	Services   map[string]*BundleService `json:"services"`
 	Redundancy int                       `json:"redundancy"`
@@ -100,7 +100,7 @@ type BundlePort struct {
 
 // BundleIDArgs are args for bundle tasks that only require bundle id.
 type BundleIDArgs struct {
-	ID int `json:"id"`
+	ID uint64 `json:"id"`
 }
 
 // BundlePayload can be used for task args or result when a bundle object needs
@@ -111,7 +111,7 @@ type BundlePayload struct {
 
 // BundleHeartbeatArgs are arguments for updating a dataset node heartbeat.
 type BundleHeartbeatArgs struct {
-	ID     int    `json:"id"`
+	ID     uint64 `json:"id"`
 	Serial string `json:"serial"`
 	IP     net.IP `json:"ip"`
 }
@@ -147,7 +147,7 @@ func (c *ClusterConf) UpdateBundle(req *acomm.Request) (interface{}, *url.URL, e
 
 	if args.Bundle.ID == 0 {
 		rand.Seed(time.Now().UnixNano())
-		args.Bundle.ID = rand.Int()
+		args.Bundle.ID = uint64(rand.Uint32())
 	}
 
 	if err := args.Bundle.update(); err != nil {
@@ -202,7 +202,7 @@ func (c *ClusterConf) BundleHeartbeat(req *acomm.Request) (interface{}, *url.URL
 	return &BundlePayload{bundle}, nil, nil
 }
 
-func (c *ClusterConf) getBundle(id int) (*Bundle, error) {
+func (c *ClusterConf) getBundle(id uint64) (*Bundle, error) {
 	bundle := &Bundle{
 		c:          c,
 		BundleConf: &BundleConf{ID: id},
@@ -215,7 +215,7 @@ func (c *ClusterConf) getBundle(id int) (*Bundle, error) {
 
 func (b *Bundle) reload() error {
 	var err error
-	key := path.Join(bundlesPrefix, strconv.Itoa(b.ID))
+	key := path.Join(bundlesPrefix, strconv.FormatUint(b.ID, 10))
 	values, err := b.c.kvGetAll(key) // Blocking
 	if err != nil {
 		return err
@@ -249,14 +249,14 @@ func (b *Bundle) reload() error {
 }
 
 func (b *Bundle) delete() error {
-	key := path.Join(bundlesPrefix, strconv.Itoa(b.ID))
+	key := path.Join(bundlesPrefix, strconv.FormatUint(b.ID, 10))
 	return b.c.kvDelete(key, b.ModIndex)
 }
 
 // update saves the core bundle config.
 // It will not modify nodes.
 func (b *Bundle) update() error {
-	key := path.Join(bundlesPrefix, strconv.Itoa(b.ID), "config")
+	key := path.Join(bundlesPrefix, strconv.FormatUint(b.ID, 10), "config")
 
 	_, err := b.c.kvUpdate(key, b.BundleConf, b.ModIndex)
 	if err != nil {
@@ -268,7 +268,7 @@ func (b *Bundle) update() error {
 }
 
 func (b *Bundle) nodeHeartbeat(serial string, ip net.IP) error {
-	key := path.Join(bundlesPrefix, strconv.Itoa(b.ID), "nodes", serial)
+	key := path.Join(bundlesPrefix, strconv.FormatUint(b.ID, 10), "nodes", serial)
 	if err := b.c.kvEphemeral(key, ip, b.c.config.BundleTTL()); err != nil {
 		return err
 	}
