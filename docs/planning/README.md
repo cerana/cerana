@@ -32,6 +32,7 @@ File System Layout
 * /$zpool/platform/${version}/{bzImage,initrd}
 * /$zpool/platform/grub.conf
 
+* /etc/systemd-mutable/system (writable/mutable directory NixOS systemd will look for unit files. we must create it ourselves)
 
 Software in image:
 ------------------
