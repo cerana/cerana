@@ -147,7 +147,7 @@ func (c *ClusterConf) UpdateBundle(req *acomm.Request) (interface{}, *url.URL, e
 
 	if args.Bundle.ID == 0 {
 		rand.Seed(time.Now().UnixNano())
-		args.Bundle.ID = uint64(rand.Uint32())
+		args.Bundle.ID = uint64(rand.Int63())
 	}
 
 	if err := args.Bundle.update(); err != nil {

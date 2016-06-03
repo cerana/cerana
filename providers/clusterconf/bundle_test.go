@@ -22,7 +22,7 @@ func (s *clusterConf) TestGetBundle() {
 		err   string
 	}{
 		{"zero id", 0, make(map[string]net.IP), "missing arg: id"},
-		{"nonexistent id", uint64(rand.Uint32()), make(map[string]net.IP), "bundle config not found"},
+		{"nonexistent id", uint64(rand.Int63()), make(map[string]net.IP), "bundle config not found"},
 		{"existent id", bundle.ID, bundle.Nodes, ""},
 	}
 
@@ -63,7 +63,7 @@ func (s *clusterConf) TestUpdateBundle() {
 		err      string
 	}{
 		{"no id", 0, 0, ""},
-		{"new id", uint64(rand.Uint32()), 0, ""},
+		{"new id", uint64(rand.Int63()), 0, ""},
 		{"create existing id", bundle.ID, 0, "CAS failed"},
 		{"update existing id", bundle2.ID, bundle2.ModIndex, ""},
 	}
@@ -110,7 +110,7 @@ func (s *clusterConf) TestDeleteBundle() {
 		err string
 	}{
 		{0, "missing arg: id"},
-		{uint64(rand.Uint32()), "bundle config not found"},
+		{uint64(rand.Int63()), "bundle config not found"},
 		{bundle.ID, ""},
 	}
 
@@ -146,7 +146,7 @@ func (s *clusterConf) TestBundleHeartbeat() {
 		{0, "", net.ParseIP("127.0.0.2"), "missing arg: id"},
 		{bundle.ID, "", net.IP{}, "missing arg: serial"},
 		{bundle.ID, uuid.New(), net.IP{}, "missing arg: ip"},
-		{uint64(rand.Uint32()), uuid.New(), net.ParseIP("127.0.0.3"), "bundle config not found"},
+		{uint64(rand.Int63()), uuid.New(), net.ParseIP("127.0.0.3"), "bundle config not found"},
 		{bundle.ID, uuid.New(), net.ParseIP("127.0.0.4"), ""},
 	}
 
@@ -185,7 +185,7 @@ func (s *clusterConf) TestBundleHeartbeat() {
 
 func (s *clusterConf) addBundle() (*clusterconf.Bundle, error) {
 	bundle := &clusterconf.Bundle{BundleConf: &clusterconf.BundleConf{
-		ID: uint64(rand.Uint32()),
+		ID: uint64(rand.Int63()),
 		Ports: clusterconf.BundlePorts{
 			1: &clusterconf.BundlePort{
 				Port: 1,
