@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+
 	log "github.com/Sirupsen/logrus"
 	logx "github.com/cerana/cerana/pkg/logrusx"
 	"github.com/cerana/cerana/provider"
@@ -32,6 +34,7 @@ func main() {
 
 func dieOnError(err error) {
 	if err != nil {
-		log.Fatal("encountered an error during startup")
+		log.Fatal("encountered an error during startup, error:", err)
+		os.Exit(1)
 	}
 }

@@ -6,15 +6,15 @@ import (
 	log "github.com/Sirupsen/logrus"
 	logx "github.com/cerana/cerana/pkg/logrusx"
 	"github.com/cerana/cerana/provider"
-	"github.com/cerana/cerana/providers/systemd"
+	"github.com/cerana/cerana/providers/kv"
 	flag "github.com/spf13/pflag"
 )
 
 func main() {
 	log.SetFormatter(&logx.JSONFormatter{})
 
-	config := systemd.NewConfig(nil, nil)
-	flag.StringP("unit-file-dir", "d", "", "directory in which to create unit files")
+	config := kv.NewConfig(nil, nil)
+	flag.StringP("address", "a", "", "kv address (leave blank for default)")
 	flag.Parse()
 
 	dieOnError(config.LoadConfig())
@@ -22,16 +22,17 @@ func main() {
 
 	server, err := provider.NewServer(config.Config)
 	dieOnError(err)
-	s, err := systemd.New(config)
-	dieOnError(err)
-	s.RegisterTasks(server)
 
-	if len(server.RegisteredTasks()) != 0 {
-		dieOnError(server.Start())
-		server.StopOnSignal()
-	} else {
+	k, err := kv.New(config, server.Tracker())
+	dieOnError(err)
+	k.RegisterTasks(server)
+
+	if len(server.RegisteredTasks()) == 0 {
 		log.Warn("no registered tasks, exiting")
+		os.Exit(1)
 	}
+	dieOnError(server.Start())
+	server.StopOnSignal()
 }
 
 func dieOnError(err error) {
