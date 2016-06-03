@@ -13,7 +13,7 @@ type Bundle struct {
 	*BundleConf
 
 	// Nodes contains the set of nodes on which the dataset is currently in use.
-	// THe map keys are serials.
+	// The map keys are serials.
 	Nodes map[string]net.IP `json:"nodes"`
 	// ModIndex should be treated as opaque, but passed back on updates.
 	ModIndex uint64 `json:"modIndex"`
@@ -26,7 +26,7 @@ Bundle is information about a bundle of services.
 
 ```go
 type BundleConf struct {
-	ID         int                       `json:"id"`
+	ID         uint64                    `json:"id"`
 	Datasets   map[string]*BundleDataset `json:"datasets"`
 	Services   map[string]*BundleService `json:"services"`
 	Redundancy int                       `json:"redundancy"`
@@ -53,7 +53,7 @@ BundleDataset is configuration for a dataset associated with a bundle.
 
 ```go
 type BundleHeartbeatArgs struct {
-	ID     int    `json:"id"`
+	ID     uint64 `json:"id"`
 	Serial string `json:"serial"`
 	IP     net.IP `json:"ip"`
 }
@@ -65,7 +65,7 @@ BundleHeartbeatArgs are arguments for updating a dataset node heartbeat.
 
 ```go
 type BundleIDArgs struct {
-	ID int `json:"id"`
+	ID uint64 `json:"id"`
 }
 ```
 
@@ -319,9 +319,9 @@ Validate returns whether the config is valid, containing necessary values.
 ```go
 type ConfigData struct {
 	provider.ConfigData
-	DatasetTTL time.Duration `json:"datasetTTL"`
-	BundleTTL  time.Duration `json:"bundleTTL"`
-	NodeTTL    time.Duration `json:"NodeTTL"`
+	DatasetTTL string `json:"datasetTTL"`
+	BundleTTL  string `json:"bundleTTL"`
+	NodeTTL    string `json:"nodeTTL"`
 }
 ```
 

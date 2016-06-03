@@ -40,6 +40,13 @@ func (c *Coordinator) NewProviderViper() *viper.Viper
 NewProviderViper prepares a basic viper instance for a Provider, setting
 appropriate values corresponding to the coordinator and provider server.
 
+#### func (*Coordinator) ProviderTracker
+
+```go
+func (c *Coordinator) ProviderTracker() *acomm.Tracker
+```
+ProviderTracker exposes the provider server tracker.
+
 #### func (*Coordinator) RegisterProvider
 
 ```go
