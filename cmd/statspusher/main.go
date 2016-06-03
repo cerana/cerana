@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	logrus.SetFormatter(&logrusx.MistifyFormatter{})
+	logrus.SetFormatter(&logrusx.JSONFormatter{})
 
 	config := newConfig(nil, nil)
 	pflag.Parse()
