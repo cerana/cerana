@@ -102,11 +102,6 @@ func (c *Coordinator) RegisterProvider(p provider.Provider) {
 	p.RegisterTasks(c.providerServer)
 }
 
-// ProviderTracker exposes the provider server tracker.
-func (c *Coordinator) ProviderTracker() *acomm.Tracker {
-	return c.providerServer.Tracker()
-}
-
 // Start starts the Coordinator and Provider servers.
 func (c *Coordinator) Start() error {
 	if err := c.coordinator.Start(); err != nil {
