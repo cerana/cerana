@@ -1,4 +1,5 @@
 # Compiled cmds
+cmd/clusterconfig-provider/clusterconfig-provider
 cmd/coordinator-cli/coordinator-cli
 cmd/coordinator/coordinator
 cmd/kv-provider/kv-provider
@@ -8,7 +9,6 @@ cmd/statspusher/statspusher
 cmd/systemd-provider/systemd-provider
 cmd/zfs-provider/zfs-provider
 cmd/zfs/zfs
-cmd/clusterconfig-provider/clusterconfig-provider
 
 # Temporary files
 *.swp
