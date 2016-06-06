@@ -12,7 +12,7 @@ func main() {
 	log.SetFormatter(&logx.MistifyFormatter{})
 
 	config := systemd.NewConfig(nil, nil)
-	flag.StringP("unit-file-dir", "d", "", "directory in which to create unit files")
+	flag.StringP("unit_file_dir", "d", "", "directory in which to create unit files")
 	flag.Parse()
 
 	dieOnError(config.LoadConfig())
