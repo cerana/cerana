@@ -1,7 +1,7 @@
 package main
 
 import (
-	"errors"
+	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -29,7 +29,7 @@ func (s *statsPusher) bundleHeartbeats() error {
 	}
 	healthy, err := s.runHealthChecks(bundles)
 	if err != nil {
-		//log
+		return err
 	}
 	return s.sendBundleHeartbeats(healthy, serial, ip)
 }
@@ -118,7 +118,7 @@ func (s *statsPusher) getSerial() (string, error) {
 }
 
 func (s *statsPusher) sendBundleHeartbeats(bundles []uint64, serial string, ip net.IP) error {
-	var errored bool
+	errored := make([]uint64, 0, len(bundles))
 
 	multiRequest := acomm.NewMultiRequest(s.tracker, s.config.requestTimeout())
 	for _, bundle := range bundles {
@@ -132,29 +132,31 @@ func (s *statsPusher) sendBundleHeartbeats(bundles []uint64, serial string, ip n
 			},
 		})
 		if err != nil {
-			errored = true
+			errored = append(errored, bundle)
 			continue
 		}
 		if err := multiRequest.AddRequest(strconv.FormatUint(bundle, 10), req); err != nil {
-			errored = true
+			errored = append(errored, bundle)
 			continue
 		}
 		if err := acomm.Send(s.config.coordinatorURL(), req); err != nil {
 			multiRequest.RemoveRequest(req)
-			errored = true
+			errored = append(errored, bundle)
 			continue
 		}
 	}
+
 	responses := multiRequest.Responses()
-	for _, resp := range responses {
+	for name, resp := range responses {
 		if resp.Error != nil {
-			errored = true
+			bundle, _ := strconv.ParseUint(name, 10, 64)
+			errored = append(errored, bundle)
 			break
 		}
 	}
 
-	if errored {
-		return errors.New("one or more bundle heartbeats unsuccessful")
+	if len(errored) > 0 {
+		return fmt.Errorf("one or more bundle heartbeats unsuccessful: %+v", errored)
 	}
 	return nil
 }
