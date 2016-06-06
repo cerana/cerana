@@ -31,10 +31,12 @@ func New(config *Config, tracker *acomm.Tracker) *ClusterConf {
 // RegisterTasks registers all of Systemd's task handlers with the server.
 func (c *ClusterConf) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("get-bundle", c.GetBundle)
+	server.RegisterTask("list-bundles", c.ListBundles)
 	server.RegisterTask("update-bundle", c.UpdateBundle)
 	server.RegisterTask("delete-bundle", c.DeleteBundle)
 	server.RegisterTask("bundle-heartbeat", c.BundleHeartbeat)
 	server.RegisterTask("get-dataset", c.GetDataset)
+	server.RegisterTask("list-datasets", c.ListDatasets)
 	server.RegisterTask("update-dataset", c.UpdateDataset)
 	server.RegisterTask("delete-dataset", c.DeleteDataset)
 	server.RegisterTask("dataset-heartbeat", c.DeleteDataset)
@@ -83,6 +85,22 @@ func (c *ClusterConf) kvReq(task string, args map[string]interface{}) (*acomm.Re
 
 	resp := <-respChan
 	return resp, resp.Error
+}
+
+func (c *ClusterConf) kvKeys(prefix string) ([]string, error) {
+	args := map[string]interface{}{
+		"key": prefix,
+	}
+
+	resp, err := c.kvReq("kv-keys", args)
+	if err != nil {
+		return nil, err
+	}
+	var values []string
+	if err := resp.UnmarshalResult(&values); err != nil {
+		return nil, err
+	}
+	return values, nil
 }
 
 func (c *ClusterConf) kvGetAll(key string) (map[string]kv.Value, error) {

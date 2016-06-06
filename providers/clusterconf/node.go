@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/shirou/gopsutil/load"
 )
 
 const (
@@ -19,18 +20,18 @@ const (
 // Node is current information about a hardware node.
 type Node struct {
 	c           *ClusterConf
-	ID          string    `json:"id"`
-	Heartbeat   time.Time `json:"heartbeat"`
-	MemoryTotal int64     `json:"memoryTotal"`
-	MemoryFree  int64     `json:"memoryFree"`
-	CPUTotal    int       `json:"cpuTotal"`
-	CPUFree     int       `json:"cpuFree"`
-	DiskTotal   int       `json:"diskTotal"`
-	DiskFree    int       `json:"diskFree"`
+	ID          string       `json:"id"`
+	Heartbeat   time.Time    `json:"heartbeat"`
+	MemoryTotal uint64       `json:"memoryTotal"`
+	MemoryFree  uint64       `json:"memoryFree"`
+	CPUCores    int          `json:"cpuCores"`
+	CPULoad     load.AvgStat `json:"cpuLoad"`
+	DiskTotal   uint64       `json:"diskTotal"`
+	DiskFree    uint64       `json:"diskFree"`
 }
 
 // NodeHistory is a set of historical information for a node.
-type NodeHistory map[time.Time]Node
+type NodeHistory map[time.Time]*Node
 
 // NodesHistory is the historical information for multiple nodes.
 type NodesHistory map[string]NodeHistory
@@ -50,7 +51,7 @@ type NodePayload struct {
 
 // NodesHistoryResult is the result from the GetNodesHistory handler.
 type NodesHistoryResult struct {
-	History *NodesHistory `json:"history"`
+	History NodesHistory `json:"history"`
 }
 
 type nodeFilter func(Node) bool
@@ -97,7 +98,7 @@ func (c *ClusterConf) GetNodesHistory(req *acomm.Request) (interface{}, *url.URL
 	if err != nil {
 		return nil, nil, err
 	}
-	return &NodesHistoryResult{history}, nil, nil
+	return &NodesHistoryResult{*history}, nil, nil
 
 }
 
@@ -162,7 +163,7 @@ func (c *ClusterConf) getNodesHistory(filters ...nodeFilter) (*NodesHistory, err
 			nodeHistory = make(NodeHistory)
 			history[node.ID] = nodeHistory
 		}
-		nodeHistory[node.Heartbeat] = node
+		nodeHistory[node.Heartbeat] = &node
 	}
 
 	return &history, nil

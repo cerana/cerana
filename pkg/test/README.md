@@ -45,7 +45,7 @@ appropriate values corresponding to the coordinator and provider server.
 ```go
 func (c *Coordinator) ProviderTracker() *acomm.Tracker
 ```
-ProviderTracker exposes the provider server tracker.
+ProviderTracker returns the tracker of the provider server.
 
 #### func (*Coordinator) RegisterProvider
 

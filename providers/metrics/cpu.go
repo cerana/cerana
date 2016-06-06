@@ -11,7 +11,7 @@ import (
 // CPUResult is the result of the CPU handler.
 type CPUResult struct {
 	Info  []cpu.InfoStat  `json:"info"`
-	Load  *load.AvgStat   `json:"load"`
+	Load  load.AvgStat    `json:"load"`
 	Times []cpu.TimesStat `json:"times"`
 }
 
@@ -32,5 +32,5 @@ func (m *Metrics) CPU(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 
-	return &CPUResult{Info: info, Load: loadAvg, Times: times}, nil, nil
+	return &CPUResult{Info: info, Load: *loadAvg, Times: times}, nil, nil
 }

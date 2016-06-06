@@ -7,6 +7,8 @@ import (
 	"net/url"
 	"path"
 	"path/filepath"
+	"strings"
+	"sync"
 
 	"github.com/cerana/cerana/acomm"
 	"github.com/pborman/uuid"
@@ -42,6 +44,11 @@ type DatasetPayload struct {
 	Dataset *Dataset `json:"dataset"`
 }
 
+// DatasetListResult is the result for listing datasets.
+type DatasetListResult struct {
+	Datasets []*Dataset `json:"datasets"`
+}
+
 // DatasetHeartbeatArgs are arguments for updating a dataset node heartbeat.
 type DatasetHeartbeatArgs struct {
 	ID string `json:"id"`
@@ -63,6 +70,54 @@ func (c *ClusterConf) GetDataset(req *acomm.Request) (interface{}, *url.URL, err
 		return nil, nil, err
 	}
 	return &DatasetPayload{dataset}, nil, nil
+}
+
+// ListDatasets returns a list of all Datasets.
+func (c *ClusterConf) ListDatasets(req *acomm.Request) (interface{}, *url.URL, error) {
+	keys, err := c.kvKeys(datasetsPrefix)
+	if err != nil {
+		return nil, nil, err
+	}
+	// extract and deduplicate the dataset ids
+	ids := make(map[string]bool)
+	for _, key := range keys {
+		// keys are full paths and include all child keys.
+		// e.g. {prefix}/{id}/{rest/of/path}
+		id := strings.Split(strings.TrimPrefix(key, datasetsPrefix), "/")[0]
+		ids[id] = true
+	}
+
+	var wg sync.WaitGroup
+	dsChan := make(chan *Dataset, len(ids))
+	defer close(dsChan)
+	errChan := make(chan error, len(ids))
+	defer close(errChan)
+	for id := range ids {
+		wg.Add(1)
+		go func(id string) {
+			defer wg.Done()
+			ds, err := c.getDataset(id)
+			if err != nil {
+				errChan <- err
+				return
+			}
+			dsChan <- ds
+		}(id)
+	}
+	wg.Wait()
+
+	if len(errChan) > 0 {
+		err := <-errChan
+		return nil, nil, err
+	}
+	datasets := make([]*Dataset, 0, len(dsChan))
+	for ds := range dsChan {
+		datasets = append(datasets, ds)
+	}
+
+	return &DatasetListResult{
+		Datasets: datasets,
+	}, nil, nil
 }
 
 // UpdateDataset creates or updates a dataset config. When updating, a Get should first be performed and the modified Dataset passed back.
@@ -98,6 +153,9 @@ func (c *ClusterConf) DeleteDataset(req *acomm.Request) (interface{}, *url.URL, 
 
 	dataset, err := c.getDataset(args.ID)
 	if err != nil {
+		if err.Error() == "dataset config not found" {
+			return nil, nil, nil
+		}
 		return nil, nil, err
 	}
 

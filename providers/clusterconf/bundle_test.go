@@ -110,7 +110,7 @@ func (s *clusterConf) TestDeleteBundle() {
 		err string
 	}{
 		{0, "missing arg: id"},
-		{uint64(rand.Int63()), "bundle config not found"},
+		{uint64(rand.Int63()), ""},
 		{bundle.ID, ""},
 	}
 
