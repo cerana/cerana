@@ -136,9 +136,7 @@ func (s *MockSystemd) Remove(req *acomm.Request) (interface{}, *url.URL, error) 
 		return nil, nil, errors.New("missing arg: name")
 	}
 
-	if _, ok := s.Data.Statuses[args.Name]; !ok {
-		return nil, nil, errors.New("unit not found")
-	}
+	delete(s.Data.Statuses, args.Name)
 	return nil, nil, nil
 }
 

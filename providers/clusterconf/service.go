@@ -99,6 +99,9 @@ func (c *ClusterConf) DeleteService(req *acomm.Request) (interface{}, *url.URL, 
 
 	service, err := c.getService(args.ID)
 	if err != nil {
+		if err.Error() == "service config not found" {
+			return nil, nil, nil
+		}
 		return nil, nil, err
 	}
 

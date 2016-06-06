@@ -104,7 +104,7 @@ func (s *clusterConf) TestDeleteService() {
 		err string
 	}{
 		{"", "missing arg: id"},
-		{"does-not-exist", "service config not found"},
+		{"does-not-exist", ""},
 		{service.ID, ""},
 	}
 

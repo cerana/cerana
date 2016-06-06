@@ -107,7 +107,7 @@ func (s *clusterConf) TestDeleteDataset() {
 		err string
 	}{
 		{"", "missing arg: id"},
-		{"does-not-exist", "dataset config not found"},
+		{"does-not-exist", ""},
 		{dataset.ID, ""},
 	}
 

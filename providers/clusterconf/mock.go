@@ -117,11 +117,6 @@ func (c *MockClusterConf) DeleteBundle(req *acomm.Request) (interface{}, *url.UR
 		return nil, nil, errors.New("missing arg: id")
 	}
 
-	_, ok := c.Data.Bundles[args.ID]
-	if !ok {
-		return nil, nil, errors.New("bundle config not found")
-	}
-
 	delete(c.Data.Bundles, args.ID)
 	return nil, nil, nil
 }
@@ -206,11 +201,6 @@ func (c *MockClusterConf) DeleteDataset(req *acomm.Request) (interface{}, *url.U
 	}
 	if args.ID == "" {
 		return nil, nil, errors.New("missing arg: id")
-	}
-
-	_, ok := c.Data.Datasets[args.ID]
-	if !ok {
-		return nil, nil, errors.New("dataset config not found")
 	}
 
 	delete(c.Data.Datasets, args.ID)
@@ -376,11 +366,6 @@ func (c *MockClusterConf) DeleteService(req *acomm.Request) (interface{}, *url.U
 	}
 	if args.ID == "" {
 		return nil, nil, errors.New("missing arg: id")
-	}
-
-	_, ok := c.Data.Services[args.ID]
-	if !ok {
-		return nil, nil, errors.New("service config not found")
 	}
 
 	delete(c.Data.Services, args.ID)

@@ -153,6 +153,9 @@ func (c *ClusterConf) DeleteDataset(req *acomm.Request) (interface{}, *url.URL, 
 
 	dataset, err := c.getDataset(args.ID)
 	if err != nil {
+		if err.Error() == "dataset config not found" {
+			return nil, nil, nil
+		}
 		return nil, nil, err
 	}
 

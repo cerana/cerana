@@ -226,6 +226,9 @@ func (c *ClusterConf) DeleteBundle(req *acomm.Request) (interface{}, *url.URL, e
 
 	bundle, err := c.getBundle(args.ID)
 	if err != nil {
+		if err.Error() == "bundle config not found" {
+			return nil, nil, nil
+		}
 		return nil, nil, err
 	}
 

@@ -29,5 +29,8 @@ func (s *Systemd) Remove(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 
-	return nil, nil, os.Remove(unitFilePath)
+	if err := os.Remove(unitFilePath); err != nil && !os.IsNotExist(err) {
+		return nil, nil, err
+	}
+	return nil, nil, nil
 }
