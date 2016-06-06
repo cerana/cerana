@@ -1,7 +1,7 @@
 #!/bin/bash
 
 source /tmp/cerana-bootcfg
-[[ -n $CERANA_KOPT_RESCUE ]] && exit 0
+[[ -n $CERANA_RESCUE ]] && exit 0
 
 ## The name of the zpool we're concerned with. Everything revolves around this
 ## being configured and present. Set name accordingly.
@@ -23,7 +23,7 @@ configure_filesystems()
 		zfs list $ZPOOL/$fs > /dev/null 2>&1 || zfs create $ZPOOL/$fs
 	done
 
-	[[ "off" = $(zfs get compression -Ho value $ZPOOL) ]] && zfs set compression=lz4 $ZPOOL
+	[[ "off" = $(zfs get compression -Ho value $ZPOOL) ]] && zfs set compression=lz4 $ZPOOL || true
 }
 
 # Gather a list of disk devices into an array
@@ -94,7 +94,7 @@ prompt_user()
 	echo "http://zfsonlinux.org/faq.html"
 	echo
 
-	answer=${CERANA_KOPT_ZFS_CONFIG}
+	answer=${CERANA_ZFS_CONFIG}
 	while [[ ! $answer ]];do
 		echo -n "Selection: "
 		read answer
@@ -164,7 +164,7 @@ configure_pool()
 	# Be sure the drives are starting fresh. Zero out any existing partition
 	for d in "${DISKARRAY[@]}"; do
 	    echo "Clearing $d"
-	    sgdisk -Z $d #> /dev/null 2>&1
+	    sgdisk -Z $d > /dev/null 2>&1
 	done
 
 	# Block until Linux figures itself out w.r.t. paritions
@@ -209,3 +209,19 @@ fi
 # Check to make sure our required filesystems are on the zpool, and create
 # them if any aren't.
 configure_filesystems
+
+# Attempt to read in any on-disk config from a previous boot and update with info from kernel command line
+if [[ -f /data/config/cerana-bootcfg ]]; then
+	cp /data/config/cerana-bootcfg /data/config/cerana-previous-bootcfg
+	source /data/config/cerana-bootcfg
+fi
+
+# Store current config (kernel command line arguments always override what was found on disk)
+source /tmp/cerana-bootcfg
+export | grep CERANA > /data/config/cerana-bootcfg
+rm /tmp/cerana-bootcfg
+ln -s /data/config/cerana-bootcfg /tmp/cerana-bootcfg
+
+# Link in network config directory for systemd-networkd
+mkdir -p /data/config/networks
+ln -s /data/config/networks /run/systemd/networks

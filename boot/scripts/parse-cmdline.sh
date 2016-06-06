@@ -1,7 +1,7 @@
 #!/bin/bash
 
 CERANA_BOOTCFG=/tmp/cerana-bootcfg
-CERANA_KOPT_PREFIX="cerana"
+CERANA_PREFIX="cerana"
 CMDLINE=$(cat /proc/cmdline)
 
 # Parse the kernel boot arguments and look for our arguments and
@@ -9,33 +9,33 @@ CMDLINE=$(cat /proc/cmdline)
 function parse_boot_args() {
     > $CERANA_BOOTCFG
 
-    [[ $CERANA_KOPT_PREFIX == *"$cmdline"* ]] || return
+    [[ $CERANA_PREFIX == *"$cmdline"* ]] || return
 
     for kopt in $CMDLINE; do
         IFS== read k v <<< $kopt
         case $k in
-            $CERANA_KOPT_PREFIX.zfs_config)
-		echo "CERANA_KOPT_ZFS_CONFIG=$v" >> $CERANA_BOOTCFG
+            $CERANA_PREFIX.zfs_config)
+		echo "CERANA_ZFS_CONFIG=$v" >> $CERANA_BOOTCFG
                 ;;
-            $CERANA_KOPT_PREFIX.cluster_ips)
-		echo "CERANA_KOPT_CLUSTER_IPS=$v" >> $CERANA_BOOTCFG
+            $CERANA_PREFIX.cluster_ips)
+		echo "CERANA_CLUSTER_IPS=$v" >> $CERANA_BOOTCFG
                 ;;
-            $CERANA_KOPT_PREFIX.cluster_bootstrap)
+            $CERANA_PREFIX.cluster_bootstrap)
 		# No argument expected. If present, just set to 1.
-		echo "CERANA_KOPT_CLUSTER_BOOTSTRAP=1" >> $CERANA_BOOTCFG
+		echo "CERANA_CLUSTER_BOOTSTRAP=1" >> $CERANA_BOOTCFG
                 ;;
-            $CERANA_KOPT_PREFIX.rescue)
+            $CERANA_PREFIX.rescue)
 		# No argument expected. If present, just set to 1.
-		echo "CERANA_KOPT_RESCUE=1" >> $CERANA_BOOTCFG
+		echo "CERANA_RESCUE=1" >> $CERANA_BOOTCFG
                 ;;
-            $CERANA_KOPT_PREFIX.mgmt_mac)
-		echo "CERANA_KOPT_MGMT_MAC=$v" >> $CERANA_BOOTCFG
+            $CERANA_PREFIX.mgmt_mac)
+		echo "CERANA_MGMT_MAC=$v" >> $CERANA_BOOTCFG
                 ;;
-            $CERANA_KOPT_PREFIX.mgmt_ip)
-		echo "CERANA_KOPT_MGMT_IP=$v" >> $CERANA_BOOTCFG
+            $CERANA_PREFIX.mgmt_ip)
+		echo "CERANA_MGMT_IP=$v" >> $CERANA_BOOTCFG
                 ;;
-            $CERANA_KOPT_PREFIX.mgmt_gw)
-		echo "CERANA_KOPT_MGMT_GW=$v" >> $CERANA_BOOTCFG
+            $CERANA_PREFIX.mgmt_gw)
+		echo "CERANA_MGMT_GW=$v" >> $CERANA_BOOTCFG
                 ;;
         esac
     done
