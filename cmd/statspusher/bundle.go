@@ -162,6 +162,7 @@ func (s *statsPusher) sendBundleHeartbeats(bundles []uint64, serial string, ip n
 }
 
 // TODO: Make this actually run health checks
+// Issue: #189
 func (s *statsPusher) runHealthChecks(bundles []*clusterconf.Bundle) ([]uint64, error) {
 	healthy := make([]uint64, len(bundles))
 	for i, bundle := range bundles {
