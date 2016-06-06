@@ -140,7 +140,7 @@ func (c *ClusterConf) GetBundle(req *acomm.Request) (interface{}, *url.URL, erro
 	return &BundlePayload{bundle}, nil, nil
 }
 
-// ListBundles retrieves a bundle.
+// ListBundles retrieves a list of all bundles.
 func (c *ClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL, error) {
 	keys, err := c.kvKeys(bundlesPrefix)
 	if err != nil {

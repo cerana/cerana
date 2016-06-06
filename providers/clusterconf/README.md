@@ -239,7 +239,7 @@ GetService retrieves a service.
 ```go
 func (c *ClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL, error)
 ```
-ListBundles retrieves a bundle.
+ListBundles retrieves a list of all bundles.
 
 #### func (*ClusterConf) ListDatasets
 
