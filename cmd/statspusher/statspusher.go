@@ -48,19 +48,18 @@ func (s *statsPusher) startHeartbeat(name string, fn func() error, desiredInterv
 		lastStart := time.Time{}
 		for {
 			// Try to start fn at the desired time interval, accounting for
-			// time time it takes for fn to complete while also preventing fn
+			// the time it takes for fn to complete while also preventing fn
 			// from running more than once at a time.
 			interval := desiredInterval
 			since := time.Since(lastStart)
 			if since < interval {
 				interval = since
 			}
-			timeChan := time.After(interval)
 
 			select {
 			case <-s.stopChan:
 				break
-			case lastStart = <-timeChan:
+			case lastStart = <-time.After(interval):
 				if err := fn(); err != nil {
 					logrus.WithFields(logrus.Fields{
 						"name":  name,
