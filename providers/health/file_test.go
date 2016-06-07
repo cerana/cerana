@@ -17,7 +17,7 @@ func (s *health) TestFile() {
 
 	dir, err := ioutil.TempDir("", "health")
 	s.Require().NoError(err)
-	defer os.RemoveAll(dir)
+	defer func() { _ = os.RemoveAll(dir) }()
 
 	tmp := filepath.Join(dir, "healthFile")
 	size := int64(2024)
