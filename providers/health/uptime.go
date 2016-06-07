@@ -22,7 +22,7 @@ func (h *Health) Uptime(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 	if args.Name == "" {
-		return nil, nil, errors.New("missing arg: path")
+		return nil, nil, errors.New("missing arg: name")
 	}
 
 	unitStatus, err := h.getUnitStatus(args.Name)
@@ -37,8 +37,7 @@ func (h *Health) Uptime(req *acomm.Request) (interface{}, *url.URL, error) {
 	return nil, nil, nil
 }
 
-func (h *Health) getUnitStatus(name string) (systemd.UnitStatus, error) {
-	var unitStatus systemd.UnitStatus
+func (h *Health) getUnitStatus(name string) (*systemd.UnitStatus, error) {
 	doneChan := make(chan *acomm.Response, 1)
 	rh := func(_ *acomm.Request, resp *acomm.Response) {
 		doneChan <- resp
@@ -52,19 +51,23 @@ func (h *Health) getUnitStatus(name string) (systemd.UnitStatus, error) {
 	})
 
 	if err != nil {
-		return unitStatus, err
+		return nil, err
 	}
 	if err := h.tracker.TrackRequest(req, h.config.RequestTimeout()); err != nil {
-		return unitStatus, err
+		return nil, err
 	}
 	if err := acomm.Send(h.config.CoordinatorURL(), req); err != nil {
-		return unitStatus, err
+		return nil, err
 	}
 
 	resp := <-doneChan
 	if resp.Error != nil {
-		return unitStatus, resp.Error
+		return nil, resp.Error
 	}
 
-	return unitStatus, resp.UnmarshalResult(&unitStatus)
+	var result systemd.GetResult
+	if err := resp.UnmarshalResult(&result); err != nil {
+		return nil, err
+	}
+	return &result.Unit, nil
 }
