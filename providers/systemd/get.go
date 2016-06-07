@@ -47,7 +47,7 @@ func (s *Systemd) Get(req *acomm.Request) (interface{}, *url.URL, error) {
 	for _, unit := range list {
 		if unit.Name == args.Name {
 			err = nil
-			var unitStatus UnitStatus
+			var unitStatus *UnitStatus
 			unitStatus, err = s.unitStatus(unit)
 			if err != nil {
 				break

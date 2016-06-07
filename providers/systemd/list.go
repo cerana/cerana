@@ -16,7 +16,7 @@ func (s *Systemd) List(req *acomm.Request) (interface{}, *url.URL, error) {
 	list, err := s.dconn.ListUnits()
 	units := make([]UnitStatus, len(list))
 	for i, unit := range list {
-		var unitStatus UnitStatus
+		var unitStatus *UnitStatus
 		unitStatus, err = s.unitStatus(unit)
 		if err != nil {
 			return nil, nil, err
