@@ -452,9 +452,9 @@ to be sent.
 
 ```go
 type HealthCheck struct {
-	ID               string   `json:"id"`
-	ProtocolProvider string   `json:"protocolProvider"`
-	Parameters       []string `json:"parameters"`
+	ID   string      `json:"id"`
+	Type string      `json:"type"`
+	Args interface{} `json:"args"`
 }
 ```
 
@@ -732,7 +732,7 @@ Service is information about a service.
 type ServiceConf struct {
 	ID           string                  `json:"id"`
 	Dataset      string                  `json:"dataset"`
-	HealthChecks map[string]*HealthCheck `json:"healthCheck"`
+	HealthChecks map[string]*HealthCheck `json:"healthChecks"`
 	Limits       *ResourceLimits         `json:"limits"`
 	Env          map[string]string       `json:"env"`
 }

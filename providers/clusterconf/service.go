@@ -24,7 +24,7 @@ type Service struct {
 type ServiceConf struct {
 	ID           string                  `json:"id"`
 	Dataset      string                  `json:"dataset"`
-	HealthChecks map[string]*HealthCheck `json:"healthCheck"`
+	HealthChecks map[string]*HealthCheck `json:"healthChecks"`
 	Limits       *ResourceLimits         `json:"limits"`
 	Env          map[string]string       `json:"env"`
 }
@@ -38,9 +38,9 @@ type ResourceLimits struct {
 
 // HealthCheck is configuration for performing a health check.
 type HealthCheck struct {
-	ID               string   `json:"id"`
-	ProtocolProvider string   `json:"protocolProvider"`
-	Parameters       []string `json:"parameters"`
+	ID   string      `json:"id"`
+	Type string      `json:"type"`
+	Args interface{} `json:"args"`
 }
 
 // ServicePayload can be used for task args or result when a service object
