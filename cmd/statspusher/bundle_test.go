@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"github.com/cerana/cerana/providers/clusterconf"
+	"github.com/cerana/cerana/providers/systemd"
 	"github.com/coreos/go-systemd/dbus"
 	"github.com/pborman/uuid"
 )
@@ -45,11 +46,11 @@ func (s *StatsPusher) TestGetBundles() {
 	}
 
 	for _, test := range tests {
-		s.systemd.Data.Statuses = make(map[string]dbus.UnitStatus)
+		s.systemd.Data.Statuses = make(map[string]systemd.UnitStatus)
 		for _, bundle := range test.local {
 			for i := 0; i < 3; i++ {
 				serviceName := fmt.Sprintf("%d:%s", bundle, uuid.New())
-				s.systemd.Data.Statuses[serviceName] = dbus.UnitStatus{Name: serviceName}
+				s.systemd.Data.Statuses[serviceName] = systemd.UnitStatus{UnitStatus: dbus.UnitStatus{Name: serviceName}}
 			}
 		}
 		s.clusterConf.Data.Bundles = make(map[uint64]*clusterconf.Bundle)

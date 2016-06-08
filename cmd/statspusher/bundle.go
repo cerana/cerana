@@ -9,7 +9,6 @@ import (
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/providers/clusterconf"
 	"github.com/cerana/cerana/providers/systemd"
-	"github.com/coreos/go-systemd/dbus"
 	"github.com/pborman/uuid"
 	"github.com/shirou/gopsutil/host"
 )
@@ -171,7 +170,7 @@ func (s *statsPusher) runHealthChecks(bundles []*clusterconf.Bundle) ([]uint64, 
 	return healthy, nil
 }
 
-func extractBundles(units []dbus.UnitStatus) []uint64 {
+func extractBundles(units []systemd.UnitStatus) []uint64 {
 	dedupe := make(map[uint64]bool)
 	for _, unit := range units {
 		// bundleID:serviceID
