@@ -218,10 +218,10 @@ fi
 
 # Store current config (kernel command line arguments always override what was found on disk)
 source /tmp/cerana-bootcfg
-export | grep CERANA > /data/config/cerana-bootcfg
+declare | grep ^CERANA > /data/config/cerana-bootcfg
 rm /tmp/cerana-bootcfg
 ln -s /data/config/cerana-bootcfg /tmp/cerana-bootcfg
 
 # Link in network config directory for systemd-networkd
-mkdir -p /data/config/networks
-ln -s /data/config/networks /run/systemd/networks
+mkdir -p /data/config/network
+ln -s /data/config/network /run/systemd/network

@@ -60,7 +60,6 @@ function is_valid_prefix()
 ##
 ## Generates an array IFACES with a list of physical ethernet interfaces
 function iface_list() {
-	declare -a IFACES
 	pushd .
 	cd /sys/class/net
 	IFACES=(e*)
@@ -83,6 +82,7 @@ function collect_addresses() {
 function query_interface() {
 	local answer
 
+	declare -a IFACES
 	iface_list
 	echo
 	echo "Detected interfaces:"
@@ -156,7 +156,7 @@ function query_gateway() {
 
 function config_mgmt_dhcp() {
 	[[ -n ${CERANA_MGMT_MAC} ]] || return 1
-	echo -e "[Link]\nMACAddress=${CERANA_MGMT_MAC}\n\n[Network]\nDHCP=yes" > /data/config/networks/mgmt.network
+	echo -e "[Link]\nMACAddress=${CERANA_MGMT_MAC}\n\n[Network]\nDHCP=yes" > /data/config/network/mgmt.network
 }
 
 
@@ -195,7 +195,7 @@ else
 fi
 
 
-export | grep CERANA > /data/config/cerana-bootcfg
+declare | grep ^CERANA > /data/config/cerana-bootcfg
 
 # We don't need the following if we can get run before it starts
 # systemctl reload systemd-networkd.service
@@ -203,4 +203,3 @@ export | grep CERANA > /data/config/cerana-bootcfg
 # Still here???
 echo "Yell at Nahum"
 exit 1
-
