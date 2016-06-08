@@ -225,3 +225,6 @@ ln -s /data/config/cerana-bootcfg /tmp/cerana-bootcfg
 # Link in network config directory for systemd-networkd
 mkdir -p /data/config/network
 ln -s /data/config/network /run/systemd/network
+
+mkdir /etc/systemd-mutable
+ln -s /data/services /etc/systemd-mutable/system
