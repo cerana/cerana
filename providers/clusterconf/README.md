@@ -34,11 +34,11 @@ Bundle is information about a bundle of services.
 
 ```go
 type BundleConf struct {
-	ID         uint64                    `json:"id"`
-	Datasets   map[string]*BundleDataset `json:"datasets"`
-	Services   map[string]*BundleService `json:"services"`
-	Redundancy int                       `json:"redundancy"`
-	Ports      BundlePorts               `json:"ports"`
+	ID         uint64                   `json:"id"`
+	Datasets   map[string]BundleDataset `json:"datasets"`
+	Services   map[string]BundleService `json:"services"`
+	Redundancy int                      `json:"redundancy"`
+	Ports      BundlePorts              `json:"ports"`
 }
 ```
 
@@ -113,7 +113,7 @@ BundlePort is configuration for a port associated with a bundle.
 #### type BundlePorts
 
 ```go
-type BundlePorts map[int]*BundlePort
+type BundlePorts map[int]BundlePort
 ```
 
 BundlePorts is a map of port numbers to port information.

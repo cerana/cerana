@@ -207,19 +207,19 @@ func (s *clusterConf) addBundle() (*clusterconf.Bundle, error) {
 	}
 	bundle := &clusterconf.Bundle{BundleConf: clusterconf.BundleConf{
 		ID: uint64(rand.Int63()),
-		Datasets: map[string]*clusterconf.BundleDataset{
-			dataset.ID: &clusterconf.BundleDataset{
+		Datasets: map[string]clusterconf.BundleDataset{
+			dataset.ID: clusterconf.BundleDataset{
 				Name: "foobar",
 				ID:   dataset.ID,
 			},
 		},
-		Services: map[string]*clusterconf.BundleService{
-			service.ID: &clusterconf.BundleService{
+		Services: map[string]clusterconf.BundleService{
+			service.ID: clusterconf.BundleService{
 				ServiceConf: clusterconf.ServiceConf{ID: service.ID},
 			},
 		},
 		Ports: clusterconf.BundlePorts{
-			1: &clusterconf.BundlePort{
+			1: clusterconf.BundlePort{
 				Port: 1,
 			},
 		},

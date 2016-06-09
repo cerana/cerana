@@ -40,20 +40,20 @@ type Bundle struct {
 
 // BundleConf is the configuration of a bundle.
 type BundleConf struct {
-	ID         uint64                    `json:"id"`
-	Datasets   map[string]*BundleDataset `json:"datasets"`
-	Services   map[string]*BundleService `json:"services"`
-	Redundancy int                       `json:"redundancy"`
-	Ports      BundlePorts               `json:"ports"`
+	ID         uint64                   `json:"id"`
+	Datasets   map[string]BundleDataset `json:"datasets"`
+	Services   map[string]BundleService `json:"services"`
+	Redundancy int                      `json:"redundancy"`
+	Ports      BundlePorts              `json:"ports"`
 }
 
 // BundlePorts is a map of port numbers to port information.
-type BundlePorts map[int]*BundlePort
+type BundlePorts map[int]BundlePort
 
 // MarshalJSON marshals BundlePorts into a JSON map, converting int keys to
 // strings.
 func (p BundlePorts) MarshalJSON() ([]byte, error) {
-	ports := make(map[string]*BundlePort)
+	ports := make(map[string]BundlePort)
 	for port, value := range p {
 		ports[strconv.Itoa(port)] = value
 	}
@@ -63,7 +63,7 @@ func (p BundlePorts) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON unmarshals JSON into a BundlePorts, converting string keys to
 // ints.
 func (p BundlePorts) UnmarshalJSON(data []byte) error {
-	ports := make(map[string]*BundlePort)
+	ports := make(map[string]BundlePort)
 	if err := json.Unmarshal(data, &ports); err != nil {
 		return err
 	}
@@ -87,21 +87,17 @@ type BundleDataset struct {
 	Quota int               `json:"type"`
 }
 
-func (d *BundleDataset) overlayOn(base *Dataset) (*BundleDataset, error) {
+func (d BundleDataset) overlayOn(base *Dataset) (BundleDataset, error) {
 	if d.ID != base.ID {
-		return nil, errors.New("dataset ids do not match")
+		return d, errors.New("dataset ids do not match")
 	}
-
-	// duplicate the BundleDataset
-	result := &BundleDataset{}
-	*result = *d
 
 	// overlay data
-	if result.Quota <= 0 {
-		result.Quota = base.Quota
+	if d.Quota <= 0 {
+		d.Quota = base.Quota
 	}
 
-	return result, nil
+	return d, nil
 }
 
 // BundleService is configuration overrides for a service of a bundle and
@@ -111,17 +107,14 @@ type BundleService struct {
 	Datasets map[string]ServiceDataset `json:"datasets"`
 }
 
-func (s *BundleService) overlayOn(base *Service) (*BundleService, error) {
+func (s BundleService) overlayOn(base *Service) (BundleService, error) {
 	if s.ID != base.ID {
-		return nil, errors.New("service ids do not match")
+		return s, errors.New("service ids do not match")
 	}
 
-	// duplicate the BundleService
 	// maps are pointers, so need to be duplicated separately.
-	result := &BundleService{
-		ServiceConf: s.ServiceConf,
-		Datasets:    make(map[string]ServiceDataset),
-	}
+	result := s
+	result.Datasets = make(map[string]ServiceDataset)
 	for k, v := range s.Datasets {
 		result.Datasets[k] = v
 	}
@@ -453,11 +446,11 @@ func (b *Bundle) combinedOverlay() (*Bundle, error) {
 	for k, v := range b.Nodes {
 		result.Nodes[k] = v
 	}
-	result.Datasets = make(map[string]*BundleDataset)
+	result.Datasets = make(map[string]BundleDataset)
 	for k, v := range b.Datasets {
 		result.Datasets[k] = v
 	}
-	result.Services = make(map[string]*BundleService)
+	result.Services = make(map[string]BundleService)
 	for k, v := range b.Services {
 		result.Services[k] = v
 	}
@@ -468,7 +461,7 @@ func (b *Bundle) combinedOverlay() (*Bundle, error) {
 
 	for i, d := range b.Datasets {
 		wg.Add(1)
-		go func(id string, bd *BundleDataset) {
+		go func(id string, bd BundleDataset) {
 			defer wg.Done()
 			dataset, err := b.c.getDataset(id)
 			if err != nil {
@@ -486,7 +479,7 @@ func (b *Bundle) combinedOverlay() (*Bundle, error) {
 
 	for i, s := range b.Services {
 		wg.Add(1)
-		go func(id string, bs *BundleService) {
+		go func(id string, bs BundleService) {
 			defer wg.Done()
 			service, err := b.c.getService(id)
 			if err != nil {
