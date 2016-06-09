@@ -717,7 +717,7 @@ ResourceLimits is configuration for resource upper bounds.
 
 ```go
 type Service struct {
-	*ServiceConf
+	ServiceConf
 
 	// ModIndex should be treated as opaque, but passed back on updates
 	ModIndex uint64 `json:"modIndex"`

@@ -67,7 +67,7 @@ func (s *clusterConf) TestUpdateService() {
 			Task: "update-service",
 			Args: &clusterconf.ServicePayload{
 				Service: &clusterconf.Service{
-					ServiceConf: &clusterconf.ServiceConf{ID: test.id},
+					ServiceConf: clusterconf.ServiceConf{ID: test.id},
 					ModIndex:    test.modIndex,
 				},
 			},
@@ -127,7 +127,7 @@ func (s *clusterConf) TestDeleteService() {
 
 func (s *clusterConf) addService() (*clusterconf.Service, error) {
 	// Populate a service
-	service := &clusterconf.Service{ServiceConf: &clusterconf.ServiceConf{ID: uuid.New()}}
+	service := &clusterconf.Service{ServiceConf: clusterconf.ServiceConf{ID: uuid.New()}}
 	key := path.Join("services", service.ID, "config")
 	data := map[string]interface{}{
 		key: service,

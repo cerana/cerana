@@ -14,7 +14,7 @@ const servicesPrefix string = "services"
 
 // Service is information about a service.
 type Service struct {
-	*ServiceConf
+	ServiceConf
 	c *ClusterConf
 	// ModIndex should be treated as opaque, but passed back on updates
 	ModIndex uint64 `json:"modIndex"`
@@ -111,7 +111,7 @@ func (c *ClusterConf) DeleteService(req *acomm.Request) (interface{}, *url.URL, 
 func (c *ClusterConf) getService(id string) (*Service, error) {
 	service := &Service{
 		c:           c,
-		ServiceConf: &ServiceConf{ID: id},
+		ServiceConf: ServiceConf{ID: id},
 	}
 	if err := service.reload(); err != nil {
 		return nil, err
@@ -129,7 +129,7 @@ func (s *Service) reload() error {
 		return err
 	}
 
-	if err := json.Unmarshal(value.Data, s.ServiceConf); err != nil {
+	if err := json.Unmarshal(value.Data, &s.ServiceConf); err != nil {
 		return err
 	}
 	s.ModIndex = value.Index
