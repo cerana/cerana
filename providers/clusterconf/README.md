@@ -6,6 +6,14 @@
 
 ## Usage
 
+```go
+const (
+	RWZFS = iota
+	TempZFS
+	RamDisk
+)
+```
+
 #### type Bundle
 
 ```go
@@ -40,14 +48,21 @@ BundleConf is the configuration of a bundle.
 
 ```go
 type BundleDataset struct {
-	Name  string `json:"name"`
-	ID    string `json:"id"`
-	Type  int    `json:"type"` // TODO: Decide on type for this. Iota?
-	Quota int    `json:"type"`
+	Name  string            `json:"name"`
+	ID    string            `json:"id"`
+	Type  BundleDatasetType `json:"type"`
+	Quota int               `json:"type"`
 }
 ```
 
 BundleDataset is configuration for a dataset associated with a bundle.
+
+#### type BundleDatasetType
+
+```go
+type BundleDatasetType int
+```
+
 
 #### type BundleHeartbeatArgs
 
@@ -60,16 +75,6 @@ type BundleHeartbeatArgs struct {
 ```
 
 BundleHeartbeatArgs are arguments for updating a dataset node heartbeat.
-
-#### type BundleIDArgs
-
-```go
-type BundleIDArgs struct {
-	ID uint64 `json:"id"`
-}
-```
-
-BundleIDArgs are args for bundle tasks that only require bundle id.
 
 #### type BundleListResult
 
@@ -134,7 +139,7 @@ ints.
 ```go
 type BundleService struct {
 	ServiceConf
-	Datasets map[string]*ServiceDataset `json:"datasets"`
+	Datasets map[string]ServiceDataset `json:"datasets"`
 }
 ```
 
@@ -448,6 +453,27 @@ type DefaultsPayload struct {
 DefaultsPayload can be used for task args or result when a cluster object needs
 to be sent.
 
+#### type DeleteBundleArgs
+
+```go
+type DeleteBundleArgs struct {
+	ID uint64 `json:"id"`
+}
+```
+
+DeleteBundleArgs are args for bundle delete task.
+
+#### type GetBundleArgs
+
+```go
+type GetBundleArgs struct {
+	ID              uint64 `json:"id"`
+	CombinedOverlay bool   `json:"overlay"`
+}
+```
+
+GetBundleArgs are args for retrieving a bundle.
+
 #### type HealthCheck
 
 ```go
@@ -469,6 +495,16 @@ type IDArgs struct {
 ```
 
 IDArgs are arguments for operations requiring only an ID.
+
+#### type ListBundleArgs
+
+```go
+type ListBundleArgs struct {
+	CombinedOverlay bool `json:"overlay"`
+}
+```
+
+ListBundleArgs are args for retrieving a bundle list.
 
 #### type MockClusterConf
 
@@ -730,11 +766,11 @@ Service is information about a service.
 
 ```go
 type ServiceConf struct {
-	ID           string                  `json:"id"`
-	Dataset      string                  `json:"dataset"`
-	HealthChecks map[string]*HealthCheck `json:"healthChecks"`
-	Limits       *ResourceLimits         `json:"limits"`
-	Env          map[string]string       `json:"env"`
+	ID           string                 `json:"id"`
+	Dataset      string                 `json:"dataset"`
+	HealthChecks map[string]HealthCheck `json:"healthChecks"`
+	Limits       ResourceLimits         `json:"limits"`
+	Env          map[string]string      `json:"env"`
 }
 ```
 

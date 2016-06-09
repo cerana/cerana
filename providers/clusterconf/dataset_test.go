@@ -174,7 +174,10 @@ func (s *clusterConf) TestDatasetHeartbeat() {
 }
 
 func (s *clusterConf) addDataset() (*clusterconf.Dataset, error) {
-	dataset := &clusterconf.Dataset{DatasetConf: clusterconf.DatasetConf{ID: uuid.New()}}
+	dataset := &clusterconf.Dataset{DatasetConf: clusterconf.DatasetConf{
+		ID:    uuid.New(),
+		Quota: 5,
+	}}
 	datasetKey := path.Join("datasets", dataset.ID, "config")
 	hbKey := path.Join("datasets", dataset.ID, "nodes", "127.0.0.1")
 

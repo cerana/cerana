@@ -16,20 +16,27 @@ func (s *clusterConf) TestGetBundle() {
 	s.Require().NoError(err)
 
 	tests := []struct {
-		desc  string
-		id    uint64
-		nodes map[string]net.IP
-		err   string
+		desc            string
+		id              uint64
+		nodes           map[string]net.IP
+		quota           int
+		dataset         string
+		combinedOverlay bool
+		err             string
 	}{
-		{"zero id", 0, make(map[string]net.IP), "missing arg: id"},
-		{"nonexistent id", uint64(rand.Int63()), make(map[string]net.IP), "bundle config not found"},
-		{"existent id", bundle.ID, bundle.Nodes, ""},
+		{"zero id", 0, make(map[string]net.IP), 0, "", false, "missing arg: id"},
+		{"nonexistent id", uint64(rand.Int63()), make(map[string]net.IP), 0, "", false, "bundle config not found"},
+		{"existent id config", bundle.ID, bundle.Nodes, 0, "", false, ""},
+		{"existent id overlayed", bundle.ID, bundle.Nodes, 5, "testds", true, ""},
 	}
 
 	for _, test := range tests {
 		req, err := acomm.NewRequest(acomm.RequestOptions{
 			Task: "get-bundle",
-			Args: &clusterconf.BundleIDArgs{ID: test.id},
+			Args: &clusterconf.GetBundleArgs{
+				ID:              test.id,
+				CombinedOverlay: test.combinedOverlay,
+			},
 		})
 		s.Require().NoError(err, test.desc)
 		result, streamURL, err := s.clusterConf.GetBundle(req)
@@ -46,6 +53,12 @@ func (s *clusterConf) TestGetBundle() {
 			s.True(ok, test.desc)
 			s.Equal(test.id, bundlePayload.Bundle.ID, test.desc)
 			s.Equal(test.nodes, bundlePayload.Bundle.Nodes, test.desc)
+			for _, ds := range bundlePayload.Bundle.Datasets {
+				s.Equal(test.quota, ds.Quota, test.desc)
+			}
+			for _, service := range bundlePayload.Bundle.Services {
+				s.Equal(test.dataset, service.Dataset, test.desc)
+			}
 		}
 	}
 }
@@ -118,7 +131,7 @@ func (s *clusterConf) TestDeleteBundle() {
 		desc := strconv.FormatUint(test.id, 10)
 		req, err := acomm.NewRequest(acomm.RequestOptions{
 			Task: "delete-bundle",
-			Args: &clusterconf.BundleIDArgs{ID: test.id},
+			Args: &clusterconf.DeleteBundleArgs{ID: test.id},
 		})
 		s.Require().NoError(err, desc)
 		result, streamURL, err := s.clusterConf.DeleteBundle(req)
@@ -184,8 +197,27 @@ func (s *clusterConf) TestBundleHeartbeat() {
 }
 
 func (s *clusterConf) addBundle() (*clusterconf.Bundle, error) {
+	service, err := s.addService()
+	if err != nil {
+		return nil, err
+	}
+	dataset, err := s.addDataset()
+	if err != nil {
+		return nil, err
+	}
 	bundle := &clusterconf.Bundle{BundleConf: clusterconf.BundleConf{
 		ID: uint64(rand.Int63()),
+		Datasets: map[string]*clusterconf.BundleDataset{
+			dataset.ID: &clusterconf.BundleDataset{
+				Name: "foobar",
+				ID:   dataset.ID,
+			},
+		},
+		Services: map[string]*clusterconf.BundleService{
+			service.ID: &clusterconf.BundleService{
+				ServiceConf: clusterconf.ServiceConf{ID: service.ID},
+			},
+		},
 		Ports: clusterconf.BundlePorts{
 			1: &clusterconf.BundlePort{
 				Port: 1,
