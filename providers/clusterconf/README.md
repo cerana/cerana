@@ -355,7 +355,7 @@ ConfigData defines the structure of the config data (e.g. in the config file)
 
 ```go
 type Dataset struct {
-	*DatasetConf
+	DatasetConf
 
 	// Nodes contains the set of nodes on which the dataset is currently in use.
 	// The map keys are IP address strings.

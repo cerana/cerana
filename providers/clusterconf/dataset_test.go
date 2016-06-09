@@ -70,7 +70,7 @@ func (s *clusterConf) TestUpdateDataset() {
 			Task: "update-dataset",
 			Args: &clusterconf.DatasetPayload{
 				Dataset: &clusterconf.Dataset{
-					DatasetConf: &clusterconf.DatasetConf{ID: test.id},
+					DatasetConf: clusterconf.DatasetConf{ID: test.id},
 					ModIndex:    test.modIndex,
 				},
 			},
@@ -174,7 +174,7 @@ func (s *clusterConf) TestDatasetHeartbeat() {
 }
 
 func (s *clusterConf) addDataset() (*clusterconf.Dataset, error) {
-	dataset := &clusterconf.Dataset{DatasetConf: &clusterconf.DatasetConf{ID: uuid.New()}}
+	dataset := &clusterconf.Dataset{DatasetConf: clusterconf.DatasetConf{ID: uuid.New()}}
 	datasetKey := path.Join("datasets", dataset.ID, "config")
 	hbKey := path.Join("datasets", dataset.ID, "nodes", "127.0.0.1")
 

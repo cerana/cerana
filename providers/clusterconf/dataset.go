@@ -18,7 +18,7 @@ const datasetsPrefix string = "datasets"
 
 // Dataset is information about a dataset.
 type Dataset struct {
-	*DatasetConf
+	DatasetConf
 	c *ClusterConf
 	// Nodes contains the set of nodes on which the dataset is currently in use.
 	// The map keys are IP address strings.
@@ -190,7 +190,7 @@ func (c *ClusterConf) DatasetHeartbeat(req *acomm.Request) (interface{}, *url.UR
 func (c *ClusterConf) getDataset(id string) (*Dataset, error) {
 	dataset := &Dataset{
 		c:           c,
-		DatasetConf: &DatasetConf{ID: id},
+		DatasetConf: DatasetConf{ID: id},
 	}
 	if err := dataset.reload(); err != nil {
 		return nil, err
@@ -211,7 +211,7 @@ func (d *Dataset) reload() error {
 	if !ok {
 		return errors.New("dataset config not found")
 	}
-	if err = json.Unmarshal(config.Data, d.DatasetConf); err != nil {
+	if err = json.Unmarshal(config.Data, &d.DatasetConf); err != nil {
 		return err
 	}
 	d.ModIndex = config.Index
