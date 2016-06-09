@@ -419,7 +419,7 @@ to be sent.
 
 ```go
 type Defaults struct {
-	*DefaultsConf
+	DefaultsConf
 
 	ModIndex uint64 `json:"modIndex"`
 }

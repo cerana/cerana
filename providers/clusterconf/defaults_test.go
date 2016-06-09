@@ -44,7 +44,7 @@ func (s *clusterConf) TestUpdateDefaults() {
 			Task: "update-defaults",
 			Args: &clusterconf.DefaultsPayload{
 				Defaults: &clusterconf.Defaults{
-					DefaultsConf: &clusterconf.DefaultsConf{ZFSManual: test.zfsManual},
+					DefaultsConf: clusterconf.DefaultsConf{ZFSManual: test.zfsManual},
 					ModIndex:     *test.modIndex,
 				},
 			},
@@ -74,7 +74,7 @@ func (s *clusterConf) TestUpdateDefaults() {
 }
 
 func (s *clusterConf) setDefaultZFSManual(value bool) (*clusterconf.Defaults, error) {
-	defaults := &clusterconf.Defaults{DefaultsConf: &clusterconf.DefaultsConf{ZFSManual: value}}
+	defaults := &clusterconf.Defaults{DefaultsConf: clusterconf.DefaultsConf{ZFSManual: value}}
 	key := path.Join("cluster")
 	data := map[string]interface{}{
 		key: defaults,
