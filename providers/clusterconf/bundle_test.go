@@ -73,7 +73,7 @@ func (s *clusterConf) TestUpdateBundle() {
 			Task: "update-bundle",
 			Args: &clusterconf.BundlePayload{
 				Bundle: &clusterconf.Bundle{
-					BundleConf: &clusterconf.BundleConf{ID: test.id},
+					BundleConf: clusterconf.BundleConf{ID: test.id},
 					ModIndex:   test.modIndex,
 				},
 			},
@@ -184,7 +184,7 @@ func (s *clusterConf) TestBundleHeartbeat() {
 }
 
 func (s *clusterConf) addBundle() (*clusterconf.Bundle, error) {
-	bundle := &clusterconf.Bundle{BundleConf: &clusterconf.BundleConf{
+	bundle := &clusterconf.Bundle{BundleConf: clusterconf.BundleConf{
 		ID: uint64(rand.Int63()),
 		Ports: clusterconf.BundlePorts{
 			1: &clusterconf.BundlePort{

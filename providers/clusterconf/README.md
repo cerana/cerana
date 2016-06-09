@@ -10,7 +10,7 @@
 
 ```go
 type Bundle struct {
-	*BundleConf
+	BundleConf
 
 	// Nodes contains the set of nodes on which the dataset is currently in use.
 	// The map keys are serials.
@@ -133,7 +133,7 @@ ints.
 
 ```go
 type BundleService struct {
-	*ServiceConf
+	ServiceConf
 	Datasets map[string]*ServiceDataset `json:"datasets"`
 }
 ```

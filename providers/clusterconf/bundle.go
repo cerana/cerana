@@ -20,7 +20,7 @@ const bundlesPrefix string = "bundles"
 
 // Bundle is information about a bundle of services.
 type Bundle struct {
-	*BundleConf
+	BundleConf
 	c *ClusterConf
 	// Nodes contains the set of nodes on which the dataset is currently in use.
 	// The map keys are serials.
@@ -81,7 +81,7 @@ type BundleDataset struct {
 // BundleService is configuration overrides for a service of a bundle and
 // associated bundles.
 type BundleService struct {
-	*ServiceConf
+	ServiceConf
 	Datasets map[string]*ServiceDataset `json:"datasets"`
 }
 
@@ -266,7 +266,7 @@ func (c *ClusterConf) BundleHeartbeat(req *acomm.Request) (interface{}, *url.URL
 func (c *ClusterConf) getBundle(id uint64) (*Bundle, error) {
 	bundle := &Bundle{
 		c:          c,
-		BundleConf: &BundleConf{ID: id},
+		BundleConf: BundleConf{ID: id},
 	}
 	if err := bundle.reload(); err != nil {
 		return nil, err
@@ -287,7 +287,7 @@ func (b *Bundle) reload() error {
 	if !ok {
 		return errors.New("bundle config not found")
 	}
-	if err = json.Unmarshal(config.Data, b.BundleConf); err != nil {
+	if err = json.Unmarshal(config.Data, &b.BundleConf); err != nil {
 		return err
 	}
 	b.ModIndex = config.Index
