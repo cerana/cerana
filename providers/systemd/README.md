@@ -125,7 +125,7 @@ GetArgs are args for the Get handler
 
 ```go
 type GetResult struct {
-	Unit dbus.UnitStatus `json:"unit"`
+	Unit UnitStatus `json:"unit"`
 }
 ```
 
@@ -135,7 +135,7 @@ GetResult is the result of the ListUnits handler.
 
 ```go
 type ListResult struct {
-	Units []dbus.UnitStatus `json:"units"`
+	Units []UnitStatus `json:"units"`
 }
 ```
 
@@ -232,7 +232,7 @@ Stop stops a mock service.
 
 ```go
 type MockSystemdData struct {
-	Statuses  map[string]dbus.UnitStatus
+	Statuses  map[string]UnitStatus
 	UnitFiles map[string]bool
 }
 ```
@@ -334,6 +334,17 @@ Start starts an enabled service.
 func (s *Systemd) Stop(req *acomm.Request) (interface{}, *url.URL, error)
 ```
 Stop stops a running service.
+
+#### type UnitStatus
+
+```go
+type UnitStatus struct {
+	dbus.UnitStatus
+	Uptime time.Duration
+}
+```
+
+UnitStatus contains information about a systemd unit.
 
 --
 *Generated with [godocdown](https://github.com/robertkrimen/godocdown)*

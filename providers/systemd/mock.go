@@ -16,7 +16,7 @@ type MockSystemd struct {
 
 // MockSystemdData is the in-memory data structure for the MockSystemd.
 type MockSystemdData struct {
-	Statuses  map[string]dbus.UnitStatus
+	Statuses  map[string]UnitStatus
 	UnitFiles map[string]bool
 }
 
@@ -24,7 +24,7 @@ type MockSystemdData struct {
 func NewMockSystemd() *MockSystemd {
 	return &MockSystemd{
 		Data: &MockSystemdData{
-			Statuses:  make(map[string]dbus.UnitStatus),
+			Statuses:  make(map[string]UnitStatus),
 			UnitFiles: make(map[string]bool),
 		},
 	}
@@ -91,9 +91,11 @@ func (s *MockSystemd) Enable(req *acomm.Request) (interface{}, *url.URL, error) 
 		return nil, nil, errors.New("No such file or directory")
 	}
 
-	s.Data.Statuses[args.Name] = dbus.UnitStatus{
-		Name:      args.Name,
-		LoadState: "Loaded",
+	s.Data.Statuses[args.Name] = UnitStatus{
+		UnitStatus: dbus.UnitStatus{
+			Name:      args.Name,
+			LoadState: "Loaded",
+		},
 	}
 	return nil, nil, nil
 }
@@ -118,7 +120,7 @@ func (s *MockSystemd) Get(req *acomm.Request) (interface{}, *url.URL, error) {
 
 // List lists mock services.
 func (s *MockSystemd) List(req *acomm.Request) (interface{}, *url.URL, error) {
-	list := make([]dbus.UnitStatus, 0, len(s.Data.Statuses))
+	list := make([]UnitStatus, 0, len(s.Data.Statuses))
 	for _, status := range s.Data.Statuses {
 		list = append(list, status)
 	}
