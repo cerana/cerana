@@ -11,7 +11,7 @@ import (
 	"github.com/cerana/cerana/pkg/logrusx"
 )
 
-// TCPResponseArgs ar arguments for TCPResponse health checks.
+// TCPResponseArgs are arguments for TCPResponse health checks.
 type TCPResponseArgs struct {
 	Address string `json:"address"`
 	Body    []byte `json:"body"`
@@ -19,7 +19,7 @@ type TCPResponseArgs struct {
 }
 
 // TCPResponse makes a TCP request to the specified address and checks the
-// response for a match to a specified string or regex.
+// response for a match to a specified regex.
 func (h *Health) TCPResponse(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args TCPResponseArgs
 	if err := req.UnmarshalArgs(&args); err != nil {

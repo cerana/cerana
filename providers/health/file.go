@@ -17,7 +17,7 @@ type FileArgs struct {
 	MaxSize  int64       `json:"maxSize"`
 }
 
-// File checks one or more attributes against supplied constraints.
+// File checks one or more attributes against supplied attributes.
 func (h *Health) File(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args FileArgs
 	if err := req.UnmarshalArgs(&args); err != nil {

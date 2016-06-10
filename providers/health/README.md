@@ -54,7 +54,7 @@ New create a new instance of a Health provider.
 ```go
 func (h *Health) File(req *acomm.Request) (interface{}, *url.URL, error)
 ```
-File checks one or more attributes against supplied constraints.
+File checks one or more attributes against supplied attributes.
 
 #### func (*Health) HTTPStatus
 
@@ -77,7 +77,7 @@ RegisterTasks registers all of Health's task handlers with the server.
 func (h *Health) TCPResponse(req *acomm.Request) (interface{}, *url.URL, error)
 ```
 TCPResponse makes a TCP request to the specified address and checks the response
-for a match to a specified string or regex.
+for a match to a specified regex.
 
 #### func (*Health) Uptime
 
@@ -161,7 +161,7 @@ type TCPResponseArgs struct {
 }
 ```
 
-TCPResponseArgs ar arguments for TCPResponse health checks.
+TCPResponseArgs are arguments for TCPResponse health checks.
 
 #### type UptimeArgs
 
