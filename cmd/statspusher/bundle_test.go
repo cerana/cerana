@@ -55,7 +55,7 @@ func (s *StatsPusher) TestGetBundles() {
 		}
 		s.clusterConf.Data.Bundles = make(map[uint64]*clusterconf.Bundle)
 		for _, id := range test.known {
-			s.clusterConf.Data.Bundles[id] = &clusterconf.Bundle{BundleConf: &clusterconf.BundleConf{ID: id}}
+			s.clusterConf.Data.Bundles[id] = &clusterconf.Bundle{BundleConf: clusterconf.BundleConf{ID: id}}
 		}
 		bundles, err := s.statsPusher.getBundles()
 		if !s.NoError(err, test.desc) {
@@ -74,7 +74,7 @@ func (s *StatsPusher) TestGetBundles() {
 func (s *StatsPusher) TestRunHealthChecks() {
 	// TODO: Write proper tests when this is done
 	bundles := []*clusterconf.Bundle{
-		{BundleConf: &clusterconf.BundleConf{ID: 123}},
+		{BundleConf: clusterconf.BundleConf{ID: 123}},
 	}
 
 	healthy, err := s.statsPusher.runHealthChecks(bundles)
@@ -87,7 +87,7 @@ func (s *StatsPusher) TestSendBundleHeartbeats() {
 	ip := net.ParseIP("123.123.123.123")
 	bundles := []uint64{123, 456}
 	for _, id := range bundles {
-		s.clusterConf.Data.Bundles[id] = &clusterconf.Bundle{BundleConf: &clusterconf.BundleConf{ID: id}}
+		s.clusterConf.Data.Bundles[id] = &clusterconf.Bundle{BundleConf: clusterconf.BundleConf{ID: id}}
 	}
 	s.NoError(s.statsPusher.sendBundleHeartbeats(bundles, serial, ip))
 	for _, id := range bundles {
