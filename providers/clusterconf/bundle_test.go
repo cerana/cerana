@@ -208,13 +208,13 @@ func (s *clusterConf) addBundle() (*clusterconf.Bundle, error) {
 	bundle := &clusterconf.Bundle{BundleConf: clusterconf.BundleConf{
 		ID: uint64(rand.Int63()),
 		Datasets: map[string]clusterconf.BundleDataset{
-			dataset.ID: clusterconf.BundleDataset{
+			dataset.ID: {
 				Name: "foobar",
 				ID:   dataset.ID,
 			},
 		},
 		Services: map[string]clusterconf.BundleService{
-			service.ID: clusterconf.BundleService{
+			service.ID: {
 				ServiceConf: clusterconf.ServiceConf{ID: service.ID},
 			},
 		},
