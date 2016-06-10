@@ -19,12 +19,14 @@ import (
 
 const bundlesPrefix string = "bundles"
 
+// BundleDatasetType is the type of dataset to be used in a bundle.
 type BundleDatasetType int
 
+// Valid bundle dataset types
 const (
 	RWZFS = iota
 	TempZFS
-	RamDisk
+	RAMDisk
 )
 
 // Bundle is information about a bundle of services.

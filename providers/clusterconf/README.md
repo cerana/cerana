@@ -10,9 +10,10 @@
 const (
 	RWZFS = iota
 	TempZFS
-	RamDisk
+	RAMDisk
 )
 ```
+Valid bundle dataset types
 
 #### type Bundle
 
@@ -63,6 +64,7 @@ BundleDataset is configuration for a dataset associated with a bundle.
 type BundleDatasetType int
 ```
 
+BundleDatasetType is the type of dataset to be used in a bundle.
 
 #### type BundleHeartbeatArgs
 
