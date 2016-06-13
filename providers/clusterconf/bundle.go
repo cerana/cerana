@@ -33,9 +33,9 @@ const (
 type Bundle struct {
 	BundleConf
 	c *ClusterConf
-	// Nodes contains the set of nodes on which the dataset is currently in use.
+	// Nodes contains the set of nodes on which the bundle is currently in use.
 	// The map keys are serials.
-	Nodes map[string]net.IP `json:"nodes"`
+	Nodes map[string]BundleNode `json:"nodes"`
 	// ModIndex should be treated as opaque, but passed back on updates.
 	ModIndex uint64 `json:"modIndex"`
 }
@@ -176,6 +176,12 @@ type BundlePort struct {
 	ExternalPort     int      `json:"externalPort"`
 }
 
+// BundleNode is the data contained in a node heartbeat.
+type BundleNode struct {
+	IP           net.IP           `json:"ip"`
+	HealthErrors map[string]error `json:"healthErrors"`
+}
+
 // DeleteBundleArgs are args for bundle delete task.
 type DeleteBundleArgs struct {
 	ID uint64 `json:"id"`
@@ -205,9 +211,9 @@ type BundleListResult struct {
 
 // BundleHeartbeatArgs are arguments for updating a dataset node heartbeat.
 type BundleHeartbeatArgs struct {
-	ID     uint64 `json:"id"`
-	Serial string `json:"serial"`
-	IP     net.IP `json:"ip"`
+	ID     uint64     `json:"id"`
+	Serial string     `json:"serial"`
+	Node   BundleNode `json:"node"`
 }
 
 // GetBundle retrieves a bundle.
@@ -352,7 +358,7 @@ func (c *ClusterConf) BundleHeartbeat(req *acomm.Request) (interface{}, *url.URL
 	if args.Serial == "" {
 		return nil, nil, errors.New("missing arg: serial")
 	}
-	if args.IP == nil {
+	if args.Node.IP == nil {
 		return nil, nil, errors.New("missing arg: ip")
 	}
 
@@ -361,7 +367,7 @@ func (c *ClusterConf) BundleHeartbeat(req *acomm.Request) (interface{}, *url.URL
 		return nil, nil, err
 	}
 
-	if err := bundle.nodeHeartbeat(args.Serial, args.IP); err != nil {
+	if err := bundle.nodeHeartbeat(args.Serial, args.Node); err != nil {
 		return nil, nil, err
 	}
 
@@ -398,16 +404,16 @@ func (b *Bundle) reload() error {
 	b.ModIndex = config.Index
 
 	// Nodes
-	b.Nodes = make(map[string]net.IP)
+	b.Nodes = make(map[string]BundleNode)
 	for key, value := range values {
 		base := filepath.Base(key)
 		dir := filepath.Base(filepath.Dir(key))
 		if dir == "nodes" {
-			var ip net.IP
-			if err := json.Unmarshal(value.Data, &ip); err != nil {
+			var data BundleNode
+			if err := json.Unmarshal(value.Data, &data); err != nil {
 				return err
 			}
-			b.Nodes[base] = ip
+			b.Nodes[base] = data
 		}
 	}
 
@@ -443,7 +449,7 @@ func (b *Bundle) combinedOverlay() (*Bundle, error) {
 	// duplicate bundle
 	result := &Bundle{
 		BundleConf: b.BundleConf,
-		Nodes:      make(map[string]net.IP),
+		Nodes:      make(map[string]BundleNode),
 	}
 	for k, v := range b.Nodes {
 		result.Nodes[k] = v
@@ -516,9 +522,9 @@ Loop:
 	return nil, fmt.Errorf("bundle overlay failed: %+v", errors)
 }
 
-func (b *Bundle) nodeHeartbeat(serial string, ip net.IP) error {
+func (b *Bundle) nodeHeartbeat(serial string, node BundleNode) error {
 	key := path.Join(bundlesPrefix, strconv.FormatUint(b.ID, 10), "nodes", serial)
-	if err := b.c.kvEphemeral(key, ip, b.c.config.BundleTTL()); err != nil {
+	if err := b.c.kvEphemeral(key, node, b.c.config.BundleTTL()); err != nil {
 		return err
 	}
 	return b.reload()
