@@ -26,11 +26,11 @@ func (s *statsPusher) bundleHeartbeats() error {
 	if err != nil {
 		return err
 	}
-	healthy, err := s.runHealthChecks(bundles)
-	if err != nil {
-		return err
+	healthResults, errs := s.runHealthChecks(bundles)
+	if len(errs) != 0 {
+		return fmt.Errorf("bundle health check errors: %v", errs)
 	}
-	return s.sendBundleHeartbeats(healthy, serial, ip)
+	return s.sendBundleHeartbeats(healthResults, serial, ip)
 }
 
 func (s *statsPusher) getBundles() ([]*clusterconf.Bundle, error) {
@@ -116,18 +116,21 @@ func (s *statsPusher) getSerial() (string, error) {
 	return data.Hostname, nil
 }
 
-func (s *statsPusher) sendBundleHeartbeats(bundles []uint64, serial string, ip net.IP) error {
+func (s *statsPusher) sendBundleHeartbeats(bundles map[uint64]map[string]error, serial string, ip net.IP) error {
 	errored := make([]uint64, 0, len(bundles))
 
 	multiRequest := acomm.NewMultiRequest(s.tracker, s.config.requestTimeout())
-	for _, bundle := range bundles {
+	for bundle, healthErrors := range bundles {
 		req, err := acomm.NewRequest(acomm.RequestOptions{
 			Task:    "bundle-heartbeat",
 			TaskURL: s.config.heartbeatURL(),
 			Args: clusterconf.BundleHeartbeatArgs{
 				ID:     bundle,
 				Serial: serial,
-				IP:     ip,
+				Node: clusterconf.BundleNode{
+					IP:           ip,
+					HealthErrors: healthErrors,
+				},
 			},
 		})
 		if err != nil {
@@ -160,14 +163,55 @@ func (s *statsPusher) sendBundleHeartbeats(bundles []uint64, serial string, ip n
 	return nil
 }
 
-// TODO: Make this actually run health checks
-// Issue: #189
-func (s *statsPusher) runHealthChecks(bundles []*clusterconf.Bundle) ([]uint64, error) {
-	healthy := make([]uint64, len(bundles))
-	for i, bundle := range bundles {
-		healthy[i] = bundle.ID
+func (s *statsPusher) runHealthChecks(bundles []*clusterconf.Bundle) (map[uint64]map[string]error, map[string]error) {
+	multiRequest := acomm.NewMultiRequest(s.tracker, 0)
+
+	requests := make(map[string]*acomm.Request)
+	errors := make(map[string]error)
+	for _, bundle := range bundles {
+		for serviceID, service := range bundle.Services {
+			for healthID, healthCheck := range service.HealthChecks {
+				name := fmt.Sprintf("%d:%s:%s", bundle.ID, serviceID, healthID)
+				req, err := acomm.NewRequest(acomm.RequestOptions{
+					Task: healthCheck.Type,
+					Args: healthCheck.Args,
+				})
+				if err != nil {
+					errors[name] = fmt.Errorf("health check request creation for %s failed: %v", name, err)
+					continue
+				}
+				requests[name] = req
+			}
+		}
 	}
-	return healthy, nil
+
+	for name, req := range requests {
+		if err := multiRequest.AddRequest(name, req); err != nil {
+			errors[name] = err
+			continue
+		}
+		if err := acomm.Send(s.config.coordinatorURL(), req); err != nil {
+			multiRequest.RemoveRequest(req)
+			errors[name] = err
+			continue
+		}
+	}
+
+	responses := multiRequest.Responses()
+	healthResults := make(map[uint64]map[string]error)
+	for name, resp := range responses {
+		nameParts := strings.Split(name, ":")
+		bundleID, _ := strconv.ParseUint(nameParts[0], 10, 64)
+		healthCheck := nameParts[1] + ":" + nameParts[2]
+		if _, ok := healthResults[bundleID]; !ok {
+			healthResults[bundleID] = make(map[string]error)
+		}
+		if resp.Error != nil {
+			healthResults[bundleID][healthCheck] = fmt.Errorf("health check failed: %v", resp.Error)
+		}
+	}
+
+	return healthResults, errors
 }
 
 func extractBundles(units []systemd.UnitStatus) []uint64 {
