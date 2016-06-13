@@ -14,7 +14,7 @@ const servicesPrefix string = "services"
 
 // Service is information about a service.
 type Service struct {
-	*ServiceConf
+	ServiceConf
 	c *ClusterConf
 	// ModIndex should be treated as opaque, but passed back on updates
 	ModIndex uint64 `json:"modIndex"`
@@ -22,11 +22,11 @@ type Service struct {
 
 // ServiceConf is the configuration of a service.
 type ServiceConf struct {
-	ID           string                  `json:"id"`
-	Dataset      string                  `json:"dataset"`
-	HealthChecks map[string]*HealthCheck `json:"healthCheck"`
-	Limits       *ResourceLimits         `json:"limits"`
-	Env          map[string]string       `json:"env"`
+	ID           string                 `json:"id"`
+	Dataset      string                 `json:"dataset"`
+	HealthChecks map[string]HealthCheck `json:"healthChecks"`
+	Limits       ResourceLimits         `json:"limits"`
+	Env          map[string]string      `json:"env"`
 }
 
 // ResourceLimits is configuration for resource upper bounds.
@@ -38,9 +38,9 @@ type ResourceLimits struct {
 
 // HealthCheck is configuration for performing a health check.
 type HealthCheck struct {
-	ID               string   `json:"id"`
-	ProtocolProvider string   `json:"protocolProvider"`
-	Parameters       []string `json:"parameters"`
+	ID   string      `json:"id"`
+	Type string      `json:"type"`
+	Args interface{} `json:"args"`
 }
 
 // ServicePayload can be used for task args or result when a service object
@@ -111,7 +111,7 @@ func (c *ClusterConf) DeleteService(req *acomm.Request) (interface{}, *url.URL, 
 func (c *ClusterConf) getService(id string) (*Service, error) {
 	service := &Service{
 		c:           c,
-		ServiceConf: &ServiceConf{ID: id},
+		ServiceConf: ServiceConf{ID: id},
 	}
 	if err := service.reload(); err != nil {
 		return nil, err
@@ -129,7 +129,7 @@ func (s *Service) reload() error {
 		return err
 	}
 
-	if err := json.Unmarshal(value.Data, s.ServiceConf); err != nil {
+	if err := json.Unmarshal(value.Data, &s.ServiceConf); err != nil {
 		return err
 	}
 	s.ModIndex = value.Index

@@ -32,7 +32,7 @@ func (s *StatsPusher) TestGetDatasets() {
 		}
 		s.clusterConf.Data.Datasets = make(map[string]*clusterconf.Dataset)
 		for _, id := range test.known {
-			s.clusterConf.Data.Datasets[id] = &clusterconf.Dataset{DatasetConf: &clusterconf.DatasetConf{ID: id}}
+			s.clusterConf.Data.Datasets[id] = &clusterconf.Dataset{DatasetConf: clusterconf.DatasetConf{ID: id}}
 		}
 		datasets, err := s.statsPusher.getDatasets()
 		if !s.NoError(err, test.desc) {
@@ -57,7 +57,7 @@ func (s *StatsPusher) TestSendDatasetHeartbeats() {
 	s.zfs.Data.Datasets = make(map[string]*zfsp.Dataset)
 	s.zfs.Data.Datasets[name] = &zfsp.Dataset{Name: name, Properties: &zfs.DatasetProperties{Type: "volume"}}
 	s.clusterConf.Data.Datasets = make(map[string]*clusterconf.Dataset)
-	s.clusterConf.Data.Datasets[name] = &clusterconf.Dataset{DatasetConf: &clusterconf.DatasetConf{ID: name}}
+	s.clusterConf.Data.Datasets[name] = &clusterconf.Dataset{DatasetConf: clusterconf.DatasetConf{ID: name}}
 	ip := net.ParseIP(s.metrics.Data.Network.Interfaces[0].Addrs[0].Addr)
 	s.NoError(s.statsPusher.sendDatasetHeartbeats([]string{name}, ip))
 	s.True(s.clusterConf.Data.Datasets[name].Nodes[ip.String()])

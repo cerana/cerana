@@ -64,7 +64,7 @@ func (c *MockClusterConf) RegisterTasks(server *provider.Server) {
 
 // GetBundle retrieves a mock bundle.
 func (c *MockClusterConf) GetBundle(req *acomm.Request) (interface{}, *url.URL, error) {
-	var args BundleIDArgs
+	var args GetBundleArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
 		return nil, nil, err
 	}
@@ -109,7 +109,7 @@ func (c *MockClusterConf) UpdateBundle(req *acomm.Request) (interface{}, *url.UR
 
 // DeleteBundle removes a mock bundle.
 func (c *MockClusterConf) DeleteBundle(req *acomm.Request) (interface{}, *url.URL, error) {
-	var args BundleIDArgs
+	var args DeleteBundleArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
 		return nil, nil, err
 	}

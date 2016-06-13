@@ -3,6 +3,7 @@ package clusterconf
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/rand"
 	"net"
 	"net/url"
@@ -18,9 +19,19 @@ import (
 
 const bundlesPrefix string = "bundles"
 
+// BundleDatasetType is the type of dataset to be used in a bundle.
+type BundleDatasetType int
+
+// Valid bundle dataset types
+const (
+	RWZFS = iota
+	TempZFS
+	RAMDisk
+)
+
 // Bundle is information about a bundle of services.
 type Bundle struct {
-	*BundleConf
+	BundleConf
 	c *ClusterConf
 	// Nodes contains the set of nodes on which the dataset is currently in use.
 	// The map keys are serials.
@@ -31,20 +42,20 @@ type Bundle struct {
 
 // BundleConf is the configuration of a bundle.
 type BundleConf struct {
-	ID         uint64                    `json:"id"`
-	Datasets   map[string]*BundleDataset `json:"datasets"`
-	Services   map[string]*BundleService `json:"services"`
-	Redundancy int                       `json:"redundancy"`
-	Ports      BundlePorts               `json:"ports"`
+	ID         uint64                   `json:"id"`
+	Datasets   map[string]BundleDataset `json:"datasets"`
+	Services   map[string]BundleService `json:"services"`
+	Redundancy int                      `json:"redundancy"`
+	Ports      BundlePorts              `json:"ports"`
 }
 
 // BundlePorts is a map of port numbers to port information.
-type BundlePorts map[int]*BundlePort
+type BundlePorts map[int]BundlePort
 
 // MarshalJSON marshals BundlePorts into a JSON map, converting int keys to
 // strings.
 func (p BundlePorts) MarshalJSON() ([]byte, error) {
-	ports := make(map[string]*BundlePort)
+	ports := make(map[string]BundlePort)
 	for port, value := range p {
 		ports[strconv.Itoa(port)] = value
 	}
@@ -54,7 +65,7 @@ func (p BundlePorts) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON unmarshals JSON into a BundlePorts, converting string keys to
 // ints.
 func (p BundlePorts) UnmarshalJSON(data []byte) error {
-	ports := make(map[string]*BundlePort)
+	ports := make(map[string]BundlePort)
 	if err := json.Unmarshal(data, &ports); err != nil {
 		return err
 	}
@@ -72,17 +83,82 @@ func (p BundlePorts) UnmarshalJSON(data []byte) error {
 
 // BundleDataset is configuration for a dataset associated with a bundle.
 type BundleDataset struct {
-	Name  string `json:"name"`
-	ID    string `json:"id"`
-	Type  int    `json:"type"` // TODO: Decide on type for this. Iota?
-	Quota int    `json:"type"`
+	Name  string            `json:"name"`
+	ID    string            `json:"id"`
+	Type  BundleDatasetType `json:"type"`
+	Quota int               `json:"type"`
+}
+
+func (d BundleDataset) overlayOn(base *Dataset) (BundleDataset, error) {
+	if d.ID != base.ID {
+		return d, errors.New("dataset ids do not match")
+	}
+
+	// overlay data
+	if d.Quota <= 0 {
+		d.Quota = base.Quota
+	}
+
+	return d, nil
 }
 
 // BundleService is configuration overrides for a service of a bundle and
 // associated bundles.
 type BundleService struct {
-	*ServiceConf
-	Datasets map[string]*ServiceDataset `json:"datasets"`
+	ServiceConf
+	Datasets map[string]ServiceDataset `json:"datasets"`
+}
+
+func (s BundleService) overlayOn(base *Service) (BundleService, error) {
+	if s.ID != base.ID {
+		return s, errors.New("service ids do not match")
+	}
+
+	// maps are pointers, so need to be duplicated separately.
+	result := s
+	result.Datasets = make(map[string]ServiceDataset)
+	for k, v := range s.Datasets {
+		result.Datasets[k] = v
+	}
+	result.HealthChecks = make(map[string]HealthCheck)
+	for k, v := range s.HealthChecks {
+		result.HealthChecks[k] = v
+	}
+	result.Env = make(map[string]string)
+	for k, v := range s.Env {
+		result.Env[k] = v
+	}
+
+	// overlay data
+	if result.Dataset == "" {
+		result.Dataset = base.Dataset
+	}
+
+	if result.Limits.CPU <= 0 {
+		result.Limits.CPU = base.Limits.CPU
+	}
+	if result.Limits.Memory <= 0 {
+		result.Limits.Memory = base.Limits.Memory
+	}
+	if result.Limits.Processes <= 0 {
+		result.Limits.Processes = base.Limits.Processes
+	}
+
+	for id, hc := range base.HealthChecks {
+		_, ok := result.HealthChecks[id]
+		if !ok {
+			result.HealthChecks[id] = hc
+			continue
+		}
+	}
+	for key, val := range base.Env {
+		_, ok := result.Env[key]
+		if !ok {
+			result.Env[key] = val
+		}
+	}
+
+	return result, nil
 }
 
 // ServiceDataset is configuration for mounting a dataset for a bundle service.
@@ -100,9 +176,20 @@ type BundlePort struct {
 	ExternalPort     int      `json:"externalPort"`
 }
 
-// BundleIDArgs are args for bundle tasks that only require bundle id.
-type BundleIDArgs struct {
+// DeleteBundleArgs are args for bundle delete task.
+type DeleteBundleArgs struct {
 	ID uint64 `json:"id"`
+}
+
+// GetBundleArgs are args for retrieving a bundle.
+type GetBundleArgs struct {
+	ID              uint64 `json:"id"`
+	CombinedOverlay bool   `json:"overlay"`
+}
+
+// ListBundleArgs are args for retrieving a bundle list.
+type ListBundleArgs struct {
+	CombinedOverlay bool `json:"overlay"`
 }
 
 // BundlePayload can be used for task args or result when a bundle object needs
@@ -125,7 +212,7 @@ type BundleHeartbeatArgs struct {
 
 // GetBundle retrieves a bundle.
 func (c *ClusterConf) GetBundle(req *acomm.Request) (interface{}, *url.URL, error) {
-	var args BundleIDArgs
+	var args GetBundleArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
 		return nil, nil, err
 	}
@@ -137,11 +224,22 @@ func (c *ClusterConf) GetBundle(req *acomm.Request) (interface{}, *url.URL, erro
 	if err != nil {
 		return nil, nil, err
 	}
+	if args.CombinedOverlay {
+		bundle, err = bundle.combinedOverlay()
+		if err != nil {
+			return nil, nil, err
+		}
+	}
 	return &BundlePayload{bundle}, nil, nil
 }
 
 // ListBundles retrieves a list of all bundles.
 func (c *ClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL, error) {
+	var args ListBundleArgs
+	if err := req.UnmarshalArgs(&args); err != nil {
+		return nil, nil, err
+	}
+
 	keys, err := c.kvKeys(bundlesPrefix)
 	if err != nil {
 		return nil, nil, err
@@ -160,20 +258,27 @@ func (c *ClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL, er
 	}
 
 	var wg sync.WaitGroup
-	dsChan := make(chan *Bundle, len(ids))
-	defer close(dsChan)
+	bundleChan := make(chan *Bundle, len(ids))
+	defer close(bundleChan)
 	errChan := make(chan error, len(ids))
 	defer close(errChan)
 	for id := range ids {
 		wg.Add(1)
 		go func(id uint64) {
 			defer wg.Done()
-			ds, err := c.getBundle(id)
+			bundle, err := c.getBundle(id)
 			if err != nil {
 				errChan <- err
 				return
 			}
-			dsChan <- ds
+			if args.CombinedOverlay {
+				bundle, err = bundle.combinedOverlay()
+				if err != nil {
+					errChan <- err
+					return
+				}
+			}
+			bundleChan <- bundle
 		}(id)
 	}
 	wg.Wait()
@@ -182,9 +287,9 @@ func (c *ClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL, er
 		err := <-errChan
 		return nil, nil, err
 	}
-	bundles := make([]*Bundle, 0, len(dsChan))
-	for ds := range dsChan {
-		bundles = append(bundles, ds)
+	bundles := make([]*Bundle, 0, len(bundleChan))
+	for bundle := range bundleChan {
+		bundles = append(bundles, bundle)
 	}
 
 	return &BundleListResult{
@@ -216,7 +321,7 @@ func (c *ClusterConf) UpdateBundle(req *acomm.Request) (interface{}, *url.URL, e
 
 // DeleteBundle deletes a bundle config.
 func (c *ClusterConf) DeleteBundle(req *acomm.Request) (interface{}, *url.URL, error) {
-	var args BundleIDArgs
+	var args DeleteBundleArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
 		return nil, nil, err
 	}
@@ -266,7 +371,7 @@ func (c *ClusterConf) BundleHeartbeat(req *acomm.Request) (interface{}, *url.URL
 func (c *ClusterConf) getBundle(id uint64) (*Bundle, error) {
 	bundle := &Bundle{
 		c:          c,
-		BundleConf: &BundleConf{ID: id},
+		BundleConf: BundleConf{ID: id},
 	}
 	if err := bundle.reload(); err != nil {
 		return nil, err
@@ -287,7 +392,7 @@ func (b *Bundle) reload() error {
 	if !ok {
 		return errors.New("bundle config not found")
 	}
-	if err = json.Unmarshal(config.Data, b.BundleConf); err != nil {
+	if err = json.Unmarshal(config.Data, &b.BundleConf); err != nil {
 		return err
 	}
 	b.ModIndex = config.Index
@@ -326,6 +431,89 @@ func (b *Bundle) update() error {
 
 	// reload instead of just setting the new modIndex in case any nodes have also changed.
 	return b.reload()
+}
+
+// combinedOverlay will create a new *Bundle object containing the base configurations of datasets and services with the bundle values overlayed on top.
+// Note: Attempting to save a combined overlay bundle will result in an error.
+func (b *Bundle) combinedOverlay() (*Bundle, error) {
+	var wg sync.WaitGroup
+	errorChan := make(chan error, len(b.Datasets)+len(b.Services))
+	defer close(errorChan)
+
+	// duplicate bundle
+	result := &Bundle{
+		BundleConf: b.BundleConf,
+		Nodes:      make(map[string]net.IP),
+	}
+	for k, v := range b.Nodes {
+		result.Nodes[k] = v
+	}
+	result.Datasets = make(map[string]BundleDataset)
+	for k, v := range b.Datasets {
+		result.Datasets[k] = v
+	}
+	result.Services = make(map[string]BundleService)
+	for k, v := range b.Services {
+		result.Services[k] = v
+	}
+	result.Ports = make(BundlePorts)
+	for k, v := range b.Ports {
+		result.Ports[k] = v
+	}
+
+	for i, d := range b.Datasets {
+		wg.Add(1)
+		go func(id string, bd BundleDataset) {
+			defer wg.Done()
+			dataset, err := b.c.getDataset(id)
+			if err != nil {
+				errorChan <- err
+				return
+			}
+			combined, err := bd.overlayOn(dataset)
+			if err != nil {
+				errorChan <- err
+				return
+			}
+			result.Datasets[id] = combined
+		}(i, d)
+	}
+
+	for i, s := range b.Services {
+		wg.Add(1)
+		go func(id string, bs BundleService) {
+			defer wg.Done()
+			service, err := b.c.getService(id)
+			if err != nil {
+				errorChan <- err
+				return
+			}
+			combined, err := bs.overlayOn(service)
+			if err != nil {
+				errorChan <- err
+				return
+			}
+			result.Services[id] = combined
+		}(i, s)
+	}
+
+	wg.Wait()
+
+	if len(errorChan) == 0 {
+		return result, nil
+	}
+
+	errors := make([]error, len(errorChan))
+Loop:
+	for {
+		select {
+		case err := <-errorChan:
+			errors = append(errors, err)
+		default:
+			break Loop
+		}
+	}
+	return nil, fmt.Errorf("bundle overlay failed: %+v", errors)
 }
 
 func (b *Bundle) nodeHeartbeat(serial string, ip net.IP) error {

@@ -12,7 +12,7 @@ const defaultsPrefix string = "cluster"
 
 // Defaults is information about the cluster configuration.
 type Defaults struct {
-	*DefaultsConf
+	DefaultsConf
 	c        *ClusterConf
 	ModIndex uint64 `json:"modIndex"`
 }
@@ -57,7 +57,7 @@ func (c *ClusterConf) UpdateDefaults(req *acomm.Request) (interface{}, *url.URL,
 
 func (c *ClusterConf) getDefaults() (*Defaults, error) {
 	defaults := &Defaults{
-		DefaultsConf: &DefaultsConf{},
+		DefaultsConf: DefaultsConf{},
 		c:            c,
 	}
 	if err := defaults.reload(); err != nil {
@@ -75,7 +75,7 @@ func (d *Defaults) reload() error {
 		return err
 	}
 
-	if err := json.Unmarshal(value.Data, d.DefaultsConf); err != nil {
+	if err := json.Unmarshal(value.Data, &d.DefaultsConf); err != nil {
 		return err
 	}
 	d.ModIndex = value.Index

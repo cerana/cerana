@@ -6,11 +6,20 @@
 
 ## Usage
 
+```go
+const (
+	RWZFS = iota
+	TempZFS
+	RAMDisk
+)
+```
+Valid bundle dataset types
+
 #### type Bundle
 
 ```go
 type Bundle struct {
-	*BundleConf
+	BundleConf
 
 	// Nodes contains the set of nodes on which the dataset is currently in use.
 	// The map keys are serials.
@@ -26,11 +35,11 @@ Bundle is information about a bundle of services.
 
 ```go
 type BundleConf struct {
-	ID         uint64                    `json:"id"`
-	Datasets   map[string]*BundleDataset `json:"datasets"`
-	Services   map[string]*BundleService `json:"services"`
-	Redundancy int                       `json:"redundancy"`
-	Ports      BundlePorts               `json:"ports"`
+	ID         uint64                   `json:"id"`
+	Datasets   map[string]BundleDataset `json:"datasets"`
+	Services   map[string]BundleService `json:"services"`
+	Redundancy int                      `json:"redundancy"`
+	Ports      BundlePorts              `json:"ports"`
 }
 ```
 
@@ -40,14 +49,22 @@ BundleConf is the configuration of a bundle.
 
 ```go
 type BundleDataset struct {
-	Name  string `json:"name"`
-	ID    string `json:"id"`
-	Type  int    `json:"type"` // TODO: Decide on type for this. Iota?
-	Quota int    `json:"type"`
+	Name  string            `json:"name"`
+	ID    string            `json:"id"`
+	Type  BundleDatasetType `json:"type"`
+	Quota int               `json:"type"`
 }
 ```
 
 BundleDataset is configuration for a dataset associated with a bundle.
+
+#### type BundleDatasetType
+
+```go
+type BundleDatasetType int
+```
+
+BundleDatasetType is the type of dataset to be used in a bundle.
 
 #### type BundleHeartbeatArgs
 
@@ -60,16 +77,6 @@ type BundleHeartbeatArgs struct {
 ```
 
 BundleHeartbeatArgs are arguments for updating a dataset node heartbeat.
-
-#### type BundleIDArgs
-
-```go
-type BundleIDArgs struct {
-	ID uint64 `json:"id"`
-}
-```
-
-BundleIDArgs are args for bundle tasks that only require bundle id.
 
 #### type BundleListResult
 
@@ -108,7 +115,7 @@ BundlePort is configuration for a port associated with a bundle.
 #### type BundlePorts
 
 ```go
-type BundlePorts map[int]*BundlePort
+type BundlePorts map[int]BundlePort
 ```
 
 BundlePorts is a map of port numbers to port information.
@@ -133,8 +140,8 @@ ints.
 
 ```go
 type BundleService struct {
-	*ServiceConf
-	Datasets map[string]*ServiceDataset `json:"datasets"`
+	ServiceConf
+	Datasets map[string]ServiceDataset `json:"datasets"`
 }
 ```
 
@@ -355,7 +362,7 @@ ConfigData defines the structure of the config data (e.g. in the config file)
 
 ```go
 type Dataset struct {
-	*DatasetConf
+	DatasetConf
 
 	// Nodes contains the set of nodes on which the dataset is currently in use.
 	// The map keys are IP address strings.
@@ -419,7 +426,7 @@ to be sent.
 
 ```go
 type Defaults struct {
-	*DefaultsConf
+	DefaultsConf
 
 	ModIndex uint64 `json:"modIndex"`
 }
@@ -448,13 +455,34 @@ type DefaultsPayload struct {
 DefaultsPayload can be used for task args or result when a cluster object needs
 to be sent.
 
+#### type DeleteBundleArgs
+
+```go
+type DeleteBundleArgs struct {
+	ID uint64 `json:"id"`
+}
+```
+
+DeleteBundleArgs are args for bundle delete task.
+
+#### type GetBundleArgs
+
+```go
+type GetBundleArgs struct {
+	ID              uint64 `json:"id"`
+	CombinedOverlay bool   `json:"overlay"`
+}
+```
+
+GetBundleArgs are args for retrieving a bundle.
+
 #### type HealthCheck
 
 ```go
 type HealthCheck struct {
-	ID               string   `json:"id"`
-	ProtocolProvider string   `json:"protocolProvider"`
-	Parameters       []string `json:"parameters"`
+	ID   string      `json:"id"`
+	Type string      `json:"type"`
+	Args interface{} `json:"args"`
 }
 ```
 
@@ -469,6 +497,16 @@ type IDArgs struct {
 ```
 
 IDArgs are arguments for operations requiring only an ID.
+
+#### type ListBundleArgs
+
+```go
+type ListBundleArgs struct {
+	CombinedOverlay bool `json:"overlay"`
+}
+```
+
+ListBundleArgs are args for retrieving a bundle list.
 
 #### type MockClusterConf
 
@@ -717,7 +755,7 @@ ResourceLimits is configuration for resource upper bounds.
 
 ```go
 type Service struct {
-	*ServiceConf
+	ServiceConf
 
 	// ModIndex should be treated as opaque, but passed back on updates
 	ModIndex uint64 `json:"modIndex"`
@@ -730,11 +768,11 @@ Service is information about a service.
 
 ```go
 type ServiceConf struct {
-	ID           string                  `json:"id"`
-	Dataset      string                  `json:"dataset"`
-	HealthChecks map[string]*HealthCheck `json:"healthCheck"`
-	Limits       *ResourceLimits         `json:"limits"`
-	Env          map[string]string       `json:"env"`
+	ID           string                 `json:"id"`
+	Dataset      string                 `json:"dataset"`
+	HealthChecks map[string]HealthCheck `json:"healthChecks"`
+	Limits       ResourceLimits         `json:"limits"`
+	Env          map[string]string      `json:"env"`
 }
 ```
 
