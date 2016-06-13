@@ -434,7 +434,7 @@ func (b *Bundle) update() error {
 }
 
 // combinedOverlay will create a new *Bundle object containing the base configurations of datasets and services with the bundle values overlayed on top.
-// This should not be saved.
+// Note: Attempting to save a combined overlay bundle will result in an error.
 func (b *Bundle) combinedOverlay() (*Bundle, error) {
 	var wg sync.WaitGroup
 	errorChan := make(chan error, len(b.Datasets)+len(b.Services))
