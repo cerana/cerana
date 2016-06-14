@@ -1,0 +1,64 @@
+# namespace
+
+[![namespace](https://godoc.org/github.com/cerana/cerana/providers/namespace?status.svg)](https://godoc.org/github.com/cerana/cerana/providers/namespace)
+
+
+
+## Usage
+
+#### type IDMap
+
+```go
+type IDMap struct {
+	ID     uint64 `json:"id"`
+	HostID uint64 `json:"hostID"`
+	Length uint64 `json:"Length"`
+}
+```
+
+IDMap is a map of id in container to id on host and length of a range.
+
+#### type Namespace
+
+```go
+type Namespace struct {
+}
+```
+
+Namespace is a provider of namespace functionality.
+
+#### func  New
+
+```go
+func New(config *provider.Config, tracker *acomm.Tracker) *Namespace
+```
+New creates a new instance of Namespace.
+
+#### func (*Namespace) RegisterTasks
+
+```go
+func (n *Namespace) RegisterTasks(server *provider.Server)
+```
+RegisterTasks registers all of Namespaces's task handlers with the server.
+
+#### func (*Namespace) SetUser
+
+```go
+func (n *Namespace) SetUser(req *acomm.Request) (interface{}, *url.URL, error)
+```
+SetUser sets the user and group id mapping for a process.
+
+#### type UserArgs
+
+```go
+type UserArgs struct {
+	PID  uint64  `json:"pid"`
+	UIDs []IDMap `json:"uid"`
+	GIDs []IDMap `json:"gid"`
+}
+```
+
+UserArgs are arguments for SetUser.
+
+--
+*Generated with [godocdown](https://github.com/robertkrimen/godocdown)*
