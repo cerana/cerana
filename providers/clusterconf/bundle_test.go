@@ -18,14 +18,14 @@ func (s *clusterConf) TestGetBundle() {
 	tests := []struct {
 		desc            string
 		id              uint64
-		nodes           map[string]net.IP
+		nodes           map[string]clusterconf.BundleNode
 		quota           int
 		dataset         string
 		combinedOverlay bool
 		err             string
 	}{
-		{"zero id", 0, make(map[string]net.IP), 0, "", false, "missing arg: id"},
-		{"nonexistent id", uint64(rand.Int63()), make(map[string]net.IP), 0, "", false, "bundle config not found"},
+		{"zero id", 0, make(map[string]clusterconf.BundleNode), 0, "", false, "missing arg: id"},
+		{"nonexistent id", uint64(rand.Int63()), make(map[string]clusterconf.BundleNode), 0, "", false, "bundle config not found"},
 		{"existent id config", bundle.ID, bundle.Nodes, 0, "", false, ""},
 		{"existent id overlayed", bundle.ID, bundle.Nodes, 5, "testds", true, ""},
 	}
@@ -169,7 +169,9 @@ func (s *clusterConf) TestBundleHeartbeat() {
 			Args: &clusterconf.BundleHeartbeatArgs{
 				ID:     test.id,
 				Serial: test.serial,
-				IP:     test.ip,
+				Node: clusterconf.BundleNode{
+					IP: test.ip,
+				},
 			},
 		})
 		args := string(*req.Args)
@@ -232,7 +234,10 @@ func (s *clusterConf) addBundle() (*clusterconf.Bundle, error) {
 
 	data := map[string]interface{}{
 		bundleKey: bundle,
-		nodeKey:   ip,
+		nodeKey: clusterconf.BundleNode{
+			IP:           ip,
+			HealthErrors: make(map[string]error),
+		},
 	}
 	indexes, err := s.loadData(data)
 	if err != nil {
@@ -240,7 +245,12 @@ func (s *clusterConf) addBundle() (*clusterconf.Bundle, error) {
 	}
 
 	bundle.ModIndex = indexes[bundleKey]
-	bundle.Nodes = map[string]net.IP{serial: ip}
+	bundle.Nodes = map[string]clusterconf.BundleNode{
+		serial: {
+			IP:           ip,
+			HealthErrors: make(map[string]error),
+		},
+	}
 
 	return bundle, nil
 }

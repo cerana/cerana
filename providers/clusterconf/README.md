@@ -21,9 +21,9 @@ Valid bundle dataset types
 type Bundle struct {
 	BundleConf
 
-	// Nodes contains the set of nodes on which the dataset is currently in use.
+	// Nodes contains the set of nodes on which the bundle is currently in use.
 	// The map keys are serials.
-	Nodes map[string]net.IP `json:"nodes"`
+	Nodes map[string]BundleNode `json:"nodes"`
 	// ModIndex should be treated as opaque, but passed back on updates.
 	ModIndex uint64 `json:"modIndex"`
 }
@@ -70,9 +70,9 @@ BundleDatasetType is the type of dataset to be used in a bundle.
 
 ```go
 type BundleHeartbeatArgs struct {
-	ID     uint64 `json:"id"`
-	Serial string `json:"serial"`
-	IP     net.IP `json:"ip"`
+	ID     uint64     `json:"id"`
+	Serial string     `json:"serial"`
+	Node   BundleNode `json:"node"`
 }
 ```
 
@@ -87,6 +87,17 @@ type BundleListResult struct {
 ```
 
 BundleListResult is the result from listing bundles.
+
+#### type BundleNode
+
+```go
+type BundleNode struct {
+	IP           net.IP           `json:"ip"`
+	HealthErrors map[string]error `json:"healthErrors"`
+}
+```
+
+BundleNode is the data contained in a node heartbeat.
 
 #### type BundlePayload
 

@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"github.com/cerana/cerana/providers/clusterconf"
+	"github.com/cerana/cerana/providers/health"
 	"github.com/cerana/cerana/providers/systemd"
 	"github.com/coreos/go-systemd/dbus"
 	"github.com/pborman/uuid"
@@ -72,25 +73,56 @@ func (s *StatsPusher) TestGetBundles() {
 }
 
 func (s *StatsPusher) TestRunHealthChecks() {
-	// TODO: Write proper tests when this is done
-	bundles := []*clusterconf.Bundle{
-		{BundleConf: clusterconf.BundleConf{ID: 123}},
+	s.health.Data.Uptime = false
+	bundle := &clusterconf.Bundle{
+		BundleConf: clusterconf.BundleConf{
+			ID: 123,
+			Services: map[string]clusterconf.BundleService{
+				"foobar": {
+					ServiceConf: clusterconf.ServiceConf{
+						HealthChecks: map[string]clusterconf.HealthCheck{
+							"file": {
+								ID:   "file",
+								Type: "health-file",
+								Args: health.FileArgs{},
+							},
+							"uptime": {
+								ID:   "file",
+								Type: "health-uptime",
+								Args: health.UptimeArgs{},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
+	bundles := []*clusterconf.Bundle{bundle}
 
-	healthy, err := s.statsPusher.runHealthChecks(bundles)
-	s.NoError(err)
-	s.Len(healthy, len(bundles))
+	healthErrors, err := s.statsPusher.runHealthChecks(bundles)
+	s.Len(err, 0)
+	b, ok := healthErrors[bundle.ID]
+	if !s.True(ok) {
+		return
+	}
+	_, ok = b["foobar:file"]
+	s.False(ok)
+	_, ok = b["foobar:uptime"]
+	s.True(ok)
 }
 
 func (s *StatsPusher) TestSendBundleHeartbeats() {
 	serial := "foobar"
 	ip := net.ParseIP("123.123.123.123")
-	bundles := []uint64{123, 456}
-	for _, id := range bundles {
+	bundles := map[uint64]map[string]error{
+		123: {},
+		456: {},
+	}
+	for id := range bundles {
 		s.clusterConf.Data.Bundles[id] = &clusterconf.Bundle{BundleConf: clusterconf.BundleConf{ID: id}}
 	}
 	s.NoError(s.statsPusher.sendBundleHeartbeats(bundles, serial, ip))
-	for _, id := range bundles {
-		s.Equal(ip, s.clusterConf.Data.Bundles[id].Nodes[serial])
+	for id := range bundles {
+		s.Equal(ip, s.clusterConf.Data.Bundles[id].Nodes[serial].IP)
 	}
 }
