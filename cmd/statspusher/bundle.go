@@ -193,7 +193,6 @@ func (s *statsPusher) runHealthChecks(bundles []*clusterconf.Bundle) (map[uint64
 		if err := acomm.Send(s.config.coordinatorURL(), req); err != nil {
 			multiRequest.RemoveRequest(req)
 			errors[name] = err
-			continue
 		}
 	}
 
