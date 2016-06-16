@@ -63,9 +63,9 @@ func newConfig(flagSet *pflag.FlagSet, v *viper.Viper) *config {
 	flagSet.StringP("heartbeatURL", "e", "", "url of coordinator for the heartbeat registering")
 	flagSet.StringP("logLevel", "l", "warning", "log level: debug/info/warn/error/fatal/panic")
 	flagSet.Uint64P("requestTimeout", "r", 0, "default timeout for requests made (seconds)")
-	flagSet.Uint64P("datasetTTL", "d", 0, "default timeout for requests made (seconds)")
-	flagSet.Uint64P("bundleTTL", "b", 0, "default timeout for requests made (seconds)")
-	flagSet.Uint64P("nodeTTL", "n", 0, "default timeout for requests made  (seconds)")
+	flagSet.Uint64P("datasetTTL", "d", 0, "dataset heartbeat ttl (seconds)")
+	flagSet.Uint64P("bundleTTL", "b", 0, "bundle heartbeat ttl (seconds)")
+	flagSet.Uint64P("nodeTTL", "n", 0, "node heartbeat ttl (seconds)")
 
 	return &config{
 		viper:   v,
