@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/acomm"
@@ -45,17 +46,19 @@ func (n *Namespace) SetUser(req *acomm.Request) (interface{}, *url.URL, error) {
 }
 
 func writeIDMapFile(path string, idMaps []IDMap) error {
-	mapFile, err := os.OpenFile(path, os.O_TRUNC, 0644)
+	mapFile, err := os.OpenFile(path, os.O_TRUNC|os.O_RDWR, 0644)
 	if err != nil {
 		return err
 	}
 	defer logrusx.LogReturnedErr(mapFile.Close, logrus.Fields{"path": path}, "failed to close map file")
 
-	for _, idMap := range idMaps {
-		line := fmt.Sprintf("%d %d %d", idMap.ID, idMap.HostID, idMap.Length)
-		if _, err := fmt.Fprintln(mapFile, line); err != nil {
-			return err
-		}
+	content := make([]string, len(idMaps))
+	for i, idMap := range idMaps {
+		content[i] = fmt.Sprintf("%d %d %d", idMap.ID, idMap.HostID, idMap.Length)
+	}
+
+	if _, err := fmt.Fprintln(mapFile, strings.Join(content, "\n")); err != nil {
+		return err
 	}
 
 	return nil
