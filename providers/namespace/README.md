@@ -18,6 +18,47 @@ type IDMap struct {
 
 IDMap is a map of id in container to id on host and length of a range.
 
+#### type Mock
+
+```go
+type Mock struct {
+	Data MockData
+}
+```
+
+Mock is a mock Namespace provider.
+
+#### func  NewMock
+
+```go
+func NewMock() *Mock
+```
+NewMock creates a new instance of Mock.
+
+#### func (*Mock) RegisterTasks
+
+```go
+func (n *Mock) RegisterTasks(server *provider.Server)
+```
+RegisterTasks registers all of Mock's task handlers.
+
+#### func (*Mock) SetUser
+
+```go
+func (n *Mock) SetUser(req *acomm.Request) (interface{}, *url.URL, error)
+```
+SetUser sets mock uid and gid mappings.
+
+#### type MockData
+
+```go
+type MockData struct {
+	SetUserErr error
+}
+```
+
+MockData is the in-memory data structure for a Mock.
+
 #### type Namespace
 
 ```go
