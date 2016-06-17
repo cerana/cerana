@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -51,7 +52,6 @@ func (s *Namespace) TestSetUser() {
 			continue
 		} else {
 			s.Nil(err, desc)
-			continue
 		}
 
 		s.checkMapFile(proc.Pid, "uid_map", test.UIDs, desc)
@@ -94,7 +94,15 @@ func (s *Namespace) checkMapFile(pid int, filename, expected, desc string) bool 
 	if !s.NoError(err, desc) {
 		return false
 	}
-	pass = pass && s.EqualValues(expected, string(contents), desc)
+
+	// After the file is written, there are whitespace adjustments outside of
+	// Namespace's control. Adjust for comparison.
+	parts := strings.Split(strings.TrimSpace(string(contents)), "\n")
+	r, _ := regexp.Compile(`\s+`)
+	for i, s := range parts {
+		parts[i] = r.ReplaceAllString(strings.TrimSpace(s), " ")
+	}
+	pass = pass && s.EqualValues(expected, strings.Join(parts, "\n"), desc)
 
 	return pass
 }
