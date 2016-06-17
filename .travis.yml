@@ -11,9 +11,14 @@ env:
     - VCONSUL=0.6.4
     - VETCD=2.1.1
     - VZFS=0.6.5.5
+    - ZFS_CACHE=/tmp/zfs
+
+cache:
+  directories:
+    - $ZFS_CACHE
 
 # Versions of Go and deps in the build matrix should test the current in use by
-# mistify-os and the latest release.
+# cerana-os and the latest release.
 
 go:
   - 1.5.2
@@ -21,6 +26,7 @@ go:
 
 install:
   - mkdir -p $HOME/bin
+  - mkdir -p $ZFS_CACHE
   - .travis/deps.sh fetch
   - go get -t -v ./...
   - .travis/deps.sh install

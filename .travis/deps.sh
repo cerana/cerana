@@ -19,8 +19,12 @@ function fetch {
 		;
 
 	cd /tmp
-	curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$VZFS/spl-$VZFS.tar.gz | bsdtar -xf- -C /tmp
-	curl -L https://github.com/zfsonlinux/zfs/archive/$CZFS.tar.gz | bsdtar -xf- -C /tmp
+    if [ ! -d "$ZFS_CACHE/spl-$VZFS" ]; then
+	    curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$VZFS/spl-$VZFS.tar.gz | bsdtar -xf- -C $ZFS_CACHE
+    fi
+    if [ ! -d "$ZFS_CACHE/zfs-$CZFS" ]; then
+	    curl -L https://github.com/zfsonlinux/zfs/archive/$CZFS.tar.gz | bsdtar -xf- -C $ZFS_CACHE
+    fi
 
 	curl -L "https://releases.hashicorp.com/consul/$VCONSUL/consul_${VCONSUL}_linux_amd64.zip" | bsdtar -xf- -C$HOME/bin
 	chmod +x $HOME/bin/consul
@@ -33,22 +37,45 @@ function fetch {
 }
 
 function install {
-	cd /tmp
+	cd $ZFS_CACHE
+    BUILT_FILE="$ZFS_CACHE/built-$VZFS-$CZFS"
 
-	(
-	cd spl-$VZFS
-	./configure --prefix=/usr
-	make
+    BUILT=0
+    if [ -f "$BUILT_FILE" ] && (grep -xq "$(uname -rv)" "$BUILT_FILE"); then
+        echo "Cache exists for spl and zfs, skipping build"
+        BUILT=1
+    else
+        echo "No cache for spl and zfs, building"
+    fi
+
+    if [ $BUILT -eq 0 ]; then
+        (
+        cd spl-$VZFS
+        ./configure --prefix=/usr
+        make
+        )
+    fi
+
+    (
+    cd spl-$VZFS
 	sudo make install
 	)
 
-	(
-	cd zfs-$CZFS
-	./autogen.sh
-	./configure --prefix=/usr --with-spl=/usr/src/spl-$VZFS
-	make
-	sudo make install
-	)
+    if [ $BUILT -eq 0 ]; then
+        (
+        cd zfs-$CZFS
+        ./autogen.sh
+        ./configure --prefix=/usr --with-spl=/usr/src/spl-$VZFS
+        make
+        )
+    fi
+    
+    (
+    cd zfs-$CZFS
+    sudo make install
+    )
+
+    uname -rv > "$BUILT_FILE"
 }
 
 case $1 in
