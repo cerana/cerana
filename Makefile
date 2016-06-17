@@ -23,6 +23,11 @@ godocdown:
 .PHONY: lint-required
 lint-required:
 	gometalinter @gometalinter.required.flags
+	# errcheck has been separated here for efficiency.
+	# It has to load all of the files to analyze APIs. When given multiple pkg
+	# paths, it takes advantage of caching after loads. Using gometalinter runs
+	# it separately for each pkg, losing the caching speed benefits.
+	errcheck --verbose $$(go list ./... | grep -v /vendor/)
 
 .PHONY: lint-optional
 lint-optional:
