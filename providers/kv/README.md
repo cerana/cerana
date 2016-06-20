@@ -213,6 +213,15 @@ type UpdateReturn struct {
 
 UpdateReturn specifies the return value from the "kv-update" endpoint.
 
+#### type Value
+
+```go
+type Value kv.Value
+```
+
+Value represents the value stored in a key, including the last modification
+index of the key
+
 #### type WatchArgs
 
 ```go
