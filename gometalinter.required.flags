@@ -1,6 +1,5 @@
 --disable-all
 --enable=goimports
---enable=errcheck
 --enable=vet
 --enable=gofmt
 --enable=golint

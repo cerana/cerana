@@ -22,7 +22,7 @@ type Server struct {
 // Provider is an interface to allow a provider to register its tasks with a
 // Server.
 type Provider interface {
-	RegisterTasks(Server)
+	RegisterTasks(*Server)
 }
 
 // NewServer creates and initializes a new Server.

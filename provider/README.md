@@ -220,7 +220,7 @@ ConfigData defines the structure of the config data (e.g. in the config file)
 
 ```go
 type Provider interface {
-	RegisterTasks(Server)
+	RegisterTasks(*Server)
 }
 ```
 

@@ -125,7 +125,7 @@ GetArgs are args for the Get handler
 
 ```go
 type GetResult struct {
-	Unit dbus.UnitStatus `json:"unit"`
+	Unit UnitStatus `json:"unit"`
 }
 ```
 
@@ -135,11 +135,109 @@ GetResult is the result of the ListUnits handler.
 
 ```go
 type ListResult struct {
-	Units []dbus.UnitStatus `json:"units"`
+	Units []UnitStatus `json:"units"`
 }
 ```
 
 ListResult is the result of the List handler.
+
+#### type MockSystemd
+
+```go
+type MockSystemd struct {
+	Data *MockSystemdData
+}
+```
+
+MockSystemd is a mock version of the Systemd provider.
+
+#### func  NewMockSystemd
+
+```go
+func NewMockSystemd() *MockSystemd
+```
+NewMockSystemd creates a new MockSystemd.
+
+#### func (*MockSystemd) Create
+
+```go
+func (s *MockSystemd) Create(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Create creates a mock unit file.
+
+#### func (*MockSystemd) Disable
+
+```go
+func (s *MockSystemd) Disable(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Disable disables a mock service.
+
+#### func (*MockSystemd) Enable
+
+```go
+func (s *MockSystemd) Enable(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Enable enables a mock service.
+
+#### func (*MockSystemd) Get
+
+```go
+func (s *MockSystemd) Get(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Get retrieves a mock service.
+
+#### func (*MockSystemd) List
+
+```go
+func (s *MockSystemd) List(req *acomm.Request) (interface{}, *url.URL, error)
+```
+List lists mock services.
+
+#### func (*MockSystemd) RegisterTasks
+
+```go
+func (s *MockSystemd) RegisterTasks(server *provider.Server)
+```
+RegisterTasks registers the MockSystemd tasks.
+
+#### func (*MockSystemd) Remove
+
+```go
+func (s *MockSystemd) Remove(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Remove removes a mock unit file.
+
+#### func (*MockSystemd) Restart
+
+```go
+func (s *MockSystemd) Restart(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Restart restarts a mock service.
+
+#### func (*MockSystemd) Start
+
+```go
+func (s *MockSystemd) Start(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Start starts a mock service.
+
+#### func (*MockSystemd) Stop
+
+```go
+func (s *MockSystemd) Stop(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Stop stops a mock service.
+
+#### type MockSystemdData
+
+```go
+type MockSystemdData struct {
+	Statuses  map[string]UnitStatus
+	UnitFiles map[string]bool
+}
+```
+
+MockSystemdData is the in-memory data structure for the MockSystemd.
 
 #### type RemoveArgs
 
@@ -236,6 +334,17 @@ Start starts an enabled service.
 func (s *Systemd) Stop(req *acomm.Request) (interface{}, *url.URL, error)
 ```
 Stop stops a running service.
+
+#### type UnitStatus
+
+```go
+type UnitStatus struct {
+	dbus.UnitStatus
+	Uptime time.Duration
+}
+```
+
+UnitStatus contains information about a systemd unit.
 
 --
 *Generated with [godocdown](https://github.com/robertkrimen/godocdown)*

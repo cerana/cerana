@@ -30,7 +30,8 @@ func (k *KV) delete(req *acomm.Request) (interface{}, *url.URL, error) {
 	if err := req.UnmarshalArgs(&args); err != nil {
 		return nil, nil, err
 	}
-	if args.Key == "" {
+
+	if !args.Recursive && args.Key == "" {
 		return nil, nil, errors.New("missing arg: key")
 	}
 

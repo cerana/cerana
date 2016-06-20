@@ -130,6 +130,139 @@ type ListResult struct {
 
 ListResult is the result data for the List handler.
 
+#### type MockZFS
+
+```go
+type MockZFS struct {
+	Data *MockZFSData
+}
+```
+
+MockZFS is a mock ZFS provider.
+
+#### func  NewMockZFS
+
+```go
+func NewMockZFS(config *provider.Config, tracker *acomm.Tracker) *MockZFS
+```
+NewMockZFS creates a new instance of MockZFS.
+
+#### func (*MockZFS) Clone
+
+```go
+func (z *MockZFS) Clone(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Clone clones a mock dataset.
+
+#### func (*MockZFS) Create
+
+```go
+func (z *MockZFS) Create(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Create creats a mock dataset.
+
+#### func (*MockZFS) Destroy
+
+```go
+func (z *MockZFS) Destroy(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Destroy destroys a mock dataset.
+
+#### func (*MockZFS) Exists
+
+```go
+func (z *MockZFS) Exists(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Exists checks whether a mock dataset exists.
+
+#### func (*MockZFS) Get
+
+```go
+func (z *MockZFS) Get(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Get retrieves a mock dataset.
+
+#### func (*MockZFS) Holds
+
+```go
+func (z *MockZFS) Holds(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Holds retrieves a mock dataset's holds.
+
+#### func (*MockZFS) List
+
+```go
+func (z *MockZFS) List(req *acomm.Request) (interface{}, *url.URL, error)
+```
+List returns all mock datasets.
+
+#### func (*MockZFS) Mount
+
+```go
+func (z *MockZFS) Mount(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Mount mounts a mock dataset.
+
+#### func (*MockZFS) Receive
+
+```go
+func (z *MockZFS) Receive(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Receive receives mock dataset data and creates a mock dataset.
+
+#### func (*MockZFS) RegisterTasks
+
+```go
+func (z *MockZFS) RegisterTasks(server *provider.Server)
+```
+RegisterTasks registers all MockZFS tasks.
+
+#### func (*MockZFS) Rename
+
+```go
+func (z *MockZFS) Rename(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Rename renames a mock dataset.
+
+#### func (*MockZFS) Rollback
+
+```go
+func (z *MockZFS) Rollback(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Rollback rolls back to a mock dataset.
+
+#### func (*MockZFS) Send
+
+```go
+func (z *MockZFS) Send(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Send sends mock dataset data.
+
+#### func (*MockZFS) Snapshot
+
+```go
+func (z *MockZFS) Snapshot(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Snapshot snapshots a mock dataset.
+
+#### func (*MockZFS) Unmount
+
+```go
+func (z *MockZFS) Unmount(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Unmount unmounts a mock dataset.
+
+#### type MockZFSData
+
+```go
+type MockZFSData struct {
+	Datasets map[string]*Dataset
+	Data     map[string][]byte
+}
+```
+
+MockZFSData is the in-memory data structure for the MockZFS.
+
 #### type MountArgs
 
 ```go

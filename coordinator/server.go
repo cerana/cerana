@@ -235,9 +235,16 @@ func (s *Server) localTask(req *acomm.Request) error {
 // service (e.g. another coordinator)
 func (s *Server) externalTask(req *acomm.Request) error {
 	taskURL := req.TaskURL
-	proxyReq, err := s.proxy.ProxyExternal(req, 0)
-	if err != nil {
-		return err
+	proxyReq := req
+	if taskURL.Scheme != "unix" {
+		var err error
+		proxyReq, err = s.proxy.ProxyExternal(req, 0)
+		if err != nil {
+			return err
+		}
+	} else {
+		// Don't proxy local requests
+		proxyReq.TaskURL = nil
 	}
 	return acomm.Send(taskURL, proxyReq)
 }

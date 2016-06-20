@@ -4,16 +4,25 @@ import (
 	"net/url"
 
 	"github.com/cerana/cerana/acomm"
-	"github.com/coreos/go-systemd/dbus"
 )
 
 // ListResult is the result of the List handler.
 type ListResult struct {
-	Units []dbus.UnitStatus `json:"units"`
+	Units []UnitStatus `json:"units"`
 }
 
 // List retuns a list of unit statuses.
 func (s *Systemd) List(req *acomm.Request) (interface{}, *url.URL, error) {
 	list, err := s.dconn.ListUnits()
-	return &ListResult{list}, nil, err
+	units := make([]UnitStatus, len(list))
+	for i, unit := range list {
+		var unitStatus *UnitStatus
+		unitStatus, err = s.unitStatus(unit)
+		if err != nil {
+			return nil, nil, err
+		}
+		units[i] = *unitStatus
+	}
+
+	return &ListResult{units}, nil, err
 }

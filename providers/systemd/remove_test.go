@@ -15,7 +15,7 @@ func (s *systemd) TestRemove() {
 		err   string
 	}{
 		{"", false, "missing arg: name"},
-		{"foo", false, fmt.Sprintf("remove %s: no such file or directory", s.dir+"/foo")},
+		{"foo", false, ""},
 		{"foo", true, ""},
 		{".", false, "invalid name"},
 	}
