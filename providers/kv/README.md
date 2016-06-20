@@ -162,6 +162,27 @@ NewMock starts up a kv backend server and instantiates a new kv.KV provider. The
 kv backend is started on the port provided as part of config.Address().
 Mock.Stop() should be called when testing is done in order to clean up.
 
+#### func (*Mock) Clean
+
+```go
+func (m *Mock) Clean(prefix string) error
+```
+Clean will perform a recursive Delete operation directly on the kv store.
+
+#### func (*Mock) Get
+
+```go
+func (m *Mock) Get(key string) (Value, error)
+```
+Get will perform a Get operation directly on the kv store.
+
+#### func (*Mock) Set
+
+```go
+func (m *Mock) Set(key, value string) error
+```
+Set will perform a Set operation directly on the kv store.
+
 #### func (*Mock) Stop
 
 ```go

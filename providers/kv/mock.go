@@ -53,3 +53,19 @@ func (m *Mock) Stop() {
 	_ = m.cmd.Wait()
 	_ = os.RemoveAll(m.dir)
 }
+
+// Get will perform a Get operation directly on the kv store.
+func (m *Mock) Get(key string) (Value, error) {
+	kvV, err := m.KV.kv.Get(key)
+	return Value(kvV), err
+}
+
+// Set will perform a Set operation directly on the kv store.
+func (m *Mock) Set(key, value string) error {
+	return m.KV.kv.Set(key, value)
+}
+
+// Clean will perform a recursive Delete operation directly on the kv store.
+func (m *Mock) Clean(prefix string) error {
+	return m.KV.kv.Delete(prefix, true)
+}
