@@ -1,13 +1,24 @@
 package zfs
 
-import "os"
+import (
+	"os"
+	"sync"
+)
 
-var zfs *os.File
+// zfsFD is the zfs device file descriptor. Do not use this directly. Access by
+// calling zfs() instead. The initialization is protected by once.
+var zfsFD *os.File
+var once sync.Once
 
-func init() {
+func openZFS() {
 	z, err := os.OpenFile("/dev/zfs", os.O_RDWR, 0)
 	if err != nil {
 		panic(err)
 	}
-	zfs = z
+	zfsFD = z
+}
+
+func zfs() *os.File {
+	once.Do(openZFS)
+	return zfsFD
 }

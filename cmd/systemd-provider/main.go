@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+
 	log "github.com/Sirupsen/logrus"
 	logx "github.com/cerana/cerana/pkg/logrusx"
 	"github.com/cerana/cerana/provider"
@@ -9,7 +11,7 @@ import (
 )
 
 func main() {
-	log.SetFormatter(&logx.MistifyFormatter{})
+	log.SetFormatter(&logx.JSONFormatter{})
 
 	config := systemd.NewConfig(nil, nil)
 	flag.StringP("unit_file_dir", "d", "", "directory in which to create unit files")
@@ -34,6 +36,7 @@ func main() {
 
 func dieOnError(err error) {
 	if err != nil {
-		log.Fatal("encountered an error during startup")
+		log.Fatal("encountered an error during startup, error:", err)
+		os.Exit(1)
 	}
 }

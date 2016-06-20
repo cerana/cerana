@@ -57,7 +57,7 @@ func main() {
 
 func dieOnError(err error) {
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal("encountered an error during startup, error:", err)
 		os.Exit(1)
 	}
 }

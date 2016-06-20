@@ -44,20 +44,21 @@ type FieldError struct {
 FieldError contains both the error struct and error message as explicit
 properties, including both when JSON marshaling.
 
-#### type MistifyFormatter
+#### type JSONFormatter
 
 ```go
-type MistifyFormatter struct {
+type JSONFormatter struct {
 	log.JSONFormatter
 }
 ```
 
-MistifyFormatter is a custom logrus formatter extending JSONFormatter
+JSONFormatter is a custom formatter extending logrus.JSONFormatter with better
+handling of error values
 
-#### func (*MistifyFormatter) Format
+#### func (*JSONFormatter) Format
 
 ```go
-func (f *MistifyFormatter) Format(entry *log.Entry) ([]byte, error)
+func (f *JSONFormatter) Format(entry *log.Entry) ([]byte, error)
 ```
 Format replaces any error field values with a FieldError and produces a JSON
 formatted log entry

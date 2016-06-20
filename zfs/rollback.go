@@ -19,7 +19,7 @@ func rollback(name string) (string, error) {
 	}
 
 	out := make([]byte, 1024)
-	err = ioctl(zfs, name, encoded.Bytes(), out)
+	err = ioctl(zfs(), name, encoded.Bytes(), out)
 
 	var snapName string
 	if err == nil {

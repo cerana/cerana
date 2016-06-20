@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	log.SetFormatter(&logx.MistifyFormatter{})
+	log.SetFormatter(&logx.JSONFormatter{})
 
 	config := provider.NewConfig(nil, nil)
 

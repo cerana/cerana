@@ -104,7 +104,7 @@ func list(name string, types map[string]bool, recurse bool, depth uint64) (ret [
 		return
 	}
 
-	err = ioctl(zfs, name, encoded.Bytes(), nil)
+	err = ioctl(zfs(), name, encoded.Bytes(), nil)
 	if err != nil {
 		return
 	}
