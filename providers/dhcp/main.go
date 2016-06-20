@@ -51,6 +51,7 @@ func New(config *Config, tracker *acomm.Tracker) (*DHCP, error) {
 	return &DHCP{
 		coordinator: config.CoordinatorURL(),
 		tracker:     tracker,
+		config:      config,
 		maxIP:       maxIP,
 		randIP: func() net.IP {
 			num := rand.Intn(size) + 1

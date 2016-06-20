@@ -89,10 +89,10 @@ func (c *Config) Network() *net.IPNet {
 }
 
 func (c *Config) network() (*net.IPNet, error) {
-	_, net, err := net.ParseCIDR(c.viper.GetString("network"))
+	_, network, err := net.ParseCIDR(c.viper.GetString("network"))
 	if err != nil {
 		return nil, err
 	}
 
-	return net, nil
+	return network, nil
 }
