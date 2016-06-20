@@ -17,7 +17,7 @@ source scripts/cerana-functions.sh
 usage () {
 cat << EOF
 Usage: $0 [options]
-    Use this script to start a virtual machine running the CeranaOS.
+    Use this script to start a virtual machine running CeranaOS.
 
     The default is to use images produced from the most recent build.
 
@@ -128,7 +128,7 @@ tap:,\
 mac:,\
 pxeoptionrom:,\
 netboot,\
-rammb,\
+rammb:,\
 ramdisksize:,\
 resetdefaults,\
 verbose,\
@@ -327,7 +327,7 @@ $netbootoptions \
 -machine accel=kvm -cpu host -smp 2 \
 -uuid $uuid \
 -global isa-fdc.driveA= \
--append "noapic acpi=off ramdisk_size=$ramdisksize rw console=ttyS0 zfs=auto" \
+-append "noapic acpi=off ramdisk_size=$ramdisksize rw console=ttyS0 cerana.zfs_config=auto cerana.mgmt_mac=$mac" \
 -nographic -m $rammb \
 -device e1000,netdev=net0,mac=$mac \
 -netdev tap,ifname=$tap,id=net0,script=no
