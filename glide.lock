@@ -1,23 +1,23 @@
-hash: d652286d3856d39d96ee1f55fe6d4801bde30625b8a6da2d1440a01291f452fc
-updated: 2016-06-01T21:04:08.865853833Z
+hash: 19c0aa7bc763c75596579a2737d35e0cf96f3a6a18420db194042ae36291e423
+updated: 2016-06-20T15:13:05.879407402-04:00
 imports:
 - name: github.com/BurntSushi/toml
   version: bbd5bb678321a0d6e58f1099321dfa73391c1b6f
 - name: github.com/coreos/etcd
-  version: fb64c8ccfeb9408b80c3f657a52ec6cad2fdb3f8
+  version: ffd1fa6f52dd17332ec5849d1af3314828a6bd56
   subpackages:
   - error
 - name: github.com/coreos/go-etcd
-  version: 003851be7bb0694fe3cc457a49529a19388ee7cf
+  version: f02171fbd43c7b9b53ce8679b03235a1ef3c7b12
   subpackages:
   - etcd
 - name: github.com/coreos/go-systemd
-  version: 7b2428fec40033549c68f54e26e89e7ca9a9ce31
+  version: 6dc8b843c670f2027cc26b164935635840a40526
   subpackages:
   - dbus
   - unit
 - name: github.com/davecgh/go-spew
-  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
+  version: 2df174808ee097f90d259e432cc04442cf60be21
   subpackages:
   - spew
 - name: github.com/davecgh/go-xdr
@@ -31,14 +31,14 @@ imports:
 - name: github.com/godbus/dbus
   version: d40f8873baf2c51e569484fd212d0667c54aa343
 - name: github.com/hashicorp/consul
-  version: b43f900766ad92eebbd5a8f931fe0fe244f9969d
+  version: 26a0ef8c41aa2252ab4cf0844fc6470c8e1d8256
   subpackages:
   - api
   - watch
 - name: github.com/hashicorp/go-cleanhttp
-  version: ad28ea4487f05916463e2423a55166280e8254b5
+  version: 875fb671b3ddc66f8e2f0acc33829c8cb989a38d
 - name: github.com/hashicorp/hcl
-  version: 2604f3bda7e8960c1be1063709e7d7f0765048d0
+  version: 578dd9746824a54637686b51a41bad457a56bcef
   subpackages:
   - hcl/ast
   - hcl/parser
@@ -49,9 +49,10 @@ imports:
   - json/scanner
   - json/token
 - name: github.com/hashicorp/serf
-  version: b60a6d928fe726a588f79a1d500582507f9d79de
+  version: e4ec8cc423bbe20d26584b96efbeb9102e16d05f
   subpackages:
   - coordinate
+  - serf
 - name: github.com/inconshreveable/mousetrap
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
 - name: github.com/kr/pretty
@@ -61,17 +62,17 @@ imports:
 - name: github.com/magiconair/properties
   version: c265cfa48dda6474e208715ca93e987829f572f8
 - name: github.com/mistifyio/go-zfs
-  version: 67e6c1df1c39c396e50d3a2770c8902888702b3e
+  version: cdc0f941c4d0e0e94d85348285568d921891e138
 - name: github.com/mitchellh/mapstructure
   version: d2dd0262208475919e1a362f675cfc0e7c10e905
 - name: github.com/pborman/uuid
-  version: c55201b036063326c5b1b89ccfe45a184973d073
+  version: a97ce2ca70fa5a848076093f05e639a89ca34d06
 - name: github.com/pmezard/go-difflib
-  version: 792786c7400a136282c1664665ae0a8db921c6c2
+  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:
   - difflib
 - name: github.com/shirou/gopsutil
-  version: e8f7a95747d711f34ddfe9dd9b825a84bd059dec
+  version: 22a03b5be3f384f558742929065778aa26471033
   subpackages:
   - cpu
   - disk
@@ -98,17 +99,13 @@ imports:
 - name: github.com/StackExchange/wmi
   version: f3e2bae1e0cb5aef83e319133eabfee30013a4a5
 - name: github.com/stretchr/testify
-  version: 8d64eb7173c7753d6419fd4a9caf057398611364
+  version: f390dcf405f7b83c997eac1b06768bb9f44dec18
   subpackages:
   - suite
   - assert
   - require
 - name: github.com/tylerb/graceful
-  version: 9a3d4236b03bb5d26f7951134d248f9d5510d599
-- name: github.com/ugorji/go
-  version: b94837a2404ab90efe9289e77a70694c355739cb
-  subpackages:
-  - codec
+  version: ecde8c8f16df93a994dda8936c8f60f0c26c28ab
 - name: golang.org/x/net
   version: e45385e9b226f570b1f086bf287b25d3d4117776
   subpackages:
