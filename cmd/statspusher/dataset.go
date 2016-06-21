@@ -2,8 +2,8 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"net"
+	"net/url"
 
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/providers/clusterconf"
@@ -25,54 +25,46 @@ func (s *statsPusher) datasetHeartbeats() error {
 }
 
 func (s *statsPusher) getDatasets() ([]string, error) {
-	requests := make(map[string]*acomm.Request)
-	localReq, err := acomm.NewRequest(acomm.RequestOptions{Task: "zfs-list"})
-	if err != nil {
-		return nil, err
+	requests := map[string]struct {
+		task     string
+		url      *url.URL
+		respData interface{}
+	}{
+		"local": {task: "zfs-list", url: s.config.nodeDataURL(), respData: &zfs.ListResult{}},
+		"known": {task: "list-datasets", url: s.config.clusterDataURL(), respData: &clusterconf.DatasetListResult{}},
 	}
-	requests["local"] = localReq
-	knownReq, err := acomm.NewRequest(acomm.RequestOptions{
-		Task:    "list-datasets",
-		TaskURL: s.config.clusterDataURL(),
-	})
-	if err != nil {
-		return nil, err
-	}
-	requests["known"] = knownReq
 
 	multiRequest := acomm.NewMultiRequest(s.tracker, s.config.requestTimeout())
-	for name, req := range requests {
-		if err := multiRequest.AddRequest(name, req); err != nil {
-			break
+	for name, args := range requests {
+		req, err := acomm.NewRequest(acomm.RequestOptions{Task: args.task})
+		if err != nil {
+			return nil, err
 		}
-		if err := acomm.Send(s.config.nodeDataURL(), req); err != nil {
+		if err := multiRequest.AddRequest(name, req); err != nil {
+			return nil, err
+		}
+		if err := acomm.Send(args.url, req); err != nil {
 			multiRequest.RemoveRequest(req)
-			break
+			return nil, err
 		}
 	}
 
 	responses := multiRequest.Responses()
-	for name := range requests {
-		resp, ok := responses[name]
-		if !ok {
-			return nil, fmt.Errorf("failed to send request: %s", name)
-		}
+	for name, args := range requests {
+		resp := responses[name]
 		if resp.Error != nil {
-			return nil, fmt.Errorf("request failed: %s: %s", name, resp.Error)
+			return nil, resp.Error
+		}
+		if err := resp.UnmarshalResult(args.respData); err != nil {
+			return nil, err
 		}
 	}
+	localDatasets := requests["local"].respData.(*zfs.ListResult).Datasets
+	knownDatasets := requests["known"].respData.(*clusterconf.DatasetListResult).Datasets
 
-	var localDatasets zfs.ListResult
-	if err := responses["local"].UnmarshalResult(&localDatasets); err != nil {
-		return nil, nil
-	}
-	var knownDatasets clusterconf.DatasetListResult
-	if err := responses["known"].UnmarshalResult(&knownDatasets); err != nil {
-		return nil, nil
-	}
-	datasets := make([]string, 0, len(localDatasets.Datasets))
-	for _, local := range localDatasets.Datasets {
-		for _, known := range knownDatasets.Datasets {
+	datasets := make([]string, 0, len(localDatasets))
+	for _, local := range localDatasets {
+		for _, known := range knownDatasets {
 			if known.ID == local.Name {
 				datasets = append(datasets, local.Name)
 				break
@@ -130,8 +122,7 @@ func (s *statsPusher) sendDatasetHeartbeats(datasets []string, ip net.IP) error 
 	multiRequest := acomm.NewMultiRequest(s.tracker, s.config.requestTimeout())
 	for _, dataset := range datasets {
 		req, err := acomm.NewRequest(acomm.RequestOptions{
-			Task:    "dataset-heartbeat",
-			TaskURL: s.config.clusterDataURL(),
+			Task: "dataset-heartbeat",
 			Args: clusterconf.DatasetHeartbeatArgs{
 				ID: dataset,
 				IP: ip,
@@ -145,7 +136,7 @@ func (s *statsPusher) sendDatasetHeartbeats(datasets []string, ip net.IP) error 
 			errored = true
 			continue
 		}
-		if err := acomm.Send(s.config.nodeDataURL(), req); err != nil {
+		if err := acomm.Send(s.config.clusterDataURL(), req); err != nil {
 			multiRequest.RemoveRequest(req)
 			errored = true
 			continue

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -34,44 +35,47 @@ func (s *statsPusher) bundleHeartbeats() error {
 }
 
 func (s *statsPusher) getBundles() ([]*clusterconf.Bundle, error) {
-	requests := make(map[string]*acomm.Request)
-	localReq, err := acomm.NewRequest(acomm.RequestOptions{Task: "systemd-list"})
-	if err != nil {
-		return nil, err
+	requests := map[string]struct {
+		task     string
+		url      *url.URL
+		respData interface{}
+	}{
+		"local": {task: "systemd-list", url: s.config.nodeDataURL(), respData: &systemd.ListResult{}},
+		"known": {task: "list-bundles", url: s.config.clusterDataURL(), respData: &clusterconf.BundleListResult{}},
 	}
-	requests["local"] = localReq
-	knownReq, err := acomm.NewRequest(acomm.RequestOptions{
-		Task:    "list-bundles",
-		TaskURL: s.config.clusterDataURL(),
-	})
-	requests["known"] = knownReq
 
 	multiRequest := acomm.NewMultiRequest(s.tracker, s.config.requestTimeout())
-	for name, req := range requests {
+	for name, args := range requests {
+		req, err := acomm.NewRequest(acomm.RequestOptions{Task: args.task})
+		if err != nil {
+			return nil, err
+		}
 		if err := multiRequest.AddRequest(name, req); err != nil {
-			break
+			return nil, err
 		}
-		if err := acomm.Send(s.config.nodeDataURL(), req); err != nil {
+		if err := acomm.Send(args.url, req); err != nil {
 			multiRequest.RemoveRequest(req)
-			break
+			return nil, err
 		}
+
 	}
 
 	responses := multiRequest.Responses()
-
-	var localUnits systemd.ListResult
-	if err := responses["local"].UnmarshalResult(&localUnits); err != nil {
-		return nil, err
+	for name, args := range requests {
+		resp := responses[name]
+		if resp.Error != nil {
+			return nil, resp.Error
+		}
+		if err := resp.UnmarshalResult(args.respData); err != nil {
+			return nil, err
+		}
 	}
-	localBundles := extractBundles(localUnits.Units)
-	var knownBundles clusterconf.BundleListResult
-	if err := responses["known"].UnmarshalResult(&knownBundles); err != nil {
-		return nil, err
-	}
+	localBundles := extractBundles(requests["local"].respData.(*systemd.ListResult).Units)
+	knownBundles := requests["known"].respData.(*clusterconf.BundleListResult).Bundles
 
 	bundles := make([]*clusterconf.Bundle, 0, len(localBundles))
 	for _, local := range localBundles {
-		for _, known := range knownBundles.Bundles {
+		for _, known := range knownBundles {
 			if known.ID == local {
 				bundles = append(bundles, known)
 				break
@@ -122,8 +126,7 @@ func (s *statsPusher) sendBundleHeartbeats(bundles map[uint64]map[string]error, 
 	multiRequest := acomm.NewMultiRequest(s.tracker, s.config.requestTimeout())
 	for bundle, healthErrors := range bundles {
 		req, err := acomm.NewRequest(acomm.RequestOptions{
-			Task:    "bundle-heartbeat",
-			TaskURL: s.config.clusterDataURL(),
+			Task: "bundle-heartbeat",
 			Args: clusterconf.BundleHeartbeatArgs{
 				ID:     bundle,
 				Serial: serial,
@@ -141,7 +144,7 @@ func (s *statsPusher) sendBundleHeartbeats(bundles map[uint64]map[string]error, 
 			errored = append(errored, bundle)
 			continue
 		}
-		if err := acomm.Send(s.config.nodeDataURL(), req); err != nil {
+		if err := acomm.Send(s.config.clusterDataURL(), req); err != nil {
 			multiRequest.RemoveRequest(req)
 			errored = append(errored, bundle)
 			continue
