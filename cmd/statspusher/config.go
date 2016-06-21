@@ -19,7 +19,7 @@ import (
 
 var (
 	flagSep     = regexp.MustCompile(`[\s._-]+`)
-	specialCaps = regexp.MustCompile("(?i)^(url|ttl|cpu|ip|id)$")
+	specialCaps = regexp.MustCompile("(?i)^(url|cpu|ip|id)$")
 )
 
 type config struct {
@@ -32,11 +32,11 @@ type ConfigData struct {
 	NodeDataURL  string `json:"nodeDataURL"`
 	HeartbeatURL string `json:"heartbeatURL"`
 	LogLevel     string `json:"logLevel"`
-	// Timeout and TTL values are in seconds
-	RequestTimeout uint `json:"requestTimeout"`
-	DatasetTTL     uint `json:"datasetTTL"`
-	BundleTTL      uint `json:"bundleTTL"`
-	NodeTTL        uint `json:"nodeTTL"`
+	// Timeout and Interval values are in seconds
+	RequestTimeout  uint `json:"requestTimeout"`
+	DatasetInterval uint `json:"datasetInterval"`
+	BundleInterval  uint `json:"bundleInterval"`
+	NodeInterval    uint `json:"nodeInterval"`
 }
 
 func newConfig(flagSet *pflag.FlagSet, v *viper.Viper) *config {
@@ -63,9 +63,9 @@ func newConfig(flagSet *pflag.FlagSet, v *viper.Viper) *config {
 	flagSet.StringP("heartbeatURL", "e", "", "url of coordinator for the heartbeat registering")
 	flagSet.StringP("logLevel", "l", "warning", "log level: debug/info/warn/error/fatal/panic")
 	flagSet.Uint64P("requestTimeout", "r", 0, "default timeout for requests made (seconds)")
-	flagSet.Uint64P("datasetTTL", "d", 0, "dataset heartbeat ttl (seconds)")
-	flagSet.Uint64P("bundleTTL", "b", 0, "bundle heartbeat ttl (seconds)")
-	flagSet.Uint64P("nodeTTL", "n", 0, "node heartbeat ttl (seconds)")
+	flagSet.Uint64P("datasetInterval", "d", 0, "dataset heartbeat interval (seconds)")
+	flagSet.Uint64P("bundleInterval", "b", 0, "bundle heartbeat interval (seconds)")
+	flagSet.Uint64P("nodeInterval", "n", 0, "node heartbeat interval (seconds)")
 
 	return &config{
 		viper:   v,
@@ -83,7 +83,7 @@ func canonicalFlagName(f *pflag.FlagSet, name string) pflag.NormalizedName {
 	// Convert to title case (lower case with leading caps, preserved all caps)
 	name = strings.Title(name)
 
-	// Some words should always be all caps or all lower case (e.g. TTL)
+	// Some words should always be all caps or all lower case (e.g. Interval)
 	nameParts := strings.Split(name, " ")
 	for i, part := range nameParts {
 		caseFn := strings.ToUpper
@@ -146,19 +146,19 @@ func (c *config) requestTimeout() time.Duration {
 	return time.Second * time.Duration(c.viper.GetInt("requestTimeout"))
 }
 
-func (c *config) datasetTTL() time.Duration {
-	return c.getTTL("datasetTTL")
+func (c *config) datasetInterval() time.Duration {
+	return c.getInterval("datasetInterval")
 }
 
-func (c *config) nodeTTL() time.Duration {
-	return c.getTTL("nodeTTL")
+func (c *config) nodeInterval() time.Duration {
+	return c.getInterval("nodeInterval")
 }
 
-func (c *config) bundleTTL() time.Duration {
-	return c.getTTL("bundleTTL")
+func (c *config) bundleInterval() time.Duration {
+	return c.getInterval("bundleInterval")
 }
 
-func (c *config) getTTL(key string) time.Duration {
+func (c *config) getInterval(key string) time.Duration {
 	return time.Second * time.Duration(c.viper.GetInt(key))
 }
 
@@ -175,14 +175,14 @@ func (c *config) setupLogging() error {
 }
 
 func (c *config) validate() error {
-	if c.datasetTTL() <= 0 {
-		return errors.New("dataset ttl must be > 0")
+	if c.datasetInterval() <= 0 {
+		return errors.New("dataset interval must be > 0")
 	}
-	if c.bundleTTL() <= 0 {
-		return errors.New("bundle ttl must be > 0")
+	if c.bundleInterval() <= 0 {
+		return errors.New("bundle interval must be > 0")
 	}
-	if c.nodeTTL() <= 0 {
-		return errors.New("node ttl must be > 0")
+	if c.nodeInterval() <= 0 {
+		return errors.New("node interval must be > 0")
 	}
 	if c.requestTimeout() <= 0 {
 		return errors.New("request timeout must be > 0")

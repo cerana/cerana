@@ -48,13 +48,13 @@ func (s *StatsPusher) SetupSuite() {
 
 	nodeDataURL := s.coordinator.NewProviderViper().GetString("coordinator_url")
 	s.configData = &ConfigData{
-		NodeDataURL:    nodeDataURL,
-		HeartbeatURL:   nodeDataURL,
-		LogLevel:       "fatal",
-		RequestTimeout: 5,
-		DatasetTTL:     4,
-		BundleTTL:      3,
-		NodeTTL:        2,
+		NodeDataURL:     nodeDataURL,
+		HeartbeatURL:    nodeDataURL,
+		LogLevel:        "fatal",
+		RequestTimeout:  5,
+		DatasetInterval: 4,
+		BundleInterval:  3,
+		NodeInterval:    2,
 	}
 
 	s.config, _, _, s.configFile, err = newTestConfig(false, true, s.configData)
