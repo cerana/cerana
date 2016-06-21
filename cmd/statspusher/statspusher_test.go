@@ -49,7 +49,7 @@ func (s *StatsPusher) SetupSuite() {
 	nodeDataURL := s.coordinator.NewProviderViper().GetString("coordinator_url")
 	s.configData = &ConfigData{
 		NodeDataURL:     nodeDataURL,
-		HeartbeatURL:    nodeDataURL,
+		ClusterDataURL:  nodeDataURL,
 		LogLevel:        "fatal",
 		RequestTimeout:  5,
 		DatasetInterval: 4,

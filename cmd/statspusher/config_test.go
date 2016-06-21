@@ -107,7 +107,7 @@ func (s *StatsPusher) TestValidate() {
 	tests := []struct {
 		description     string
 		nodeDataURL     string
-		heartbeatURL    string
+		clusterDataURL  string
 		requestTimeout  uint
 		datasetInterval uint
 		bundleInterval  uint
@@ -117,8 +117,8 @@ func (s *StatsPusher) TestValidate() {
 		{"valid", u, u, 5, 4, 3, 2, ""},
 		{"missing coord", "", u, 5, 4, 3, 2, "missing nodeDataURL"},
 		{"invalud coord", "asdf", u, 5, 4, 3, 2, "invalid nodeDataURL"},
-		{"missing heartbeat", u, "", 5, 4, 3, 2, "missing heartbeatURL"},
-		{"invalud heartbeat", u, "asdf", 5, 4, 3, 2, "invalid heartbeatURL"},
+		{"missing heartbeat", u, "", 5, 4, 3, 2, "missing clusterDataURL"},
+		{"invalud heartbeat", u, "asdf", 5, 4, 3, 2, "invalid clusterDataURL"},
 		{"invalid request timeout", u, u, 0, 4, 3, 2, "request timeout must be > 0"},
 		{"invalid dataset interval", u, u, 5, 0, 3, 2, "dataset interval must be > 0"},
 		{"invalid bundle interval", u, u, 5, 4, 0, 2, "bundle interval must be > 0"},
@@ -128,7 +128,7 @@ func (s *StatsPusher) TestValidate() {
 	for _, test := range tests {
 		configData := &ConfigData{
 			NodeDataURL:     test.nodeDataURL,
-			HeartbeatURL:    test.heartbeatURL,
+			ClusterDataURL:  test.clusterDataURL,
 			RequestTimeout:  test.requestTimeout,
 			DatasetInterval: test.datasetInterval,
 			BundleInterval:  test.bundleInterval,
@@ -157,10 +157,10 @@ func (s *StatsPusher) TestNodeDataURL() {
 	s.Equal(u, s.config.nodeDataURL())
 }
 
-func (s *StatsPusher) TestHeartbeatURL() {
-	u, err := url.ParseRequestURI(s.configData.HeartbeatURL)
+func (s *StatsPusher) TestClusterDataURL() {
+	u, err := url.ParseRequestURI(s.configData.ClusterDataURL)
 	s.Require().NoError(err)
-	s.Equal(u, s.config.heartbeatURL())
+	s.Equal(u, s.config.clusterDataURL())
 }
 
 func (s *StatsPusher) TestRequestTimeout() {
@@ -211,7 +211,7 @@ func newTestConfig(setFlags, writeConfig bool, configData *ConfigData) (*config,
 		if err := fs.Set("nodeDataURL", configData.NodeDataURL); err != nil {
 			return nil, nil, nil, configFile, err
 		}
-		if err := fs.Set("heartbeatURL", configData.HeartbeatURL); err != nil {
+		if err := fs.Set("clusterDataURL", configData.ClusterDataURL); err != nil {
 			return nil, nil, nil, configFile, err
 		}
 		if err := fs.Set("logLevel", configData.LogLevel); err != nil {

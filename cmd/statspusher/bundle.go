@@ -42,7 +42,7 @@ func (s *statsPusher) getBundles() ([]*clusterconf.Bundle, error) {
 	requests["local"] = localReq
 	knownReq, err := acomm.NewRequest(acomm.RequestOptions{
 		Task:    "list-bundles",
-		TaskURL: s.config.heartbeatURL(),
+		TaskURL: s.config.clusterDataURL(),
 	})
 	requests["known"] = knownReq
 
@@ -123,7 +123,7 @@ func (s *statsPusher) sendBundleHeartbeats(bundles map[uint64]map[string]error, 
 	for bundle, healthErrors := range bundles {
 		req, err := acomm.NewRequest(acomm.RequestOptions{
 			Task:    "bundle-heartbeat",
-			TaskURL: s.config.heartbeatURL(),
+			TaskURL: s.config.clusterDataURL(),
 			Args: clusterconf.BundleHeartbeatArgs{
 				ID:     bundle,
 				Serial: serial,

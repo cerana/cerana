@@ -33,7 +33,7 @@ func (s *statsPusher) getDatasets() ([]string, error) {
 	requests["local"] = localReq
 	knownReq, err := acomm.NewRequest(acomm.RequestOptions{
 		Task:    "list-datasets",
-		TaskURL: s.config.heartbeatURL(),
+		TaskURL: s.config.clusterDataURL(),
 	})
 	if err != nil {
 		return nil, err
@@ -131,7 +131,7 @@ func (s *statsPusher) sendDatasetHeartbeats(datasets []string, ip net.IP) error 
 	for _, dataset := range datasets {
 		req, err := acomm.NewRequest(acomm.RequestOptions{
 			Task:    "dataset-heartbeat",
-			TaskURL: s.config.heartbeatURL(),
+			TaskURL: s.config.clusterDataURL(),
 			Args: clusterconf.DatasetHeartbeatArgs{
 				ID: dataset,
 				IP: ip,

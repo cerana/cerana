@@ -95,7 +95,7 @@ func (s *statsPusher) sendNodeHeartbeat(data *clusterconf.Node) error {
 	}
 	req, err := acomm.NewRequest(acomm.RequestOptions{
 		Task:           "node-heartbeat",
-		TaskURL:        s.config.heartbeatURL(),
+		TaskURL:        s.config.clusterDataURL(),
 		ResponseHook:   s.tracker.URL(),
 		Args:           &clusterconf.NodePayload{Node: data},
 		SuccessHandler: rh,

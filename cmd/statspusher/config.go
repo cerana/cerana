@@ -29,9 +29,9 @@ type config struct {
 
 // ConfigData defines the structure of the config data (e.g. in the config file)
 type ConfigData struct {
-	NodeDataURL  string `json:"nodeDataURL"`
-	HeartbeatURL string `json:"heartbeatURL"`
-	LogLevel     string `json:"logLevel"`
+	NodeDataURL    string `json:"nodeDataURL"`
+	ClusterDataURL string `json:"clusterDataURL"`
+	LogLevel       string `json:"logLevel"`
 	// Timeout and Interval values are in seconds
 	RequestTimeout  uint `json:"requestTimeout"`
 	DatasetInterval uint `json:"datasetInterval"`
@@ -60,7 +60,7 @@ func newConfig(flagSet *pflag.FlagSet, v *viper.Viper) *config {
 
 	flagSet.StringP("configFile", "c", "", "path to config file")
 	flagSet.StringP("nodeDataURL", "u", "", "url of coordinator for node information retrieval")
-	flagSet.StringP("heartbeatURL", "e", "", "url of coordinator for the heartbeat registering")
+	flagSet.StringP("clusterDataURL", "e", "", "url of coordinator for the cluster information")
 	flagSet.StringP("logLevel", "l", "warning", "log level: debug/info/warn/error/fatal/panic")
 	flagSet.Uint64P("requestTimeout", "r", 0, "default timeout for requests made (seconds)")
 	flagSet.Uint64P("datasetInterval", "d", 0, "dataset heartbeat interval (seconds)")
@@ -136,9 +136,9 @@ func (c *config) nodeDataURL() *url.URL {
 	return u
 }
 
-func (c *config) heartbeatURL() *url.URL {
+func (c *config) clusterDataURL() *url.URL {
 	// Error checking has been done during validation
-	u, _ := url.ParseRequestURI(c.viper.GetString("heartbeatURL"))
+	u, _ := url.ParseRequestURI(c.viper.GetString("clusterDataURL"))
 	return u
 }
 
@@ -191,7 +191,7 @@ func (c *config) validate() error {
 	if err := c.validateURL("nodeDataURL"); err != nil {
 		return err
 	}
-	if err := c.validateURL("heartbeatURL"); err != nil {
+	if err := c.validateURL("clusterDataURL"); err != nil {
 		return err
 	}
 
