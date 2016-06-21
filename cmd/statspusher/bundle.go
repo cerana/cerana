@@ -51,7 +51,7 @@ func (s *statsPusher) getBundles() ([]*clusterconf.Bundle, error) {
 		if err := multiRequest.AddRequest(name, req); err != nil {
 			break
 		}
-		if err := acomm.Send(s.config.coordinatorURL(), req); err != nil {
+		if err := acomm.Send(s.config.nodeDataURL(), req); err != nil {
 			multiRequest.RemoveRequest(req)
 			break
 		}
@@ -99,7 +99,7 @@ func (s *statsPusher) getSerial() (string, error) {
 	if err := s.tracker.TrackRequest(req, s.config.requestTimeout()); err != nil {
 		return "", err
 	}
-	if err := acomm.Send(s.config.coordinatorURL(), req); err != nil {
+	if err := acomm.Send(s.config.nodeDataURL(), req); err != nil {
 		return "", err
 	}
 
@@ -141,7 +141,7 @@ func (s *statsPusher) sendBundleHeartbeats(bundles map[uint64]map[string]error, 
 			errored = append(errored, bundle)
 			continue
 		}
-		if err := acomm.Send(s.config.coordinatorURL(), req); err != nil {
+		if err := acomm.Send(s.config.nodeDataURL(), req); err != nil {
 			multiRequest.RemoveRequest(req)
 			errored = append(errored, bundle)
 			continue
@@ -190,7 +190,7 @@ func (s *statsPusher) runHealthChecks(bundles []*clusterconf.Bundle) (map[uint64
 			errors[name] = err
 			continue
 		}
-		if err := acomm.Send(s.config.coordinatorURL(), req); err != nil {
+		if err := acomm.Send(s.config.nodeDataURL(), req); err != nil {
 			multiRequest.RemoveRequest(req)
 			errors[name] = err
 		}

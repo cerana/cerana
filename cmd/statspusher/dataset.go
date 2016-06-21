@@ -45,7 +45,7 @@ func (s *statsPusher) getDatasets() ([]string, error) {
 		if err := multiRequest.AddRequest(name, req); err != nil {
 			break
 		}
-		if err := acomm.Send(s.config.coordinatorURL(), req); err != nil {
+		if err := acomm.Send(s.config.nodeDataURL(), req); err != nil {
 			multiRequest.RemoveRequest(req)
 			break
 		}
@@ -101,7 +101,7 @@ func (s *statsPusher) getIP() (net.IP, error) {
 	if err := s.tracker.TrackRequest(req, s.config.requestTimeout()); err != nil {
 		return nil, err
 	}
-	if err := acomm.Send(s.config.coordinatorURL(), req); err != nil {
+	if err := acomm.Send(s.config.nodeDataURL(), req); err != nil {
 		return nil, err
 	}
 
@@ -145,7 +145,7 @@ func (s *statsPusher) sendDatasetHeartbeats(datasets []string, ip net.IP) error 
 			errored = true
 			continue
 		}
-		if err := acomm.Send(s.config.coordinatorURL(), req); err != nil {
+		if err := acomm.Send(s.config.nodeDataURL(), req); err != nil {
 			multiRequest.RemoveRequest(req)
 			errored = true
 			continue
