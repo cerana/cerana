@@ -115,10 +115,10 @@ func (s *StatsPusher) TestValidate() {
 		expectedErr     string
 	}{
 		{"valid", u, u, 5, 4, 3, 2, ""},
-		{"missing coord", "", u, 5, 4, 3, 2, "missing nodeDataURL"},
-		{"invalud coord", "asdf", u, 5, 4, 3, 2, "invalid nodeDataURL"},
-		{"missing heartbeat", u, "", 5, 4, 3, 2, "missing clusterDataURL"},
-		{"invalud heartbeat", u, "asdf", 5, 4, 3, 2, "invalid clusterDataURL"},
+		{"missing nodeDataURL", "", u, 5, 4, 3, 2, "missing nodeDataURL"},
+		{"invalud nodeDataURL", "asdf", u, 5, 4, 3, 2, "invalid nodeDataURL"},
+		{"missing clusterDataURL", u, "", 5, 4, 3, 2, "missing clusterDataURL"},
+		{"invalud clusterDataURL", u, "asdf", 5, 4, 3, 2, "invalid clusterDataURL"},
 		{"invalid request timeout", u, u, 0, 4, 3, 2, "request timeout must be > 0"},
 		{"invalid dataset interval", u, u, 5, 0, 3, 2, "dataset interval must be > 0"},
 		{"invalid bundle interval", u, u, 5, 4, 0, 2, "bundle interval must be > 0"},
