@@ -1,5 +1,5 @@
-hash: 19c0aa7bc763c75596579a2737d35e0cf96f3a6a18420db194042ae36291e423
-updated: 2016-06-20T15:13:05.879407402-04:00
+hash: a086486ea7d5d97c804603bc32b4f98553713d0edc8708944c5c6eac564a1e23
+updated: 2016-06-22T14:18:21.760594837-04:00
 imports:
 - name: github.com/BurntSushi/toml
   version: bbd5bb678321a0d6e58f1099321dfa73391c1b6f
@@ -62,7 +62,7 @@ imports:
 - name: github.com/magiconair/properties
   version: c265cfa48dda6474e208715ca93e987829f572f8
 - name: github.com/mistifyio/go-zfs
-  version: cdc0f941c4d0e0e94d85348285568d921891e138
+  version: 22c9b32c84eb0d0c6f4043b6e90fc94073de92fa
 - name: github.com/mitchellh/mapstructure
   version: d2dd0262208475919e1a362f675cfc0e7c10e905
 - name: github.com/pborman/uuid

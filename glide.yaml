@@ -24,7 +24,7 @@ import:
   - api
   - watch
 - package: github.com/mistifyio/go-zfs
-  version: ^2.1.1
+  version: 22c9b32
 - package: github.com/mitchellh/mapstructure
 - package: github.com/pborman/uuid
   version: ^1.0.0
