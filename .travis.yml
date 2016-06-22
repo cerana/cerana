@@ -29,7 +29,7 @@ install:
   - mkdir -p $HOME/bin
   - mkdir -p $ZFS_CACHE
   - .travis/deps.sh fetch
-  - go get -t -v ./...
+  - glide install
   - .travis/deps.sh install
   - sudo modprobe zfs
 
