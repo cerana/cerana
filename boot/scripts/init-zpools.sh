@@ -223,3 +223,6 @@ ln -s /data/config/network /run/systemd/network
 
 mkdir /etc/systemd-mutable
 ln -s /data/services /etc/systemd-mutable/system
+
+# load in unit files that already exist in the pool
+systemctl daemon-reload

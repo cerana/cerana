@@ -18,6 +18,17 @@ function collect_addresses() {
     done
 }
 
+# Collect them already. Other functions need them.
+collect_addresses
+
+function fail_exit() {
+    local return
+    return=$1
+    shift
+    echo "$*" >&2
+    exit $return
+}
+
 ## in_array ARRAY ITEM
 ##
 ## Tests whether ITEM is contained inside array ARRAY
@@ -79,29 +90,22 @@ function iface_list() {
 }
 
 function query_interface() {
-    local answer
-
-    declare -a IFACES
-    iface_list
+    local response
+    response="not-an-interface"
     echo
     echo "Detected interfaces:"
     echo
-    for iface in ${IFACES[@]}; do
-        printf "\t* %s\n" "$iface"
+    for iface in ${!IFACE_TO_MAC[@]}; do
+        echo "$iface		${IFACE_TO_MAC[$iface]}"
     done
-    echo
-    echo "Please select the main interface from the list above."
-    answer=""
-    echo -n "Selection: "
-    read answer
 
-    while [ ! $answer ] || ! in_array IFACES "$answer"; do
-        echo "You must select from the listed interfaces!"
+    while [[ -z ${IFACE_TO_MAC[$response]} ]]; do
+        echo
+        echo "Please choose an interface for management network DHCP."
         echo -n "Selection: "
-        read answer
+        read response
     done
-
-    CERANA_IFACE=$answer
+    CERANA_MGMT_MAC=${IFACE_TO_MAC[$response]}
 }
 
 function query_ip() {
@@ -153,11 +157,24 @@ function query_gateway() {
 }
 
 function config_mgmt_dhcp() {
-    [[ -n ${CERANA_MGMT_MAC} ]] || return 1
+    [[ -n ${CERANA_MGMT_MAC} ]] \
+        && [[ -n ${MAC_TO_IFACE[${CERANA_MGMT_MAC}]} ]] \
+        || return 1
     echo -e "[Link]\nMACAddress=${CERANA_MGMT_MAC}\n\n[Network]\nDHCP=yes" >/data/config/network/mgmt.network
 }
 
 function drop_consul_config() {
+    case $1 in
+        'bootstrap')
+            echo "Let's bootstrap a cluster"
+            ;;
+        'join')
+            echo "Let's join the cluster containing ${CERANA_CLUSTER_IPS}"
+            ;;
+        *)
+            return 1
+            ;;
+    esac
     echo "Configuring Consul not implemented yet, yell at Nahum"
     return 1
 }
@@ -168,16 +185,20 @@ collect_addresses
 if [[ -n $CERANA_CLUSTER_BOOTSTRAP ]]; then
     # We're bootstrapping a layer 2 cluster
     # 1. Which MAC address are we using
+    config_mgmt_dhcp \
+        || query_interface
     # 2. What IP range are we using?
-    echo "Cluster bootstrap not implemented yet. Yell at Nahum"
-    exit 1
+    query_ip
+    fail_exit 1 "Cluster bootstrap not implemented yet. Yell at Nahum"
+    drop_consul_config bootstrap
 
 elif [[ -n $CERANA_CLUSTER_IPS ]]; then
     # We're joining a layer 2 cluster
     # We should have been told which MAC to use for DHCP and which IPs to pass to consul
     config_mgmt_dhcp \
-        && drop_consul_config
-    exit $?
+        && drop_consul_config join \
+        || exit $?
+
 else
     # We're a standalone node
     # If we were given a MAC address to use on the kernel command line, use it
@@ -185,21 +206,11 @@ else
     config_mgmt_dhcp && exit 0
 
     #FIXME Only do DHCP for now. Static IP for standalone will come later.
-    response=""
-    while [[ -z ${IFACE_TO_MAC[$response]} ]]; do
-        echo
-        echo "Please choose an interface for management network DHCP:"
-        echo
-        echo "IFACE MAC"
-        echo
-        for iface in ${!IFACE_TO_MAC[@]}; do echo "$iface   ${IFACE_TO_MAC[$iface]}"; done
-        read response
-    done
-    CERANA_MGMT_MAC=${IFACE_TO_MAC[$response]}
+    query_interface
 
 fi
 
 declare | grep ^CERANA >/data/config/cerana-bootcfg
 config_mgmt_dhcp && exit 0
 
-exit 1
+fail_exit 1 "Reached the end of the script without configuring any networking"
