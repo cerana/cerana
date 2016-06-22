@@ -152,7 +152,7 @@ func NewMockMetrics() *MockMetrics {
 						MTU:          1500,
 						HardwareAddr: "en0",
 						Addrs: []net.InterfaceAddr{
-							{"123.123.123.123"},
+							{Addr: "123.123.123.123"},
 						},
 					},
 				},
