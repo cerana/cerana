@@ -7,7 +7,7 @@ set -e
 
 dir=$(dirname $1)
 name=$(basename $1)
-out=$1.run.out
+out="$dir/test.out"
 exec 2> $out
 
 which consul &>/dev/null
