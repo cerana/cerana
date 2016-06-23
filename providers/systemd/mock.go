@@ -138,6 +138,7 @@ func (s *MockSystemd) Remove(req *acomm.Request) (interface{}, *url.URL, error) 
 	}
 
 	delete(s.Data.Statuses, args.Name)
+	delete(s.Data.UnitFiles, args.Name)
 	return nil, nil, nil
 }
 
@@ -229,4 +230,12 @@ func (s *MockSystemd) ManualEnable(name string) {
 		s.Data.Statuses[name].UnitTypeProperties[key] = value
 	}
 	s.Data.Statuses[name].UnitTypeProperties["Environment"] = env
+}
+
+func (s *MockSystemd) ManualGet(name string) *UnitStatus {
+	u, ok := s.Data.Statuses[name]
+	if ok {
+		return &u
+	}
+	return nil
 }
