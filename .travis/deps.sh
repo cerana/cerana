@@ -31,6 +31,9 @@ function fetch() {
     curl -L "https://github.com/coreos/etcd/releases/download/v$VETCD/etcd-v$VETCD-linux-amd64.tar.gz" \
         | bsdtar -xf- -C$HOME/bin --strip-components=1 etcd-v$VETCD-linux-amd64/etcd
 
+    curl -L "https://github.com/Masterminds/glide/releases/download/$VGLIDE/glide-$VGLIDE-linux-amd64.tar.gz" \
+        | bsdtar -xf- -C$HOME/bin --strip-components=1 linux-amd64/glide
+
     go get github.com/alecthomas/gometalinter
     gometalinter --install --update
 }
