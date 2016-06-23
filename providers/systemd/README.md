@@ -211,6 +211,12 @@ func (s *MockSystemd) ManualCreate(args CreateArgs, enable bool)
 func (s *MockSystemd) ManualEnable(name string)
 ```
 
+#### func (*MockSystemd) ManualGet
+
+```go
+func (s *MockSystemd) ManualGet(name string) *UnitStatus
+```
+
 #### func (*MockSystemd) RegisterTasks
 
 ```go
