@@ -10,6 +10,7 @@ env:
     - KV=consul
     - VCONSUL=0.6.4
     - VETCD=2.1.1
+    - VGLIDE=0.10.2
     - VZFS=0.6.5.5
     - ZFS_CACHE=/tmp/zfs
 
@@ -21,14 +22,14 @@ cache:
 # cerana-os and the latest release.
 
 go:
-  - 1.5.2
-  - 1.6
+  - 1.6.2
+  - tip
 
 install:
   - mkdir -p $HOME/bin
   - mkdir -p $ZFS_CACHE
   - .travis/deps.sh fetch
-  - go get -t -v ./...
+  - glide install
   - .travis/deps.sh install
   - sudo modprobe zfs
 
