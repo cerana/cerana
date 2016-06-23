@@ -189,15 +189,16 @@ if [[ -n $CERANA_CLUSTER_BOOTSTRAP ]]; then
         || query_interface
     # 2. What IP range are we using?
     query_ip
-    fail_exit 1 "Cluster bootstrap not implemented yet. Yell at Nahum"
-    drop_consul_config bootstrap
+    drop_consul_config bootstrap \
+        || fail_exit $? "Cluster bootstrap not implemented yet. Yell at Nahum"
 
 elif [[ -n $CERANA_CLUSTER_IPS ]]; then
     # We're joining a layer 2 cluster
     # We should have been told which MAC to use for DHCP and which IPs to pass to consul
     config_mgmt_dhcp \
-        && drop_consul_config join \
-        || exit $?
+        || fail_exit $? "Cluster join expects a working mgmt interface to be specified"
+    drop_consul_config join \
+        || fail_exit $? "Cluster joining not implemented yet. Yell at Nahum"
 
 else
     # We're a standalone node
@@ -209,6 +210,9 @@ else
     query_interface
 
 fi
+
+# remove the bootstrap flag for future boots
+unset CERANA_CLUSTER_BOOTSTRAP
 
 declare | grep ^CERANA >/data/config/cerana-bootcfg
 config_mgmt_dhcp && exit 0
