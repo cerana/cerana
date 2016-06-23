@@ -51,10 +51,10 @@ func (s *StatsPusher) SetupSuite() {
 		NodeDataURL:     nodeDataURL,
 		ClusterDataURL:  nodeDataURL,
 		LogLevel:        "fatal",
-		RequestTimeout:  5,
-		DatasetInterval: 4,
-		BundleInterval:  3,
-		NodeInterval:    2,
+		RequestTimeout:  "5s",
+		DatasetInterval: "4s",
+		BundleInterval:  "3s",
+		NodeInterval:    "2s",
 	}
 
 	s.config, _, _, s.configFile, err = newTestConfig(false, true, s.configData)

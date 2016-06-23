@@ -29,14 +29,13 @@ type config struct {
 
 // ConfigData defines the structure of the config data (e.g. in the config file)
 type ConfigData struct {
-	NodeDataURL    string `json:"nodeDataURL"`
-	ClusterDataURL string `json:"clusterDataURL"`
-	LogLevel       string `json:"logLevel"`
-	// Timeout and Interval values are in seconds
-	RequestTimeout  uint `json:"requestTimeout"`
-	DatasetInterval uint `json:"datasetInterval"`
-	BundleInterval  uint `json:"bundleInterval"`
-	NodeInterval    uint `json:"nodeInterval"`
+	NodeDataURL     string `json:"nodeDataURL"`
+	ClusterDataURL  string `json:"clusterDataURL"`
+	LogLevel        string `json:"logLevel"`
+	RequestTimeout  string `json:"requestTimeout"`
+	DatasetInterval string `json:"datasetInterval"`
+	BundleInterval  string `json:"bundleInterval"`
+	NodeInterval    string `json:"nodeInterval"`
 }
 
 func newConfig(flagSet *pflag.FlagSet, v *viper.Viper) *config {
@@ -62,10 +61,10 @@ func newConfig(flagSet *pflag.FlagSet, v *viper.Viper) *config {
 	flagSet.StringP("nodeDataURL", "u", "", "url of coordinator for node information retrieval")
 	flagSet.StringP("clusterDataURL", "e", "", "url of coordinator for the cluster information")
 	flagSet.StringP("logLevel", "l", "warning", "log level: debug/info/warn/error/fatal/panic")
-	flagSet.Uint64P("requestTimeout", "r", 0, "default timeout for requests made (seconds)")
-	flagSet.Uint64P("datasetInterval", "d", 0, "dataset heartbeat interval (seconds)")
-	flagSet.Uint64P("bundleInterval", "b", 0, "bundle heartbeat interval (seconds)")
-	flagSet.Uint64P("nodeInterval", "n", 0, "node heartbeat interval (seconds)")
+	flagSet.DurationP("requestTimeout", "r", 0, "default timeout for requests made")
+	flagSet.DurationP("datasetInterval", "d", 0, "dataset heartbeat interval")
+	flagSet.DurationP("bundleInterval", "b", 0, "bundle heartbeat interval")
+	flagSet.DurationP("nodeInterval", "n", 0, "node heartbeat interval")
 
 	return &config{
 		viper:   v,
@@ -143,23 +142,19 @@ func (c *config) clusterDataURL() *url.URL {
 }
 
 func (c *config) requestTimeout() time.Duration {
-	return time.Second * time.Duration(c.viper.GetInt("requestTimeout"))
+	return c.viper.GetDuration("requestTimeout")
 }
 
 func (c *config) datasetInterval() time.Duration {
-	return c.getInterval("datasetInterval")
+	return c.viper.GetDuration("datasetInterval")
 }
 
 func (c *config) nodeInterval() time.Duration {
-	return c.getInterval("nodeInterval")
+	return c.viper.GetDuration("nodeInterval")
 }
 
 func (c *config) bundleInterval() time.Duration {
-	return c.getInterval("bundleInterval")
-}
-
-func (c *config) getInterval(key string) time.Duration {
-	return time.Second * time.Duration(c.viper.GetInt(key))
+	return c.viper.GetDuration("bundleInterval")
 }
 
 func (c *config) setupLogging() error {
@@ -175,16 +170,16 @@ func (c *config) setupLogging() error {
 }
 
 func (c *config) validate() error {
-	if c.datasetInterval() <= 0 {
+	if c.datasetInterval() == 0 {
 		return errors.New("dataset interval must be > 0")
 	}
-	if c.bundleInterval() <= 0 {
+	if c.bundleInterval() == 0 {
 		return errors.New("bundle interval must be > 0")
 	}
-	if c.nodeInterval() <= 0 {
+	if c.nodeInterval() == 0 {
 		return errors.New("node interval must be > 0")
 	}
-	if c.requestTimeout() <= 0 {
+	if c.requestTimeout() == 0 {
 		return errors.New("request timeout must be > 0")
 	}
 

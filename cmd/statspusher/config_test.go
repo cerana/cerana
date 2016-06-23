@@ -6,8 +6,6 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
-	"strconv"
-	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/pborman/uuid"
@@ -108,21 +106,21 @@ func (s *StatsPusher) TestValidate() {
 		description     string
 		nodeDataURL     string
 		clusterDataURL  string
-		requestTimeout  uint
-		datasetInterval uint
-		bundleInterval  uint
-		nodeInterval    uint
+		requestTimeout  string
+		datasetInterval string
+		bundleInterval  string
+		nodeInterval    string
 		expectedErr     string
 	}{
-		{"valid", u, u, 5, 4, 3, 2, ""},
-		{"missing nodeDataURL", "", u, 5, 4, 3, 2, "missing nodeDataURL"},
-		{"invalud nodeDataURL", "asdf", u, 5, 4, 3, 2, "invalid nodeDataURL"},
-		{"missing clusterDataURL", u, "", 5, 4, 3, 2, "missing clusterDataURL"},
-		{"invalud clusterDataURL", u, "asdf", 5, 4, 3, 2, "invalid clusterDataURL"},
-		{"invalid request timeout", u, u, 0, 4, 3, 2, "request timeout must be > 0"},
-		{"invalid dataset interval", u, u, 5, 0, 3, 2, "dataset interval must be > 0"},
-		{"invalid bundle interval", u, u, 5, 4, 0, 2, "bundle interval must be > 0"},
-		{"invalid node interval", u, u, 5, 4, 3, 0, "node interval must be > 0"},
+		{"valid", u, u, "5s", "4s", "3s", "2s", ""},
+		{"missing nodeDataURL", "", u, "5s", "4s", "3s", "2s", "missing nodeDataURL"},
+		{"invalud nodeDataURL", "asdf", u, "5s", "4s", "3s", "2s", "invalid nodeDataURL"},
+		{"missing clusterDataURL", u, "", "5s", "4s", "3s", "2s", "missing clusterDataURL"},
+		{"invalud clusterDataURL", u, "asdf", "5s", "4s", "3s", "2s", "invalid clusterDataURL"},
+		{"invalid request timeout", u, u, "0", "4s", "3s", "2s", "request timeout must be > 0"},
+		{"invalid dataset interval", u, u, "5s", "0", "3s", "2s", "dataset interval must be > 0"},
+		{"invalid bundle interval", u, u, "5s", "4s", "0", "2s", "bundle interval must be > 0"},
+		{"invalid node interval", u, u, "5s", "4s", "3s", "0", "node interval must be > 0"},
 	}
 
 	for _, test := range tests {
@@ -164,19 +162,19 @@ func (s *StatsPusher) TestClusterDataURL() {
 }
 
 func (s *StatsPusher) TestRequestTimeout() {
-	s.EqualValues(s.configData.RequestTimeout, s.config.requestTimeout()/time.Second)
+	s.EqualValues(s.configData.RequestTimeout, s.config.requestTimeout().String())
 }
 
 func (s *StatsPusher) TestDatasetInterval() {
-	s.EqualValues(s.configData.DatasetInterval, s.config.datasetInterval()/time.Second)
+	s.EqualValues(s.configData.DatasetInterval, s.config.datasetInterval().String())
 }
 
 func (s *StatsPusher) TestBundleInterval() {
-	s.EqualValues(s.configData.BundleInterval, s.config.bundleInterval()/time.Second)
+	s.EqualValues(s.configData.BundleInterval, s.config.bundleInterval().String())
 }
 
 func (s *StatsPusher) TestNodeInterval() {
-	s.EqualValues(s.configData.NodeInterval, s.config.nodeInterval()/time.Second)
+	s.EqualValues(s.configData.NodeInterval, s.config.nodeInterval().String())
 }
 
 func newTestConfig(setFlags, writeConfig bool, configData *ConfigData) (*config, *pflag.FlagSet, *viper.Viper, *os.File, error) {
@@ -217,16 +215,16 @@ func newTestConfig(setFlags, writeConfig bool, configData *ConfigData) (*config,
 		if err := fs.Set("logLevel", configData.LogLevel); err != nil {
 			return nil, nil, nil, configFile, err
 		}
-		if err := fs.Set("requestTimeout", strconv.FormatUint(uint64(configData.RequestTimeout), 10)); err != nil {
+		if err := fs.Set("requestTimeout", configData.RequestTimeout); err != nil {
 			return nil, nil, nil, configFile, err
 		}
-		if err := fs.Set("datasetInterval", strconv.FormatUint(uint64(configData.DatasetInterval), 10)); err != nil {
+		if err := fs.Set("datasetInterval", configData.DatasetInterval); err != nil {
 			return nil, nil, nil, configFile, err
 		}
-		if err := fs.Set("bundleInterval", strconv.FormatUint(uint64(configData.BundleInterval), 10)); err != nil {
+		if err := fs.Set("bundleInterval", configData.BundleInterval); err != nil {
 			return nil, nil, nil, configFile, err
 		}
-		if err := fs.Set("nodeInterval", strconv.FormatUint(uint64(configData.NodeInterval), 10)); err != nil {
+		if err := fs.Set("nodeInterval", configData.NodeInterval); err != nil {
 			return nil, nil, nil, configFile, err
 		}
 	}
