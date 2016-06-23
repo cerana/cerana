@@ -14,15 +14,15 @@ import (
 // UserArgs are arguments for SetUser.
 type UserArgs struct {
 	PID  uint64  `json:"pid"`
-	UIDs []IDMap `json:"uid"`
-	GIDs []IDMap `json:"gid"`
+	UIDs []IDMap `json:"uids"`
+	GIDs []IDMap `json:"gids"`
 }
 
 // IDMap is a map of id in container to id on host and length of a range.
 type IDMap struct {
 	ID     uint64 `json:"id"`
 	HostID uint64 `json:"hostID"`
-	Length uint64 `json:"Length"`
+	Length uint64 `json:"length"`
 }
 
 // SetUser sets the user and group id mapping for a process.
@@ -57,9 +57,6 @@ func writeIDMapFile(path string, idMaps []IDMap) error {
 		content[i] = fmt.Sprintf("%d %d %d", idMap.ID, idMap.HostID, idMap.Length)
 	}
 
-	if _, err := fmt.Fprintln(mapFile, strings.Join(content, "\n")); err != nil {
-		return err
-	}
-
-	return nil
+	_, err = fmt.Fprintln(mapFile, strings.Join(content, "\n"))
+	return err
 }

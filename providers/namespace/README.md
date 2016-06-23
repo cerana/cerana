@@ -12,7 +12,7 @@
 type IDMap struct {
 	ID     uint64 `json:"id"`
 	HostID uint64 `json:"hostID"`
-	Length uint64 `json:"Length"`
+	Length uint64 `json:"length"`
 }
 ```
 
@@ -94,8 +94,8 @@ SetUser sets the user and group id mapping for a process.
 ```go
 type UserArgs struct {
 	PID  uint64  `json:"pid"`
-	UIDs []IDMap `json:"uid"`
-	GIDs []IDMap `json:"gid"`
+	UIDs []IDMap `json:"uids"`
+	GIDs []IDMap `json:"gids"`
 }
 ```
 
