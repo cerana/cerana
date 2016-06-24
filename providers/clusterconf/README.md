@@ -342,6 +342,13 @@ func (c *Config) DatasetTTL() time.Duration
 ```
 DatasetTTL returns the TTL for dataset node heartbeats.
 
+#### func (*Config) LoadConfig
+
+```go
+func (c *Config) LoadConfig() error
+```
+LoadConfig loads and validates the ClusterConf provider config.
+
 #### func (*Config) NodeTTL
 
 ```go

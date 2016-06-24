@@ -14,9 +14,9 @@ func main() {
 	log.SetFormatter(&logx.JSONFormatter{})
 
 	config := clusterconf.NewConfig(nil, nil)
-	flag.DurationP("dataset-ttl", "d", time.Minute, "ttl for dataset usage heartbeats")
-	flag.DurationP("bundle-ttl", "b", time.Minute, "ttl for bundle usage heartbeats")
-	flag.DurationP("node-ttl", "o", time.Minute, "ttl for node heartbeats")
+	flag.DurationP("dataset_ttl", "d", time.Minute, "ttl for dataset usage heartbeats")
+	flag.DurationP("bundle_ttl", "b", time.Minute, "ttl for bundle usage heartbeats")
+	flag.DurationP("node_ttl", "o", time.Minute, "ttl for node heartbeats")
 	flag.Parse()
 
 	dieOnError(config.LoadConfig())
