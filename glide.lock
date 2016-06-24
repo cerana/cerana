@@ -1,10 +1,10 @@
-hash: a086486ea7d5d97c804603bc32b4f98553713d0edc8708944c5c6eac564a1e23
-updated: 2016-06-22T14:18:21.760594837-04:00
+hash: 31d2c8cadbc2b6e36e186685c4ef707dfc0199f923c0b9d364ed7c39e1b98b8a
+updated: 2016-06-24T08:00:47.353173707-04:00
 imports:
 - name: github.com/BurntSushi/toml
   version: bbd5bb678321a0d6e58f1099321dfa73391c1b6f
 - name: github.com/coreos/etcd
-  version: ffd1fa6f52dd17332ec5849d1af3314828a6bd56
+  version: 6335fdc595ff03d27007db04e5b545189b9647c6
   subpackages:
   - error
 - name: github.com/coreos/go-etcd
