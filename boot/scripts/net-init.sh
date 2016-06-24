@@ -113,20 +113,18 @@ function query_ip() {
     local ip
     local prefix
 
-    echo
-    echo "Please specify the IP address and netmask of this node."
-    echo
-    echo -n "> "
-    read answer
+    answer=${CERANA_MGMT_IP}
 
     ip=$(awk -F/ '{print $1}' <<<$answer)
     prefix=$(awk -F/ '{print $2}' <<<$answer)
 
-    while [ ! $answer ] \
-        || [ ! $prefix ] \
+    while [[ ! $answer ]] \
+        || [[ ! $prefix ]] \
         || ! is_valid_ip $ip \
         || ! is_valid_prefix $prefix; do
-        echo "You must provide a valid IP address and prefix!"
+        echo
+        echo "Please specify the IP address and netmask of this node in the form a.b.c.d/n :"
+        echo
         echo -n "> "
         read answer
 
