@@ -46,15 +46,15 @@ func (s *StatsPusher) SetupSuite() {
 	s.coordinator, err = test.NewCoordinator("")
 	noError(err)
 
-	coordinatorURL := s.coordinator.NewProviderViper().GetString("coordinator_url")
+	nodeDataURL := s.coordinator.NewProviderViper().GetString("coordinator_url")
 	s.configData = &ConfigData{
-		CoordinatorURL: coordinatorURL,
-		HeartbeatURL:   coordinatorURL,
-		LogLevel:       "fatal",
-		RequestTimeout: 5,
-		DatasetTTL:     4,
-		BundleTTL:      3,
-		NodeTTL:        2,
+		NodeDataURL:     nodeDataURL,
+		ClusterDataURL:  nodeDataURL,
+		LogLevel:        "fatal",
+		RequestTimeout:  "5s",
+		DatasetInterval: "4s",
+		BundleInterval:  "3s",
+		NodeInterval:    "2s",
 	}
 
 	s.config, _, _, s.configFile, err = newTestConfig(false, true, s.configData)

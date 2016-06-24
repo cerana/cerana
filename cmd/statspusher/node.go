@@ -43,7 +43,7 @@ func (s *statsPusher) getNodeInfo() (*clusterconf.Node, error) {
 			fmt.Println("failed to add")
 			break
 		}
-		if err := acomm.Send(s.config.coordinatorURL(), req); err != nil {
+		if err := acomm.Send(s.config.nodeDataURL(), req); err != nil {
 			fmt.Println(name, err)
 			multiRequest.RemoveRequest(req)
 			break
@@ -95,7 +95,6 @@ func (s *statsPusher) sendNodeHeartbeat(data *clusterconf.Node) error {
 	}
 	req, err := acomm.NewRequest(acomm.RequestOptions{
 		Task:           "node-heartbeat",
-		TaskURL:        s.config.heartbeatURL(),
 		ResponseHook:   s.tracker.URL(),
 		Args:           &clusterconf.NodePayload{Node: data},
 		SuccessHandler: rh,
@@ -108,7 +107,7 @@ func (s *statsPusher) sendNodeHeartbeat(data *clusterconf.Node) error {
 	if err := s.tracker.TrackRequest(req, s.config.requestTimeout()); err != nil {
 		return err
 	}
-	if err := acomm.Send(s.config.coordinatorURL(), req); err != nil {
+	if err := acomm.Send(s.config.clusterDataURL(), req); err != nil {
 		_ = s.tracker.RemoveRequest(req)
 		return err
 	}

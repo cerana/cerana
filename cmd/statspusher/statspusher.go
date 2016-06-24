@@ -35,9 +35,9 @@ func (s *statsPusher) run() error {
 	if err := s.tracker.Start(); err != nil {
 		return err
 	}
-	s.startHeartbeat("node", s.nodeHeartbeat, s.config.nodeTTL())
-	s.startHeartbeat("dataset", s.datasetHeartbeats, s.config.datasetTTL())
-	s.startHeartbeat("bundle", s.bundleHeartbeats, s.config.bundleTTL())
+	s.startHeartbeat("node", s.nodeHeartbeat, s.config.nodeInterval())
+	s.startHeartbeat("dataset", s.datasetHeartbeats, s.config.datasetInterval())
+	s.startHeartbeat("bundle", s.bundleHeartbeats, s.config.bundleInterval())
 	return nil
 }
 

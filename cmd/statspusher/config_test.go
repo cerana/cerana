@@ -6,8 +6,6 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
-	"strconv"
-	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/pborman/uuid"
@@ -31,7 +29,7 @@ func (s *StatsPusher) TestCanonicalFlagName() {
 		{"Foo_bar", "fooBar"},
 		{"foo_BAR", "fooBAR"},
 		{"foo_cpu", "fooCPU"},
-		{"foo_ttl", "fooTTL"},
+		{"foo_interval", "fooInterval"},
 		{"foo_cpu", "fooCPU"},
 		{"foo_url", "fooURL"},
 		{"foo_ip", "fooIP"},
@@ -105,34 +103,34 @@ func (s *StatsPusher) TestSetupLogging() {
 func (s *StatsPusher) TestValidate() {
 	u := "unix:///tmp/foobar"
 	tests := []struct {
-		description    string
-		coordinatorURL string
-		heartbeatURL   string
-		requestTimeout uint
-		datasetTTL     uint
-		bundleTTL      uint
-		nodeTTL        uint
-		expectedErr    string
+		description     string
+		nodeDataURL     string
+		clusterDataURL  string
+		requestTimeout  string
+		datasetInterval string
+		bundleInterval  string
+		nodeInterval    string
+		expectedErr     string
 	}{
-		{"valid", u, u, 5, 4, 3, 2, ""},
-		{"missing coord", "", u, 5, 4, 3, 2, "missing coordinatorURL"},
-		{"invalud coord", "asdf", u, 5, 4, 3, 2, "invalid coordinatorURL"},
-		{"missing heartbeat", u, "", 5, 4, 3, 2, "missing heartbeatURL"},
-		{"invalud heartbeat", u, "asdf", 5, 4, 3, 2, "invalid heartbeatURL"},
-		{"invalid request timeout", u, u, 0, 4, 3, 2, "request timeout must be > 0"},
-		{"invalid dataset ttl", u, u, 5, 0, 3, 2, "dataset ttl must be > 0"},
-		{"invalid bundle ttl", u, u, 5, 4, 0, 2, "bundle ttl must be > 0"},
-		{"invalid node ttl", u, u, 5, 4, 3, 0, "node ttl must be > 0"},
+		{"valid", u, u, "5s", "4s", "3s", "2s", ""},
+		{"missing nodeDataURL", "", u, "5s", "4s", "3s", "2s", "missing nodeDataURL"},
+		{"invalud nodeDataURL", "asdf", u, "5s", "4s", "3s", "2s", "invalid nodeDataURL"},
+		{"missing clusterDataURL", u, "", "5s", "4s", "3s", "2s", "missing clusterDataURL"},
+		{"invalud clusterDataURL", u, "asdf", "5s", "4s", "3s", "2s", "invalid clusterDataURL"},
+		{"invalid request timeout", u, u, "0", "4s", "3s", "2s", "request timeout must be > 0"},
+		{"invalid dataset interval", u, u, "5s", "0", "3s", "2s", "dataset interval must be > 0"},
+		{"invalid bundle interval", u, u, "5s", "4s", "0", "2s", "bundle interval must be > 0"},
+		{"invalid node interval", u, u, "5s", "4s", "3s", "0", "node interval must be > 0"},
 	}
 
 	for _, test := range tests {
 		configData := &ConfigData{
-			CoordinatorURL: test.coordinatorURL,
-			HeartbeatURL:   test.heartbeatURL,
-			RequestTimeout: test.requestTimeout,
-			DatasetTTL:     test.datasetTTL,
-			BundleTTL:      test.bundleTTL,
-			NodeTTL:        test.nodeTTL,
+			NodeDataURL:     test.nodeDataURL,
+			ClusterDataURL:  test.clusterDataURL,
+			RequestTimeout:  test.requestTimeout,
+			DatasetInterval: test.datasetInterval,
+			BundleInterval:  test.bundleInterval,
+			NodeInterval:    test.nodeInterval,
 		}
 
 		config, fs, v, _, err := newTestConfig(true, false, configData)
@@ -151,32 +149,32 @@ func (s *StatsPusher) TestValidate() {
 	}
 }
 
-func (s *StatsPusher) TestCoordinatorURL() {
-	u, err := url.ParseRequestURI(s.configData.CoordinatorURL)
+func (s *StatsPusher) TestNodeDataURL() {
+	u, err := url.ParseRequestURI(s.configData.NodeDataURL)
 	s.Require().NoError(err)
-	s.Equal(u, s.config.coordinatorURL())
+	s.Equal(u, s.config.nodeDataURL())
 }
 
-func (s *StatsPusher) TestHeartbeatURL() {
-	u, err := url.ParseRequestURI(s.configData.HeartbeatURL)
+func (s *StatsPusher) TestClusterDataURL() {
+	u, err := url.ParseRequestURI(s.configData.ClusterDataURL)
 	s.Require().NoError(err)
-	s.Equal(u, s.config.heartbeatURL())
+	s.Equal(u, s.config.clusterDataURL())
 }
 
 func (s *StatsPusher) TestRequestTimeout() {
-	s.EqualValues(s.configData.RequestTimeout, s.config.requestTimeout()/time.Second)
+	s.EqualValues(s.configData.RequestTimeout, s.config.requestTimeout().String())
 }
 
-func (s *StatsPusher) TestDatasetTTL() {
-	s.EqualValues(s.configData.DatasetTTL, s.config.datasetTTL()/time.Second)
+func (s *StatsPusher) TestDatasetInterval() {
+	s.EqualValues(s.configData.DatasetInterval, s.config.datasetInterval().String())
 }
 
-func (s *StatsPusher) TestBundleTTL() {
-	s.EqualValues(s.configData.BundleTTL, s.config.bundleTTL()/time.Second)
+func (s *StatsPusher) TestBundleInterval() {
+	s.EqualValues(s.configData.BundleInterval, s.config.bundleInterval().String())
 }
 
-func (s *StatsPusher) TestNodeTTL() {
-	s.EqualValues(s.configData.NodeTTL, s.config.nodeTTL()/time.Second)
+func (s *StatsPusher) TestNodeInterval() {
+	s.EqualValues(s.configData.NodeInterval, s.config.nodeInterval().String())
 }
 
 func newTestConfig(setFlags, writeConfig bool, configData *ConfigData) (*config, *pflag.FlagSet, *viper.Viper, *os.File, error) {
@@ -208,25 +206,25 @@ func newTestConfig(setFlags, writeConfig bool, configData *ConfigData) (*config,
 	}
 
 	if setFlags {
-		if err := fs.Set("coordinatorURL", configData.CoordinatorURL); err != nil {
+		if err := fs.Set("nodeDataURL", configData.NodeDataURL); err != nil {
 			return nil, nil, nil, configFile, err
 		}
-		if err := fs.Set("heartbeatURL", configData.HeartbeatURL); err != nil {
+		if err := fs.Set("clusterDataURL", configData.ClusterDataURL); err != nil {
 			return nil, nil, nil, configFile, err
 		}
 		if err := fs.Set("logLevel", configData.LogLevel); err != nil {
 			return nil, nil, nil, configFile, err
 		}
-		if err := fs.Set("requestTimeout", strconv.FormatUint(uint64(configData.RequestTimeout), 10)); err != nil {
+		if err := fs.Set("requestTimeout", configData.RequestTimeout); err != nil {
 			return nil, nil, nil, configFile, err
 		}
-		if err := fs.Set("datasetTTL", strconv.FormatUint(uint64(configData.DatasetTTL), 10)); err != nil {
+		if err := fs.Set("datasetInterval", configData.DatasetInterval); err != nil {
 			return nil, nil, nil, configFile, err
 		}
-		if err := fs.Set("bundleTTL", strconv.FormatUint(uint64(configData.BundleTTL), 10)); err != nil {
+		if err := fs.Set("bundleInterval", configData.BundleInterval); err != nil {
 			return nil, nil, nil, configFile, err
 		}
-		if err := fs.Set("nodeTTL", strconv.FormatUint(uint64(configData.NodeTTL), 10)); err != nil {
+		if err := fs.Set("nodeInterval", configData.NodeInterval); err != nil {
 			return nil, nil, nil, configFile, err
 		}
 	}
