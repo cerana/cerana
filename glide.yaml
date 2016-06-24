@@ -47,3 +47,4 @@ import:
 - package: github.com/tylerb/graceful
   version: ^1.2.8
 - package: gopkg.in/tomb.v2
+- package: github.com/krolaw/dhcp4
