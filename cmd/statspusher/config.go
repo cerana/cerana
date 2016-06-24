@@ -19,7 +19,7 @@ import (
 
 var (
 	flagSep     = regexp.MustCompile(`[\s._-]+`)
-	specialCaps = regexp.MustCompile("(?i)^(url|ttl|cpu|ip|id)$")
+	specialCaps = regexp.MustCompile("(?i)^(url|cpu|ip|id)$")
 )
 
 type config struct {
@@ -29,14 +29,13 @@ type config struct {
 
 // ConfigData defines the structure of the config data (e.g. in the config file)
 type ConfigData struct {
-	CoordinatorURL string `json:"coordinatorURL"`
-	HeartbeatURL   string `json:"heartbeatURL"`
-	LogLevel       string `json:"logLevel"`
-	// Timeout and TTL values are in seconds
-	RequestTimeout uint `json:"requestTimeout"`
-	DatasetTTL     uint `json:"datasetTTL"`
-	BundleTTL      uint `json:"bundleTTL"`
-	NodeTTL        uint `json:"nodeTTL"`
+	NodeDataURL     string `json:"nodeDataURL"`
+	ClusterDataURL  string `json:"clusterDataURL"`
+	LogLevel        string `json:"logLevel"`
+	RequestTimeout  string `json:"requestTimeout"`
+	DatasetInterval string `json:"datasetInterval"`
+	BundleInterval  string `json:"bundleInterval"`
+	NodeInterval    string `json:"nodeInterval"`
 }
 
 func newConfig(flagSet *pflag.FlagSet, v *viper.Viper) *config {
@@ -59,13 +58,13 @@ func newConfig(flagSet *pflag.FlagSet, v *viper.Viper) *config {
 	}
 
 	flagSet.StringP("configFile", "c", "", "path to config file")
-	flagSet.StringP("coordinatorURL", "u", "", "url of coordinator for information retrieval")
-	flagSet.StringP("heartbeatURL", "e", "", "url of coordinator for the heartbeat registering")
+	flagSet.StringP("nodeDataURL", "u", "", "url of coordinator for node information retrieval")
+	flagSet.StringP("clusterDataURL", "e", "", "url of coordinator for the cluster information")
 	flagSet.StringP("logLevel", "l", "warning", "log level: debug/info/warn/error/fatal/panic")
-	flagSet.Uint64P("requestTimeout", "r", 0, "default timeout for requests made (seconds)")
-	flagSet.Uint64P("datasetTTL", "d", 0, "dataset heartbeat ttl (seconds)")
-	flagSet.Uint64P("bundleTTL", "b", 0, "bundle heartbeat ttl (seconds)")
-	flagSet.Uint64P("nodeTTL", "n", 0, "node heartbeat ttl (seconds)")
+	flagSet.DurationP("requestTimeout", "r", 0, "default timeout for requests made")
+	flagSet.DurationP("datasetInterval", "d", 0, "dataset heartbeat interval")
+	flagSet.DurationP("bundleInterval", "b", 0, "bundle heartbeat interval")
+	flagSet.DurationP("nodeInterval", "n", 0, "node heartbeat interval")
 
 	return &config{
 		viper:   v,
@@ -83,7 +82,7 @@ func canonicalFlagName(f *pflag.FlagSet, name string) pflag.NormalizedName {
 	// Convert to title case (lower case with leading caps, preserved all caps)
 	name = strings.Title(name)
 
-	// Some words should always be all caps or all lower case (e.g. TTL)
+	// Some words should always be all caps or all lower case (e.g. Interval)
 	nameParts := strings.Split(name, " ")
 	for i, part := range nameParts {
 		caseFn := strings.ToUpper
@@ -130,36 +129,32 @@ func (c *config) loadConfig() error {
 	return c.validate()
 }
 
-func (c *config) coordinatorURL() *url.URL {
+func (c *config) nodeDataURL() *url.URL {
 	// Error checking has been done during validation
-	u, _ := url.ParseRequestURI(c.viper.GetString("coordinatorURL"))
+	u, _ := url.ParseRequestURI(c.viper.GetString("nodeDataURL"))
 	return u
 }
 
-func (c *config) heartbeatURL() *url.URL {
+func (c *config) clusterDataURL() *url.URL {
 	// Error checking has been done during validation
-	u, _ := url.ParseRequestURI(c.viper.GetString("heartbeatURL"))
+	u, _ := url.ParseRequestURI(c.viper.GetString("clusterDataURL"))
 	return u
 }
 
 func (c *config) requestTimeout() time.Duration {
-	return time.Second * time.Duration(c.viper.GetInt("requestTimeout"))
+	return c.viper.GetDuration("requestTimeout")
 }
 
-func (c *config) datasetTTL() time.Duration {
-	return c.getTTL("datasetTTL")
+func (c *config) datasetInterval() time.Duration {
+	return c.viper.GetDuration("datasetInterval")
 }
 
-func (c *config) nodeTTL() time.Duration {
-	return c.getTTL("nodeTTL")
+func (c *config) nodeInterval() time.Duration {
+	return c.viper.GetDuration("nodeInterval")
 }
 
-func (c *config) bundleTTL() time.Duration {
-	return c.getTTL("bundleTTL")
-}
-
-func (c *config) getTTL(key string) time.Duration {
-	return time.Second * time.Duration(c.viper.GetInt(key))
+func (c *config) bundleInterval() time.Duration {
+	return c.viper.GetDuration("bundleInterval")
 }
 
 func (c *config) setupLogging() error {
@@ -175,23 +170,23 @@ func (c *config) setupLogging() error {
 }
 
 func (c *config) validate() error {
-	if c.datasetTTL() <= 0 {
-		return errors.New("dataset ttl must be > 0")
+	if c.datasetInterval() == 0 {
+		return errors.New("dataset interval must be > 0")
 	}
-	if c.bundleTTL() <= 0 {
-		return errors.New("bundle ttl must be > 0")
+	if c.bundleInterval() == 0 {
+		return errors.New("bundle interval must be > 0")
 	}
-	if c.nodeTTL() <= 0 {
-		return errors.New("node ttl must be > 0")
+	if c.nodeInterval() == 0 {
+		return errors.New("node interval must be > 0")
 	}
-	if c.requestTimeout() <= 0 {
+	if c.requestTimeout() == 0 {
 		return errors.New("request timeout must be > 0")
 	}
 
-	if err := c.validateURL("coordinatorURL"); err != nil {
+	if err := c.validateURL("nodeDataURL"); err != nil {
 		return err
 	}
-	if err := c.validateURL("heartbeatURL"); err != nil {
+	if err := c.validateURL("clusterDataURL"); err != nil {
 		return err
 	}
 
