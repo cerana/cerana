@@ -20,6 +20,9 @@ testOutputs := $(addsuffix test.out,$(pkgdirs))
 godocdown:
 	find -type f -name \*.go -not -path "./vendor/*" -execdir godocdown -template $(CURDIR)/.godocdown.template -o README.md \;
 
+errcheckMatch := ^([^:]+):([[:digit:]]+):([[:digit:]]+)\t(.*)
+errcheckReplace := \1:\2:\3:warning: error return value not checked (\4) (errcheck)
+
 .PHONY: lint-required
 lint-required:
 	gometalinter @gometalinter.required.flags
@@ -27,7 +30,8 @@ lint-required:
 	# It has to load all of the files to analyze APIs. When given multiple pkg
 	# paths, it takes advantage of caching after loads. Using gometalinter runs
 	# it separately for each pkg, losing the caching speed benefits.
-	errcheck --verbose $$(go list ./... | grep -v /vendor/)
+	errcheck $$(go list ./... | grep -v /vendor/) 2>&1 | \
+		sed -r 's|$(errcheckMatch)|$(errcheckReplace)|'
 
 .PHONY: lint-optional
 lint-optional:
