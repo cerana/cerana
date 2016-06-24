@@ -162,19 +162,30 @@ function config_mgmt_dhcp() {
 }
 
 function drop_consul_config() {
+    # FIXME Need to implement joining a cluster as a "client" agent
+    local CONFIG comma
+    CONFIG=/data/config/consul.json
+
+    echo '{' >$CONFIG
+    echo '"server": true,' >>$CONFIG
     case $1 in
         'bootstrap')
-            echo "Let's bootstrap a cluster"
+            echo '"bootstrap": true,' >>$CONFIG
             ;;
         'join')
-            echo "Let's join the cluster containing ${CERANA_CLUSTER_IPS}"
+            echo '"start_join": [' >>$CONFIG
+            for server in ${CERANA_CLUSTER_IPS//,/ }; do
+                [[ -n $comma ]] && echo -n ', ' >>$CONFIG || comma=1 # json is terrible
+                echo "\"server\": \"$server\"" >>$CONFIG
+            done
+            echo '],' >>$CONFIG
             ;;
         *)
             return 1
             ;;
     esac
-    echo "Configuring Consul not implemented yet, yell at Nahum"
-    return 1
+    echo '"data_dir": "/data/config/consul/"' >>$CONFIG
+    echo '}' >>$CONFIG
 }
 
 ## Main
@@ -188,7 +199,7 @@ if [[ -n $CERANA_CLUSTER_BOOTSTRAP ]]; then
     # 2. What IP range are we using?
     query_ip
     drop_consul_config bootstrap \
-        || fail_exit $? "Cluster bootstrap not implemented yet. Yell at Nahum"
+        || fail_exit $? "Cluster configuration failed"
 
 elif [[ -n $CERANA_CLUSTER_IPS ]]; then
     # We're joining a layer 2 cluster
@@ -196,7 +207,7 @@ elif [[ -n $CERANA_CLUSTER_IPS ]]; then
     config_mgmt_dhcp \
         || fail_exit $? "Cluster join expects a working mgmt interface to be specified"
     drop_consul_config join \
-        || fail_exit $? "Cluster joining not implemented yet. Yell at Nahum"
+        || fail_exit $? "Cluster joining failed"
 
 else
     # We're a standalone node
