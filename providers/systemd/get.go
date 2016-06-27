@@ -2,8 +2,9 @@ package systemd
 
 import (
 	"errors"
-	"fmt"
 	"net/url"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/cerana/cerana/acomm"
@@ -13,7 +14,9 @@ import (
 // UnitStatus contains information about a systemd unit.
 type UnitStatus struct {
 	dbus.UnitStatus
-	Uptime time.Duration
+	Uptime             time.Duration          `json:"uptime"`
+	UnitProperties     map[string]interface{} `json:"unitProperties"`
+	UnitTypeProperties map[string]interface{} `json:"unitTypeProperties"`
 }
 
 // GetArgs are args for the Get handler
@@ -64,14 +67,23 @@ func (s *Systemd) Get(req *acomm.Request) (interface{}, *url.URL, error) {
 func (s *Systemd) unitStatus(unit dbus.UnitStatus) (*UnitStatus, error) {
 	unitStatus := &UnitStatus{UnitStatus: unit}
 
-	if unit.ActiveState == "active" {
-		prop, err := s.dconn.GetUnitProperty(unit.Name, "ActiveEnterTimestamp")
-		if err != nil {
-			return nil, err
-		}
-		activeEnter := time.Unix(int64(prop.Value.Value().(uint64))/int64(time.Second/time.Microsecond), 0)
+	unitProps, err := s.dconn.GetUnitProperties(unit.Name)
+	if err != nil {
+		return nil, err
+	}
+	unitStatus.UnitProperties = unitProps
+
+	unitType := strings.Title(strings.TrimLeft(filepath.Ext(unit.Name), "."))
+	unitTypeProps, err := s.dconn.GetUnitTypeProperties(unit.Name, unitType)
+	if err != nil && !strings.Contains(err.Error(), "Unknown interface") {
+		return nil, err
+	} else {
+		unitStatus.UnitTypeProperties = unitTypeProps
+	}
+
+	if unitStatus.ActiveState == "active" {
+		activeEnter := time.Unix(int64(unitStatus.UnitProperties["ActiveEnterTimestamp"].(uint64))/int64(time.Second/time.Microsecond), 0)
 		unitStatus.Uptime = time.Now().Sub(activeEnter)
-		fmt.Println(unit.Name, prop.Value.Value(), activeEnter.Unix(), time.Now().Unix(), unitStatus.Uptime.Seconds())
 	}
 
 	return unitStatus, nil
