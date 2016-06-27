@@ -14,6 +14,9 @@ type KV struct {
 	tracker *acomm.Tracker
 }
 
+// Value represents the value stored in a key, including the last modification index of the key
+type Value kv.Value
+
 // New creates a new instance of KV.
 func New(config *Config, tracker *acomm.Tracker) (*KV, error) {
 	addr, err := config.Address()
