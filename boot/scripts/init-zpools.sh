@@ -123,6 +123,42 @@ prompt_user() {
     esac
 }
 
+# add a partition for and install GRUB2 to pool disks
+install_grub() {
+    [[ -n ${INSTALL_GRUB_PLEASE} ]] || return
+    for d in "${DISKARRAY[@]}"; do
+        echo "Adding BIOS boot partition to $d"
+        echo -e "n\n2\n34\n2047\nt\n2\n4\nw\n" | fdisk $d #&>/dev/null
+        echo "Installing GRUB boot block on $d"
+        grub-install --modules=zfs $d #&>/dev/null
+    done
+}
+
+# Minimal workable GRUB2 from ZFS (uses serial port)
+create_grub_config() {
+    [[ -n ${INSTALL_GRUB_PLEASE} ]] || return
+    [[ -f /data/boot/grub.cfg ]] && return
+    mkdir -p /data/boot
+    ln -s /data/boot /boot
+    cat >/data/boot/grub.cfg <<'EOF'
+serial --unit=0 --speed=115200
+terminal_input serial
+terminal_output serial
+
+set default 0
+set timeout 10
+set color_normal=white/black
+set color_highlight=black/white
+
+search --set=poolname --label data
+
+menuentry "Boot CeranaOS from Disk" {
+  linux ($poolname)/platform/@//current/bzImage loglevel=4 console=ttyS0
+  initrd ($poolname)/platform/@//current/initrd
+}
+EOF
+}
+
 # Create the zpool using user input
 configure_pool() {
 
@@ -160,11 +196,14 @@ configure_pool() {
     # Be sure the drives are starting fresh. Zero out any existing partition
     for d in "${DISKARRAY[@]}"; do
         echo "Clearing $d"
-        sgdisk -Z $d >/dev/null 2>&1
+        sgdisk -Z $d &>/dev/null
     done
 
     # Block until Linux figures itself out w.r.t. paritions
     udevadm settle
+
+    # Flag for installing GRUB onto disks
+    INSTALL_GRUB_PLEASE=1
 
     # Now create the zpool
     zpool create -f \
@@ -204,6 +243,12 @@ fi
 # Check to make sure our required filesystems are on the zpool, and create
 # them if any aren't.
 configure_filesystems
+
+# Add a grub config if we don't have one
+create_grub_config
+
+# Install GRUB if this is a fresh pool
+install_grub
 
 # Attempt to read in any on-disk config from a previous boot and update with info from kernel command line
 if [[ -f /data/config/cerana-bootcfg ]]; then
