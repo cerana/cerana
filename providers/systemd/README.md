@@ -340,7 +340,9 @@ Stop stops a running service.
 ```go
 type UnitStatus struct {
 	dbus.UnitStatus
-	Uptime time.Duration
+	Uptime             time.Duration          `json:"uptime"`
+	UnitProperties     map[string]interface{} `json:"unitProperties"`
+	UnitTypeProperties map[string]interface{} `json:"unitTypeProperties"`
 }
 ```
 
