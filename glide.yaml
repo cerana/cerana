@@ -3,11 +3,11 @@ import:
 - package: github.com/Sirupsen/logrus
   version: ^0.10.0
 - package: github.com/coreos/etcd
-  version: ~2.1.1
+  version: v2.1.1
   subpackages:
   - error
 - package: github.com/coreos/go-etcd
-  version: ~2.1.1
+  version: v2.0.0
   subpackages:
   - etcd
 - package: github.com/coreos/go-systemd
@@ -47,3 +47,4 @@ import:
 - package: github.com/tylerb/graceful
   version: ^1.2.8
 - package: gopkg.in/tomb.v2
+- package: github.com/krolaw/dhcp4
