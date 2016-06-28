@@ -114,9 +114,8 @@ function query_ip() {
     local prefix
 
     answer=${CERANA_MGMT_IP}
-
-    ip=$(awk -F/ '{print $1}' <<<$answer)
-    prefix=$(awk -F/ '{print $2}' <<<$answer)
+    ip=${answer%/*}
+    prefix=${answer#*/}
 
     while [[ ! $answer ]] \
         || [[ ! $prefix ]] \
@@ -127,13 +126,11 @@ function query_ip() {
         echo
         echo -n "> "
         read answer
-
-        ip=$(awk -F/ '{print $1}' <<<$answer)
-        prefix=$(awk -F/ '{print $2}' <<<$answer)
+        ip=${answer%/*}
+        prefix=${answer#*/}
     done
 
-    CERANA_IP=$ip
-    CERANA_NETMASK=$prefix
+    CERANA_MGMT_IP=$answer
 }
 
 function query_gateway() {
@@ -158,7 +155,15 @@ function config_mgmt_dhcp() {
     [[ -n ${CERANA_MGMT_MAC} ]] \
         && [[ -n ${MAC_TO_IFACE[${CERANA_MGMT_MAC}]} ]] \
         || return 1
-    echo -e "[Link]\nMACAddress=${CERANA_MGMT_MAC}\n\n[Network]\nDHCP=yes" >/data/config/network/mgmt.network
+    echo -e "[Match]\nMACAddress=${CERANA_MGMT_MAC}\n\n[Network]\nDHCP=yes" >/data/config/network/mgmt.network
+}
+
+function config_mgmt_static() {
+    [[ -n ${CERANA_MGMT_MAC} ]] \
+        && [[ -n ${MAC_TO_IFACE[${CERANA_MGMT_MAC}]} ]] \
+        && [[ -n ${CERANA_MGMT_IP} ]] \
+        || return 1
+    echo -e "[Match]\nMACAddress=${CERANA_MGMT_MAC}\n\n[Network]\nAddress=${CERANA_MGMT_IP}" >/data/config/network/mgmt.network
 }
 
 function drop_consul_config() {
@@ -198,6 +203,9 @@ if [[ -n $CERANA_CLUSTER_BOOTSTRAP ]]; then
         || query_interface
     # 2. What IP range are we using?
     query_ip
+    #3. Set the IP statically
+    config_mgmt_static
+
     drop_consul_config bootstrap \
         || fail_exit $? "Cluster configuration failed"
 
