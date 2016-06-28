@@ -283,4 +283,4 @@ mkdir /data/services/cerana.target.wants
 systemctl daemon-reload
 
 # start up the full cerana target
-systemctl start cerana.target
+systemctl --no-block start cerana.target
