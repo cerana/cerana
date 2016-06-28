@@ -130,6 +130,8 @@ install_grub() {
         echo "Adding BIOS boot partition to $d"
         echo -e "n\n2\n34\n2047\nt\n2\n4\nw\n" | fdisk $d #&>/dev/null
         echo "Installing GRUB boot block on $d"
+        # Currently doesn't work when run here, but works when run after system finishes booting.
+        # Not sure why.
         grub-install --modules=zfs $d #&>/dev/null
     done
 }
@@ -137,10 +139,10 @@ install_grub() {
 # Minimal workable GRUB2 from ZFS (uses serial port)
 create_grub_config() {
     [[ -n ${INSTALL_GRUB_PLEASE} ]] || return
-    [[ -f /data/boot/grub.cfg ]] && return
-    mkdir -p /data/boot
+    [[ -f /data/boot/grub/grub.cfg ]] && return
+    mkdir -p /data/boot/grub
     ln -s /data/boot /boot
-    cat >/data/boot/grub.cfg <<'EOF'
+    cat >/data/boot/grub/grub.cfg <<'EOF'
 serial --unit=0 --speed=115200
 terminal_input serial
 terminal_output serial
