@@ -271,5 +271,16 @@ ln -s /data/config/network /run/systemd/network
 mkdir /etc/systemd-mutable
 ln -s /data/services /etc/systemd-mutable/system
 
+# create the mutable cerana.target.wants
+mkdir /data/services/cerana.target.wants
+
+#if we're a cluster node, create this symlink for layer 2 services
+[[ -n $CERANA_CLUSTER_BOOTSTRAP ]] \
+    || [[ -n $CERANA_CLUSTER_IPS ]] \
+    && ln -s /etc/systemd/system/ceranaLayer2.target /data/services/cerana.target.wants/
+
 # load in unit files that already exist in the pool
 systemctl daemon-reload
+
+# start up the full cerana target
+systemctl start cerana.target

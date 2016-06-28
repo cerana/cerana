@@ -193,6 +193,15 @@ function drop_consul_config() {
     echo '}' >>$CONFIG
 }
 
+export_config () {
+    declare | grep ^CERANA >/data/config/cerana-bootcfg
+}
+
+enable_layer2 () {
+    mkdir -p /data/services/cerana.target.wants/
+    ln -s /etc/systemd/system/ceranaLayer2.target /data/services/cerana.target.wants/
+}
+
 ## Main
 collect_addresses
 
@@ -209,6 +218,11 @@ if [[ -n $CERANA_CLUSTER_BOOTSTRAP ]]; then
     drop_consul_config bootstrap \
         || fail_exit $? "Cluster configuration failed"
 
+    # remove the bootstrap flag for future boots
+    unset CERANA_CLUSTER_BOOTSTRAP
+
+    export_config
+
 elif [[ -n $CERANA_CLUSTER_IPS ]]; then
     # We're joining a layer 2 cluster
     # We should have been told which MAC to use for DHCP and which IPs to pass to consul
@@ -216,6 +230,7 @@ elif [[ -n $CERANA_CLUSTER_IPS ]]; then
         || fail_exit $? "Cluster join expects a working mgmt interface to be specified"
     drop_consul_config join \
         || fail_exit $? "Cluster joining failed"
+    export_config
 
 else
     # We're a standalone node
@@ -225,13 +240,6 @@ else
 
     #FIXME Only do DHCP for now. Static IP for standalone will come later.
     query_interface
-
+    export_config
+    config_mgmt_dhcp
 fi
-
-# remove the bootstrap flag for future boots
-unset CERANA_CLUSTER_BOOTSTRAP
-
-declare | grep ^CERANA >/data/config/cerana-bootcfg
-config_mgmt_dhcp && exit 0
-
-fail_exit 1 "Reached the end of the script without configuring any networking"
