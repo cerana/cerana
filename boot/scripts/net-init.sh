@@ -140,7 +140,7 @@ function drop_consul_config() {
             echo '"start_join": [' >>$CONFIG
             for server in ${CERANA_CLUSTER_IPS//,/ }; do
                 [[ -n $comma ]] && echo -n ', ' >>$CONFIG || comma=1 # json is terrible
-                echo "\"server\": \"$server\"" >>$CONFIG
+                echo "\"$server\"" >>$CONFIG
             done
             echo '],' >>$CONFIG
             ;;
