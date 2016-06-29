@@ -1,6 +1,6 @@
 DESTDIR=/does/not/exist
 
-.PHONY: install install-scripts install-bins
+.PHONY: install install-scripts install-bins lint
 
 install: install-scripts install-bins
 
@@ -13,3 +13,7 @@ install-bins: bin/*
 	mkdir -p $(DESTDIR)/bin/
 	cp $? $(DESTDIR)/bin/
 	chmod +x $(DESTDIR)/bin/*
+
+lint:
+	shfmt -i 4 -w scripts/*
+	shellcheck scripts/*
