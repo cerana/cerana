@@ -69,6 +69,8 @@ function is_valid_prefix() {
 function query_interface() {
     local response
     response="not-an-interface"
+    # If there's only one interface, use it. No need to prompt user.
+    [[ "1" == "${#IFACE_TO_MAC[@]}" ]] && response="${!IFACE_TO_MAC[*]}"
     echo
     echo "Detected interfaces:"
     echo
