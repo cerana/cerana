@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# shellcheck disable=SC1091
 source /tmp/cerana-bootcfg
 [[ -n $CERANA_RESCUE ]] && exit 0
 
@@ -20,10 +21,10 @@ configure_filesystems() {
 
     # Create base ZFS filesystems and set their properies
     for fs in $FILESYSTEMS; do
-        zfs list $ZPOOL/$fs >/dev/null 2>&1 || zfs create $ZPOOL/$fs
+        zfs list "$ZPOOL/$fs" >/dev/null 2>&1 || zfs create "$ZPOOL/$fs"
     done
 
-    [[ "off" = $(zfs get compression -Ho value $ZPOOL) ]] && zfs set compression=lz4 $ZPOOL || true
+    if [[ "off" = $(zfs get compression -Ho value $ZPOOL) ]]; then zfs set compression=lz4 $ZPOOL; fi
 }
 
 # Gather a list of disk devices into an array
@@ -34,11 +35,11 @@ get_disklist() {
     # disk sdb     16G VBOX HARDDISK
     # disk sdc     45G VBOX HARDDISK
     # disk sdd     10G VBOX HARDDISK
-    DISKLIST=`lsblk --ascii --noheadings \
-        --output type,name,size,model --nodeps | grep ^disk`
+    DISKLIST=$(lsblk --ascii --noheadings \
+        --output type,name,size,model --nodeps | grep ^disk)
 
     # Scrape the above into a list of just device nodes
-    DISKDEVS=`echo "$DISKLIST" | awk '{print "/dev/"$2}'`
+    DISKDEVS=$(echo "$DISKLIST" | awk '{print "/dev/"$2}')
 
     readarray DISKARRAY <<<"$DISKDEVS"
 }
@@ -97,7 +98,7 @@ prompt_user() {
     answer=${CERANA_ZFS_CONFIG}
     while [[ ! $answer ]]; do
         echo -n "Selection: "
-        read answer
+        read -r answer
     done
 
     case $answer in
@@ -126,13 +127,13 @@ prompt_user() {
 # add a partition for and install GRUB2 to pool disks
 install_grub() {
     [[ -n ${INSTALL_GRUB_PLEASE} ]] || return
-    for d in "${DISKARRAY[@]}"; do
-        echo "Adding BIOS boot partition to $d"
-        echo -e "n\n2\n34\n2047\nt\n2\n4\nw\n" | fdisk $d #&>/dev/null
-        echo "Installing GRUB boot block on $d"
+    for disk in "${DISKARRAY[@]}"; do
+        echo "Adding BIOS boot partition to $disk"
+        echo -e "n\n2\n34\n2047\nt\n2\n4\nw\n" | fdisk "$disk" #&>/dev/null
+        echo "Installing GRUB boot block on $disk"
         # Currently doesn't work when run here, but works when run after system finishes booting.
         # Not sure why.
-        grub-install --modules=zfs $d #&>/dev/null
+        grub-install --modules=zfs "$disk" #&>/dev/null
     done
 }
 
@@ -196,9 +197,9 @@ configure_pool() {
     fi
 
     # Be sure the drives are starting fresh. Zero out any existing partition
-    for d in "${DISKARRAY[@]}"; do
-        echo "Clearing $d"
-        sgdisk -Z $d &>/dev/null
+    for disk in "${DISKARRAY[@]}"; do
+        echo "Clearing $disk"
+        sgdisk -Z "$disk" &>/dev/null
     done
 
     # Block until Linux figures itself out w.r.t. paritions
@@ -208,6 +209,7 @@ configure_pool() {
     INSTALL_GRUB_PLEASE=1
 
     # Now create the zpool
+    # shellcheck disable=SC2086
     zpool create -f \
         -o cachefile=none \
         $ZPOOL $ZPOOLARGS
@@ -255,10 +257,12 @@ install_grub
 # Attempt to read in any on-disk config from a previous boot and update with info from kernel command line
 if [[ -f /data/config/cerana-bootcfg ]]; then
     cp /data/config/cerana-bootcfg /data/config/cerana-previous-bootcfg
+    # shellcheck disable=SC1091
     source /data/config/cerana-bootcfg
 fi
 
 # Store current config (kernel command line arguments always override what was found on disk)
+# shellcheck disable=SC1091
 source /tmp/cerana-bootcfg
 declare | grep ^CERANA >/data/config/cerana-bootcfg
 rm /tmp/cerana-bootcfg

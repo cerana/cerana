@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# shellcheck disable=SC1091
 source /tmp/cerana-bootcfg
 
 # don't configure networking in rescue mode
@@ -12,7 +13,7 @@ function collect_addresses() {
     local name address
     for device in /sys/class/net/e*; do
         name=${device#/sys/class/net/}
-        read address <${device}/address
+        read -r address <"${device}/address"
         MAC_TO_IFACE[$address]=$name
         IFACE_TO_MAC[$name]=$address
     done
@@ -26,21 +27,7 @@ function fail_exit() {
     return=$1
     shift
     echo "$*" >&2
-    exit $return
-}
-
-## in_array ARRAY ITEM
-##
-## Tests whether ITEM is contained inside array ARRAY
-function in_array() {
-    local haystack=${1}[@]
-    local needle=${2}
-    for i in ${!haystack}; do
-        if [[ ${i} == ${needle} ]]; then
-            return 0
-        fi
-    done
-    return 1
+    exit "$return"
 }
 
 ## is_valid_ip <ip address>
@@ -79,31 +66,21 @@ function is_valid_prefix() {
     return $stat
 }
 
-## iface_list
-##
-## Generates an array IFACES with a list of physical ethernet interfaces
-function iface_list() {
-    pushd .
-    cd /sys/class/net
-    IFACES=(e*)
-    popd
-}
-
 function query_interface() {
     local response
     response="not-an-interface"
     echo
     echo "Detected interfaces:"
     echo
-    for iface in ${!IFACE_TO_MAC[@]}; do
+    for iface in "${!IFACE_TO_MAC[@]}"; do
         echo "$iface		${IFACE_TO_MAC[$iface]}"
     done
 
-    while [[ -z ${IFACE_TO_MAC[$response]} ]]; do
+    while [[ -z "${IFACE_TO_MAC[$response]}" ]]; do
         echo
         echo "Please choose an interface for management network DHCP."
         echo -n "Selection: "
-        read response
+        read -r response
     done
     CERANA_MGMT_MAC=${IFACE_TO_MAC[$response]}
 }
@@ -117,38 +94,20 @@ function query_ip() {
     ip=${answer%/*}
     prefix=${answer#*/}
 
-    while [[ ! $answer ]] \
-        || [[ ! $prefix ]] \
-        || ! is_valid_ip $ip \
-        || ! is_valid_prefix $prefix; do
+    while [[ -z "$answer" ]] \
+        || [[ -z "$prefix" ]] \
+        || ! is_valid_ip "$ip" \
+        || ! is_valid_prefix "$prefix"; do
         echo
         echo "Please specify the IP address and netmask of this node in the form a.b.c.d/n :"
         echo
         echo -n "> "
-        read answer
+        read -r answer
         ip=${answer%/*}
         prefix=${answer#*/}
     done
 
     CERANA_MGMT_IP=$answer
-}
-
-function query_gateway() {
-    local answer
-
-    echo
-    echo "Please specify the default gateway IP:"
-    echo
-    echo -n "> "
-    read answer
-
-    while [ ! $answer ] || ! is_valid_ip $answer; do
-        echo "You must provide a valid IP address!"
-        echo -n "> "
-        read answer
-    done
-
-    CERANA_GW=$answer
 }
 
 function config_mgmt_dhcp() {
@@ -193,11 +152,11 @@ function drop_consul_config() {
     echo '}' >>$CONFIG
 }
 
-export_config () {
+export_config() {
     declare | grep ^CERANA >/data/config/cerana-bootcfg
 }
 
-enable_layer2 () {
+enable_layer2() {
     mkdir -p /data/services/cerana.target.wants/
     ln -s /etc/systemd/system/ceranaLayer2.target /data/services/cerana.target.wants/
 }
