@@ -159,6 +159,11 @@ menuentry "Boot CeranaOS from Disk" {
   linux ($poolname)/platform/@//current/bzImage loglevel=4 console=ttyS0
   initrd ($poolname)/platform/@//current/initrd
 }
+
+menuentry "Boot CeranaOS Rescue Mode" {
+  linux ($poolname)/platform/@//current/bzImage loglevel=4 console=ttyS0 cerana.rescue
+  initrd ($poolname)/platform/@//current/initrd
+}
 EOF
 }
 
