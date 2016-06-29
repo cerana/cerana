@@ -184,9 +184,10 @@ if [[ -n $CERANA_CLUSTER_BOOTSTRAP ]]; then
 
 elif [[ -n $CERANA_CLUSTER_IPS ]]; then
     # We're joining a layer 2 cluster
-    # We should have been told which MAC to use for DHCP and which IPs to pass to consul
     config_mgmt_dhcp \
-        || fail_exit $? "Cluster join expects a working mgmt interface to be specified"
+        || { query_interface \
+            && query_ip \
+            && config_mgmt_static; }
     drop_consul_config join \
         || fail_exit $? "Cluster joining failed"
     export_config
