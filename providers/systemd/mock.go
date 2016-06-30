@@ -3,10 +3,14 @@ package systemd
 import (
 	"errors"
 	"net/url"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/provider"
 	"github.com/coreos/go-systemd/dbus"
+	"github.com/coreos/go-systemd/unit"
 )
 
 // MockSystemd is a mock version of the Systemd provider.
@@ -17,7 +21,7 @@ type MockSystemd struct {
 // MockSystemdData is the in-memory data structure for the MockSystemd.
 type MockSystemdData struct {
 	Statuses  map[string]UnitStatus
-	UnitFiles map[string]bool
+	UnitFiles map[string][]*unit.UnitOption
 }
 
 // NewMockSystemd creates a new MockSystemd.
@@ -25,7 +29,7 @@ func NewMockSystemd() *MockSystemd {
 	return &MockSystemd{
 		Data: &MockSystemdData{
 			Statuses:  make(map[string]UnitStatus),
-			UnitFiles: make(map[string]bool),
+			UnitFiles: make(map[string][]*unit.UnitOption),
 		},
 	}
 }
@@ -57,7 +61,7 @@ func (s *MockSystemd) Create(req *acomm.Request) (interface{}, *url.URL, error) 
 	if _, ok := s.Data.UnitFiles[args.Name]; ok {
 		return nil, nil, errors.New("unit file already exists")
 	}
-	s.Data.UnitFiles[args.Name] = true
+	s.Data.UnitFiles[args.Name] = args.UnitOptions
 	return nil, nil, nil
 }
 
@@ -91,12 +95,7 @@ func (s *MockSystemd) Enable(req *acomm.Request) (interface{}, *url.URL, error) 
 		return nil, nil, errors.New("No such file or directory")
 	}
 
-	s.Data.Statuses[args.Name] = UnitStatus{
-		UnitStatus: dbus.UnitStatus{
-			Name:      args.Name,
-			LoadState: "Loaded",
-		},
-	}
+	s.ManualEnable(args.Name)
 	return nil, nil, nil
 }
 
@@ -171,4 +170,63 @@ func (s *MockSystemd) Start(req *acomm.Request) (interface{}, *url.URL, error) {
 // Stop stops a mock service.
 func (s *MockSystemd) Stop(req *acomm.Request) (interface{}, *url.URL, error) {
 	return s.action(req)
+}
+
+func (s *MockSystemd) ClearData() {
+	s.Data = &MockSystemdData{
+		Statuses:  make(map[string]UnitStatus),
+		UnitFiles: make(map[string][]*unit.UnitOption),
+	}
+}
+
+func (s *MockSystemd) ManualCreate(args CreateArgs, enable bool) {
+	s.Data.UnitFiles[args.Name] = args.UnitOptions
+	if enable {
+		s.ManualEnable(args.Name)
+	}
+}
+
+func (s *MockSystemd) ManualEnable(name string) {
+	unit, ok := s.Data.UnitFiles[name]
+	if !ok {
+		return
+	}
+
+	s.Data.Statuses[name] = UnitStatus{
+		UnitStatus: dbus.UnitStatus{
+			Name:        name,
+			LoadState:   "Loaded",
+			ActiveState: "Active",
+		},
+		Uptime:             time.Minute,
+		UnitProperties:     make(map[string]interface{}),
+		UnitTypeProperties: make(map[string]interface{}),
+	}
+	env := make([]string, 0)
+	for _, unitOption := range unit {
+		key := unitOption.Name
+		var value interface{}
+		// since not everything is a string when looked up, do conversions of
+		// properties we know things care about
+		switch unitOption.Name {
+		case "ExecStart":
+			value = []interface{}{"", strings.Split(unitOption.Value, " ")}
+		case "User", "Group":
+			value, _ = strconv.ParseUint(unitOption.Value, 10, 64)
+		case "Description":
+			value = unitOption.Value
+			//s.Data.Statuses[name].Description = unitOption.Value
+			tmp := s.Data.Statuses[name]
+			tmp.Description = unitOption.Value
+			s.Data.Statuses[name] = tmp
+		case "Environment":
+			env = append(env, unitOption.Value)
+		default:
+			value = unitOption.Value
+		}
+		// fudge it here for simplicity
+		s.Data.Statuses[name].UnitProperties[key] = value
+		s.Data.Statuses[name].UnitTypeProperties[key] = value
+	}
+	s.Data.Statuses[name].UnitTypeProperties["Environment"] = env
 }

@@ -7,7 +7,6 @@ import (
 	"github.com/cerana/cerana/acomm"
 	healthp "github.com/cerana/cerana/providers/health"
 	"github.com/cerana/cerana/providers/systemd"
-	"github.com/coreos/go-systemd/dbus"
 	"github.com/pborman/uuid"
 )
 
@@ -52,15 +51,9 @@ func (s *health) TestUptime() {
 }
 
 func (s *health) addService() systemd.UnitStatus {
-	status := systemd.UnitStatus{
-		UnitStatus: dbus.UnitStatus{
-			Name:      uuid.New(),
-			LoadState: "Loaded",
-		},
-		Uptime: time.Minute,
-	}
-
-	s.systemd.Data.UnitFiles[status.Name] = true
-	s.systemd.Data.Statuses[status.Name] = status
-	return status
+	name := uuid.New()
+	s.systemd.ManualCreate(systemd.CreateArgs{
+		Name: name,
+	}, true)
+	return s.systemd.Data.Statuses[name]
 }

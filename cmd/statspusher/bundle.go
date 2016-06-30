@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -219,11 +220,13 @@ func (s *statsPusher) runHealthChecks(bundles []*clusterconf.Bundle) (map[uint64
 func extractBundles(units []systemd.UnitStatus) []uint64 {
 	dedupe := make(map[uint64]bool)
 	for _, unit := range units {
-		// bundleID:serviceID
-		parts := strings.Split(unit.Name, ":")
-		bundleID, err := strconv.ParseUint(parts[0], 10, 64)
-		if err == nil && len(parts) == 2 && uuid.Parse(parts[1]) != nil {
-			dedupe[bundleID] = true
+		// bundleID:serviceID.service
+		r, _ := regexp.Compile(`^(\d+):(.+)\.service$`)
+		parts := r.FindStringSubmatch(unit.Name)
+		if len(parts) == 3 && uuid.Parse(parts[2]) != nil {
+			if bundleID, err := strconv.ParseUint(parts[1], 10, 64); err == nil {
+				dedupe[bundleID] = true
+			}
 		}
 	}
 	ids := make([]uint64, 0, len(dedupe))

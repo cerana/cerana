@@ -158,6 +158,12 @@ func NewMockSystemd() *MockSystemd
 ```
 NewMockSystemd creates a new MockSystemd.
 
+#### func (*MockSystemd) ClearData
+
+```go
+func (s *MockSystemd) ClearData()
+```
+
 #### func (*MockSystemd) Create
 
 ```go
@@ -192,6 +198,18 @@ Get retrieves a mock service.
 func (s *MockSystemd) List(req *acomm.Request) (interface{}, *url.URL, error)
 ```
 List lists mock services.
+
+#### func (*MockSystemd) ManualCreate
+
+```go
+func (s *MockSystemd) ManualCreate(args CreateArgs, enable bool)
+```
+
+#### func (*MockSystemd) ManualEnable
+
+```go
+func (s *MockSystemd) ManualEnable(name string)
+```
 
 #### func (*MockSystemd) RegisterTasks
 
@@ -233,7 +251,7 @@ Stop stops a mock service.
 ```go
 type MockSystemdData struct {
 	Statuses  map[string]UnitStatus
-	UnitFiles map[string]bool
+	UnitFiles map[string][]*unit.UnitOption
 }
 ```
 
