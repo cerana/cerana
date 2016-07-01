@@ -116,7 +116,7 @@ function config_mgmt_dhcp() {
     [[ -n ${CERANA_MGMT_MAC} ]] \
         && [[ -n ${MAC_TO_IFACE[${CERANA_MGMT_MAC}]} ]] \
         || return 1
-    echo -e "[Match]\nMACAddress=${CERANA_MGMT_MAC}\n\n[Network]\nDHCP=yes" >/data/config/network/mgmt.network
+    echo -e "[Match]\nMACAddress=${CERANA_MGMT_MAC}\n\n[Network]\nDHCP=yes\n\n[DHCP]\nClientIdentifier=mac\n" >/data/config/network/mgmt.network
 }
 
 function config_mgmt_static() {
