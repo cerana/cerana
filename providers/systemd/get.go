@@ -81,8 +81,9 @@ func (s *Systemd) unitStatus(unit dbus.UnitStatus) (*UnitStatus, error) {
 	unitStatus.UnitTypeProperties = unitTypeProps
 
 	if unitStatus.ActiveState == "active" {
-		activeEnter := time.Unix(int64(unitStatus.UnitProperties["ActiveEnterTimestamp"].(uint64))/int64(time.Second/time.Microsecond), 0)
-		unitStatus.Uptime = time.Now().Sub(activeEnter)
+		activeEnterDur := time.Duration(unitStatus.UnitProperties["ActiveEnterTimestamp"].(uint64)) * time.Microsecond
+		activeEnterTs := time.Unix(int64(activeEnterDur.Seconds()), 0)
+		unitStatus.Uptime = time.Now().Sub(activeEnterTs)
 	}
 
 	return unitStatus, nil
