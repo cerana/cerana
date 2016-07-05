@@ -9,6 +9,7 @@ import (
 	"github.com/cerana/cerana/provider"
 	"github.com/cerana/cerana/providers/dhcp"
 	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 )
 
 func dieOnError(msg string, err error) {
@@ -26,13 +27,16 @@ func defaultNetwork() net.IPNet {
 func main() {
 	log.SetFormatter(&log.JSONFormatter{})
 
-	config := dhcp.NewConfig(nil, nil)
-	pflag.IP("gateway", nil, "default gateway")
-	pflag.Duration("lease-duration", 24*time.Hour, "default lease duration")
-	pflag.IPNet("network", defaultNetwork(), "network to manage dhcp addresses on")
-	pflag.StringSlice("dns-servers", nil, "dns servers")
-	pflag.Parse()
+	v := viper.New()
+	f := pflag.NewFlagSet("dhcp-provider", pflag.ExitOnError)
+	f.IP("gateway", nil, "default gateway")
+	f.Duration("lease-duration", 24*time.Hour, "default lease duration")
+	f.IPNet("network", defaultNetwork(), "network to manage dhcp addresses on")
+	f.StringSlice("dns-servers", nil, "dns servers")
 
+	config := dhcp.NewConfig(f, v)
+
+	dieOnError("error parsing args", f.Parse(os.Args))
 	dieOnError("error loading config", config.LoadConfig())
 	dieOnError("error setting up logging", config.SetupLogging())
 
