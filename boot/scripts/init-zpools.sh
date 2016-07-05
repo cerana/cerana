@@ -126,19 +126,19 @@ prompt_user() {
 
 # add a partition for and install GRUB2 to pool disks
 install_grub() {
-    local major minor
+    local node major minor
     [[ -n ${INSTALL_GRUB_PLEASE} ]] || return
     # shellcheck disable=SC2068
     for disk in ${DISKARRAY[@]}; do
         echo "Adding BIOS boot partition to $disk"
-        # /dev isn't mounted yet time for mknod!
-        disk=${disk#/dev}
-        IFS=: read -r major minor <"/sys/block/$disk/dev"
-        mknod "$disk" b "$major" "$minor"
-        echo -e "n\n2\n34\n2047\nt\n2\n4\nw\n" | fdisk "$disk" #&>/dev/null
+        # /dev isn't mounted yet (?!) time for mknod!
+        node=${disk#/dev}
+        IFS=: read -r major minor <"/sys/block/$node/dev"
+        mknod "$node" b "$major" "$minor"
+        echo -e "n\n2\n34\n2047\nt\n2\n4\nw\n" | fdisk "$node" &>/dev/null
         echo "Installing GRUB boot block on $disk"
-        grub-install --modules=zfs "$disk" #&>/dev/null
-        rm "$disk"
+        grub-install --modules=zfs "$node" &>/dev/null
+        rm "$node"
     done
 }
 
@@ -207,7 +207,8 @@ configure_pool() {
     fi
 
     # Be sure the drives are starting fresh. Zero out any existing partition
-    for disk in "${DISKARRAY[@]}"; do
+    # shellcheck disable=SC2068
+    for disk in ${DISKARRAY[@]}; do
         echo "Clearing $disk"
         sgdisk -Z "$disk" &>/dev/null
     done
@@ -286,7 +287,7 @@ mkdir /etc/systemd-mutable
 ln -s /data/services /etc/systemd-mutable/system
 
 # create the mutable cerana.target.wants
-mkdir /data/services/cerana.target.wants
+mkdir -p /data/services/cerana.target.wants
 
 #if we're a cluster node, create this symlink for layer 2 services
 [[ -n $CERANA_CLUSTER_BOOTSTRAP ]] \
