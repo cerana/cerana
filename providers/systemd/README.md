@@ -163,6 +163,7 @@ NewMockSystemd creates a new MockSystemd.
 ```go
 func (s *MockSystemd) ClearData()
 ```
+ClearData clears all data out of the mock provider.
 
 #### func (*MockSystemd) Create
 
@@ -204,18 +205,21 @@ List lists mock services.
 ```go
 func (s *MockSystemd) ManualCreate(args CreateArgs, enable bool)
 ```
+ManualCreate directly creates a service in the mock data, optionally enabled.
 
 #### func (*MockSystemd) ManualEnable
 
 ```go
 func (s *MockSystemd) ManualEnable(name string)
 ```
+ManualEnable directly enables a service in the mock data.
 
 #### func (*MockSystemd) ManualGet
 
 ```go
 func (s *MockSystemd) ManualGet(name string) *UnitStatus
 ```
+ManualGet directly retrieves a services from the mock data.
 
 #### func (*MockSystemd) RegisterTasks
 

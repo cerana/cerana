@@ -100,6 +100,7 @@ RegisterTasks registers all of the provider task handlers with the server.
 ```go
 func (p *Provider) Remove(req *acomm.Request) (interface{}, *url.URL, error)
 ```
+Remove removes a service from the node.
 
 #### func (*Provider) Restart
 
@@ -117,6 +118,7 @@ type RemoveArgs struct {
 }
 ```
 
+RemoveArgs are arguments for the Remove task.
 
 #### type RestartArgs
 

@@ -8,11 +8,13 @@ import (
 	"github.com/cerana/cerana/providers/systemd"
 )
 
+// RemoveArgs are arguments for the Remove task.
 type RemoveArgs struct {
 	ID       string `json:"id"`
 	BundleID uint64 `json:"bundleID"`
 }
 
+// Remove removes a service from the node.
 func (p *Provider) Remove(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args RemoveArgs
 	if err := req.UnmarshalArgs(&args); err != nil {

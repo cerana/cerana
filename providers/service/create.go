@@ -58,7 +58,7 @@ func (p *Provider) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 
-	if err := p.executeRequests(requests); err != nil {
+	if err = p.executeRequests(requests); err != nil {
 		return nil, nil, err
 	}
 
