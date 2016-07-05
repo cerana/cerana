@@ -126,14 +126,19 @@ prompt_user() {
 
 # add a partition for and install GRUB2 to pool disks
 install_grub() {
+    local major minor
     [[ -n ${INSTALL_GRUB_PLEASE} ]] || return
-    for disk in "${DISKARRAY[@]}"; do
+    # shellcheck disable=SC2068
+    for disk in ${DISKARRAY[@]}; do
         echo "Adding BIOS boot partition to $disk"
+        # /dev isn't mounted yet time for mknod!
+        disk=${disk#/dev}
+        IFS=: read -r major minor <"/sys/block/$disk/dev"
+        mknod "$disk" b "$major" "$minor"
         echo -e "n\n2\n34\n2047\nt\n2\n4\nw\n" | fdisk "$disk" #&>/dev/null
         echo "Installing GRUB boot block on $disk"
-        # Currently doesn't work when run here, but works when run after system finishes booting.
-        # Not sure why.
         grub-install --modules=zfs "$disk" #&>/dev/null
+        rm "$disk"
     done
 }
 
