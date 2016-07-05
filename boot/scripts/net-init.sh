@@ -116,7 +116,10 @@ function config_mgmt_dhcp() {
     [[ -n ${CERANA_MGMT_MAC} ]] \
         && [[ -n ${MAC_TO_IFACE[${CERANA_MGMT_MAC}]} ]] \
         || return 1
-    echo -e "[Match]\nMACAddress=${CERANA_MGMT_MAC}\n\n[Network]\nDHCP=yes\n\n[DHCP]\nClientIdentifier=mac\n" >/data/config/network/mgmt.network
+    echo -e "[Match]\nMACAddress=${CERANA_MGMT_MAC}\n\n[Network]\nDHCP=yes\n" >/data/config/network/mgmt.network
+    # If we're on SmartOS, fall back to using a MAC based ClientIdentifier to avoid being blocked by antispoof
+    lshw | grep -iq joyent \
+        && echo -e "\n[DHCP]\nClientIdentifier=mac\n" >>/data/config/network/mgmt.network
 }
 
 function config_mgmt_static() {
