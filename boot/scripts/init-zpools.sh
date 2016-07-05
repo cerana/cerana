@@ -1,5 +1,8 @@
 #!/bin/bash
 
+ZFS_CMD=zfs
+ZPOOL_CMD=zpool
+
 # shellcheck disable=SC1091
 source /tmp/cerana-bootcfg
 [[ -n $CERANA_RESCUE ]] && exit 0
@@ -13,7 +16,7 @@ FILESYSTEMS="datasets datasets/ro datasets/rw running-clones config services log
 configure_filesystems() {
 
     # Do we have the zpool?
-    zpool list $ZPOOL >/dev/null 2>&1
+    ${ZPOOL_CMD} list $ZPOOL >/dev/null 2>&1
     if [[ $? -ne 0 ]]; then
         echo "ERROR: \"$ZPOOL\" pool is not present!"
         return 1
@@ -21,10 +24,10 @@ configure_filesystems() {
 
     # Create base ZFS filesystems and set their properies
     for fs in $FILESYSTEMS; do
-        zfs list "$ZPOOL/$fs" >/dev/null 2>&1 || zfs create "$ZPOOL/$fs"
+        ${ZFS_CMD} list "$ZPOOL/$fs" >/dev/null 2>&1 || ${ZFS_CMD} create "$ZPOOL/$fs"
     done
 
-    if [[ "off" = $(zfs get compression -Ho value $ZPOOL) ]]; then zfs set compression=lz4 $ZPOOL; fi
+    if [[ "off" = $(${ZFS_CMD} get compression -Ho value $ZPOOL) ]]; then ${ZFS_CMD} set compression=lz4 $ZPOOL; fi
 }
 
 # Gather a list of disk devices into an array
@@ -215,7 +218,7 @@ configure_pool() {
 
     # Now create the zpool
     # shellcheck disable=SC2086
-    zpool create -f \
+    ${ZPOOL_CMD} create -f \
         -o cachefile=none \
         $ZPOOL $ZPOOLARGS
 
@@ -235,7 +238,7 @@ configure_pool() {
 POOLTYPE=""
 
 udevadm settle
-zpool import -f $ZPOOL >/dev/null 2>&1
+${ZPOOL_CMD} import -f $ZPOOL >/dev/null 2>&1
 
 # We did not detect a zpool by the name of $ZPOOL, so start the process to
 # create one.
