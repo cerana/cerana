@@ -177,7 +177,7 @@ configure_pool() {
         # Execute shell for manual zpool config; then create zfs FSs
         echo "When finished, type \"exit\" or Ctrl-D"
         echo "The option \"-o cachefile=none\" MUST be specified"
-        PS1='zpool-config> ' /bin/bash
+        PS1='zpool-config> ' bash
         return
     fi
 
