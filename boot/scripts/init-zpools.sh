@@ -130,14 +130,16 @@ install_grub() {
     [[ -n ${INSTALL_GRUB_PLEASE} ]] || return
     # shellcheck disable=SC2068
     for disk in ${DISKARRAY[@]}; do
-        echo "Adding BIOS boot partition to $disk"
+        echo -n "Adding BIOS boot partition to $disk"
         # /dev isn't mounted yet (?!) time for mknod!
         node=${disk#/dev}
         IFS=: read -r major minor <"/sys/block/$node/dev"
         mknod "$node" b "$major" "$minor"
-        echo -e "n\n2\n34\n2047\nt\n2\n4\nw\n" | fdisk "$node" &>/dev/null
-        echo "Installing GRUB boot block on $disk"
-        grub-install --modules=zfs "$node" &>/dev/null
+        echo -e "n\n2\n34\n2047\nt\n2\n4\nw\n" | fdisk "$node" &>/dev/null \
+            && echo "  done"
+        echo -n "Installing GRUB boot block on $disk"
+        grub-install --modules=zfs "$node" &>/dev/null \
+            && echo "  done"
         rm "$node"
     done
 }
@@ -209,8 +211,9 @@ configure_pool() {
     # Be sure the drives are starting fresh. Zero out any existing partition
     # shellcheck disable=SC2068
     for disk in ${DISKARRAY[@]}; do
-        echo "Clearing $disk"
-        sgdisk -Z "$disk" &>/dev/null
+        echo -n "Clearing $disk"
+        sgdisk -Z "$disk" &>/dev/null \
+            && echo "  done"
     done
 
     # Block until Linux figures itself out w.r.t. paritions
