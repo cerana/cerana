@@ -119,7 +119,7 @@ function config_mgmt_dhcp() {
     echo -e "[Match]\nMACAddress=${CERANA_MGMT_MAC}\n\n[Network]\nDHCP=yes\n" >/data/config/network/mgmt.network
     # If we're on SmartOS, fall back to using a MAC based ClientIdentifier to avoid being blocked by antispoof
     lshw | grep -iq joyent \
-        && echo -e "\n[DHCP]\nClientIdentifier=mac\n" >>/data/config/network/mgmt.network \
+        && echo -e "\n[DHCP]\nClientIdentifier=mac\n" >>/data/config/network/mgmt.network
     # If grep fails we still want to return true otherwise the service can fail
     true
 }
