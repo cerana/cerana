@@ -173,6 +173,7 @@ func (s *MockSystemd) Stop(req *acomm.Request) (interface{}, *url.URL, error) {
 	return s.action(req)
 }
 
+// ClearData clears all data out of the mock provider.
 func (s *MockSystemd) ClearData() {
 	s.Data = &MockSystemdData{
 		Statuses:  make(map[string]UnitStatus),
@@ -180,6 +181,7 @@ func (s *MockSystemd) ClearData() {
 	}
 }
 
+// ManualCreate directly creates a service in the mock data, optionally enabled.
 func (s *MockSystemd) ManualCreate(args CreateArgs, enable bool) {
 	s.Data.UnitFiles[args.Name] = args.UnitOptions
 	if enable {
@@ -187,6 +189,7 @@ func (s *MockSystemd) ManualCreate(args CreateArgs, enable bool) {
 	}
 }
 
+// ManualEnable directly enables a service in the mock data.
 func (s *MockSystemd) ManualEnable(name string) {
 	unit, ok := s.Data.UnitFiles[name]
 	if !ok {
@@ -203,7 +206,7 @@ func (s *MockSystemd) ManualEnable(name string) {
 		UnitProperties:     make(map[string]interface{}),
 		UnitTypeProperties: make(map[string]interface{}),
 	}
-	env := make([]string, 0)
+	var env []string
 	for _, unitOption := range unit {
 		key := unitOption.Name
 		var value interface{}
@@ -232,6 +235,7 @@ func (s *MockSystemd) ManualEnable(name string) {
 	s.Data.Statuses[name].UnitTypeProperties["Environment"] = env
 }
 
+// ManualGet directly retrieves a services from the mock data.
 func (s *MockSystemd) ManualGet(name string) *UnitStatus {
 	u, ok := s.Data.Statuses[name]
 	if ok {

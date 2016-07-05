@@ -77,9 +77,8 @@ func (s *Systemd) unitStatus(unit dbus.UnitStatus) (*UnitStatus, error) {
 	unitTypeProps, err := s.dconn.GetUnitTypeProperties(unit.Name, unitType)
 	if err != nil && !strings.Contains(err.Error(), "Unknown interface") {
 		return nil, err
-	} else {
-		unitStatus.UnitTypeProperties = unitTypeProps
 	}
+	unitStatus.UnitTypeProperties = unitTypeProps
 
 	if unitStatus.ActiveState == "active" {
 		activeEnter := time.Unix(int64(unitStatus.UnitProperties["ActiveEnterTimestamp"].(uint64))/int64(time.Second/time.Microsecond), 0)
