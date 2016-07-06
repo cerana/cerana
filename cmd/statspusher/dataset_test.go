@@ -11,28 +11,20 @@ import (
 
 func (s *StatsPusher) TestGetDatasets() {
 	tests := []struct {
-		desc   string
-		known  []string
-		local  []string
-		result []string
+		desc     string
+		datasets []string
+		result   []string
 	}{
-		{"empty", []string{}, []string{}, []string{}},
-		{"known only", []string{"foo"}, []string{}, []string{}},
-		{"local only", []string{}, []string{"foo"}, []string{}},
-		{"both, single", []string{"foo"}, []string{"foo"}, []string{"foo"}},
-		{"extra local", []string{"foo"}, []string{"foo", "bar"}, []string{"foo"}},
-		{"extra known", []string{"foo", "bar"}, []string{"foo"}, []string{"foo"}},
-		{"both, multiple", []string{"foo", "bar"}, []string{"foo", "bar"}, []string{"foo", "bar"}},
+		{"empty", []string{}, []string{}},
+		{"one", []string{"asdf"}, []string{"asdf"}},
+		{"base stripping", []string{"base/asdf"}, []string{"asdf"}},
+		{"base stripping", []string{"foobar", "foobar/asdf"}, []string{"asdf"}},
 	}
 
 	for _, test := range tests {
 		s.zfs.Data.Datasets = make(map[string]*zfsp.Dataset)
-		for _, name := range test.local {
+		for _, name := range test.datasets {
 			s.zfs.Data.Datasets[name] = &zfsp.Dataset{Name: name, Properties: &zfs.DatasetProperties{Type: "volume"}}
-		}
-		s.clusterConf.Data.Datasets = make(map[string]*clusterconf.Dataset)
-		for _, id := range test.known {
-			s.clusterConf.Data.Datasets[id] = &clusterconf.Dataset{DatasetConf: clusterconf.DatasetConf{ID: id}}
 		}
 		datasets, err := s.statsPusher.getDatasets()
 		if !s.NoError(err, test.desc) {

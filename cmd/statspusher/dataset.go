@@ -3,7 +3,7 @@ package main
 import (
 	"errors"
 	"net"
-	"net/url"
+	"path/filepath"
 
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/providers/clusterconf"
@@ -25,53 +25,52 @@ func (s *statsPusher) datasetHeartbeats() error {
 }
 
 func (s *statsPusher) getDatasets() ([]string, error) {
-	requests := map[string]struct {
-		task     string
-		url      *url.URL
-		respData interface{}
-	}{
-		"local": {task: "zfs-list", url: s.config.nodeDataURL(), respData: &zfs.ListResult{}},
-		"known": {task: "list-datasets", url: s.config.clusterDataURL(), respData: &clusterconf.DatasetListResult{}},
+	ch := make(chan *acomm.Response, 1)
+	defer close(ch)
+	rh := func(_ *acomm.Request, resp *acomm.Response) {
+		ch <- resp
+	}
+	req, err := acomm.NewRequest(acomm.RequestOptions{
+		Task:         "zfs-list",
+		ResponseHook: s.tracker.URL(),
+		Args: zfs.ListArgs{
+			Name: s.config.datasetDir(),
+		},
+		SuccessHandler: rh,
+		ErrorHandler:   rh,
+	})
+	if err != nil {
+		return nil, err
 	}
 
-	multiRequest := acomm.NewMultiRequest(s.tracker, s.config.requestTimeout())
-	for name, args := range requests {
-		req, err := acomm.NewRequest(acomm.RequestOptions{Task: args.task})
-		if err != nil {
-			return nil, err
-		}
-		if err := multiRequest.AddRequest(name, req); err != nil {
-			return nil, err
-		}
-		if err := acomm.Send(args.url, req); err != nil {
-			multiRequest.RemoveRequest(req)
-			return nil, err
-		}
+	if err := s.tracker.TrackRequest(req, s.config.requestTimeout()); err != nil {
+		return nil, err
+	}
+	if err := acomm.Send(s.config.nodeDataURL(), req); err != nil {
+		_ = s.tracker.RemoveRequest(req)
+		return nil, err
 	}
 
-	responses := multiRequest.Responses()
-	for name, args := range requests {
-		resp := responses[name]
-		if resp.Error != nil {
-			return nil, resp.Error
-		}
-		if err := resp.UnmarshalResult(args.respData); err != nil {
-			return nil, err
-		}
+	resp := <-ch
+	if resp.Error != nil {
+		return nil, resp.Error
 	}
-	localDatasets := requests["local"].respData.(*zfs.ListResult).Datasets
-	knownDatasets := requests["known"].respData.(*clusterconf.DatasetListResult).Datasets
 
-	datasets := make([]string, 0, len(localDatasets))
-	for _, local := range localDatasets {
-		for _, known := range knownDatasets {
-			if known.ID == local.Name {
-				datasets = append(datasets, local.Name)
-				break
-			}
-		}
+	var listResult zfs.ListResult
+	if err := resp.UnmarshalResult(&listResult); err != nil {
+		return nil, err
 	}
-	return datasets, nil
+
+	// extract just the dataset ids and remove the base directory
+	datasetIDs := make([]string, 0, len(listResult.Datasets))
+	for _, dataset := range listResult.Datasets {
+		if s.config.datasetDir() == dataset.Name {
+			continue
+		}
+		datasetIDs = append(datasetIDs, filepath.Base(dataset.Name))
+	}
+
+	return datasetIDs, nil
 }
 
 func (s *statsPusher) getIP() (net.IP, error) {

@@ -110,17 +110,20 @@ func (s *StatsPusher) TestValidate() {
 		datasetInterval string
 		bundleInterval  string
 		nodeInterval    string
+		datasetDir      string
 		expectedErr     string
 	}{
-		{"valid", u, u, "5s", "4s", "3s", "2s", ""},
-		{"missing nodeDataURL", "", u, "5s", "4s", "3s", "2s", "missing nodeDataURL"},
-		{"invalud nodeDataURL", "asdf", u, "5s", "4s", "3s", "2s", "invalid nodeDataURL"},
-		{"missing clusterDataURL", u, "", "5s", "4s", "3s", "2s", "missing clusterDataURL"},
-		{"invalud clusterDataURL", u, "asdf", "5s", "4s", "3s", "2s", "invalid clusterDataURL"},
-		{"invalid request timeout", u, u, "0", "4s", "3s", "2s", "request timeout must be > 0"},
-		{"invalid dataset interval", u, u, "5s", "0", "3s", "2s", "dataset interval must be > 0"},
-		{"invalid bundle interval", u, u, "5s", "4s", "0", "2s", "bundle interval must be > 0"},
-		{"invalid node interval", u, u, "5s", "4s", "3s", "0", "node interval must be > 0"},
+		{"valid", u, u, "5s", "4s", "3s", "2s", "foobar", ""},
+		{"missing nodeDataURL", "", u, "5s", "4s", "3s", "2s", "foobar", "missing nodeDataURL"},
+		{"invalud nodeDataURL", "asdf", u, "5s", "4s", "3s", "2s", "foobar", "invalid nodeDataURL"},
+		{"missing clusterDataURL", u, "", "5s", "4s", "3s", "2s", "foobar", "missing clusterDataURL"},
+		{"invalud clusterDataURL", u, "asdf", "5s", "4s", "3s", "2s", "foobar", "invalid clusterDataURL"},
+		{"invalid request timeout", u, u, "0", "4s", "3s", "2s", "foobar", "request timeout must be > 0"},
+		{"invalid dataset interval", u, u, "5s", "0", "3s", "2s", "foobar", "dataset interval must be > 0"},
+		{"invalid bundle interval", u, u, "5s", "4s", "0", "2s", "foobar", "bundle interval must be > 0"},
+		{"invalid node interval", u, u, "5s", "4s", "3s", "0", "foobar", "node interval must be > 0"},
+		{"invalid node interval", u, u, "5s", "4s", "3s", "2s", "", "missing datasetDir"},
+		{"invalid node interval", u, u, "5s", "4s", "3s", "2s", "foobar", ""},
 	}
 
 	for _, test := range tests {
@@ -131,6 +134,7 @@ func (s *StatsPusher) TestValidate() {
 			DatasetInterval: test.datasetInterval,
 			BundleInterval:  test.bundleInterval,
 			NodeInterval:    test.nodeInterval,
+			DatasetDir:      test.datasetDir,
 		}
 
 		config, fs, v, _, err := newTestConfig(true, false, configData)
@@ -225,6 +229,9 @@ func newTestConfig(setFlags, writeConfig bool, configData *ConfigData) (*config,
 			return nil, nil, nil, configFile, err
 		}
 		if err := fs.Set("nodeInterval", configData.NodeInterval); err != nil {
+			return nil, nil, nil, configFile, err
+		}
+		if err := fs.Set("datasetDir", configData.DatasetDir); err != nil {
 			return nil, nil, nil, configFile, err
 		}
 	}
