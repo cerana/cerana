@@ -55,6 +55,7 @@ func (s *StatsPusher) SetupSuite() {
 		DatasetInterval: "4s",
 		BundleInterval:  "3s",
 		NodeInterval:    "2s",
+		DatasetDir:      "foobar",
 	}
 
 	s.config, _, _, s.configFile, err = newTestConfig(false, true, s.configData)
