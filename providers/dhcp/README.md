@@ -37,21 +37,21 @@ NewConfig creates a new instance of Config.
 #### func (*Config) DNSServers
 
 ```go
-func (c *Config) DNSServers() ([]net.IP, error)
+func (c *Config) DNSServers() []net.IP
 ```
 DNSServers returns the dns server addresses
 
 #### func (*Config) Gateway
 
 ```go
-func (c *Config) Gateway() (net.IP, error)
+func (c *Config) Gateway() net.IP
 ```
 Gateway returns the default gateway address
 
 #### func (*Config) LeaseDuration
 
 ```go
-func (c *Config) LeaseDuration() (time.Duration, error)
+func (c *Config) LeaseDuration() time.Duration
 ```
 LeaseDuration returns the client lease duration
 
@@ -65,7 +65,7 @@ LoadConfig loads and validates the KV provider config.
 #### func (*Config) Network
 
 ```go
-func (c *Config) Network() (*net.IPNet, error)
+func (c *Config) Network() *net.IPNet
 ```
 Network returns the ip range
 
@@ -106,6 +106,7 @@ type Lease struct {
 	Net      net.IPNet     `json:"net"`
 	Gateway  net.IP        `json:"gateway"`
 	Duration time.Duration `json:"duration"`
+	DNS      []net.IP      `json:"dns"`
 }
 ```
 
