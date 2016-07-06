@@ -158,6 +158,13 @@ func NewMockSystemd() *MockSystemd
 ```
 NewMockSystemd creates a new MockSystemd.
 
+#### func (*MockSystemd) ClearData
+
+```go
+func (s *MockSystemd) ClearData()
+```
+ClearData clears all data out of the mock provider.
+
 #### func (*MockSystemd) Create
 
 ```go
@@ -192,6 +199,27 @@ Get retrieves a mock service.
 func (s *MockSystemd) List(req *acomm.Request) (interface{}, *url.URL, error)
 ```
 List lists mock services.
+
+#### func (*MockSystemd) ManualCreate
+
+```go
+func (s *MockSystemd) ManualCreate(args CreateArgs, enable bool)
+```
+ManualCreate directly creates a service in the mock data, optionally enabled.
+
+#### func (*MockSystemd) ManualEnable
+
+```go
+func (s *MockSystemd) ManualEnable(name string)
+```
+ManualEnable directly enables a service in the mock data.
+
+#### func (*MockSystemd) ManualGet
+
+```go
+func (s *MockSystemd) ManualGet(name string) *UnitStatus
+```
+ManualGet directly retrieves a services from the mock data.
 
 #### func (*MockSystemd) RegisterTasks
 
@@ -233,7 +261,7 @@ Stop stops a mock service.
 ```go
 type MockSystemdData struct {
 	Statuses  map[string]UnitStatus
-	UnitFiles map[string]bool
+	UnitFiles map[string][]*unit.UnitOption
 }
 ```
 
@@ -340,7 +368,9 @@ Stop stops a running service.
 ```go
 type UnitStatus struct {
 	dbus.UnitStatus
-	Uptime time.Duration
+	Uptime             time.Duration          `json:"uptime"`
+	UnitProperties     map[string]interface{} `json:"unitProperties"`
+	UnitTypeProperties map[string]interface{} `json:"unitTypeProperties"`
 }
 ```
 
