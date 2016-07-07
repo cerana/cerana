@@ -1,3 +1,9 @@
 #!/bin/bash -x
 
-kexec -l /data/platform/current/bzImage --append="$(cat /proc/cmdline)" --initrd=/data/platform/current/initrd && kexec -e
+kexec \
+    -l /data/platform/current/bzImage \
+    --initrd=/data/platform/current/initrd \
+    --append="$(cat /proc/cmdline)" \
+    || exit 1
+sync
+kexec -e
