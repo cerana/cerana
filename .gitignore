@@ -8,6 +8,7 @@ cmd/kv-provider/kv-provider
 cmd/metrics-provider/metrics-provider
 cmd/namespace-provider/namespace-provider
 cmd/nvprint/nvprint
+cmd/service-provider/service-provider
 cmd/statspusher/statspusher
 cmd/systemd-provider/systemd-provider
 cmd/zfs-provider/zfs-provider
