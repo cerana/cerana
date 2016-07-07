@@ -18,11 +18,11 @@
 * The system will come up with only the Cerana Layer 1 services running.
 * There is no root password, type "root" as your username and you will be logged in.
 
-### SmartOS
+### Under SmartOS
 
 * Example configuration (update the nic_tag as appropriate for your system):
 ```json
-{
+
   "alias": "cerana-dev-node",
   "autoboot": "false",
   "brand": "kvm",
@@ -57,7 +57,7 @@
 * `vmadm start <uuid>`
 * `vmadm console <uuid>` to connect to the console
 
-### Virtualbox
+### Under Virtualbox (tested on OSX)
 
 * Install `socat`
 * New VM
@@ -82,4 +82,57 @@
 * Boot the VM
 * Connect to the serial console with (fix the port number to what you used above) e.g. `socat STDIO,rawer TCP4:localhost:12345`
 
-### Linux
+### Under Linux QEMU/KVM
+
+FIXME
+
+## Setting up a persistent local user account and persistent SSH host keys
+
+* The development builds of CeranaOS include a running `sshd`. To have those survive reboots:
+```
+rsync -av /etc/ssh/ /data/config/ssh/
+find /data/config/ssh/ -type l -delete
+cat >/data/services/persist-ssh-keys.service <<"EOF"
+[Unit]
+Before=sshd.service
+WantedBy=cerana.target
+Description=Restore SSH Host Keys
+
+[Service]
+
+ExecStart=/run/current-system/sw/bin/rsync -av /data/config/ssh/ /etc/ssh/
+Type=simple
+EOF
+ln -s ../persist-ssh-keys.service /data/services/cerana.target.wants/persist-ssh-keys.service
+```
+* Create a persistent `/home`
+```
+zfs create -o mountpoint=/home data/home
+```
+* Create a service to recreate your user at boot time (remember to adjust the username and password)
+```
+cat > /data/services/localusers.service <<"EOF"
+[Unit]
+Before=cerana.target
+WantedBy=cerana.target
+Description=Local User Setup
+
+[Service]
+Environment=USERNAME=myuser
+Environment=PASSWORD=password123
+Environment=UID=1000
+ExecStartPre=/bin/sh -c "/run/current-system/sw/bin/groupadd -g $UID $USERNAME"
+ExecStartPre=/bin/sh -c "/run/current-system/sw/bin/useradd -g $USERNAME -G wheel -u $UID -m -d /home/$USERNAME $USERNAME"
+ExecStart=/bin/sh -c "/run/current-system/sw/bin/chpasswd <<<$USERNAME:$PASSWORD"
+Type=simple
+EOF
+ln -s ../localusers.service /data/services/cerana.target.wants/localusers.service
+systemctl daemon-reload
+systemctl start localusers
+```
+
+## Rapid Updates for Develoment Machines
+
+Starting at build 83 we are shipping a pair of tools for doing rapid updates of a CeranaOS machine from our S3 bucket of development builds.
+You can run `cerana-update-dev-platform` to download the latest kernel and initrd files.
+Once that completes, you can run `fastreboot` which will use kexec to rapidly reboot using them. The VM will see the same /proc/cmdline as it did on the previous boot.
