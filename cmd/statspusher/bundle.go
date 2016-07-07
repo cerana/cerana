@@ -129,12 +129,10 @@ func (s *statsPusher) sendBundleHeartbeats(bundles map[uint64]map[string]error, 
 		req, err := acomm.NewRequest(acomm.RequestOptions{
 			Task: "bundle-heartbeat",
 			Args: clusterconf.BundleHeartbeatArgs{
-				ID:     bundle,
-				Serial: serial,
-				Node: clusterconf.BundleNode{
-					IP:           ip,
-					HealthErrors: healthErrors,
-				},
+				ID:           bundle,
+				Serial:       serial,
+				IP:           ip,
+				HealthErrors: healthErrors,
 			},
 		})
 		if err != nil {
