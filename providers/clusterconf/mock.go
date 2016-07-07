@@ -18,23 +18,25 @@ type MockClusterConf struct {
 
 // MockClusterData is the in-memory data structure for a MockClusterConf.
 type MockClusterData struct {
-	Services map[string]*Service
-	Bundles  map[uint64]*Bundle
-	Datasets map[string]*Dataset
-	Nodes    map[string]*Node
-	History  NodesHistory
-	Defaults *Defaults
+	Services  map[string]*Service
+	Bundles   map[uint64]*Bundle
+	Datasets  map[string]*Dataset
+	DatasetHB map[string]bool
+	Nodes     map[string]*Node
+	History   NodesHistory
+	Defaults  *Defaults
 }
 
 // NewMockClusterConf creates a new MockClusterConf.
 func NewMockClusterConf() *MockClusterConf {
 	return &MockClusterConf{
 		Data: &MockClusterData{
-			Services: make(map[string]*Service),
-			Bundles:  make(map[uint64]*Bundle),
-			Datasets: make(map[string]*Dataset),
-			Nodes:    make(map[string]*Node),
-			History:  make(NodesHistory),
+			Services:  make(map[string]*Service),
+			Bundles:   make(map[uint64]*Bundle),
+			Datasets:  make(map[string]*Dataset),
+			DatasetHB: make(map[string]bool),
+			Nodes:     make(map[string]*Node),
+			History:   make(NodesHistory),
 		},
 	}
 }
@@ -218,15 +220,8 @@ func (c *MockClusterConf) DatasetHeartbeat(req *acomm.Request) (interface{}, *ur
 	if args.IP == nil {
 		return nil, nil, errors.New("missing arg: ip")
 	}
-	dataset, ok := c.Data.Datasets[args.ID]
-	if !ok {
-		return nil, nil, errors.New("dataset config not found")
-	}
-	if dataset.Nodes == nil {
-		dataset.Nodes = make(map[string]bool)
-	}
-	dataset.Nodes[args.IP.String()] = true
-	return &DatasetPayload{dataset}, nil, nil
+	c.Data.DatasetHB[args.IP.String()] = args.InUse
+	return nil, nil, nil
 }
 
 // GetDefaults retrieves the mock default values.
