@@ -20,6 +20,7 @@ type MockClusterConf struct {
 type MockClusterData struct {
 	Services  map[string]*Service
 	Bundles   map[uint64]*Bundle
+	BundlesHB map[uint64]BundleHeartbeats
 	Datasets  map[string]*Dataset
 	DatasetHB map[string]bool
 	Nodes     map[string]*Node
@@ -33,6 +34,7 @@ func NewMockClusterConf() *MockClusterConf {
 		Data: &MockClusterData{
 			Services:  make(map[string]*Service),
 			Bundles:   make(map[uint64]*Bundle),
+			BundlesHB: make(map[uint64]BundleHeartbeats),
 			Datasets:  make(map[string]*Dataset),
 			DatasetHB: make(map[string]bool),
 			Nodes:     make(map[string]*Node),
@@ -134,20 +136,15 @@ func (c *MockClusterConf) BundleHeartbeat(req *acomm.Request) (interface{}, *url
 	if args.Serial == "" {
 		return nil, nil, errors.New("missing arg: serial")
 	}
-	if args.Node.IP == nil {
+	if args.IP == nil {
 		return nil, nil, errors.New("missing arg: ip")
 	}
 
-	bundle, ok := c.Data.Bundles[args.ID]
-	if !ok {
-		return nil, nil, errors.New("bundle config not found")
+	if _, ok := c.Data.BundlesHB[args.ID]; !ok {
+		c.Data.BundlesHB[args.ID] = make(BundleHeartbeats)
 	}
-
-	if bundle.Nodes == nil {
-		bundle.Nodes = make(map[string]BundleNode)
-	}
-	bundle.Nodes[args.Serial] = args.Node
-	return &BundlePayload{bundle}, nil, nil
+	c.Data.BundlesHB[args.ID][args.Serial] = BundleHeartbeat{IP: args.IP, HealthErrors: args.HealthErrors}
+	return nil, nil, nil
 }
 
 // GetDataset retrieves a mock dataset.

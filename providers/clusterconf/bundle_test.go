@@ -1,6 +1,8 @@
 package clusterconf_test
 
 import (
+	"encoding/json"
+	"errors"
 	"math/rand"
 	"net"
 	"path"
@@ -18,16 +20,15 @@ func (s *clusterConf) TestGetBundle() {
 	tests := []struct {
 		desc            string
 		id              uint64
-		nodes           map[string]clusterconf.BundleNode
 		quota           int
 		dataset         string
 		combinedOverlay bool
 		err             string
 	}{
-		{"zero id", 0, make(map[string]clusterconf.BundleNode), 0, "", false, "missing arg: id"},
-		{"nonexistent id", uint64(rand.Int63()), make(map[string]clusterconf.BundleNode), 0, "", false, "bundle config not found"},
-		{"existent id config", bundle.ID, bundle.Nodes, 0, "", false, ""},
-		{"existent id overlayed", bundle.ID, bundle.Nodes, 5, "testds", true, ""},
+		{"zero id", 0, 0, "", false, "missing arg: id"},
+		{"nonexistent id", uint64(rand.Int63()), 0, "", false, "bundle config not found"},
+		{"existent id config", bundle.ID, 0, "", false, ""},
+		{"existent id overlayed", bundle.ID, 5, "testds", true, ""},
 	}
 
 	for _, test := range tests {
@@ -52,7 +53,6 @@ func (s *clusterConf) TestGetBundle() {
 			bundlePayload, ok := result.(*clusterconf.BundlePayload)
 			s.True(ok, test.desc)
 			s.Equal(test.id, bundlePayload.Bundle.ID, test.desc)
-			s.Equal(test.nodes, bundlePayload.Bundle.Nodes, test.desc)
 			for _, ds := range bundlePayload.Bundle.Datasets {
 				s.Equal(test.quota, ds.Quota, test.desc)
 			}
@@ -86,8 +86,8 @@ func (s *clusterConf) TestUpdateBundle() {
 			Task: "update-bundle",
 			Args: &clusterconf.BundlePayload{
 				Bundle: &clusterconf.Bundle{
-					BundleConf: clusterconf.BundleConf{ID: test.id},
-					ModIndex:   test.modIndex,
+					ID:       test.id,
+					ModIndex: test.modIndex,
 				},
 			},
 		})
@@ -146,9 +146,6 @@ func (s *clusterConf) TestDeleteBundle() {
 }
 
 func (s *clusterConf) TestBundleHeartbeat() {
-	bundle, err := s.addBundle()
-	s.Require().NoError(err)
-
 	tests := []struct {
 		id     uint64
 		serial string
@@ -157,10 +154,9 @@ func (s *clusterConf) TestBundleHeartbeat() {
 	}{
 		{0, "", net.IP{}, "missing arg: id"},
 		{0, "", net.ParseIP("127.0.0.2"), "missing arg: id"},
-		{bundle.ID, "", net.IP{}, "missing arg: serial"},
-		{bundle.ID, uuid.New(), net.IP{}, "missing arg: ip"},
-		{uint64(rand.Int63()), uuid.New(), net.ParseIP("127.0.0.3"), "bundle config not found"},
-		{bundle.ID, uuid.New(), net.ParseIP("127.0.0.4"), ""},
+		{uint64(rand.Int63()), "", net.IP{}, "missing arg: serial"},
+		{uint64(rand.Int63()), uuid.New(), net.IP{}, "missing arg: ip"},
+		{uint64(rand.Int63()), uuid.New(), net.ParseIP("127.0.0.4"), ""},
 	}
 
 	for _, test := range tests {
@@ -169,9 +165,7 @@ func (s *clusterConf) TestBundleHeartbeat() {
 			Args: &clusterconf.BundleHeartbeatArgs{
 				ID:     test.id,
 				Serial: test.serial,
-				Node: clusterconf.BundleNode{
-					IP: test.ip,
-				},
+				IP:     test.ip,
 			},
 		})
 		args := string(*req.Args)
@@ -183,19 +177,70 @@ func (s *clusterConf) TestBundleHeartbeat() {
 			s.Nil(result, args)
 		} else {
 			s.NoError(err, args)
-			if !s.NotNil(result, args) {
-				continue
-			}
-			bundlePayload, ok := result.(*clusterconf.BundlePayload)
-			s.True(ok, args)
-			if test.id == 0 {
-				s.NotEmpty(bundlePayload.Bundle.ID, args)
-			} else {
-				s.Equal(test.id, bundlePayload.Bundle.ID, args)
-			}
-			s.NotEmpty(bundlePayload.Bundle.Nodes[test.serial], args)
+			s.Nil(result, args)
 		}
 	}
+}
+
+func (s *clusterConf) TestBundleHeartbeatJSON() {
+	heartbeatList := clusterconf.BundleHeartbeatList{
+		Heartbeats: map[uint64]clusterconf.BundleHeartbeats{
+			uint64(1): clusterconf.BundleHeartbeats{
+				uuid.New(): clusterconf.BundleHeartbeat{
+					IP: net.ParseIP("192.168.1.1"),
+					HealthErrors: map[string]error{
+						uuid.New(): errors.New("test"),
+					},
+				},
+			},
+		},
+	}
+	j, err := json.Marshal(heartbeatList)
+	if !s.NoError(err) {
+		return
+	}
+
+	var heartbeatList2 clusterconf.BundleHeartbeatList
+	s.NoError(json.Unmarshal(j, &heartbeatList2))
+
+	s.Equal(heartbeatList, heartbeatList2)
+}
+
+func (s *clusterConf) TestListBundleHeartbeats() {
+	id := uint64(5)
+	serial := uuid.New()
+	hb := clusterconf.BundleHeartbeat{
+		IP:           net.ParseIP("123.123.123.123"),
+		HealthErrors: make(map[string]error),
+	}
+
+	req, err := acomm.NewRequest(acomm.RequestOptions{
+		Task: "dataset-heartbeat",
+		Args: &clusterconf.BundleHeartbeatArgs{ID: id, Serial: serial, IP: hb.IP},
+	})
+	s.Require().NoError(err)
+	_, _, err = s.clusterConf.BundleHeartbeat(req)
+	s.Require().NoError(err)
+
+	req, err = acomm.NewRequest(acomm.RequestOptions{
+		Task: "bundle-list-heartbeats",
+	})
+	s.Require().NoError(err)
+	result, streamURL, err := s.clusterConf.ListBundleHeartbeats(req)
+	s.NoError(err)
+	s.Nil(streamURL)
+	if !s.NotNil(result) {
+		return
+	}
+	hbList := result.(clusterconf.BundleHeartbeatList)
+	dsHBs, ok := hbList.Heartbeats[id]
+	if !s.True(ok) {
+		return
+	}
+	if !s.Len(dsHBs, 1) {
+		return
+	}
+	s.EqualValues(hb, dsHBs[serial])
 }
 
 func (s *clusterConf) addBundle() (*clusterconf.Bundle, error) {
@@ -207,7 +252,7 @@ func (s *clusterConf) addBundle() (*clusterconf.Bundle, error) {
 	if err != nil {
 		return nil, err
 	}
-	bundle := &clusterconf.Bundle{BundleConf: clusterconf.BundleConf{
+	bundle := &clusterconf.Bundle{
 		ID: uint64(rand.Int63()),
 		Datasets: map[string]clusterconf.BundleDataset{
 			dataset.ID: {
@@ -225,19 +270,11 @@ func (s *clusterConf) addBundle() (*clusterconf.Bundle, error) {
 				Port: 1,
 			},
 		},
-	}}
+	}
 	bundleKey := path.Join("bundles", strconv.FormatUint(bundle.ID, 10), "config")
-
-	serial := uuid.New()
-	ip := net.ParseIP("127.0.0.1")
-	nodeKey := path.Join("bundles", strconv.FormatUint(bundle.ID, 10), "nodes", serial)
 
 	data := map[string]interface{}{
 		bundleKey: bundle,
-		nodeKey: clusterconf.BundleNode{
-			IP:           ip,
-			HealthErrors: make(map[string]error),
-		},
 	}
 	indexes, err := s.loadData(data)
 	if err != nil {
@@ -245,12 +282,6 @@ func (s *clusterConf) addBundle() (*clusterconf.Bundle, error) {
 	}
 
 	bundle.ModIndex = indexes[bundleKey]
-	bundle.Nodes = map[string]clusterconf.BundleNode{
-		serial: {
-			IP:           ip,
-			HealthErrors: make(map[string]error),
-		},
-	}
 
 	return bundle, nil
 }
