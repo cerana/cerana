@@ -24,7 +24,9 @@ configure_filesystems() {
         zfs list "$ZPOOL/$fs" >/dev/null 2>&1 || zfs create "$ZPOOL/$fs"
     done
 
-    if [[ "off" = $(zfs get compression -Ho value $ZPOOL) ]]; then zfs set compression=lz4 $ZPOOL; fi
+    if [[ "off" = $(zfs get compression -Ho value $ZPOOL) ]]; then
+        zfs set compression=lz4 $ZPOOL
+    fi
 }
 
 # Gather a list of disk devices into an array
@@ -61,31 +63,33 @@ prompt_user() {
         echo "ERROR: This server has no disks!"
         exit
     elif [[ ${#DISKARRAY[@]} -eq 1 ]]; then
-        echo " stripe (${#DISKARRAY[@]} disk) *"
+        echo " stripe (${#DISKARRAY[@]} disk) * (auto)"
         AUTO="stripe"
     elif [[ ${#DISKARRAY[@]} -eq 2 ]]; then
         echo " stripe (${#DISKARRAY[@]} disks) *"
-        echo " mirror (${#DISKARRAY[@]} disks)"
+        echo " mirror (${#DISKARRAY[@]} disks) (auto)"
         AUTO="mirror"
     elif [[ ${#DISKARRAY[@]} -eq 3 ]]; then
         echo " stripe (${#DISKARRAY[@]} disks) *"
-        echo " raidz (${#DISKARRAY[@]} disks)"
+        echo " raidz (${#DISKARRAY[@]} disks) (auto)"
         AUTO="raidz"
     elif [[ ${#DISKARRAY[@]} -eq 4 ]]; then
         echo " stripe (${#DISKARRAY[@]} disks) *"
-        echo " raidz (${#DISKARRAY[@]} disks)"
+        echo " raidz (${#DISKARRAY[@]} disks) (auto)"
         echo " raidz2 (${#DISKARRAY[@]} disks)"
         AUTO="raidz"
     elif [[ ${#DISKARRAY[@]} -gt 4 ]]; then
         echo " stripe (${#DISKARRAY[@]} disks) *"
         echo " raidz (${#DISKARRAY[@]} disks)"
-        echo " raidz2 (${#DISKARRAY[@]} disks)"
+        echo " raidz2 (${#DISKARRAY[@]} disks) (auto)"
         echo " raidz3 (${#DISKARRAY[@]} disks)"
         AUTO="raidz2"
     fi
     echo
     echo "* = not suggested for production purposes"
+    echo "(auto) = configuration used if you type \"auto\""
     echo
+    echo "You may type \"auto\" and let the system choose a layout for you"
     echo "You may also type \"manual\" to enter a shell to perform a manual"
     echo "configuration of the \"${ZPOOL}\" pool using command-line tools."
     echo "This is preferable if an exact ZFS pool configuration is desired,"
@@ -215,9 +219,6 @@ configure_pool() {
         sgdisk -Z "$disk" &>/dev/null \
             && echo "  done"
     done
-
-    # Block until Linux figures itself out w.r.t. paritions
-    udevadm settle
 
     # Flag for installing GRUB onto disks
     INSTALL_GRUB_PLEASE=1

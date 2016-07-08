@@ -54,16 +54,9 @@ function is_valid_ip() {
 ##
 ## Takes a CIDR prefix and makes sure that it is greater than 7 and less than 33
 function is_valid_prefix() {
-
     local prefix=$1
-    local stat=1
-
-    if [[ $prefix =~ ^[0-9]{1,2}$ ]]; then
-        [[ $prefix -le 32 || $prefix -ge 8 ]]
-        stat=$?
-    fi
-
-    return $stat
+    [[ -n $prefix ]] && ((8 <= prefix && prefix <= 32))
+    return $?
 }
 
 function query_interface() {
