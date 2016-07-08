@@ -149,6 +149,7 @@ func (c *MockClusterConf) BundleHeartbeat(req *acomm.Request) (interface{}, *url
 	return nil, nil, nil
 }
 
+// ListBundleHeartbeats list all mock bundle heartbeats.
 func (c *MockClusterConf) ListBundleHeartbeats(req *acomm.Request) (interface{}, *url.URL, error) {
 	return BundleHeartbeatList{c.Data.BundlesHB}, nil, nil
 }
@@ -230,6 +231,7 @@ func (c *MockClusterConf) DatasetHeartbeat(req *acomm.Request) (interface{}, *ur
 	return nil, nil, nil
 }
 
+// ListDatasetHeartbeats lists all mock dataset heartbeats.
 func (c *MockClusterConf) ListDatasetHeartbeats(req *acomm.Request) (interface{}, *url.URL, error) {
 	return DatasetHeartbeatList{c.Data.DatasetsHB}, nil, nil
 }

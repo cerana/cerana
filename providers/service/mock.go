@@ -15,6 +15,7 @@ type Mock struct {
 	Data MockData
 }
 
+// MockData is the in-memory data structure for the Mock.
 type MockData struct {
 	Services map[uint64]map[string]Service
 }
@@ -37,6 +38,7 @@ func (m *Mock) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("service-remove", m.Remove)
 }
 
+// Create creates a new mock service.
 func (m *Mock) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args CreateArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -69,6 +71,7 @@ func (m *Mock) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 	return GetResult{m.Data.Services[args.BundleID][args.ID]}, nil, nil
 }
 
+// Get retrieves a mock service.
 func (m *Mock) Get(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args GetArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -93,6 +96,7 @@ func (m *Mock) Get(req *acomm.Request) (interface{}, *url.URL, error) {
 	return GetResult{service}, nil, nil
 }
 
+// List lists all mock services.
 func (m *Mock) List(req *acomm.Request) (interface{}, *url.URL, error) {
 	services := []Service{}
 	for _, bundle := range m.Data.Services {
@@ -104,10 +108,12 @@ func (m *Mock) List(req *acomm.Request) (interface{}, *url.URL, error) {
 	return ListResult{services}, nil, nil
 }
 
+// Restart restarts a mock service.
 func (m *Mock) Restart(req *acomm.Request) (interface{}, *url.URL, error) {
 	return nil, nil, nil
 }
 
+// Remove removes a mock service.
 func (m *Mock) Remove(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args RemoveArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -127,10 +133,12 @@ func (m *Mock) Remove(req *acomm.Request) (interface{}, *url.URL, error) {
 	return nil, nil, nil
 }
 
+// ClearData clears all mock data.
 func (m *Mock) ClearData() {
 	m.Data.Services = make(map[uint64]map[string]Service)
 }
 
+// Add is a convenience method to directly add a mock service.
 func (m *Mock) Add(service Service) {
 	if _, ok := m.Data.Services[service.BundleID]; !ok {
 		m.Data.Services[service.BundleID] = make(map[string]Service)

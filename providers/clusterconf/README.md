@@ -61,6 +61,7 @@ type BundleHeartbeat struct {
 }
 ```
 
+BundleHeartbeat is bundle heartbeat information.
 
 #### func (BundleHeartbeat) MarshalJSON
 
@@ -89,6 +90,7 @@ type BundleHeartbeatArgs struct {
 }
 ```
 
+BundleHeartbeatArgs are argumenst for updating a bundle heartbeat.
 
 #### type BundleHeartbeatList
 
@@ -98,6 +100,7 @@ type BundleHeartbeatList struct {
 }
 ```
 
+BundleHeartbeatList is the result of a ListBundleHeartbeats.
 
 #### func (BundleHeartbeatList) MarshalJSON
 
@@ -121,6 +124,7 @@ to uints.
 type BundleHeartbeats map[string]BundleHeartbeat
 ```
 
+BundleHeartbeats are a set of bundle heartbeats for a node.
 
 #### type BundleListResult
 
@@ -290,6 +294,7 @@ GetService retrieves a service.
 ```go
 func (c *ClusterConf) ListBundleHeartbeats(req *acomm.Request) (interface{}, *url.URL, error)
 ```
+ListBundleHeartbeats returns a list of all active bundle heartbeats.
 
 #### func (*ClusterConf) ListBundles
 
@@ -303,6 +308,7 @@ ListBundles retrieves a list of all bundles.
 ```go
 func (c *ClusterConf) ListDatasetHeartbeats(req *acomm.Request) (interface{}, *url.URL, error)
 ```
+ListDatasetHeartbeats returns a list of all active dataset heartbeats.
 
 #### func (*ClusterConf) ListDatasets
 
@@ -448,6 +454,7 @@ type DatasetHeartbeat struct {
 }
 ```
 
+DatasetHeartbeat is dataset heartbeat information.
 
 #### type DatasetHeartbeatArgs
 
@@ -469,6 +476,7 @@ type DatasetHeartbeatList struct {
 }
 ```
 
+DatasetHeartbeatList is the result of a ListDatasetHeartbeats.
 
 #### type DatasetListResult
 
@@ -671,12 +679,26 @@ func (c *MockClusterConf) GetService(req *acomm.Request) (interface{}, *url.URL,
 ```
 GetService retrieves a mock service.
 
+#### func (*MockClusterConf) ListBundleHeartbeats
+
+```go
+func (c *MockClusterConf) ListBundleHeartbeats(req *acomm.Request) (interface{}, *url.URL, error)
+```
+ListBundleHeartbeats list all mock bundle heartbeats.
+
 #### func (*MockClusterConf) ListBundles
 
 ```go
 func (c *MockClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL, error)
 ```
 ListBundles retrieves all mock bundles.
+
+#### func (*MockClusterConf) ListDatasetHeartbeats
+
+```go
+func (c *MockClusterConf) ListDatasetHeartbeats(req *acomm.Request) (interface{}, *url.URL, error)
+```
+ListDatasetHeartbeats lists all mock dataset heartbeats.
 
 #### func (*MockClusterConf) ListDatasets
 
@@ -731,14 +753,14 @@ UpdateService updates a mock service.
 
 ```go
 type MockClusterData struct {
-	Services  map[string]*Service
-	Bundles   map[uint64]*Bundle
-	BundlesHB map[uint64]BundleHeartbeats
-	Datasets  map[string]*Dataset
-	DatasetHB map[string]bool
-	Nodes     map[string]*Node
-	History   NodesHistory
-	Defaults  *Defaults
+	Services   map[string]*Service
+	Bundles    map[uint64]*Bundle
+	BundlesHB  map[uint64]BundleHeartbeats
+	Datasets   map[string]*Dataset
+	DatasetsHB map[string]map[string]DatasetHeartbeat
+	Nodes      map[string]*Node
+	History    NodesHistory
+	Defaults   *Defaults
 }
 ```
 
