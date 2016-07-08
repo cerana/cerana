@@ -26,7 +26,7 @@ type DatasetHeartbeat struct {
 }
 
 type DatasetHeartbeatList struct {
-	Heartbeats map[string][]DatasetHeartbeat
+	Heartbeats map[string]map[string]DatasetHeartbeat
 }
 
 // DatasetHeartbeat registers a new node heartbeat that is using the dataset.
@@ -52,7 +52,7 @@ func (c *ClusterConf) ListDatasetHeartbeats(req *acomm.Request) (interface{}, *u
 	if err != nil {
 		return nil, nil, err
 	}
-	heartbeats := make(map[string][]DatasetHeartbeat)
+	heartbeats := make(map[string]map[string]DatasetHeartbeat)
 	for key, value := range values {
 		if key == base {
 			continue
@@ -65,9 +65,9 @@ func (c *ClusterConf) ListDatasetHeartbeats(req *acomm.Request) (interface{}, *u
 			return nil, nil, err
 		}
 		if _, ok := heartbeats[id]; !ok {
-			heartbeats[id] = []DatasetHeartbeat{}
+			heartbeats[id] = make(map[string]DatasetHeartbeat)
 		}
-		heartbeats[id] = append(heartbeats[id], DatasetHeartbeat{IP: ip, InUse: inUse})
+		heartbeats[id][ip.String()] = DatasetHeartbeat{IP: ip, InUse: inUse}
 	}
 
 	return DatasetHeartbeatList{heartbeats}, nil, nil

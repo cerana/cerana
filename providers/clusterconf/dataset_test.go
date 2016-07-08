@@ -196,7 +196,7 @@ func (s *clusterConf) TestListDatasetHeartbeats() {
 	if !s.Len(dsHBs, 1) {
 		return
 	}
-	s.EqualValues(hb, dsHBs[0])
+	s.EqualValues(hb, dsHBs[hb.IP.String()])
 }
 
 func (s *clusterConf) addDataset() (*clusterconf.Dataset, error) {
