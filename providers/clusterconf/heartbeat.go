@@ -20,11 +20,13 @@ type DatasetHeartbeatArgs struct {
 	InUse bool   `json:"inUse"`
 }
 
+// DatasetHeartbeat is dataset heartbeat information.
 type DatasetHeartbeat struct {
 	IP    net.IP `json:"ip"`
 	InUse bool   `json:"inUse"`
 }
 
+// DatasetHeartbeatList is the result of a ListDatasetHeartbeats.
 type DatasetHeartbeatList struct {
 	Heartbeats map[string]map[string]DatasetHeartbeat
 }
@@ -46,6 +48,7 @@ func (c *ClusterConf) DatasetHeartbeat(req *acomm.Request) (interface{}, *url.UR
 	return nil, nil, c.kvEphemeral(key, args.InUse, c.config.DatasetTTL())
 }
 
+// ListDatasetHeartbeats returns a list of all active dataset heartbeats.
 func (c *ClusterConf) ListDatasetHeartbeats(req *acomm.Request) (interface{}, *url.URL, error) {
 	base := path.Join(heartbeatPrefix, datasetsPrefix)
 	values, err := c.kvGetAll(base)
@@ -73,6 +76,7 @@ func (c *ClusterConf) ListDatasetHeartbeats(req *acomm.Request) (interface{}, *u
 	return DatasetHeartbeatList{heartbeats}, nil, nil
 }
 
+// BundleHeartbeatArgs are argumenst for updating a bundle heartbeat.
 type BundleHeartbeatArgs struct {
 	ID           uint64           `json:"id"`
 	Serial       string           `json:"serial"`
@@ -80,6 +84,7 @@ type BundleHeartbeatArgs struct {
 	HealthErrors map[string]error `json:"healthErrors"`
 }
 
+// BundleHeartbeat is bundle heartbeat information.
 type BundleHeartbeat struct {
 	IP           net.IP           `json:"ip"`
 	HealthErrors map[string]error `json:"healthErrors"`
@@ -122,8 +127,10 @@ func (b *BundleHeartbeat) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// BundleHeartbeats are a set of bundle heartbeats for a node.
 type BundleHeartbeats map[string]BundleHeartbeat
 
+// BundleHeartbeatList is the result of a ListBundleHeartbeats.
 type BundleHeartbeatList struct {
 	Heartbeats map[uint64]BundleHeartbeats `json:"heartbeats"`
 }
@@ -194,6 +201,7 @@ func (c *ClusterConf) BundleHeartbeat(req *acomm.Request) (interface{}, *url.URL
 	return nil, nil, c.kvEphemeral(key, heartbeat, c.config.BundleTTL())
 }
 
+// ListBundleHeartbeats returns a list of all active bundle heartbeats.
 func (c *ClusterConf) ListBundleHeartbeats(req *acomm.Request) (interface{}, *url.URL, error) {
 	base := path.Join(heartbeatPrefix, bundlesPrefix)
 	values, err := c.kvGetAll(base)

@@ -185,7 +185,7 @@ func (s *clusterConf) TestBundleHeartbeat() {
 func (s *clusterConf) TestBundleHeartbeatJSON() {
 	heartbeatList := clusterconf.BundleHeartbeatList{
 		Heartbeats: map[uint64]clusterconf.BundleHeartbeats{
-			uint64(1): clusterconf.BundleHeartbeats{
+			uint64(1): {
 				uuid.New(): clusterconf.BundleHeartbeat{
 					IP: net.ParseIP("192.168.1.1"),
 					HealthErrors: map[string]error{
