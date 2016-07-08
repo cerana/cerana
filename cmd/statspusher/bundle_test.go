@@ -1,13 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"net"
 	"sort"
 
 	"github.com/cerana/cerana/providers/clusterconf"
 	"github.com/cerana/cerana/providers/health"
-	"github.com/cerana/cerana/providers/systemd"
+	"github.com/cerana/cerana/providers/service"
 	"github.com/pborman/uuid"
 )
 
@@ -38,21 +37,21 @@ func (s *StatsPusher) TestGetBundles() {
 	}{
 		{"empty", []uint64{}, []uint64{}, []uint64{}},
 		{"known only", []uint64{123}, []uint64{}, []uint64{}},
-		{"local only", []uint64{}, []uint64{123}, []uint64{}},
+		{"local only", []uint64{}, []uint64{123}, []uint64{123}},
 		{"both, single", []uint64{123}, []uint64{123}, []uint64{123}},
-		{"extra local", []uint64{123}, []uint64{123, 456}, []uint64{123}},
+		{"extra local", []uint64{123}, []uint64{123, 456}, []uint64{123, 456}},
 		{"extra known", []uint64{123, 456}, []uint64{123}, []uint64{123}},
 		{"both, multiple", []uint64{123, 456}, []uint64{123, 456}, []uint64{123, 456}},
 	}
 
 	for _, test := range tests {
-		s.systemd.ClearData()
+		s.service.ClearData()
 		for _, bundle := range test.local {
 			for i := 0; i < 3; i++ {
-				serviceName := fmt.Sprintf("%d:%s.service", bundle, uuid.New())
-				s.systemd.ManualCreate(systemd.CreateArgs{
-					Name: serviceName,
-				}, true)
+				s.service.Add(service.Service{
+					ID:       uuid.New(),
+					BundleID: bundle,
+				})
 			}
 		}
 		s.clusterConf.Data.Bundles = make(map[uint64]*clusterconf.Bundle)
