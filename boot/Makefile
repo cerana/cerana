@@ -5,14 +5,10 @@ DESTDIR=/does/not/exist
 install: install-scripts install-bins
 
 install-scripts: scripts/*
-	mkdir -p $(DESTDIR)/scripts/
-	cp $? $(DESTDIR)/scripts/
-	chmod +x $(DESTDIR)/scripts/*
+	install -D -m 755 -t $(DESTDIR)/scripts $?
 
 install-bins: bin/*
-	mkdir -p $(DESTDIR)/bin/
-	cp $? $(DESTDIR)/bin/
-	chmod +x $(DESTDIR)/bin/*
+	install -D -m 755 -t $(DESTDIR)/bin $?
 
 lint:
 	shfmt -i 4 -w scripts/*

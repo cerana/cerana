@@ -13,7 +13,7 @@ if [[ -L /dev/disk/by-label/CERANA ]]; then
     rm -f /data/platform/current
     ln -s bootcd /data/platform/current
     # No physical media, most likely PXE booted
-    # FIXME
+    # FIXME https://github.com/cerana/cerana/issues/209
     # Check to see if we already have latest media on disk
     # If not, download it and update /data/platform/current symlink
 fi
