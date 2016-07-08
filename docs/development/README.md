@@ -70,10 +70,14 @@
 * Open up the settings for the VM
   * Under System, give it more CPUs depending on planned workload
   * Under Storage, Put the CeranaOS ISO into the virtual CD drive
-  * Under Network, for Adapter 1, under Advanced, change the Adapter Type to "Paravirtualized Network (virtio-net)" for performance
-    * To switch to bridged networking (optional):
-      * Set "Attached to" to "Bridged Adapter"
-      * Pick which physical NIC on the local machine you want to be bridged through (e.g. wifi vs ethernet)
+  * Under Network, for Adapter 1, under Advanced
+    * Change the Adapter Type to "Paravirtualized Network (virtio-net)" for performance
+    * To set up SSH forwarding, click the Port Forwarding button and in the new window:
+      * On the top right click the plus button to add a rule and edit it
+      * Name: `SSH`, Protocol: leave as `TCP`, Host Port: you choose, e.g. `2222`, Guest Port: `22`, Leave Host and Guest IP blank
+  * To switch to bridged networking (optional):
+    * Set "Attached to" to "Bridged Adapter"
+    * Pick which physical NIC on the local machine you want to be bridged through (e.g. wifi vs ethernet)
   * Under Ports, Under Serial Ports, Port 1
     * Click the Enable box
     * Set the Port Mode to TCP
