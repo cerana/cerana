@@ -1,0 +1,10 @@
+#!/bin/bash -x
+
+kexec \
+    -l /data/platform/current/bzImage \
+    --initrd=/data/platform/current/initrd \
+    --append="$(cat /proc/cmdline)" \
+    || exit 1
+journalctl --flush
+sync
+kexec -e

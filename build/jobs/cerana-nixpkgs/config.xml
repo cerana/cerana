@@ -1,0 +1,45 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description>This is to do builds on a local clone of the repo. A symbolic link into the Docker volume can be used to access the clone from outside the container. This builds whichever branch is currently checked out.&#xd;
+&#xd;
+Because the build runs in a Docker container some trickery is required if you want to modify source outside the container. If you started the container following the recipe in the `build` directory README.md then you can create a symbolic link which points to the repository clone in the container. &#xd;
+&#xd;
+For example, say you used &quot;-v ${PWD}/cerana/jenkins_home:/home/&lt;user&gt;&quot; then the symbolic link becomes &quot;${PWD}/cerana/jenkins_home/.jenkins/workspace&quot;. In other words:&#xd;
+  ln -s cerana/jenkins_home.jenkins/workspace&#xd;
+You will then be able to easily see the workspace for each of theJenkins jobs. Before running this build it is necessary to first create the clone. e.g.:&#xd;
+  git clone https://github.com/cerana/nixpkgs.git workspace cerana-nixpkgs&#xd;
+NOTE: The name of the clone directory must match this job&apos;s name.&#xd;
+  </description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <scm class="hudson.scm.NullSCM"/>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>. ~/.nix-profile/etc/profile.d/nix.sh
+
+time nix-build  --cores 0 --max-jobs 3 -A netboot nixos/release.nix
+if [ -h result/etc ]; then echo Error: Build resulted /etc as symlink &amp;&amp; exit 1; fi
+
+# Copy results to a location that doesn&apos;t rely upon the nix symlinks.
+known_location=artifacts
+mkdir -p $known_location
+rm -f $known_location/*
+cp result/bzImage $known_location/bzImage.cerana
+cp result/initrd $known_location/initrd.cerana
+nix-store -q result --graph | sed &apos;s/#ff0000/#ffffff/&apos; | dot -Nstyle=bold -Tpng &gt; $known_location/dependencies.png
+nix-store -q result --tree &gt; $known_location/dependencies.txt
+</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers/>
+  <buildWrappers>
+    <hudson.plugins.timestamper.TimestamperBuildWrapper plugin="timestamper@1.8.2"/>
+  </buildWrappers>
+</project>
