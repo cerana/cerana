@@ -1,0 +1,6 @@
+#!/bin/bash
+
+set -o errexit
+
+cd /data/build-container
+systemd-nspawn /init
