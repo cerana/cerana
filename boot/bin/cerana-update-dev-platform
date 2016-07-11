@@ -4,10 +4,10 @@ BUCKET=https://omniti-cerana-artifacts.s3.amazonaws.com/
 
 INITRD=$(curl "$BUCKET?prefix=CeranaOS/build-cerana/" | sed 's|><|>\n<|g' | grep initrd | tail -n 1 | sed 's|<[^>]*>||g')
 BUILD=${INITRD#*build-cerana/}
-BUILD=${BUILD%%/*}
-mkdir /data/platform/${BUILD} \
-    && cd /data/platform/${BUILD} \
-    && curl -O ${BUCKET}${INITRD/initrd/bzImage} \
-    && curl -O ${BUCKET}${INITRD} \
+BUILD="${BUILD%%/*}"
+mkdir "/data/platform/${BUILD}" \
+    && cd "/data/platform/${BUILD}" \
+    && curl -O "${BUCKET}${INITRD/initrd/bzImage}" \
+    && curl -O "${BUCKET}${INITRD}" \
     && rm -f /data/platform/current \
-    && ln -s ${BUILD} /data/platform/current
+    && ln -s "${BUILD}" /data/platform/current
