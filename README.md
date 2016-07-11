@@ -1,4 +1,4 @@
-# Cerana
+![Cerana](https://rawgithub.com/cerana/cerana/master/docs/logos/cerana_logo_side.svg)
 
 [![Build Status](https://img.shields.io/travis/cerana/cerana/master.svg)](https://travis-ci.org/cerana/cerana)
 [![Freenode](https://img.shields.io/badge/freenode-%23cerana-brightgreen.svg)](https://kiwiirc.com/client/irc.freenode.net/#cerana)

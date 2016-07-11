@@ -4,7 +4,7 @@ Planning diagrams and documentation
 Boot Process Diagram
 --------------------
 
-![Boot Process Diagram](https://rawgithub.com/mistifyio/mistify/master/docs/planning/boot.svg)
+![Boot Process Diagram](https://rawgithub.com/cerana/cerana/master/docs/planning/boot.svg)
 
 Kernel Command Line
 -------------------
