@@ -239,8 +239,8 @@ func (s *DHCPS) TestGetTaken() {
 }
 
 func (s *DHCPS) TestNextGetter() {
-	min := uint32(0)
-	max := uint32(7)
+	min := uint32(1)
+	max := uint32(6)
 	tests := []struct {
 		name string
 		ips  []uint32
@@ -266,7 +266,7 @@ func (s *DHCPS) TestNextGetter() {
 
 	for _, t := range tests {
 		closer := make(chan struct{})
-		got := []uint32{}
+		got := make([]uint32, 0, len(t.want))
 		i := 0
 		for ip := range nextGetter(closer, t.ips, min, max) {
 			got = append(got, ip)
