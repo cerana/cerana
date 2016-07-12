@@ -156,17 +156,9 @@ func refreshLeaseAck(tracker *acomm.Tracker, coord *url.URL, mac, ip string, ttl
 
 func nextGetter(closer <-chan struct{}, taken []uint32, min, max uint32) <-chan uint32 {
 	ch := make(chan uint32)
-	next := min
 	go func() {
-		for {
-			next++
-			// make sure we stop before max
-			if next == max {
-				close(ch)
-				return
-			}
-
-			// check if ip in in the taken list, if so pop it from the list
+		for next := min; next <= max; next++ {
+			// check if ip is in the taken list, if so pop it from the list
 			if len(taken) > 0 {
 				if next == taken[0] {
 					taken = taken[1:]
@@ -180,6 +172,7 @@ func nextGetter(closer <-chan struct{}, taken []uint32, min, max uint32) <-chan 
 				return
 			}
 		}
+		close(ch)
 	}()
 
 	return ch
