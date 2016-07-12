@@ -381,5 +381,18 @@ func (d *DHCP) ack(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.New("requested ip not assigned to this mac")
 	}
 
-	return nil, nil, refreshLeaseAck(d.tracker, d.coordinator, addrs.MAC, addrs.IP, d.config.LeaseDuration())
+	err = refreshLeaseAck(d.tracker, d.coordinator, addrs.MAC, addrs.IP, d.config.LeaseDuration())
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return Lease{
+		DNS:      d.config.DNSServers(),
+		Duration: d.config.LeaseDuration(),
+		Gateway:  d.config.Gateway(),
+		Net: net.IPNet{
+			IP:   net.ParseIP(addrs.IP),
+			Mask: d.config.Network().Mask,
+		},
+	}, nil, nil
 }
