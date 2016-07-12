@@ -6,14 +6,17 @@ import (
 	"net"
 	"net/url"
 	"sync"
+	"time"
 
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/provider"
 	"github.com/krolaw/dhcp4"
+	"github.com/spf13/viper"
 )
 
 // Mock is a mock dhcp provider.
 type Mock struct {
+	config *Config
 	randIP func() net.IP
 	sync.Mutex
 	macs map[string]string
@@ -21,22 +24,30 @@ type Mock struct {
 }
 
 // NewMock creates a new Mock.
-func NewMock(config *provider.Config, tracker *acomm.Tracker) (*Mock, error) {
+func NewMock() *Mock {
+	v := viper.New()
+	v.Set("dns-servers", []string{"8.8.8.8", "8.8.4.4"})
+	v.Set("gateway", "10.0.0.1")
+	v.Set("lease-duration", 24*time.Hour)
+	v.Set("network", "10.0.0.1/8")
+	conf := NewConfig(nil, v)
+
 	_, network, _ := net.ParseCIDR("10.0.0.0/8")
-	_, zeros := network.Mask.Size()
-	size := (1 << uint(zeros)) - 2
+	ones, bits := network.Mask.Size()
+	size := 1<<uint(bits-ones) - 2
 	return &Mock{
+		config: conf,
 		randIP: func() net.IP {
-			num := rand.Intn(size)
+			num := rand.Intn(size) + 1
 			return dhcp4.IPAdd(network.IP, num)
 		},
 		macs: map[string]string{},
 		ips:  map[string]string{},
-	}, nil
+	}
 }
 
 // RegisterTasks registers all of Mock's task handlers with the server.
-func (m *Mock) RegisterTasks(server provider.Server) {
+func (m *Mock) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("dhcp-offer-lease", m.get)
 	server.RegisterTask("dhcp-ack-lease", m.ack)
 	server.RegisterTask("dhcp-remove-lease", m.remove)
@@ -50,7 +61,14 @@ func (m *Mock) get(req *acomm.Request) (interface{}, *url.URL, error) {
 	if addrs.MAC == "" {
 		return nil, nil, errors.New("missing arg: mac")
 	}
-	lease := Lease{}
+	lease := Lease{
+		DNS:      m.config.DNSServers(),
+		Duration: m.config.LeaseDuration(),
+		Gateway:  m.config.Gateway(),
+		Net: net.IPNet{
+			Mask: m.config.Network().Mask,
+		},
+	}
 
 	m.Lock()
 	defer m.Unlock()
@@ -62,11 +80,16 @@ func (m *Mock) get(req *acomm.Request) (interface{}, *url.URL, error) {
 			lease.Net.IP = net.ParseIP(ip)
 			return lease, nil, nil
 		}
-		// otherwise that ip is alloc'ed for a different client
-	}
 
-	// client asked for a different ip than previous alloc'ed
-	if ip != "" {
+		// client asked for a different ip than previous alloc'ed
+		if ip != "" && m.macs[ip] == "" && m.Config.ipInRange(net.ParseIP(ip)) {
+			m.macs[ip] = addrs.MAC
+			m.ips[addrs.MAC] = ip
+
+			lease.Net.IP = net.ParseIP(ip)
+			return lease, nil, nil
+		}
+	} else if ip != "" {
 		lease.Net.IP = net.ParseIP(ip)
 		return lease, nil, nil
 	}
@@ -75,6 +98,8 @@ func (m *Mock) get(req *acomm.Request) (interface{}, *url.URL, error) {
 		netIP := m.randIP()
 		if m.macs[netIP.String()] == "" {
 			m.macs[netIP.String()] = addrs.MAC
+			m.ips[addrs.MAC] = netIP.String()
+
 			lease.Net.IP = netIP
 			return lease, nil, nil
 		}
@@ -104,11 +129,20 @@ func (m *Mock) ack(req *acomm.Request) (interface{}, *url.URL, error) {
 	if mac == "" {
 		return nil, nil, errors.New("unallocated ip address")
 	}
-	if ip == "" || ip != mac {
+	if ip == "" || m.macs[ip] != mac {
 		return nil, nil, errors.New("unknown mac address")
 	}
 
-	return nil, nil, nil
+	lease := Lease{
+		DNS:      m.config.DNSServers(),
+		Duration: m.config.LeaseDuration(),
+		Gateway:  m.config.Gateway(),
+		Net: net.IPNet{
+			IP:   net.ParseIP(ip),
+			Mask: m.config.Network().Mask,
+		},
+	}
+	return lease, nil, nil
 }
 
 // Expire will remove an entry from memory as if the ephemeral key expired.
