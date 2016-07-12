@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/cerana/cerana/provider"
+	"github.com/krolaw/dhcp4"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -86,6 +87,24 @@ func (c *Config) DNSServers() []net.IP {
 func (c *Config) Network() *net.IPNet {
 	net, _ := c.network()
 	return net
+}
+
+func (c *Config) ipRange() (min, max uint32) {
+	network := c.Network()
+	ones, bits := network.Mask.Size()
+
+	size := 1<<uint(bits-ones) - 2
+	min = ipToU32(dhcp4.IPAdd(network.IP, 1))
+	max = ipToU32(dhcp4.IPAdd(network.IP, size))
+	return min, max
+
+}
+
+func (c *Config) ipInRange(ip net.IP) bool {
+	min, max := c.ipRange()
+	uIP := ipToU32(ip)
+
+	return uIP >= min && uIP <= max
 }
 
 func (c *Config) network() (*net.IPNet, error) {
