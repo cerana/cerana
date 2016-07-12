@@ -23,7 +23,6 @@ type DHCP struct {
 	coordinator *url.URL
 	tracker     *acomm.Tracker
 	config      *Config
-	maxIP       net.IP
 	randIP      func() net.IP
 }
 
@@ -46,13 +45,10 @@ func New(config *Config, tracker *acomm.Tracker) (*DHCP, error) {
 	network := config.Network()
 	ones, bits := network.Mask.Size()
 	size := 1<<uint(bits-ones) - 2
-	maxIP := dhcp4.IPAdd(network.IP, size+2)
-
 	return &DHCP{
 		coordinator: config.CoordinatorURL(),
 		tracker:     tracker,
 		config:      config,
-		maxIP:       maxIP,
 		randIP: func() net.IP {
 			num := rand.Intn(size) + 1
 			return dhcp4.IPAdd(network.IP, num)
@@ -352,7 +348,9 @@ func (d *DHCP) get(req *acomm.Request) (interface{}, *url.URL, error) {
 
 	closer := make(chan struct{}, 1)
 	defer close(closer)
-	for uIP := range nextGetter(closer, ips, ipToU32(d.config.Network().IP), ipToU32(d.maxIP)) {
+
+	min, max := d.config.ipRange()
+	for uIP := range nextGetter(closer, ips, min, max) {
 		ip := u32ToIP(uIP)
 
 		addrs.IP = ip.String()
