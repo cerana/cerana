@@ -193,6 +193,33 @@ func (s *DHCPS) TestGetAlmostFull() {
 	s.Require().Equal(wantIP.String(), lease.Net.IP.String())
 }
 
+func (s *DHCPS) TestGetFull() {
+	size, bits := s.dhcp.config.Network().Mask.Size()
+	numIPs := (1 << uint(bits-size)) - 2
+
+	const macFormat = "00:ba:dd:be:ef:%02x"
+
+	for i := 1; i < numIPs+1; i++ {
+		ip := dhcp4.IPAdd(s.dhcp.config.Network().IP, i)
+		s.Require().NoError(s.kv.Set(prefix+ip.String(), fmt.Sprintf(macFormat, i)))
+	}
+	time.Sleep(1 * time.Second)
+
+	req, err := acomm.NewRequest(acomm.RequestOptions{
+		Task: "dhcp-offer-lease",
+		Args: Addresses{
+			MAC: "00:00:ba:dd:be:ef",
+		},
+	})
+	s.Require().NoError(err)
+	s.Require().NotNil(req)
+
+	resp, url, err := s.dhcp.get(req)
+	s.Require().NotNil(err)
+	s.Require().Nil(url)
+	s.Nil(resp)
+}
+
 func (s *DHCPS) TestGetTaken() {
 	mac := randMAC(s.T())
 
