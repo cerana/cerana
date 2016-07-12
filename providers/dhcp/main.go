@@ -316,7 +316,7 @@ func (d *DHCP) get(req *acomm.Request) (interface{}, *url.URL, error) {
 
 	for range [5]struct{}{} {
 		ip := d.randIP()
-		if !d.config.Network().Contains(ip) {
+		if !d.config.ipInRange(ip) {
 			continue
 		}
 		if _, ok := leases[ip.String()]; ok {
