@@ -35,10 +35,10 @@ type Addresses struct {
 
 // Lease specifies the dhcp lease returned from the "dhcp-offer-lease" endpoint.
 type Lease struct {
-	Net      net.IPNet     `json:"net"`
-	Gateway  net.IP        `json:"gateway"`
-	Duration time.Duration `json:"duration"`
 	DNS      []net.IP      `json:"dns"`
+	Duration time.Duration `json:"duration"`
+	Gateway  net.IP        `json:"gateway"`
+	Net      net.IPNet     `json:"net"`
 }
 
 // New creates a new instance of DHCP.
@@ -258,12 +258,12 @@ func (d *DHCP) get(req *acomm.Request) (interface{}, *url.URL, error) {
 	}
 
 	lease := Lease{
+		DNS:      d.config.DNSServers(),
+		Duration: d.config.LeaseDuration(),
+		Gateway:  d.config.Gateway(),
 		Net: net.IPNet{
 			Mask: d.config.Network().Mask,
 		},
-		Gateway:  d.config.Gateway(),
-		Duration: d.config.LeaseDuration(),
-		DNS:      d.config.DNSServers(),
 	}
 
 	// shortcut client renewing ip
