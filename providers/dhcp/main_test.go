@@ -153,7 +153,8 @@ func (s *DHCPS) TestGetAddressBasic() {
 	resp, url, err = s.dhcp.ack(req)
 	s.Require().Nil(err)
 	s.Require().Nil(url)
-	s.Require().Nil(resp)
+	s.Require().NotNil(resp)
+	s.Equal(lease, resp.(Lease))
 }
 
 func (s *DHCPS) TestGetAlmostFull() {
