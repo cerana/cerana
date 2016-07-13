@@ -140,3 +140,26 @@ systemctl start localusers
 Starting at build 83 we are shipping a pair of tools for doing rapid updates of a CeranaOS machine from our S3 bucket of development builds.
 You can run `cerana-update-dev-platform` to download the latest kernel and initrd files.
 Once that completes, you can run `fastreboot` which will use kexec to rapidly reboot using them. The VM will see the same /proc/cmdline as it did on the previous boot.
+
+## Building CeranaOS on CeranaOS
+
+As root you can run `create-build-container` which will fetch a NixOS liveCD ISO and use the contents to set up a minimal build container, as well as fetching a copy of our cerana/nixpkgs repo.
+When it's finished you can run `enter-build-container` which will use systemd-nspawn to set up the appropriate namespaces and drop you at a shell.
+That shell behaves oddly, but running `exec bash -i -l` seems to clear up most of those quirks.
+If you plan on using screen, running `export SHELL` gets things set to use bash as you would expect.
+
+If all you want to do is run a build:
+```bash
+cd /nixpkgs
+nix-build -A netboot nixos/release.nix
+```
+
+To make the build use more parallelism you may prefer our current preferred invocation:
+```bash
+time nix-build --cores 0 --max-jobs 3 -A netboot nixos/release.nix
+```
+
+Additionally, while use of the Nix package manager is a bit out of scope for this document, you can install some additional tools like so:
+```
+nix-env -f /nixpkgs/default.nix -i git go-1.6.2 go1.6-glide go1.6-shfmt ShellCheck-0.4.4 vim
+```
