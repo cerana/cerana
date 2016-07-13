@@ -244,7 +244,7 @@ func pivotRoot(rootfs, pivotBaseDir string) (err error) {
 
 func SetNewRoot(path string) (err error) {
 	if len(path) == 0 || path == "/" {
-		path, err = os.Getwd();
+		path, err = os.Getwd()
 		if err != nil {
 			return err
 		}

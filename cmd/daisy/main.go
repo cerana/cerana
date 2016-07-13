@@ -8,17 +8,17 @@ import "C"
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
-	"runtime"
 
 	log "github.com/Sirupsen/logrus"
-	flags "github.com/spf13/pflag"
 	"github.com/cerana/cerana/pkg/seccomp"
+	flags "github.com/spf13/pflag"
 )
 
 const (
-	argSep = "="
+	argSep  = "="
 	defScmp = "SCMP_ACT_ERRNO"
 )
 
@@ -70,13 +70,13 @@ func main() {
 
 	capInit()
 
-        w, err := newCapWhitelist(Capabilities)
-        dieOnError(err)
-        // drop capabilities in bounding set before changing user
-        dieOnError(w.dropBoundingSet())
+	w, err := newCapWhitelist(Capabilities)
+	dieOnError(err)
+	// drop capabilities in bounding set before changing user
+	dieOnError(w.dropBoundingSet())
 
-        // preserve existing capabilities while we change users
-        dieOnError(SetKeepCaps())
+	// preserve existing capabilities while we change users
+	dieOnError(SetKeepCaps())
 
 	dieOnError(SetNewUser(uid, gid))
 
@@ -93,7 +93,6 @@ func main() {
 	//dieOnError(selinux.InitLabels(nil));
 	// should update user namespace mapping before this point
 	dieOnError(SetNewUser(0, 0))
-
 
 	dieOnError(ClearKeepCaps())
 
@@ -165,4 +164,3 @@ func parseArgs(args []string) (map[string]interface{}, error) {
 	}
 	return out, nil
 }
-

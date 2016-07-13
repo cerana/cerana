@@ -1,6 +1,7 @@
 // +build linux,cgo,seccomp
 // Package seccomp provides basic interfaces for applying seccomp filters
 package seccomp
+
 // from github.com/opencontainers/runc/libcontainer/seccomp/seccomp_linux.go
 
 import (
