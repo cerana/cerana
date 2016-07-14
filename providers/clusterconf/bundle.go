@@ -337,7 +337,7 @@ func (c *ClusterConf) getBundle(id uint64) (*Bundle, error) {
 func (b *Bundle) reload() error {
 	var err error
 	key := path.Join(bundlesPrefix, strconv.FormatUint(b.ID, 10), "config")
-	value, err := b.c.kvGet(key) // Blocking
+	value, err := b.c.kvGet(key)
 	if err != nil {
 		if err.Error() == "key not found" {
 			err = errors.New("bundle config not found")
