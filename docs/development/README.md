@@ -143,8 +143,8 @@ Once that completes, you can run `fastreboot` which will use kexec to rapidly re
 
 ## Building CeranaOS on CeranaOS
 
-As root you can run `create-build-container` which will fetch a NixOS liveCD ISO and use the contents to set up a minimal build container, as well as fetching a copy of our cerana/nixpkgs repo.
-When it's finished you can run `enter-build-container` which will use systemd-nspawn to set up the appropriate namespaces and drop you at a shell.
+You can run `sudo create-build-container` which will fetch a NixOS liveCD ISO and use the contents to set up a minimal build container, as well as fetching a copy of our cerana/nixpkgs repo.
+When it's finished you can run `sudo enter-build-container` which will use systemd-nspawn to set up the appropriate namespaces and drop you at a shell.
 That shell behaves oddly, but running `exec bash -i -l` seems to clear up most of those quirks.
 If you plan on using screen, running `export SHELL` gets things set to use bash as you would expect.
 
@@ -160,6 +160,40 @@ time nix-build --cores 0 --max-jobs 3 -A netboot nixos/release.nix
 ```
 
 Additionally, while use of the Nix package manager is a bit out of scope for this document, you can install some additional tools like so:
-```
+```bash
 nix-env -f /nixpkgs/default.nix -i git go-1.6.2 go1.6-glide go1.6-shfmt ShellCheck-0.4.4 vim
 ```
+
+Note: We've seen nix-env fail complaining about a lack of memory.
+Workaround is to temporarily enable some swap (in the initial namespace):
+```
+sudo zfs create -V 1G data/swap
+sudo mkswap /dev/zvol/data/swap
+sudo swapon /dev/zvol/data/swap
+sudo enter-build-container
+nix-env -f /nixpkgs/default.nix -i vim
+exit
+sudo swapoff -a
+sudo zfs destroy data/swap
+```
+
+## Hacking on cerana/cerana in a build container
+
+```bash
+sudo create-build-container
+sudo enter-build-container
+nix-env -f /nixpkgs/default.nix -i vim
+bldenv
+go get github.com/cerana/cerana
+cd $HOME/go/src/github.com/cerana/cerana/
+glide install
+go build $(glide nv)
+```
+
+On subsequent logins to the machine/VM:
+```bash
+sudo enter-build-container
+bldenv
+cd $HOME/go/src/github.com/cerana/cerana/
+```
+Then hack on things and use `go build` as you would expect.

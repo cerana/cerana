@@ -16,7 +16,7 @@ FILE_SIZE=$(find "$FILE" -printf %s 2>/dev/null || echo)
 FILE_SIZE=$(find "$FILE" -printf %s 2>/dev/null || echo)
 [[ "$SIZE" = "$FILE_SIZE" ]]
 
-mkdir -p mnt/iso mnt/squash etc dev proc sys bin usr/bin nix/store
+mkdir -p mnt/iso mnt/squash etc dev proc sys bin usr/bin nix/store root/.nix-defexpr/channels/
 mount latest-iso-minimal-x86_64-linux mnt/iso
 mount mnt/iso/nix-store.squashfs mnt/squash/
 rsync -av --delete ./mnt/squash/ ./nix/store/
@@ -28,12 +28,19 @@ BASH=$(find nix -type f -path '*/bin/bash' | tail -n 1)
 ENV=$(find nix -type f -path '*coreutils*/bin/env')
 HOSTNAME=$(find nix -type f -path '*net-tools*/bin/hostname')
 LOCAL=$(find nix/store/ -type f -path '*-local-cmds')
-sed -i "s|arting systemd|arting bash|;s|exec systemd|exec /$BASH|" "$INIT"
-echo "/$HOSTNAME build-container" >>"$LOCAL"
-echo "cat /etc/resolv.conf.host | resolvconf -m 1000 -a host" >>"$LOCAL"
+sed -i "s|arting systemd|arting bash|;s|exec systemd|exec /$BASH -i -l|" "$INIT"
+cat >>"$LOCAL" <<EOF
+$HOSTNAME build-container
+cat /etc/resolv.conf.host | resolvconf -m 1000 -a host
+EOF
 ln -sf "/$BASH" bin/sh
 ln -sf "/$ENV" usr/bin/env
 ln -sf "/$INIT" init
 cp /etc/resolv.conf etc/resolv.conf.host
 uuidgen | tr -d "-" >etc/machine-id
+ln -s /nixpkgs root/.nix-defexpr/channels/nixos
+cat >etc/profile.local <<"EOF"
+export GOPATH=$HOME/go
+alias buildenv='nix-shell -A cerana.bin /nixpkgs/default.nix --command "export GIT_SSL_CAINFO=/etc/ssl/certs/ca-certificates.crt; return"'
+EOF
 [[ -d nixpkgs/.git ]] || git clone git://github.com/cerana/nixpkgs
