@@ -137,6 +137,7 @@ type BundleHeartbeatList struct {
 
 // MarshalJSON marshals BundleHeartbeatList into a JSON map, converting uint
 // keys to strings.
+// TODO: Needed until go 1.7 is released
 func (b BundleHeartbeatList) MarshalJSON() ([]byte, error) {
 	type Alias BundleHeartbeatList
 	hbs := make(map[string]BundleHeartbeats)
@@ -154,6 +155,7 @@ func (b BundleHeartbeatList) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON unmarshals JSON into a BundleHeartbeatList, converting string
 // keys to uints.
+// TODO: Needed until go 1.7 is released
 func (b *BundleHeartbeatList) UnmarshalJSON(data []byte) error {
 	type Alias BundleHeartbeatList
 	aux := &struct {

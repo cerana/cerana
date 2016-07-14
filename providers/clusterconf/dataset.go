@@ -160,7 +160,7 @@ func (c *ClusterConf) getDataset(id string) (*Dataset, error) {
 func (d *Dataset) reload() error {
 	var err error
 	key := path.Join(datasetsPrefix, d.ID, "config")
-	value, err := d.c.kvGet(key) // Blocking
+	value, err := d.c.kvGet(key)
 	if err != nil {
 		if err.Error() == "key not found" {
 			err = errors.New("dataset config not found")
