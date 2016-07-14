@@ -51,6 +51,89 @@ type ListResult struct {
 
 ListResult is the result of the List handler.
 
+#### type Mock
+
+```go
+type Mock struct {
+	Data MockData
+}
+```
+
+Mock is a mock provider of service management functionality.
+
+#### func  NewMock
+
+```go
+func NewMock() *Mock
+```
+NewMock creates a new instance of Mock.
+
+#### func (*Mock) Add
+
+```go
+func (m *Mock) Add(service Service)
+```
+Add is a convenience method to directly add a mock service.
+
+#### func (*Mock) ClearData
+
+```go
+func (m *Mock) ClearData()
+```
+ClearData clears all mock data.
+
+#### func (*Mock) Create
+
+```go
+func (m *Mock) Create(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Create creates a new mock service.
+
+#### func (*Mock) Get
+
+```go
+func (m *Mock) Get(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Get retrieves a mock service.
+
+#### func (*Mock) List
+
+```go
+func (m *Mock) List(req *acomm.Request) (interface{}, *url.URL, error)
+```
+List lists all mock services.
+
+#### func (*Mock) RegisterTasks
+
+```go
+func (m *Mock) RegisterTasks(server *provider.Server)
+```
+RegisterTasks registers all of the mock provider task handlers with the server.
+
+#### func (*Mock) Remove
+
+```go
+func (m *Mock) Remove(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Remove removes a mock service.
+
+#### func (*Mock) Restart
+
+```go
+func (m *Mock) Restart(req *acomm.Request) (interface{}, *url.URL, error)
+```
+Restart restarts a mock service.
+
+#### type MockData
+
+```go
+type MockData struct {
+	Services map[uint64]map[string]Service
+}
+```
+
+MockData is the in-memory data structure for the Mock.
+
 #### type Provider
 
 ```go

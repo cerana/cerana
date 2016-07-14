@@ -36,6 +36,7 @@ type ConfigData struct {
 	DatasetInterval string `json:"datasetInterval"`
 	BundleInterval  string `json:"bundleInterval"`
 	NodeInterval    string `json:"nodeInterval"`
+	DatasetDir      string `json:"datasetDir"`
 }
 
 func newConfig(flagSet *pflag.FlagSet, v *viper.Viper) *config {
@@ -65,6 +66,7 @@ func newConfig(flagSet *pflag.FlagSet, v *viper.Viper) *config {
 	flagSet.DurationP("datasetInterval", "d", 0, "dataset heartbeat interval")
 	flagSet.DurationP("bundleInterval", "b", 0, "bundle heartbeat interval")
 	flagSet.DurationP("nodeInterval", "n", 0, "node heartbeat interval")
+	flagSet.StringP("datasetDir", "a", "", "dataset directory")
 
 	return &config{
 		viper:   v,
@@ -157,6 +159,10 @@ func (c *config) bundleInterval() time.Duration {
 	return c.viper.GetDuration("bundleInterval")
 }
 
+func (c *config) datasetDir() string {
+	return c.viper.GetString("datasetDir")
+}
+
 func (c *config) setupLogging() error {
 	logLevel := c.viper.GetString("logLevel")
 	if err := logrusx.SetLevel(logLevel); err != nil {
@@ -188,6 +194,9 @@ func (c *config) validate() error {
 	}
 	if err := c.validateURL("clusterDataURL"); err != nil {
 		return err
+	}
+	if c.datasetDir() == "" {
+		return errors.New("missing datasetDir")
 	}
 
 	return nil

@@ -14,13 +14,12 @@ func (s *clusterConf) TestGetDataset() {
 	s.Require().NoError(err)
 
 	tests := []struct {
-		id    string
-		nodes map[string]bool
-		err   string
+		id  string
+		err string
 	}{
-		{"", make(map[string]bool), "missing arg: id"},
-		{"does-not-exist", make(map[string]bool), "dataset config not found"},
-		{dataset.ID, dataset.Nodes, ""},
+		{"", "missing arg: id"},
+		{"does-not-exist", "dataset config not found"},
+		{dataset.ID, ""},
 	}
 
 	for _, test := range tests {
@@ -42,7 +41,6 @@ func (s *clusterConf) TestGetDataset() {
 			datasetPayload, ok := result.(*clusterconf.DatasetPayload)
 			s.True(ok, test.id)
 			s.Equal(test.id, datasetPayload.Dataset.ID, test.id)
-			s.Equal(test.nodes, datasetPayload.Dataset.Nodes, test.id)
 		}
 	}
 }
@@ -70,8 +68,8 @@ func (s *clusterConf) TestUpdateDataset() {
 			Task: "update-dataset",
 			Args: &clusterconf.DatasetPayload{
 				Dataset: &clusterconf.Dataset{
-					DatasetConf: clusterconf.DatasetConf{ID: test.id},
-					ModIndex:    test.modIndex,
+					ID:       test.id,
+					ModIndex: test.modIndex,
 				},
 			},
 		})
@@ -133,15 +131,17 @@ func (s *clusterConf) TestDatasetHeartbeat() {
 	s.Require().NoError(err)
 
 	tests := []struct {
-		id  string
-		ip  net.IP
-		err string
+		id    string
+		ip    net.IP
+		inUse bool
+		err   string
 	}{
-		{"", net.IP{}, "missing arg: id"},
-		{"", net.ParseIP("127.0.0.2"), "missing arg: id"},
-		{dataset.ID, net.IP{}, "missing arg: ip"},
-		{uuid.New(), net.ParseIP("127.0.0.3"), "dataset config not found"},
-		{dataset.ID, net.ParseIP("127.0.0.4"), ""},
+		{"", net.IP{}, false, "missing arg: id"},
+		{"", net.ParseIP("127.0.0.2"), false, "missing arg: id"},
+		{dataset.ID, net.IP{}, false, "missing arg: ip"},
+		{uuid.New(), net.ParseIP("127.0.0.3"), false, ""},
+		{dataset.ID, net.ParseIP("127.0.0.4"), false, ""},
+		{dataset.ID, net.ParseIP("127.0.0.4"), true, ""},
 	}
 
 	for _, test := range tests {
@@ -158,32 +158,56 @@ func (s *clusterConf) TestDatasetHeartbeat() {
 			s.Nil(result, args)
 		} else {
 			s.NoError(err, args)
-			if !s.NotNil(result, args) {
-				continue
-			}
-			datasetPayload, ok := result.(*clusterconf.DatasetPayload)
-			s.True(ok, args)
-			if test.id == "" {
-				s.NotEmpty(datasetPayload.Dataset.ID, args)
-			} else {
-				s.Equal(test.id, datasetPayload.Dataset.ID, args)
-			}
-			s.True(datasetPayload.Dataset.Nodes[test.ip.String()], args)
+			s.Nil(result, args)
 		}
 	}
 }
 
+func (s *clusterConf) TestListDatasetHeartbeats() {
+	id := uuid.New()
+	hb := clusterconf.DatasetHeartbeat{
+		IP:    net.ParseIP("123.123.123.123"),
+		InUse: true,
+	}
+
+	req, err := acomm.NewRequest(acomm.RequestOptions{
+		Task: "dataset-heartbeat",
+		Args: &clusterconf.DatasetHeartbeatArgs{ID: id, IP: hb.IP, InUse: hb.InUse},
+	})
+	s.Require().NoError(err)
+	_, _, err = s.clusterConf.DatasetHeartbeat(req)
+	s.Require().NoError(err)
+
+	req, err = acomm.NewRequest(acomm.RequestOptions{
+		Task: "dataset-list-heartbeats",
+	})
+	s.Require().NoError(err)
+	result, streamURL, err := s.clusterConf.ListDatasetHeartbeats(req)
+	s.NoError(err)
+	s.Nil(streamURL)
+	if !s.NotNil(result) {
+		return
+	}
+	hbList := result.(clusterconf.DatasetHeartbeatList)
+	dsHBs, ok := hbList.Heartbeats[id]
+	if !s.True(ok) {
+		return
+	}
+	if !s.Len(dsHBs, 1) {
+		return
+	}
+	s.EqualValues(hb, dsHBs[hb.IP.String()])
+}
+
 func (s *clusterConf) addDataset() (*clusterconf.Dataset, error) {
-	dataset := &clusterconf.Dataset{DatasetConf: clusterconf.DatasetConf{
+	dataset := &clusterconf.Dataset{
 		ID:    uuid.New(),
 		Quota: 5,
-	}}
+	}
 	datasetKey := path.Join("datasets", dataset.ID, "config")
-	hbKey := path.Join("datasets", dataset.ID, "nodes", "127.0.0.1")
 
 	data := map[string]interface{}{
 		datasetKey: dataset,
-		hbKey:      true,
 	}
 	indexes, err := s.loadData(data)
 	if err != nil {
@@ -191,7 +215,6 @@ func (s *clusterConf) addDataset() (*clusterconf.Dataset, error) {
 	}
 
 	dataset.ModIndex = indexes[datasetKey]
-	dataset.Nodes = map[string]bool{"127.0.0.1": true}
 
 	return dataset, nil
 }

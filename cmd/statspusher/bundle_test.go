@@ -1,13 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"net"
 	"sort"
 
 	"github.com/cerana/cerana/providers/clusterconf"
 	"github.com/cerana/cerana/providers/health"
-	"github.com/cerana/cerana/providers/systemd"
+	"github.com/cerana/cerana/providers/service"
 	"github.com/pborman/uuid"
 )
 
@@ -38,26 +37,26 @@ func (s *StatsPusher) TestGetBundles() {
 	}{
 		{"empty", []uint64{}, []uint64{}, []uint64{}},
 		{"known only", []uint64{123}, []uint64{}, []uint64{}},
-		{"local only", []uint64{}, []uint64{123}, []uint64{}},
+		{"local only", []uint64{}, []uint64{123}, []uint64{123}},
 		{"both, single", []uint64{123}, []uint64{123}, []uint64{123}},
-		{"extra local", []uint64{123}, []uint64{123, 456}, []uint64{123}},
+		{"extra local", []uint64{123}, []uint64{123, 456}, []uint64{123, 456}},
 		{"extra known", []uint64{123, 456}, []uint64{123}, []uint64{123}},
 		{"both, multiple", []uint64{123, 456}, []uint64{123, 456}, []uint64{123, 456}},
 	}
 
 	for _, test := range tests {
-		s.systemd.ClearData()
+		s.service.ClearData()
 		for _, bundle := range test.local {
 			for i := 0; i < 3; i++ {
-				serviceName := fmt.Sprintf("%d:%s.service", bundle, uuid.New())
-				s.systemd.ManualCreate(systemd.CreateArgs{
-					Name: serviceName,
-				}, true)
+				s.service.Add(service.Service{
+					ID:       uuid.New(),
+					BundleID: bundle,
+				})
 			}
 		}
 		s.clusterConf.Data.Bundles = make(map[uint64]*clusterconf.Bundle)
 		for _, id := range test.known {
-			s.clusterConf.Data.Bundles[id] = &clusterconf.Bundle{BundleConf: clusterconf.BundleConf{ID: id}}
+			s.clusterConf.Data.Bundles[id] = &clusterconf.Bundle{ID: id}
 		}
 		bundles, err := s.statsPusher.getBundles()
 		if !s.NoError(err, test.desc) {
@@ -76,22 +75,20 @@ func (s *StatsPusher) TestGetBundles() {
 func (s *StatsPusher) TestRunHealthChecks() {
 	s.health.Data.Uptime = false
 	bundle := &clusterconf.Bundle{
-		BundleConf: clusterconf.BundleConf{
-			ID: 123,
-			Services: map[string]clusterconf.BundleService{
-				"foobar": {
-					ServiceConf: clusterconf.ServiceConf{
-						HealthChecks: map[string]clusterconf.HealthCheck{
-							"file": {
-								ID:   "file",
-								Type: "health-file",
-								Args: health.FileArgs{},
-							},
-							"uptime": {
-								ID:   "file",
-								Type: "health-uptime",
-								Args: health.UptimeArgs{},
-							},
+		ID: 123,
+		Services: map[string]clusterconf.BundleService{
+			"foobar": {
+				ServiceConf: clusterconf.ServiceConf{
+					HealthChecks: map[string]clusterconf.HealthCheck{
+						"file": {
+							ID:   "file",
+							Type: "health-file",
+							Args: health.FileArgs{},
+						},
+						"uptime": {
+							ID:   "file",
+							Type: "health-uptime",
+							Args: health.UptimeArgs{},
 						},
 					},
 				},
@@ -119,11 +116,5 @@ func (s *StatsPusher) TestSendBundleHeartbeats() {
 		123: {},
 		456: {},
 	}
-	for id := range bundles {
-		s.clusterConf.Data.Bundles[id] = &clusterconf.Bundle{BundleConf: clusterconf.BundleConf{ID: id}}
-	}
 	s.NoError(s.statsPusher.sendBundleHeartbeats(bundles, serial, ip))
-	for id := range bundles {
-		s.Equal(ip, s.clusterConf.Data.Bundles[id].Nodes[serial].IP)
-	}
 }

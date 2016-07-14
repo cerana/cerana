@@ -3,7 +3,7 @@ package main
 import (
 	"errors"
 	"net"
-	"net/url"
+	"path/filepath"
 
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/providers/clusterconf"
@@ -12,11 +12,11 @@ import (
 )
 
 func (s *statsPusher) datasetHeartbeats() error {
-	datasets, err := s.getDatasets()
+	ip, err := s.getIP()
 	if err != nil {
 		return err
 	}
-	ip, err := s.getIP()
+	datasets, err := s.getDatasets(ip)
 	if err != nil {
 		return err
 	}
@@ -24,14 +24,15 @@ func (s *statsPusher) datasetHeartbeats() error {
 	return s.sendDatasetHeartbeats(datasets, ip)
 }
 
-func (s *statsPusher) getDatasets() ([]string, error) {
+func (s *statsPusher) getDatasets(ip net.IP) ([]clusterconf.DatasetHeartbeatArgs, error) {
 	requests := map[string]struct {
 		task     string
-		url      *url.URL
+		args     interface{}
 		respData interface{}
 	}{
-		"local": {task: "zfs-list", url: s.config.nodeDataURL(), respData: &zfs.ListResult{}},
-		"known": {task: "list-datasets", url: s.config.clusterDataURL(), respData: &clusterconf.DatasetListResult{}},
+		"datasets":  {task: "zfs-list", args: zfs.ListArgs{Name: s.config.datasetDir()}, respData: &zfs.ListResult{}},
+		"bundles":   {task: "list-bundles", respData: &clusterconf.BundleListResult{}},
+		"bundleHBs": {task: "list-bundle-heartbeats", respData: &clusterconf.BundleHeartbeatList{}},
 	}
 
 	multiRequest := acomm.NewMultiRequest(s.tracker, s.config.requestTimeout())
@@ -43,7 +44,7 @@ func (s *statsPusher) getDatasets() ([]string, error) {
 		if err := multiRequest.AddRequest(name, req); err != nil {
 			return nil, err
 		}
-		if err := acomm.Send(args.url, req); err != nil {
+		if err := acomm.Send(s.config.nodeDataURL(), req); err != nil {
 			multiRequest.RemoveRequest(req)
 			return nil, err
 		}
@@ -59,18 +60,40 @@ func (s *statsPusher) getDatasets() ([]string, error) {
 			return nil, err
 		}
 	}
-	localDatasets := requests["local"].respData.(*zfs.ListResult).Datasets
-	knownDatasets := requests["known"].respData.(*clusterconf.DatasetListResult).Datasets
 
-	datasets := make([]string, 0, len(localDatasets))
-	for _, local := range localDatasets {
-		for _, known := range knownDatasets {
-			if known.ID == local.Name {
-				datasets = append(datasets, local.Name)
+	listResult := requests["datasets"].respData.(*zfs.ListResult).Datasets
+	bundles := requests["bundles"].respData.(*clusterconf.BundleListResult).Bundles
+	heartbeats := requests["bundleHBs"].respData.(*clusterconf.BundleHeartbeatList).Heartbeats
+
+	// determine which datasets are configured to be in use on this node
+	datasetsInUse := make(map[string]bool)
+	for _, bundle := range bundles {
+		for _, hb := range heartbeats[bundle.ID] {
+			if hb.IP.Equal(ip) {
+				for datasetID := range bundle.Datasets {
+					datasetsInUse[datasetID] = true
+				}
 				break
 			}
 		}
 	}
+
+	// extract just the dataset ids and ignore the base directory
+	datasets := make([]clusterconf.DatasetHeartbeatArgs, 0, len(listResult))
+	for _, dataset := range listResult {
+		if s.config.datasetDir() == dataset.Name {
+			continue
+		}
+
+		datasetID := filepath.Base(dataset.Name)
+
+		args := clusterconf.DatasetHeartbeatArgs{
+			ID:    datasetID,
+			InUse: datasetsInUse[datasetID],
+		}
+		datasets = append(datasets, args)
+	}
+
 	return datasets, nil
 }
 
@@ -117,22 +140,20 @@ func (s *statsPusher) getIP() (net.IP, error) {
 	return nil, errors.New("no suitable IP found")
 }
 
-func (s *statsPusher) sendDatasetHeartbeats(datasets []string, ip net.IP) error {
+func (s *statsPusher) sendDatasetHeartbeats(datasetArgs []clusterconf.DatasetHeartbeatArgs, ip net.IP) error {
 	var errored bool
 	multiRequest := acomm.NewMultiRequest(s.tracker, s.config.requestTimeout())
-	for _, dataset := range datasets {
+	for _, dataset := range datasetArgs {
+		dataset.IP = ip
 		req, err := acomm.NewRequest(acomm.RequestOptions{
 			Task: "dataset-heartbeat",
-			Args: clusterconf.DatasetHeartbeatArgs{
-				ID: dataset,
-				IP: ip,
-			},
+			Args: dataset,
 		})
 		if err != nil {
 			errored = true
 			continue
 		}
-		if err := multiRequest.AddRequest(dataset, req); err != nil {
+		if err := multiRequest.AddRequest(dataset.ID, req); err != nil {
 			errored = true
 			continue
 		}

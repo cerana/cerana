@@ -5,10 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"net"
 	"net/url"
 	"path"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -31,22 +29,14 @@ const (
 
 // Bundle is information about a bundle of services.
 type Bundle struct {
-	BundleConf
-	c *ClusterConf
-	// Nodes contains the set of nodes on which the bundle is currently in use.
-	// The map keys are serials.
-	Nodes map[string]BundleNode `json:"nodes"`
-	// ModIndex should be treated as opaque, but passed back on updates.
-	ModIndex uint64 `json:"modIndex"`
-}
-
-// BundleConf is the configuration of a bundle.
-type BundleConf struct {
+	c          *ClusterConf
 	ID         uint64                   `json:"id"`
 	Datasets   map[string]BundleDataset `json:"datasets"`
 	Services   map[string]BundleService `json:"services"`
 	Redundancy int                      `json:"redundancy"`
 	Ports      BundlePorts              `json:"ports"`
+	// ModIndex should be treated as opaque, but passed back on updates.
+	ModIndex uint64 `json:"modIndex"`
 }
 
 // BundlePorts is a map of port numbers to port information.
@@ -176,12 +166,6 @@ type BundlePort struct {
 	ExternalPort     int      `json:"externalPort"`
 }
 
-// BundleNode is the data contained in a node heartbeat.
-type BundleNode struct {
-	IP           net.IP           `json:"ip"`
-	HealthErrors map[string]error `json:"healthErrors"`
-}
-
 // DeleteBundleArgs are args for bundle delete task.
 type DeleteBundleArgs struct {
 	ID uint64 `json:"id"`
@@ -207,13 +191,6 @@ type BundlePayload struct {
 // BundleListResult is the result from listing bundles.
 type BundleListResult struct {
 	Bundles []*Bundle `json:"bundles"`
-}
-
-// BundleHeartbeatArgs are arguments for updating a dataset node heartbeat.
-type BundleHeartbeatArgs struct {
-	ID     uint64     `json:"id"`
-	Serial string     `json:"serial"`
-	Node   BundleNode `json:"node"`
 }
 
 // GetBundle retrieves a bundle.
@@ -346,38 +323,10 @@ func (c *ClusterConf) DeleteBundle(req *acomm.Request) (interface{}, *url.URL, e
 	return nil, nil, bundle.delete()
 }
 
-// BundleHeartbeat registers a new node heartbeat that is using the bundle.
-func (c *ClusterConf) BundleHeartbeat(req *acomm.Request) (interface{}, *url.URL, error) {
-	var args BundleHeartbeatArgs
-	if err := req.UnmarshalArgs(&args); err != nil {
-		return nil, nil, err
-	}
-	if args.ID == 0 {
-		return nil, nil, errors.New("missing arg: id")
-	}
-	if args.Serial == "" {
-		return nil, nil, errors.New("missing arg: serial")
-	}
-	if args.Node.IP == nil {
-		return nil, nil, errors.New("missing arg: ip")
-	}
-
-	bundle, err := c.getBundle(args.ID)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if err := bundle.nodeHeartbeat(args.Serial, args.Node); err != nil {
-		return nil, nil, err
-	}
-
-	return &BundlePayload{bundle}, nil, nil
-}
-
 func (c *ClusterConf) getBundle(id uint64) (*Bundle, error) {
 	bundle := &Bundle{
-		c:          c,
-		BundleConf: BundleConf{ID: id},
+		c:  c,
+		ID: id,
 	}
 	if err := bundle.reload(); err != nil {
 		return nil, err
@@ -387,35 +336,19 @@ func (c *ClusterConf) getBundle(id uint64) (*Bundle, error) {
 
 func (b *Bundle) reload() error {
 	var err error
-	key := path.Join(bundlesPrefix, strconv.FormatUint(b.ID, 10))
-	values, err := b.c.kvGetAll(key) // Blocking
+	key := path.Join(bundlesPrefix, strconv.FormatUint(b.ID, 10), "config")
+	value, err := b.c.kvGet(key)
 	if err != nil {
-		return err
-	}
-
-	// Config
-	config, ok := values[path.Join(key, "config")]
-	if !ok {
-		return errors.New("bundle config not found")
-	}
-	if err = json.Unmarshal(config.Data, &b.BundleConf); err != nil {
-		return err
-	}
-	b.ModIndex = config.Index
-
-	// Nodes
-	b.Nodes = make(map[string]BundleNode)
-	for key, value := range values {
-		base := filepath.Base(key)
-		dir := filepath.Base(filepath.Dir(key))
-		if dir == "nodes" {
-			var data BundleNode
-			if err := json.Unmarshal(value.Data, &data); err != nil {
-				return err
-			}
-			b.Nodes[base] = data
+		if err.Error() == "key not found" {
+			err = errors.New("bundle config not found")
 		}
+		return err
 	}
+
+	if err = json.Unmarshal(value.Data, &b); err != nil {
+		return err
+	}
+	b.ModIndex = value.Index
 
 	return nil
 }
@@ -426,17 +359,16 @@ func (b *Bundle) delete() error {
 }
 
 // update saves the core bundle config.
-// It will not modify nodes.
 func (b *Bundle) update() error {
 	key := path.Join(bundlesPrefix, strconv.FormatUint(b.ID, 10), "config")
 
-	_, err := b.c.kvUpdate(key, b.BundleConf, b.ModIndex)
+	index, err := b.c.kvUpdate(key, b, b.ModIndex)
 	if err != nil {
 		return err
 	}
+	b.ModIndex = index
 
-	// reload instead of just setting the new modIndex in case any nodes have also changed.
-	return b.reload()
+	return nil
 }
 
 // combinedOverlay will create a new *Bundle object containing the base configurations of datasets and services with the bundle values overlayed on top.
@@ -446,14 +378,16 @@ func (b *Bundle) combinedOverlay() (*Bundle, error) {
 	errorChan := make(chan error, len(b.Datasets)+len(b.Services))
 	defer close(errorChan)
 
-	// duplicate bundle
-	result := &Bundle{
-		BundleConf: b.BundleConf,
-		Nodes:      make(map[string]BundleNode),
+	// duplicate bundle using json to also duplicate the map field values
+	var result Bundle
+	tmp, err := json.Marshal(b)
+	if err != nil {
+		return nil, err
 	}
-	for k, v := range b.Nodes {
-		result.Nodes[k] = v
+	if err := json.Unmarshal(tmp, &result); err != nil {
+		return nil, err
 	}
+
 	result.Datasets = make(map[string]BundleDataset)
 	for k, v := range b.Datasets {
 		result.Datasets[k] = v
@@ -506,7 +440,7 @@ func (b *Bundle) combinedOverlay() (*Bundle, error) {
 	wg.Wait()
 
 	if len(errorChan) == 0 {
-		return result, nil
+		return &result, nil
 	}
 
 	errors := make([]error, len(errorChan))
@@ -520,12 +454,4 @@ Loop:
 		}
 	}
 	return nil, fmt.Errorf("bundle overlay failed: %+v", errors)
-}
-
-func (b *Bundle) nodeHeartbeat(serial string, node BundleNode) error {
-	key := path.Join(bundlesPrefix, strconv.FormatUint(b.ID, 10), "nodes", serial)
-	if err := b.c.kvEphemeral(key, node, b.c.config.BundleTTL()); err != nil {
-		return err
-	}
-	return b.reload()
 }

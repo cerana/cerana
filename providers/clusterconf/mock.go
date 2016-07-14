@@ -18,23 +18,27 @@ type MockClusterConf struct {
 
 // MockClusterData is the in-memory data structure for a MockClusterConf.
 type MockClusterData struct {
-	Services map[string]*Service
-	Bundles  map[uint64]*Bundle
-	Datasets map[string]*Dataset
-	Nodes    map[string]*Node
-	History  NodesHistory
-	Defaults *Defaults
+	Services   map[string]*Service
+	Bundles    map[uint64]*Bundle
+	BundlesHB  map[uint64]BundleHeartbeats
+	Datasets   map[string]*Dataset
+	DatasetsHB map[string]map[string]DatasetHeartbeat
+	Nodes      map[string]*Node
+	History    NodesHistory
+	Defaults   *Defaults
 }
 
 // NewMockClusterConf creates a new MockClusterConf.
 func NewMockClusterConf() *MockClusterConf {
 	return &MockClusterConf{
 		Data: &MockClusterData{
-			Services: make(map[string]*Service),
-			Bundles:  make(map[uint64]*Bundle),
-			Datasets: make(map[string]*Dataset),
-			Nodes:    make(map[string]*Node),
-			History:  make(NodesHistory),
+			Services:   make(map[string]*Service),
+			Bundles:    make(map[uint64]*Bundle),
+			BundlesHB:  make(map[uint64]BundleHeartbeats),
+			Datasets:   make(map[string]*Dataset),
+			DatasetsHB: make(map[string]map[string]DatasetHeartbeat),
+			Nodes:      make(map[string]*Node),
+			History:    make(NodesHistory),
 		},
 	}
 }
@@ -43,11 +47,13 @@ func NewMockClusterConf() *MockClusterConf {
 func (c *MockClusterConf) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("get-bundle", c.GetBundle)
 	server.RegisterTask("list-bundles", c.ListBundles)
+	server.RegisterTask("list-bundle-heartbeats", c.ListBundleHeartbeats)
 	server.RegisterTask("update-bundle", c.UpdateBundle)
 	server.RegisterTask("delete-bundle", c.DeleteBundle)
 	server.RegisterTask("bundle-heartbeat", c.BundleHeartbeat)
 	server.RegisterTask("get-dataset", c.GetDataset)
 	server.RegisterTask("list-datasets", c.ListDatasets)
+	server.RegisterTask("list-dataset-heartbeats", c.ListDatasetHeartbeats)
 	server.RegisterTask("update-dataset", c.UpdateDataset)
 	server.RegisterTask("delete-dataset", c.DeleteDataset)
 	server.RegisterTask("dataset-heartbeat", c.DatasetHeartbeat)
@@ -132,20 +138,20 @@ func (c *MockClusterConf) BundleHeartbeat(req *acomm.Request) (interface{}, *url
 	if args.Serial == "" {
 		return nil, nil, errors.New("missing arg: serial")
 	}
-	if args.Node.IP == nil {
+	if args.IP == nil {
 		return nil, nil, errors.New("missing arg: ip")
 	}
 
-	bundle, ok := c.Data.Bundles[args.ID]
-	if !ok {
-		return nil, nil, errors.New("bundle config not found")
+	if _, ok := c.Data.BundlesHB[args.ID]; !ok {
+		c.Data.BundlesHB[args.ID] = make(BundleHeartbeats)
 	}
+	c.Data.BundlesHB[args.ID][args.Serial] = BundleHeartbeat{IP: args.IP, HealthErrors: args.HealthErrors}
+	return nil, nil, nil
+}
 
-	if bundle.Nodes == nil {
-		bundle.Nodes = make(map[string]BundleNode)
-	}
-	bundle.Nodes[args.Serial] = args.Node
-	return &BundlePayload{bundle}, nil, nil
+// ListBundleHeartbeats list all mock bundle heartbeats.
+func (c *MockClusterConf) ListBundleHeartbeats(req *acomm.Request) (interface{}, *url.URL, error) {
+	return BundleHeartbeatList{c.Data.BundlesHB}, nil, nil
 }
 
 // GetDataset retrieves a mock dataset.
@@ -218,15 +224,16 @@ func (c *MockClusterConf) DatasetHeartbeat(req *acomm.Request) (interface{}, *ur
 	if args.IP == nil {
 		return nil, nil, errors.New("missing arg: ip")
 	}
-	dataset, ok := c.Data.Datasets[args.ID]
-	if !ok {
-		return nil, nil, errors.New("dataset config not found")
+	if _, ok := c.Data.DatasetsHB[args.ID]; !ok {
+		c.Data.DatasetsHB[args.ID] = make(map[string]DatasetHeartbeat)
 	}
-	if dataset.Nodes == nil {
-		dataset.Nodes = make(map[string]bool)
-	}
-	dataset.Nodes[args.IP.String()] = true
-	return &DatasetPayload{dataset}, nil, nil
+	c.Data.DatasetsHB[args.ID][args.IP.String()] = DatasetHeartbeat{IP: args.IP, InUse: args.InUse}
+	return nil, nil, nil
+}
+
+// ListDatasetHeartbeats lists all mock dataset heartbeats.
+func (c *MockClusterConf) ListDatasetHeartbeats(req *acomm.Request) (interface{}, *url.URL, error) {
+	return DatasetHeartbeatList{c.Data.DatasetsHB}, nil, nil
 }
 
 // GetDefaults retrieves the mock default values.

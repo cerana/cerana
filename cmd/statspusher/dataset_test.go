@@ -2,7 +2,6 @@ package main
 
 import (
 	"net"
-	"sort"
 
 	"github.com/cerana/cerana/providers/clusterconf"
 	zfsp "github.com/cerana/cerana/providers/zfs"
@@ -10,36 +9,44 @@ import (
 )
 
 func (s *StatsPusher) TestGetDatasets() {
+	ip := net.ParseIP("192.168.1.1")
 	tests := []struct {
-		desc   string
-		known  []string
-		local  []string
-		result []string
+		desc     string
+		datasets []string
+		result   []clusterconf.DatasetHeartbeatArgs
 	}{
-		{"empty", []string{}, []string{}, []string{}},
-		{"known only", []string{"foo"}, []string{}, []string{}},
-		{"local only", []string{}, []string{"foo"}, []string{}},
-		{"both, single", []string{"foo"}, []string{"foo"}, []string{"foo"}},
-		{"extra local", []string{"foo"}, []string{"foo", "bar"}, []string{"foo"}},
-		{"extra known", []string{"foo", "bar"}, []string{"foo"}, []string{"foo"}},
-		{"both, multiple", []string{"foo", "bar"}, []string{"foo", "bar"}, []string{"foo", "bar"}},
+		{"empty", []string{}, []clusterconf.DatasetHeartbeatArgs{}},
+		{"one", []string{"asdf"}, []clusterconf.DatasetHeartbeatArgs{{ID: "asdf"}}},
+		{"base stripping", []string{"base/asdf"}, []clusterconf.DatasetHeartbeatArgs{{ID: "asdf"}}},
+		{"base stripping", []string{"foobar", "foobar/asdf"}, []clusterconf.DatasetHeartbeatArgs{{ID: "asdf"}}},
+		{"in use", []string{"useddataset"}, []clusterconf.DatasetHeartbeatArgs{{ID: "useddataset", InUse: true}}},
 	}
 
 	for _, test := range tests {
 		s.zfs.Data.Datasets = make(map[string]*zfsp.Dataset)
-		for _, name := range test.local {
+		for _, name := range test.datasets {
 			s.zfs.Data.Datasets[name] = &zfsp.Dataset{Name: name, Properties: &zfs.DatasetProperties{Type: "volume"}}
+			if test.desc == "in use" {
+				bundleID := uint64(1)
+				s.clusterConf.Data.Bundles[bundleID] = &clusterconf.Bundle{
+					ID: bundleID,
+					Datasets: map[string]clusterconf.BundleDataset{
+						test.datasets[0]: {
+							Name: test.datasets[0],
+							ID:   test.datasets[0],
+						},
+					},
+				}
+				s.clusterConf.Data.BundlesHB[bundleID] = clusterconf.BundleHeartbeats{
+					"someserial": {IP: ip},
+				}
+			}
 		}
-		s.clusterConf.Data.Datasets = make(map[string]*clusterconf.Dataset)
-		for _, id := range test.known {
-			s.clusterConf.Data.Datasets[id] = &clusterconf.Dataset{DatasetConf: clusterconf.DatasetConf{ID: id}}
-		}
-		datasets, err := s.statsPusher.getDatasets()
+		datasets, err := s.statsPusher.getDatasets(ip)
 		if !s.NoError(err, test.desc) {
 			continue
 		}
-		sort.Strings(test.result)
-		sort.Strings(datasets)
+
 		s.Equal(test.result, datasets, test.desc)
 	}
 }
@@ -57,8 +64,7 @@ func (s *StatsPusher) TestSendDatasetHeartbeats() {
 	s.zfs.Data.Datasets = make(map[string]*zfsp.Dataset)
 	s.zfs.Data.Datasets[name] = &zfsp.Dataset{Name: name, Properties: &zfs.DatasetProperties{Type: "volume"}}
 	s.clusterConf.Data.Datasets = make(map[string]*clusterconf.Dataset)
-	s.clusterConf.Data.Datasets[name] = &clusterconf.Dataset{DatasetConf: clusterconf.DatasetConf{ID: name}}
+	s.clusterConf.Data.Datasets[name] = &clusterconf.Dataset{ID: name}
 	ip := net.ParseIP(s.metrics.Data.Network.Interfaces[0].Addrs[0].Addr)
-	s.NoError(s.statsPusher.sendDatasetHeartbeats([]string{name}, ip))
-	s.True(s.clusterConf.Data.Datasets[name].Nodes[ip.String()])
+	s.NoError(s.statsPusher.sendDatasetHeartbeats([]clusterconf.DatasetHeartbeatArgs{{ID: name}}, ip))
 }

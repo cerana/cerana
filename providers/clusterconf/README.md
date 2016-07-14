@@ -19,31 +19,17 @@ Valid bundle dataset types
 
 ```go
 type Bundle struct {
-	BundleConf
-
-	// Nodes contains the set of nodes on which the bundle is currently in use.
-	// The map keys are serials.
-	Nodes map[string]BundleNode `json:"nodes"`
+	ID         uint64                   `json:"id"`
+	Datasets   map[string]BundleDataset `json:"datasets"`
+	Services   map[string]BundleService `json:"services"`
+	Redundancy int                      `json:"redundancy"`
+	Ports      BundlePorts              `json:"ports"`
 	// ModIndex should be treated as opaque, but passed back on updates.
 	ModIndex uint64 `json:"modIndex"`
 }
 ```
 
 Bundle is information about a bundle of services.
-
-#### type BundleConf
-
-```go
-type BundleConf struct {
-	ID         uint64                   `json:"id"`
-	Datasets   map[string]BundleDataset `json:"datasets"`
-	Services   map[string]BundleService `json:"services"`
-	Redundancy int                      `json:"redundancy"`
-	Ports      BundlePorts              `json:"ports"`
-}
-```
-
-BundleConf is the configuration of a bundle.
 
 #### type BundleDataset
 
@@ -66,17 +52,79 @@ type BundleDatasetType int
 
 BundleDatasetType is the type of dataset to be used in a bundle.
 
+#### type BundleHeartbeat
+
+```go
+type BundleHeartbeat struct {
+	IP           net.IP           `json:"ip"`
+	HealthErrors map[string]error `json:"healthErrors"`
+}
+```
+
+BundleHeartbeat is bundle heartbeat information.
+
+#### func (BundleHeartbeat) MarshalJSON
+
+```go
+func (b BundleHeartbeat) MarshalJSON() ([]byte, error)
+```
+MarshalJSON marshals BundleHeartbeat into a JSON map, converting error values to
+strings.
+
+#### func (*BundleHeartbeat) UnmarshalJSON
+
+```go
+func (b *BundleHeartbeat) UnmarshalJSON(data []byte) error
+```
+UnmarshalJSON unmarshals JSON into a BundleHeartbeat, converting string values
+to errors.
+
 #### type BundleHeartbeatArgs
 
 ```go
 type BundleHeartbeatArgs struct {
-	ID     uint64     `json:"id"`
-	Serial string     `json:"serial"`
-	Node   BundleNode `json:"node"`
+	ID           uint64           `json:"id"`
+	Serial       string           `json:"serial"`
+	IP           net.IP           `json:"ip"`
+	HealthErrors map[string]error `json:"healthErrors"`
 }
 ```
 
-BundleHeartbeatArgs are arguments for updating a dataset node heartbeat.
+BundleHeartbeatArgs are argumenst for updating a bundle heartbeat.
+
+#### type BundleHeartbeatList
+
+```go
+type BundleHeartbeatList struct {
+	Heartbeats map[uint64]BundleHeartbeats `json:"heartbeats"`
+}
+```
+
+BundleHeartbeatList is the result of a ListBundleHeartbeats.
+
+#### func (BundleHeartbeatList) MarshalJSON
+
+```go
+func (b BundleHeartbeatList) MarshalJSON() ([]byte, error)
+```
+MarshalJSON marshals BundleHeartbeatList into a JSON map, converting uint keys
+to strings.
+
+#### func (*BundleHeartbeatList) UnmarshalJSON
+
+```go
+func (b *BundleHeartbeatList) UnmarshalJSON(data []byte) error
+```
+UnmarshalJSON unmarshals JSON into a BundleHeartbeatList, converting string keys
+to uints.
+
+#### type BundleHeartbeats
+
+```go
+type BundleHeartbeats map[string]BundleHeartbeat
+```
+
+BundleHeartbeats are a set of bundle heartbeats for a node.
 
 #### type BundleListResult
 
@@ -87,17 +135,6 @@ type BundleListResult struct {
 ```
 
 BundleListResult is the result from listing bundles.
-
-#### type BundleNode
-
-```go
-type BundleNode struct {
-	IP           net.IP           `json:"ip"`
-	HealthErrors map[string]error `json:"healthErrors"`
-}
-```
-
-BundleNode is the data contained in a node heartbeat.
 
 #### type BundlePayload
 
@@ -180,7 +217,7 @@ New creates a new instance of ClusterConf
 ```go
 func (c *ClusterConf) BundleHeartbeat(req *acomm.Request) (interface{}, *url.URL, error)
 ```
-BundleHeartbeat registers a new node heartbeat that is using the bundle.
+BundleHeartbeat registers a new node heartbeat that is using the dataset.
 
 #### func (*ClusterConf) DatasetHeartbeat
 
@@ -252,12 +289,26 @@ func (c *ClusterConf) GetService(req *acomm.Request) (interface{}, *url.URL, err
 ```
 GetService retrieves a service.
 
+#### func (*ClusterConf) ListBundleHeartbeats
+
+```go
+func (c *ClusterConf) ListBundleHeartbeats(req *acomm.Request) (interface{}, *url.URL, error)
+```
+ListBundleHeartbeats returns a list of all active bundle heartbeats.
+
 #### func (*ClusterConf) ListBundles
 
 ```go
 func (c *ClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL, error)
 ```
 ListBundles retrieves a list of all bundles.
+
+#### func (*ClusterConf) ListDatasetHeartbeats
+
+```go
+func (c *ClusterConf) ListDatasetHeartbeats(req *acomm.Request) (interface{}, *url.URL, error)
+```
+ListDatasetHeartbeats returns a list of all active dataset heartbeats.
 
 #### func (*ClusterConf) ListDatasets
 
@@ -380,22 +431,6 @@ ConfigData defines the structure of the config data (e.g. in the config file)
 
 ```go
 type Dataset struct {
-	DatasetConf
-
-	// Nodes contains the set of nodes on which the dataset is currently in use.
-	// The map keys are IP address strings.
-	Nodes map[string]bool `json:"nodes"`
-	// ModIndex should be treated as opaque, but passed back on updates.
-	ModIndex uint64 `json:"modIndex"`
-}
-```
-
-Dataset is information about a dataset.
-
-#### type DatasetConf
-
-```go
-type DatasetConf struct {
 	ID                string `json:"id"`
 	Parent            string `json:"parent"`
 	ParentSameMachine bool   `json:"parentSameMachine"`
@@ -403,21 +438,45 @@ type DatasetConf struct {
 	NFS               bool   `json:"nfs"`
 	Redundancy        int    `json:"redundancy"`
 	Quota             int    `json:"quota"`
+	// ModIndex should be treated as opaque, but passed back on updates.
+	ModIndex uint64 `json:"modIndex"`
 }
 ```
 
-DatasetConf is the configuration of a dataset.
+Dataset is information about a dataset.
+
+#### type DatasetHeartbeat
+
+```go
+type DatasetHeartbeat struct {
+	IP    net.IP `json:"ip"`
+	InUse bool   `json:"inUse"`
+}
+```
+
+DatasetHeartbeat is dataset heartbeat information.
 
 #### type DatasetHeartbeatArgs
 
 ```go
 type DatasetHeartbeatArgs struct {
-	ID string `json:"id"`
-	IP net.IP `json:"ip"`
+	ID    string `json:"id"`
+	IP    net.IP `json:"ip"`
+	InUse bool   `json:"inUse"`
 }
 ```
 
 DatasetHeartbeatArgs are arguments for updating a dataset node heartbeat.
+
+#### type DatasetHeartbeatList
+
+```go
+type DatasetHeartbeatList struct {
+	Heartbeats map[string]map[string]DatasetHeartbeat
+}
+```
+
+DatasetHeartbeatList is the result of a ListDatasetHeartbeats.
 
 #### type DatasetListResult
 
@@ -620,12 +679,26 @@ func (c *MockClusterConf) GetService(req *acomm.Request) (interface{}, *url.URL,
 ```
 GetService retrieves a mock service.
 
+#### func (*MockClusterConf) ListBundleHeartbeats
+
+```go
+func (c *MockClusterConf) ListBundleHeartbeats(req *acomm.Request) (interface{}, *url.URL, error)
+```
+ListBundleHeartbeats list all mock bundle heartbeats.
+
 #### func (*MockClusterConf) ListBundles
 
 ```go
 func (c *MockClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL, error)
 ```
 ListBundles retrieves all mock bundles.
+
+#### func (*MockClusterConf) ListDatasetHeartbeats
+
+```go
+func (c *MockClusterConf) ListDatasetHeartbeats(req *acomm.Request) (interface{}, *url.URL, error)
+```
+ListDatasetHeartbeats lists all mock dataset heartbeats.
 
 #### func (*MockClusterConf) ListDatasets
 
@@ -680,12 +753,14 @@ UpdateService updates a mock service.
 
 ```go
 type MockClusterData struct {
-	Services map[string]*Service
-	Bundles  map[uint64]*Bundle
-	Datasets map[string]*Dataset
-	Nodes    map[string]*Node
-	History  NodesHistory
-	Defaults *Defaults
+	Services   map[string]*Service
+	Bundles    map[uint64]*Bundle
+	BundlesHB  map[uint64]BundleHeartbeats
+	Datasets   map[string]*Dataset
+	DatasetsHB map[string]map[string]DatasetHeartbeat
+	Nodes      map[string]*Node
+	History    NodesHistory
+	Defaults   *Defaults
 }
 ```
 

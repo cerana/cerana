@@ -11,7 +11,7 @@ import (
 	"github.com/cerana/cerana/providers/clusterconf"
 	"github.com/cerana/cerana/providers/health"
 	"github.com/cerana/cerana/providers/metrics"
-	"github.com/cerana/cerana/providers/systemd"
+	"github.com/cerana/cerana/providers/service"
 	"github.com/cerana/cerana/providers/zfs"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/suite"
@@ -25,7 +25,7 @@ type StatsPusher struct {
 	statsPusher *statsPusher
 	tracker     *acomm.Tracker
 	coordinator *test.Coordinator
-	systemd     *systemd.MockSystemd
+	service     *service.Mock
 	zfs         *zfs.MockZFS
 	clusterConf *clusterconf.MockClusterConf
 	metrics     *metrics.MockMetrics
@@ -55,6 +55,7 @@ func (s *StatsPusher) SetupSuite() {
 		DatasetInterval: "4s",
 		BundleInterval:  "3s",
 		NodeInterval:    "2s",
+		DatasetDir:      "foobar",
 	}
 
 	s.config, _, _, s.configFile, err = newTestConfig(false, true, s.configData)
@@ -68,7 +69,7 @@ func (s *StatsPusher) SetupSuite() {
 	// Setup mock providers
 	noError(err)
 
-	s.setupSystemd()
+	s.setupService()
 	s.setupZFS()
 	s.setupClusterConf()
 	s.setupMetrics()
@@ -97,9 +98,9 @@ func (s *StatsPusher) setupZFS() {
 	s.coordinator.RegisterProvider(s.zfs)
 }
 
-func (s *StatsPusher) setupSystemd() {
-	s.systemd = systemd.NewMockSystemd()
-	s.coordinator.RegisterProvider(s.systemd)
+func (s *StatsPusher) setupService() {
+	s.service = service.NewMock()
+	s.coordinator.RegisterProvider(s.service)
 }
 
 func (s *StatsPusher) setupMetrics() {

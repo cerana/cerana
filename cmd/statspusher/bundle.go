@@ -4,14 +4,12 @@ import (
 	"fmt"
 	"net"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/providers/clusterconf"
-	"github.com/cerana/cerana/providers/systemd"
-	"github.com/pborman/uuid"
+	"github.com/cerana/cerana/providers/service"
 	"github.com/shirou/gopsutil/host"
 )
 
@@ -41,7 +39,7 @@ func (s *statsPusher) getBundles() ([]*clusterconf.Bundle, error) {
 		url      *url.URL
 		respData interface{}
 	}{
-		"local": {task: "systemd-list", url: s.config.nodeDataURL(), respData: &systemd.ListResult{}},
+		"local": {task: "service-list", url: s.config.nodeDataURL(), respData: &service.ListResult{}},
 		"known": {task: "list-bundles", url: s.config.clusterDataURL(), respData: &clusterconf.BundleListResult{}},
 	}
 
@@ -71,16 +69,25 @@ func (s *statsPusher) getBundles() ([]*clusterconf.Bundle, error) {
 			return nil, err
 		}
 	}
-	localBundles := extractBundles(requests["local"].respData.(*systemd.ListResult).Units)
+	localBundles := extractBundles(requests["local"].respData.(*service.ListResult).Services)
 	knownBundles := requests["known"].respData.(*clusterconf.BundleListResult).Bundles
 
 	bundles := make([]*clusterconf.Bundle, 0, len(localBundles))
 	for _, local := range localBundles {
+		// Attempt to add the known bundle with service and healthcheck info.
+		found := false
 		for _, known := range knownBundles {
 			if known.ID == local {
 				bundles = append(bundles, known)
+				found = true
 				break
 			}
+		}
+
+		// If not found, add an entry anyway so it is tracked by heartbeat.
+		// Something will later clean the untracked bundle up.
+		if !found {
+			bundles = append(bundles, &clusterconf.Bundle{ID: local})
 		}
 	}
 
@@ -129,12 +136,10 @@ func (s *statsPusher) sendBundleHeartbeats(bundles map[uint64]map[string]error, 
 		req, err := acomm.NewRequest(acomm.RequestOptions{
 			Task: "bundle-heartbeat",
 			Args: clusterconf.BundleHeartbeatArgs{
-				ID:     bundle,
-				Serial: serial,
-				Node: clusterconf.BundleNode{
-					IP:           ip,
-					HealthErrors: healthErrors,
-				},
+				ID:           bundle,
+				Serial:       serial,
+				IP:           ip,
+				HealthErrors: healthErrors,
 			},
 		})
 		if err != nil {
@@ -217,17 +222,10 @@ func (s *statsPusher) runHealthChecks(bundles []*clusterconf.Bundle) (map[uint64
 	return healthResults, errors
 }
 
-func extractBundles(units []systemd.UnitStatus) []uint64 {
+func extractBundles(services []service.Service) []uint64 {
 	dedupe := make(map[uint64]bool)
-	for _, unit := range units {
-		// bundleID:serviceID.service
-		r, _ := regexp.Compile(`^(\d+):(.+)\.service$`)
-		parts := r.FindStringSubmatch(unit.Name)
-		if len(parts) == 3 && uuid.Parse(parts[2]) != nil {
-			if bundleID, err := strconv.ParseUint(parts[1], 10, 64); err == nil {
-				dedupe[bundleID] = true
-			}
-		}
+	for _, service := range services {
+		dedupe[service.BundleID] = true
 	}
 	ids := make([]uint64, 0, len(dedupe))
 	for id := range dedupe {
