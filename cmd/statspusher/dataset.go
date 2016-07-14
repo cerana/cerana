@@ -65,30 +65,31 @@ func (s *statsPusher) getDatasets(ip net.IP) ([]clusterconf.DatasetHeartbeatArgs
 	bundles := requests["bundles"].respData.(*clusterconf.BundleListResult).Bundles
 	heartbeats := requests["bundleHBs"].respData.(*clusterconf.BundleHeartbeatList).Heartbeats
 
+	// determine which datasets are configured to be in use on this node
+	datasetsInUse := make(map[string]bool)
+	for _, bundle := range bundles {
+		for _, hb := range heartbeats[bundle.ID] {
+			if hb.IP.Equal(ip) {
+				for datasetID := range bundle.Datasets {
+					datasetsInUse[datasetID] = true
+				}
+				break
+			}
+		}
+	}
+
 	// extract just the dataset ids and ignore the base directory
-	// also determine whether they are in use based on bundle heartbeat and conf
 	datasets := make([]clusterconf.DatasetHeartbeatArgs, 0, len(listResult))
 	for _, dataset := range listResult {
 		if s.config.datasetDir() == dataset.Name {
 			continue
 		}
+
+		datasetID := filepath.Base(dataset.Name)
+
 		args := clusterconf.DatasetHeartbeatArgs{
-			ID: filepath.Base(dataset.Name),
-		}
-	LOOP:
-		for _, bundle := range bundles {
-			for datasetID := range bundle.Datasets {
-				if datasetID == args.ID {
-					if hbs, ok := heartbeats[bundle.ID]; ok {
-						for _, hb := range hbs {
-							if hb.IP.Equal(ip) {
-								args.InUse = true
-								break LOOP
-							}
-						}
-					}
-				}
-			}
+			ID:    datasetID,
+			InUse: datasetsInUse[datasetID],
 		}
 		datasets = append(datasets, args)
 	}
