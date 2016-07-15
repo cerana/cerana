@@ -13,6 +13,7 @@ import (
 	"github.com/pborman/uuid"
 )
 
+// DatasetImportArgs are arguments for configuring an imported dataset.
 type DatasetImportArgs struct {
 	NFS        bool `json:"nfs"`
 	Quota      int  `json:"quota"`
@@ -20,6 +21,7 @@ type DatasetImportArgs struct {
 	Redundancy int  `json:"redundancy"`
 }
 
+// DatasetImportResult is the result of a dataset import.
 type DatasetImportResult struct {
 	Dataset clusterconf.Dataset `json:"dataset"`
 	NodeID  string              `json:"nodeID"`
@@ -99,7 +101,7 @@ func (p *Provider) datasetImport(nodeID, datasetID string, streamURL *url.URL) e
 func (p *Provider) datasetConfig(dataset clusterconf.Dataset) error {
 	opts := acomm.RequestOptions{
 		Task: "update-dataset",
-		Args: clusterconf.DatasetPayload{&dataset},
+		Args: clusterconf.DatasetPayload{Dataset: &dataset},
 	}
 	_, err := p.tracker.SyncRequest(p.config.CoordinatorURL(), opts, p.config.RequestTimeout())
 	return err
