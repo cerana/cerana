@@ -16,8 +16,8 @@ import (
 
 // Mock is a mock dhcp provider.
 type Mock struct {
-	config *Config
-	randIP func() net.IP
+	RandIP func() net.IP
+	Config *Config
 	sync.Mutex
 	macs map[string]string
 	ips  map[string]string
@@ -36,8 +36,8 @@ func NewMock() *Mock {
 	ones, bits := network.Mask.Size()
 	size := 1<<uint(bits-ones) - 2
 	return &Mock{
-		config: conf,
-		randIP: func() net.IP {
+		Config: conf,
+		RandIP: func() net.IP {
 			num := rand.Intn(size) + 1
 			return dhcp4.IPAdd(network.IP, num)
 		},
@@ -62,11 +62,11 @@ func (m *Mock) get(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.New("missing arg: mac")
 	}
 	lease := Lease{
-		DNS:      m.config.DNSServers(),
-		Duration: m.config.LeaseDuration(),
-		Gateway:  m.config.Gateway(),
+		DNS:      m.Config.DNSServers(),
+		Duration: m.Config.LeaseDuration(),
+		Gateway:  m.Config.Gateway(),
 		Net: net.IPNet{
-			Mask: m.config.Network().Mask,
+			Mask: m.Config.Network().Mask,
 		},
 	}
 
@@ -95,7 +95,7 @@ func (m *Mock) get(req *acomm.Request) (interface{}, *url.URL, error) {
 	}
 
 	for range [5]struct{}{} {
-		netIP := m.randIP()
+		netIP := m.RandIP()
 		if m.macs[netIP.String()] == "" {
 			m.macs[netIP.String()] = addrs.MAC
 			m.ips[addrs.MAC] = netIP.String()
@@ -134,12 +134,12 @@ func (m *Mock) ack(req *acomm.Request) (interface{}, *url.URL, error) {
 	}
 
 	lease := Lease{
-		DNS:      m.config.DNSServers(),
-		Duration: m.config.LeaseDuration(),
-		Gateway:  m.config.Gateway(),
+		DNS:      m.Config.DNSServers(),
+		Duration: m.Config.LeaseDuration(),
+		Gateway:  m.Config.Gateway(),
 		Net: net.IPNet{
 			IP:   net.ParseIP(ip),
-			Mask: m.config.Network().Mask,
+			Mask: m.Config.Network().Mask,
 		},
 	}
 	return lease, nil, nil
