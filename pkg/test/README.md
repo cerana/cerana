@@ -11,6 +11,7 @@
 ```go
 type Coordinator struct {
 	SocketDir string
+	HTTPPort  int
 }
 ```
 

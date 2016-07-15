@@ -376,6 +376,14 @@ func (t *Tracker) Stop()
 Stop deactivates the tracker. It blocks until all active connections or tracked
 requests to finish.
 
+#### func (*Tracker) SyncRequest
+
+```go
+func (t *Tracker) SyncRequest(dest *url.URL, opts RequestOptions, timeout time.Duration) (*Response, error)
+```
+SyncRequest is a convenience method for creating and sending a synchronous
+request.
+
 #### func (*Tracker) TrackRequest
 
 ```go
