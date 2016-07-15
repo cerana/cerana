@@ -46,6 +46,7 @@ func (c *ClusterConf) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("set-default-options", c.UpdateDefaults)
 	server.RegisterTask("node-heartbeat", c.NodeHeartbeat)
 	server.RegisterTask("get-node", c.GetNode)
+	server.RegisterTask("list-nodes", c.ListNodes)
 	server.RegisterTask("get-nodes-history", c.GetNodesHistory)
 	server.RegisterTask("get-service", c.GetService)
 	server.RegisterTask("update-service", c.UpdateService)
