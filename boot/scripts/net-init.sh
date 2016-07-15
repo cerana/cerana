@@ -113,8 +113,7 @@ function config_mgmt_dhcp() {
     # If we're on SmartOS, fall back to using a MAC based ClientIdentifier to avoid being blocked by antispoof
     lshw | grep -iq joyent \
         && echo -e "\n[DHCP]\nClientIdentifier=mac\n" >>/data/config/network/mgmt.network
-    # If grep fails we still want to return true otherwise the service can fail
-    true
+    ip link set "${MAC_TO_IFACE[${CERANA_MGMT_MAC}]}" name mgmt0
 }
 
 function config_mgmt_static() {
@@ -123,6 +122,7 @@ function config_mgmt_static() {
         && [[ -n ${CERANA_MGMT_IP} ]] \
         || return 1
     echo -e "[Match]\nMACAddress=${CERANA_MGMT_MAC}\n\n[Network]\nAddress=${CERANA_MGMT_IP}" >/data/config/network/mgmt.network
+    ip link set "${MAC_TO_IFACE[${CERANA_MGMT_MAC}]}" name mgmt0
 }
 
 function drop_consul_config() {
