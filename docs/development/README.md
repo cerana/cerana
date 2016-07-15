@@ -183,7 +183,7 @@ sudo zfs destroy data/swap
 sudo create-build-container
 sudo enter-build-container
 nix-env -f /nixpkgs/default.nix -i vim
-bldenv
+buildenv
 go get github.com/cerana/cerana
 cd $HOME/go/src/github.com/cerana/cerana/
 glide install
@@ -193,7 +193,7 @@ go build $(glide nv)
 On subsequent logins to the machine/VM:
 ```bash
 sudo enter-build-container
-bldenv
+buildenv
 cd $HOME/go/src/github.com/cerana/cerana/
 ```
 Then hack on things and use `go build` as you would expect.
