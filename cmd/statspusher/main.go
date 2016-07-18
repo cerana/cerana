@@ -24,6 +24,6 @@ func main() {
 
 func dieOnError(err error) {
 	if err != nil {
-		logrus.Fatal("encountered an error during startup")
+		logrus.WithField("error", err).Fatal("encountered an error during startup")
 	}
 }
