@@ -103,10 +103,10 @@ RegisterTasks registers all of DHCP's task handlers with the server.
 
 ```go
 type Lease struct {
-	Net      net.IPNet     `json:"net"`
-	Gateway  net.IP        `json:"gateway"`
-	Duration time.Duration `json:"duration"`
 	DNS      []net.IP      `json:"dns"`
+	Duration time.Duration `json:"duration"`
+	Gateway  net.IP        `json:"gateway"`
+	Net      net.IPNet     `json:"net"`
 }
 ```
 
@@ -116,6 +116,8 @@ Lease specifies the dhcp lease returned from the "dhcp-offer-lease" endpoint.
 
 ```go
 type Mock struct {
+	RandIP func() net.IP
+	Config *Config
 	sync.Mutex
 }
 ```
@@ -125,7 +127,7 @@ Mock is a mock dhcp provider.
 #### func  NewMock
 
 ```go
-func NewMock(config *provider.Config, tracker *acomm.Tracker) (*Mock, error)
+func NewMock() *Mock
 ```
 NewMock creates a new Mock.
 
@@ -139,7 +141,7 @@ Expire will remove an entry from memory as if the ephemeral key expired.
 #### func (*Mock) RegisterTasks
 
 ```go
-func (m *Mock) RegisterTasks(server provider.Server)
+func (m *Mock) RegisterTasks(server *provider.Server)
 ```
 RegisterTasks registers all of Mock's task handlers with the server.
 
