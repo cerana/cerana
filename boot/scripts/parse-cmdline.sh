@@ -37,6 +37,12 @@ function parse_boot_args() {
             $CERANA_PREFIX.mgmt_gw)
                 echo "CERANA_MGMT_GW=$v" >>$CERANA_BOOTCFG
                 ;;
+            $CERANA_PREFIX.initrd_hash)
+                echo "CERANA_INITRD_HASH=$v" >>$CERANA_BOOTCFG
+                ;;
+            $CERANA_PREFIX.boot_server)
+                echo "CERANA_BOOT_SERVER=$v" >>$CERANA_BOOTCFG
+                ;;
         esac
     done
 }
@@ -44,7 +50,7 @@ function parse_boot_args() {
 #if manually invoked with argument "test" do a quick sanity check to stdout
 if [[ "test" == "$1" ]]; then
     CERANA_BOOTCFG=/dev/stdout
-    CMDLINE="cerana.zfs_config=auto cerana.cluster_ips=10.2.3.4,10.2.3.5 cerana.cluster_bootstrap cerana.rescue cerana.mgmt_mac=00:00:00:00 cerana.mgmt_ip=10.2.3.6/24 cerana.mgmt_gw=10.2.3.1"
+    CMDLINE="cerana.zfs_config=auto cerana.cluster_ips=172.16.10.4,172.16.10.5 cerana.cluster_bootstrap cerana.rescue cerana.mgmt_mac=00:00:00:00 cerana.mgmt_ip=172.16.10.6/24 cerana.mgmt_gw=172.16.10.1 cerana.initrd_hash=sha256-748c35c5de02f473339867aa5fae1ab8d7893be3798041d03fade7c67896541b cerana.boot_server=http://172.16.10.4/"
 fi
 
 parse_boot_args
