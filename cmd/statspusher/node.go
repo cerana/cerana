@@ -9,7 +9,6 @@ import (
 	"github.com/cerana/cerana/providers/clusterconf"
 	"github.com/cerana/cerana/providers/metrics"
 	"github.com/shirou/gopsutil/disk"
-	"github.com/shirou/gopsutil/host"
 )
 
 func (s *statsPusher) nodeHeartbeat() error {
@@ -23,10 +22,14 @@ func (s *statsPusher) nodeHeartbeat() error {
 func (s *statsPusher) getNodeInfo() (*clusterconf.Node, error) {
 	var err error
 
+	ip, err := s.getIP()
+	if err != nil {
+		return nil, err
+	}
+
 	tasks := map[string]interface{}{
 		"metrics-cpu":    &metrics.CPUResult{},
 		"metrics-disk":   &metrics.DiskResult{},
-		"metrics-host":   &host.InfoStat{},
 		"metrics-memory": &metrics.MemoryResult{},
 	}
 	requests := make(map[string]*acomm.Request)
@@ -77,7 +80,7 @@ func (s *statsPusher) getNodeInfo() (*clusterconf.Node, error) {
 	}
 
 	return &clusterconf.Node{
-		ID:          tasks["metrics-host"].(*host.InfoStat).Hostname,
+		ID:          ip.String(),
 		Heartbeat:   time.Now(),
 		MemoryTotal: tasks["metrics-memory"].(*metrics.MemoryResult).Virtual.Total,
 		MemoryFree:  tasks["metrics-memory"].(*metrics.MemoryResult).Virtual.Available,

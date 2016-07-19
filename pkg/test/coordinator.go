@@ -18,6 +18,7 @@ import (
 // more registered mock Providers to be used for testing.
 type Coordinator struct {
 	SocketDir      string
+	HTTPPort       int
 	coordinatorURL string
 	coordinator    *coordinator.Server
 	providerName   string
@@ -33,10 +34,12 @@ func NewCoordinator(baseDir string) (*Coordinator, error) {
 		return nil, err
 	}
 
+	port := 1024 + rand.Intn(65535-1024)
+
 	coordinatorViper := viper.New()
 	coordinatorViper.Set("service_name", coordinatorName)
 	coordinatorViper.Set("socket_dir", socketDir)
-	coordinatorViper.Set("external_port", 1024+rand.Intn(65535-1024))
+	coordinatorViper.Set("external_port", port)
 	coordinatorViper.Set("request_timeout", 20)
 	coordinatorViper.Set("log_level", "fatal")
 
@@ -59,6 +62,7 @@ func NewCoordinator(baseDir string) (*Coordinator, error) {
 
 	c := &Coordinator{
 		SocketDir:      socketDir,
+		HTTPPort:       port,
 		coordinatorURL: coordinatorSocket,
 		coordinator:    coordinatorServer,
 	}

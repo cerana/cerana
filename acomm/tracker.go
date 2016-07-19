@@ -436,3 +436,34 @@ func (t *Tracker) ProxyExternalHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	t.HandleResponse(resp)
 }
+
+// SyncRequest is a convenience method for creating and sending a synchronous request.
+func (t *Tracker) SyncRequest(dest *url.URL, opts RequestOptions, timeout time.Duration) (*Response, error) {
+	opts.ResponseHook = t.URL()
+
+	ch := make(chan *Response, 1)
+	defer close(ch)
+
+	rh := func(_ *Request, resp *Response) {
+		ch <- resp
+	}
+	opts.SuccessHandler = rh
+	opts.ErrorHandler = rh
+
+	req, err := NewRequest(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := t.TrackRequest(req, timeout); err != nil {
+		return nil, err
+	}
+
+	if err := Send(dest, req); err != nil {
+		_ = t.RemoveRequest(req)
+		return nil, err
+	}
+
+	resp := <-ch
+	return resp, resp.Error
+}

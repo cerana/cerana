@@ -20,7 +20,7 @@ func (s *clusterConf) TestGetBundle() {
 	tests := []struct {
 		desc            string
 		id              uint64
-		quota           int
+		quota           uint64
 		dataset         string
 		combinedOverlay bool
 		err             string

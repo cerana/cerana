@@ -43,6 +43,11 @@ type NodeHistoryArgs struct {
 	After  time.Time `json:"after"`
 }
 
+// ListNodesResult is the result of ListNodes.
+type ListNodesResult struct {
+	Nodes []Node `json:"nodes"`
+}
+
 // NodePayload can be used for task args or result when a node object needs to
 // be sent.
 type NodePayload struct {
@@ -84,6 +89,15 @@ func (c *ClusterConf) GetNode(req *acomm.Request) (interface{}, *url.URL, error)
 	return &NodePayload{node}, nil, err
 }
 
+// ListNodes list all current nodes.
+func (c *ClusterConf) ListNodes(req *acomm.Request) (interface{}, *url.URL, error) {
+	nodes, err := c.getNodes()
+	if err != nil {
+		return nil, nil, err
+	}
+	return &ListNodesResult{nodes}, nil, nil
+}
+
 // GetNodesHistory gets the heartbeat history for one or more nodes.
 func (c *ClusterConf) GetNodesHistory(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args NodeHistoryArgs
@@ -114,6 +128,28 @@ func (c *ClusterConf) getNode(id string) (*Node, error) {
 	}
 	node.c = c
 	return node, nil
+}
+
+func (c *ClusterConf) getNodes() ([]Node, error) {
+	values, err := c.kvGetAll(nodesPrefix)
+	if err != nil {
+		return nil, err
+	}
+
+	nodes := make([]Node, 0, len(values))
+	for key, value := range values {
+		if key == nodesPrefix {
+			continue
+		}
+		var node Node
+		if err := json.Unmarshal(value.Data, node); err != nil {
+			return nil, err
+		}
+		node.c = c
+		nodes = append(nodes, node)
+	}
+
+	return nodes, nil
 }
 
 func nodeFilterID(ids ...string) nodeFilter {

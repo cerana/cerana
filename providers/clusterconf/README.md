@@ -22,7 +22,7 @@ type Bundle struct {
 	ID         uint64                   `json:"id"`
 	Datasets   map[string]BundleDataset `json:"datasets"`
 	Services   map[string]BundleService `json:"services"`
-	Redundancy int                      `json:"redundancy"`
+	Redundancy uint64                   `json:"redundancy"`
 	Ports      BundlePorts              `json:"ports"`
 	// ModIndex should be treated as opaque, but passed back on updates.
 	ModIndex uint64 `json:"modIndex"`
@@ -38,7 +38,7 @@ type BundleDataset struct {
 	Name  string            `json:"name"`
 	ID    string            `json:"id"`
 	Type  BundleDatasetType `json:"type"`
-	Quota int               `json:"type"`
+	Quota uint64            `json:"type"`
 }
 ```
 
@@ -108,7 +108,7 @@ BundleHeartbeatList is the result of a ListBundleHeartbeats.
 func (b BundleHeartbeatList) MarshalJSON() ([]byte, error)
 ```
 MarshalJSON marshals BundleHeartbeatList into a JSON map, converting uint keys
-to strings.
+to strings. TODO: Needed until go 1.7 is released
 
 #### func (*BundleHeartbeatList) UnmarshalJSON
 
@@ -116,7 +116,7 @@ to strings.
 func (b *BundleHeartbeatList) UnmarshalJSON(data []byte) error
 ```
 UnmarshalJSON unmarshals JSON into a BundleHeartbeatList, converting string keys
-to uints.
+to uints. TODO: Needed until go 1.7 is released
 
 #### type BundleHeartbeats
 
@@ -317,6 +317,13 @@ func (c *ClusterConf) ListDatasets(req *acomm.Request) (interface{}, *url.URL, e
 ```
 ListDatasets returns a list of all Datasets.
 
+#### func (*ClusterConf) ListNodes
+
+```go
+func (c *ClusterConf) ListNodes(req *acomm.Request) (interface{}, *url.URL, error)
+```
+ListNodes list all current nodes.
+
 #### func (*ClusterConf) NodeHeartbeat
 
 ```go
@@ -436,8 +443,8 @@ type Dataset struct {
 	ParentSameMachine bool   `json:"parentSameMachine"`
 	ReadOnly          bool   `json:"readOnly"`
 	NFS               bool   `json:"nfs"`
-	Redundancy        int    `json:"redundancy"`
-	Quota             int    `json:"quota"`
+	Redundancy        uint64 `json:"redundancy"`
+	Quota             uint64 `json:"quota"`
 	// ModIndex should be treated as opaque, but passed back on updates.
 	ModIndex uint64 `json:"modIndex"`
 }
@@ -585,6 +592,16 @@ type ListBundleArgs struct {
 
 ListBundleArgs are args for retrieving a bundle list.
 
+#### type ListNodesResult
+
+```go
+type ListNodesResult struct {
+	Nodes []Node `json:"nodes"`
+}
+```
+
+ListNodesResult is the result of ListNodes.
+
 #### type MockClusterConf
 
 ```go
@@ -706,6 +723,13 @@ ListDatasetHeartbeats lists all mock dataset heartbeats.
 func (c *MockClusterConf) ListDatasets(req *acomm.Request) (interface{}, *url.URL, error)
 ```
 ListDatasets lists all mock datasets.
+
+#### func (*MockClusterConf) ListNodes
+
+```go
+func (c *MockClusterConf) ListNodes(req *acomm.Request) (interface{}, *url.URL, error)
+```
+ListNodes lists all mock nodes.
 
 #### func (*MockClusterConf) NodeHeartbeat
 
