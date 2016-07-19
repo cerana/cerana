@@ -1,0 +1,37 @@
+#!/bin/bash
+
+#
+# Expects two arguments:
+# SOURCE - source snapshot
+# DESTINATION - destination dataset
+#
+# Makes sure that DESTINATION has been rolled back to a pristine snapshot from
+# after it was cloned from SOURCE
+#
+# Will use _CERANA_CLONE_SOURCE and _CERANA_CLONE_DESTINATION environment variables
+# if present, but arguments trump environment variables
+
+set -o errexit
+
+SOURCE="${1:-${_CERANA_CLONE_SOURCE}}"
+DESTINATION="${2:-${_CERANA_CLONE_DESTINATION}}"
+
+[[ -n "${SOURCE}" ]]
+[[ -n "${DESTINATION}" ]]
+SNAP=pristine
+
+origin_match() { [[ "${SOURCE}" == $(zfs get -H -o value origin "${DESTINATION}") ]]; }
+dest_exists() { zfs list -o name "${DESTINATION}" &>/dev/null; }
+snapshot_exists() { zfs list -o name "${DESTINATION}@${SNAP}" &>/dev/null; }
+
+zfs_clone() { zfs clone "${SOURCE}" "${DESTINATION}"; }
+zfs_snapshot() { zfs snapshot "${DESTINATION}@${SNAP}"; }
+zfs_rollback() { zfs rollback "${DESTINATION}@${SNAP}"; }
+zfs_destroy() { zfs destroy -r "${DESTINATION}"; }
+
+if ! origin_match; then
+    dest_exists && zfs_destroy
+    zfs_clone
+fi
+snapshot_exists || zfs_snapshot
+zfs_rollback
