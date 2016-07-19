@@ -67,10 +67,10 @@ ConfigData defines the structure of the config data (e.g. in the config file)
 
 ```go
 type DatasetImportArgs struct {
-	NFS        bool `json:"nfs"`
-	Quota      int  `json:"quota"`
-	ReadOnly   bool `json:"readOnly"`
-	Redundancy int  `json:"redundancy"`
+	NFS        bool   `json:"nfs"`
+	Quota      uint64 `json:"quota"`
+	ReadOnly   bool   `json:"readOnly"`
+	Redundancy uint64 `json:"redundancy"`
 }
 ```
 

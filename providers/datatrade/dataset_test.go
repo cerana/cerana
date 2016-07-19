@@ -21,7 +21,7 @@ func (p *Provider) TestDatasetImport() {
 	p.clusterConf.Data.Nodes["localhost"] = &clusterconf.Node{ID: "localhost"}
 
 	tests := []struct {
-		redundancy  int
+		redundancy  uint64
 		streamURL   *url.URL
 		expectedErr string
 	}{

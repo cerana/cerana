@@ -22,7 +22,7 @@ type Bundle struct {
 	ID         uint64                   `json:"id"`
 	Datasets   map[string]BundleDataset `json:"datasets"`
 	Services   map[string]BundleService `json:"services"`
-	Redundancy int                      `json:"redundancy"`
+	Redundancy uint64                   `json:"redundancy"`
 	Ports      BundlePorts              `json:"ports"`
 	// ModIndex should be treated as opaque, but passed back on updates.
 	ModIndex uint64 `json:"modIndex"`
@@ -38,7 +38,7 @@ type BundleDataset struct {
 	Name  string            `json:"name"`
 	ID    string            `json:"id"`
 	Type  BundleDatasetType `json:"type"`
-	Quota int               `json:"type"`
+	Quota uint64            `json:"type"`
 }
 ```
 
@@ -443,8 +443,8 @@ type Dataset struct {
 	ParentSameMachine bool   `json:"parentSameMachine"`
 	ReadOnly          bool   `json:"readOnly"`
 	NFS               bool   `json:"nfs"`
-	Redundancy        int    `json:"redundancy"`
-	Quota             int    `json:"quota"`
+	Redundancy        uint64 `json:"redundancy"`
+	Quota             uint64 `json:"quota"`
 	// ModIndex should be treated as opaque, but passed back on updates.
 	ModIndex uint64 `json:"modIndex"`
 }

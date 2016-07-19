@@ -15,10 +15,10 @@ import (
 
 // DatasetImportArgs are arguments for configuring an imported dataset.
 type DatasetImportArgs struct {
-	NFS        bool `json:"nfs"`
-	Quota      int  `json:"quota"`
-	ReadOnly   bool `json:"readOnly"`
-	Redundancy int  `json:"redundancy"`
+	NFS        bool   `json:"nfs"`
+	Quota      uint64 `json:"quota"`
+	ReadOnly   bool   `json:"readOnly"`
+	Redundancy uint64 `json:"redundancy"`
 }
 
 // DatasetImportResult is the result of a dataset import.

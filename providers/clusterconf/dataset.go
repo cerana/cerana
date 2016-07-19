@@ -22,8 +22,8 @@ type Dataset struct {
 	ParentSameMachine bool   `json:"parentSameMachine"`
 	ReadOnly          bool   `json:"readOnly"`
 	NFS               bool   `json:"nfs"`
-	Redundancy        int    `json:"redundancy"`
-	Quota             int    `json:"quota"`
+	Redundancy        uint64 `json:"redundancy"`
+	Quota             uint64 `json:"quota"`
 	// ModIndex should be treated as opaque, but passed back on updates.
 	ModIndex uint64 `json:"modIndex"`
 }
