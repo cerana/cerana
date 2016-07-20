@@ -29,8 +29,8 @@ func main() {
 
 	v := viper.New()
 	f := pflag.NewFlagSet("dhcp-provider", pflag.ExitOnError)
-	f.IP("gateway", nil, "default gateway")
-	f.String("dns-servers", "", "comma separated list of dns servers ")
+	f.String("dns-servers", "", "[optional] comma separated list of dns servers ")
+	f.IP("gateway", nil, "[optional] default gateway")
 	f.Duration("lease-duration", 24*time.Hour, "default lease duration")
 	f.IPNet("network", defaultNetwork(), "network to manage dhcp addresses on")
 

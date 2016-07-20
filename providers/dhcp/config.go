@@ -39,10 +39,7 @@ func (c *Config) Validate() error {
 	}
 
 	g := c.Gateway()
-	if g == nil {
-		return errors.New("gateway is invalid")
-	}
-	if !net.Contains(g) {
+	if g != nil && !net.Contains(g) {
 		return errors.New("gateway is not reachable from subnet")
 	}
 
