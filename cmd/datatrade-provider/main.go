@@ -13,6 +13,7 @@ func main() {
 
 	config := datatrade.NewConfig(nil, nil)
 	flag.UintP("node_coordinator_port", "o", 0, "node coordinator external port")
+	flag.StringP("dataset_dir", "d", "/data/datasets", "node directory for dataset storage")
 	flag.Parse()
 
 	dieOnError(config.LoadConfig())
