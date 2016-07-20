@@ -3,6 +3,7 @@ package dhcp
 import (
 	"errors"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/cerana/cerana/provider"
@@ -69,7 +70,10 @@ func (c *Config) Gateway() net.IP {
 
 // DNSServers returns the dns server addresses
 func (c *Config) DNSServers() []net.IP {
-	addresses := c.viper.GetStringSlice("dns-servers")
+	// TODO: fix when viper stop having trouble with StringSlice
+	// https://github.com/spf13/viper/issues/112
+	// https://github.com/spf13/viper/issues/200
+	addresses := strings.Split(c.viper.GetString("dns-servers"), ",")
 	ips := make([]net.IP, len(addresses))
 
 	for i := range addresses {

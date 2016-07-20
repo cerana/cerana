@@ -50,7 +50,7 @@ func (s *DHCPS) SetupSuite() {
 
 	v := coordinator.NewProviderViper()
 	v.Set("lease-duration", 24*time.Hour)
-	v.Set("dns-servers", []string{"10.0.0.1", "10.0.0.2"})
+	v.Set("dns-servers", "10.0.0.1,10.0.0.2")
 	v.Set("gateway", "10.0.0.1")
 	v.Set("network", "10.0.0.1/24")
 
