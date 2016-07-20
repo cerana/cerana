@@ -175,14 +175,22 @@ function die() {
 
 function run() {
     verbose "Running: '$@'"
-    "$@"; code=$?; [ $code -ne 0 ] && die "Command [$*] failed with status code $code";
-    return $code
+    if [ -z "$dryrun" ]; then
+        "$@"; code=$?; [ $code -ne 0 ] && die "Command [$*] returned status code $code";
+        return $code
+    else
+        return 0
+    fi
 }
 
 function run_ignore {
     verbose "Running: '$@'"
-    "$@"; code=$?; [ $code -ne 0 ] && verbose "Command [$*] returned status code $code";
-    return $code
+    if [ -z "$dryrun" ]; then
+        "$@"; code=$?; [ $code -ne 0 ] && verbose "Command [$*] returned status code $code";
+        return $code
+    else
+        return 0
+    fi
 }
 
 function confirm () {
