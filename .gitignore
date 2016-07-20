@@ -1,4 +1,5 @@
 # Compiled cmds
+cmd/bootserver/bootserver
 cmd/clusterconfig-provider/clusterconfig-provider
 cmd/coordinator-cli/coordinator-cli
 cmd/coordinator/coordinator

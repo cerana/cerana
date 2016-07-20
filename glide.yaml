@@ -48,3 +48,4 @@ import:
   version: ^1.2.8
 - package: gopkg.in/tomb.v2
 - package: github.com/krolaw/dhcp4
+- package: github.com/pin/tftp
