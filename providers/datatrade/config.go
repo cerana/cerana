@@ -17,7 +17,7 @@ type Config struct {
 type ConfigData struct {
 	provider.ConfigData
 	DatasetDir          string `json:"dataset_dir"`
-	NodeCoordinatorPort uint   `json:"dataset_dir"`
+	NodeCoordinatorPort uint   `json:"node_coordinator_port"`
 }
 
 // DatasetDir returns the directory in which datasets are stored on nodes.
