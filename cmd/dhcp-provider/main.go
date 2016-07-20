@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/provider"
 	"github.com/cerana/cerana/providers/dhcp"
 	"github.com/spf13/pflag"
@@ -14,8 +14,7 @@ import (
 
 func dieOnError(msg string, err error) {
 	if err != nil {
-		log.WithError(err).Fatal(msg)
-		os.Exit(1)
+		logrus.WithError(err).Fatal("failed to " + msg)
 	}
 }
 
@@ -25,7 +24,7 @@ func defaultNetwork() net.IPNet {
 }
 
 func main() {
-	log.SetFormatter(&log.JSONFormatter{})
+	logrus.SetFormatter(&logrusx.JSONFormatter{})
 
 	v := viper.New()
 	f := pflag.NewFlagSet("dhcp-provider", pflag.ExitOnError)
@@ -35,22 +34,22 @@ func main() {
 	f.IPNet("network", defaultNetwork(), "network to manage dhcp addresses on")
 
 	config := dhcp.NewConfig(f, v)
+	dieOnError("parse arguments", f.Parse(os.Args))
+	dieOnError("load configuration", config.LoadConfig())
+	dieOnError("setup logging", config.SetupLogging())
 
-	dieOnError("error parsing args", f.Parse(os.Args))
-	dieOnError("error loading config", config.LoadConfig())
-	dieOnError("error setting up logging", config.SetupLogging())
 
 	server, err := provider.NewServer(config.Config)
-	dieOnError("error creating provider", err)
+	dieOnError("create provider", err)
 
 	d, err := dhcp.New(config, server.Tracker())
-	dieOnError("error creating dhcp server", err)
+	dieOnError("create dhcp server", err)
 
 	d.RegisterTasks(server)
 	if len(server.RegisteredTasks()) == 0 {
-		log.Warn("no registered tasks, exiting")
+		logrus.Warn("no registered tasks, exiting")
 		os.Exit(1)
 	}
-	dieOnError("dhcp provider encountered and error", server.Start())
+	dieOnError("successfully run dhcp provider", server.Start())
 	server.StopOnSignal()
 }
