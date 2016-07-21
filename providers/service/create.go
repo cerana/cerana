@@ -46,6 +46,10 @@ func (p *Provider) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 	}
 	// TODO: Add User= and Group= if not part of daisy
 	for key, val := range args.Env {
+		// do not allow custom overrides of the internal cerana env variables
+		if strings.HasPrefix(key, "_CERANA_") {
+			continue
+		}
 		unitOptions = append(unitOptions, &unit.UnitOption{
 			Section: "Service",
 			Name:    "Environment",

@@ -2,6 +2,7 @@ package service_test
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/providers/service"
@@ -24,6 +25,7 @@ func (s *Provider) TestCreate() {
 		{uuid.New(), 219, "working service", []string{}, map[string]string{"foo": "bar"}, "missing arg: exec"},
 		{uuid.New(), 219, "working service", []string{"foo", "bar"}, map[string]string{}, ""},
 		{uuid.New(), 219, "working service", []string{"foo", "bar"}, map[string]string{"foo": "bar"}, ""},
+		{uuid.New(), 219, "working service", []string{"foo", "bar"}, map[string]string{"_CERANA_foo": "bar"}, ""},
 	}
 
 	for _, test := range tests {
@@ -59,7 +61,14 @@ func (s *Provider) TestCreate() {
 			s.Equal(test.bundleID, getResult.Service.BundleID, desc)
 			s.Equal(test.description, getResult.Service.Description, desc)
 			s.Equal(test.exec, getResult.Service.Exec, desc)
-			s.Equal(test.env, getResult.Service.Env, desc)
+			for key, val := range test.env {
+				if strings.HasPrefix(key, "_CERANA_") {
+					_, ok := getResult.Service.Env[key]
+					s.False(ok, desc)
+				} else {
+					s.Equal(val, getResult.Service.Env[key], desc)
+				}
+			}
 		}
 	}
 }
