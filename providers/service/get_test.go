@@ -58,7 +58,7 @@ func (s *Provider) TestGet() {
 	s.Equal(bundleID, result.Service.BundleID)
 	s.Equal(desc, result.Service.Description)
 	s.Equal(svc.Uptime, result.Service.Uptime)
-	s.Equal(execStart, result.Service.Exec)
+	s.Equal(execStart, result.Service.Cmd)
 	s.Equal(user, result.Service.UID)
 	s.Equal(group, result.Service.GID)
 	s.Equal(env, result.Service.Env)
