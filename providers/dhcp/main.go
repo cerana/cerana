@@ -14,7 +14,7 @@ import (
 	"github.com/krolaw/dhcp4"
 )
 
-const prefix string = "dhcp/"
+const prefix string = "dhcp-leases/"
 
 var ttlOffer = 1 * time.Minute
 
@@ -216,7 +216,7 @@ func getAllAllocations(tracker *acomm.Tracker, coord *url.URL) (map[string]strin
 		ResponseHook:   tracker.URL(),
 		SuccessHandler: handler,
 		ErrorHandler:   handler,
-		Args:           kv.GetArgs{Key: "dhcp"},
+		Args:           kv.GetArgs{Key: prefix},
 	})
 	if err != nil {
 		return nil, err
