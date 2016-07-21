@@ -27,15 +27,18 @@ type demotick struct {
 
 func main() {
 	logrus.SetFormatter(&logrusx.JSONFormatter{})
-	var urlS, datasetDir string
+	var urlS, logLevel, datasetDir string
 	var requestTimeout time.Duration
 	var nodeCoordinatorPort uint
 
 	pflag.StringVarP(&urlS, "coordinator_url", "c", "", "layer2 coordinator url")
 	pflag.StringVarP(&datasetDir, "dataset_dir", "d", "/data/datasets", "directory containing datasets on nodes")
+	pflag.StringVarP(&logLevel, "log_leveL", "l", "info", "log level: debug/info/warn/error/fatal/panic")
 	pflag.DurationVarP(&requestTimeout, "request_timeout", "r", 10*time.Second, "request timeout")
 	pflag.UintVarP(&nodeCoordinatorPort, "node_coordinator_port", "n", 8080, "node coordinator port")
 	pflag.Parse()
+
+	dieOnError(logrusx.SetLevel(logLevel))
 
 	if urlS == "" {
 		dieOnError(errors.New("missing coordinator_url"))
@@ -59,33 +62,45 @@ func main() {
 		tracker:             tracker,
 	}
 
-	d.run()
+	logrus.Info("running cluster tick")
+	dieOnError(d.run())
+	logrus.Info("completed cluster tick successfully")
 }
 
 func (d *demotick) run() error {
 	// Get nodes
+	logrus.Info("retrieving list of healthy nodes")
 	nodes, err := d.getNodes()
 	if err != nil {
 		return err
 	}
 
 	// Get datasets and current node(s)
+	logrus.Info("retrieving datasets and their current locations")
 	datasets, err := d.getDatasets()
 	if err != nil {
 		return err
 	}
 	// ZFS Send/Receive datasets from current node(s) to missing node(s)
+	logrus.Info("replicating datasets to cluster nodes")
 	if err = d.replicateDatasets(datasets, nodes); err != nil {
 		return err
 	}
+	logrus.Info("replicating datasets successful")
 
 	// Get bundles and current node(s)
+	logrus.Info("retrieving bundles and their current locations")
 	bundles, bundleHeartbeats, err := d.getBundles()
 	if err != nil {
 		return err
 	}
 	// Start bundles on missing node(s)
-	return d.runBundles(bundles, bundleHeartbeats, nodes)
+	logrus.Info("running bundles on cluster nodes")
+	if err = d.runBundles(bundles, bundleHeartbeats, nodes); err != nil {
+		return err
+	}
+	logrus.Info("running bundles on cluster nodes successful")
+	return nil
 }
 
 func (d *demotick) getNodes() ([]clusterconf.Node, error) {
@@ -153,8 +168,10 @@ func (d *demotick) replicateDatasets(datasets map[string]map[string]clusterconf.
 	defer close(errorChan)
 
 	for datasetID, heartbeats := range datasets {
+		logrus.Debug("replicating dataset " + datasetID)
 		replicateN := len(nodes) - len(heartbeats)
 		if replicateN == 0 {
+			logrus.Debug("no replication needed for dataset " + datasetID)
 			// already present on all nodes
 			continue
 		}
@@ -190,6 +207,7 @@ func (d *demotick) replicateDatasets(datasets map[string]map[string]clusterconf.
 		}
 
 		for _, destinationIP := range destinationIPs {
+			logrus.Debugf("replicating dataset %s from %s to %d", datasetID, sourceIP, destinationIP)
 			wg.Add(1)
 			trackErr := func(id, sIP, dIP string) func(string, error) {
 				return func(task string, e error) {
@@ -304,10 +322,12 @@ func (d *demotick) runBundles(bundles []*clusterconf.Bundle, bundleHeartbeats ma
 	defer close(errorChan)
 
 	for _, bundle := range bundles {
+		logrus.Debugf("running bundle %d", bundle.ID)
 		heartbeats := bundleHeartbeats[bundle.ID]
 
 		replicateN := len(nodes) - len(heartbeats)
 		if replicateN == 0 {
+			logrus.Debugf("no running needed for bundle %d", bundle.ID)
 			// already present on all nodes
 			continue
 		}
@@ -323,6 +343,7 @@ func (d *demotick) runBundles(bundles []*clusterconf.Bundle, bundleHeartbeats ma
 
 		for _, destinationIP := range destinationIPs {
 			for _, serviceConf := range bundle.Services {
+				logrus.Debugf("running bundle %d service %s on %s", bundle.ID, serviceConf.ID, destinationIP)
 				wg.Add(1)
 				trackErr := func(bID uint64, sID, dIP string) func(string, error) {
 					return func(task string, e error) {
