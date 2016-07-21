@@ -20,7 +20,7 @@ type Service struct {
 	Description string            `json:"description"`
 	Uptime      time.Duration     `json:"uptime"`
 	ActiveState string            `json:"activeState"`
-	Exec        []string          `json:"exec"`
+	Cmd         []string          `json:"exec"`
 	UID         uint64            `json:"uid"`
 	GID         uint64            `json:"gid"`
 	Env         map[string]string `json:"env"`
@@ -156,8 +156,8 @@ func systemdUnitToService(systemdUnit systemd.UnitStatus) (*Service, error) {
 		Description: description,
 		Uptime:      systemdUnit.Uptime,
 		ActiveState: systemdUnit.ActiveState,
-		Exec:        execStart,
-		// TODO: Possibly extract User and Group from Exec
+		Cmd:         execStart,
+		// TODO: Possibly extract User and Group from Cmd
 		UID: uid,
 		GID: gid,
 		Env: env,
