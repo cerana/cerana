@@ -4,64 +4,11 @@
 
 package main
 
-/*
-#define _GNU_SOURCE
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sched.h>
-
-struct nsmap {
-	const char *path;
-	int type;
-};
-
-struct nsmap mappings[]  = {
-	{ "MNTNS_PATH", CLONE_NEWNS },
-	{ "UTSNS_PATH", CLONE_NEWUTS },
-	{ "IPCNS_PATH", CLONE_NEWIPC },
-	{ "NETNS_PATH", CLONE_NEWNET },
-	{ "PIDNS_PATH", CLONE_NEWPID },
-	{ "USERNS_PATH", CLONE_NEWUSER },
-	{ NULL, 0 }
-};
-
-__attribute__((constructor)) void
-init_namespaces(void)
-{
-	int flags = CLONE_NEWNS|CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWNET| \
-	    CLONE_NEWPID;
-	int fd, err, i;
-	const char *nspath;
-
-	(void) unshare(CLONE_NEWUSER);
-
-	for (i = 0; mappings[i].path != NULL; i++) {
-		nspath = getenv(mappings[i].path);
-		if (nspath != NULL) {
-			fd = open(nspath, O_RDONLY, 0644);
-			if (fd < 0)
-				continue;
-   			err = setns(fd, mappings[i].type);
-			if (err == 0)
-				flags &= ~(mappings[i].type);
-			(void) close(fd);
-		}
-	}
-
-	(void) unshare(flags);
-}
-*/
-import "C"
-
 import (
 	"bufio"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"syscall"
 	"unsafe"
@@ -203,86 +150,6 @@ func SetNoNewPrivs(i int) error {
 	return Prctl(PR_SET_NO_NEW_PRIVS, uintptr(i), 0, 0, 0)
 }
 
-func pivotRoot(rootfs, pivotBaseDir string) (err error) {
-	if pivotBaseDir == "" {
-		pivotBaseDir = "/"
-	}
-	tmpDir := filepath.Join(rootfs, pivotBaseDir)
-	if err := os.MkdirAll(tmpDir, 0755); err != nil {
-		return fmt.Errorf("can't create tmp dir %s, error %v", tmpDir, err)
-	}
-	pivotDir, err := ioutil.TempDir(tmpDir, ".pivot_root")
-	if err != nil {
-		return fmt.Errorf("can't create pivot_root dir %s, error %v", pivotDir, err)
-	}
-	defer func() {
-		errVal := os.Remove(pivotDir)
-		if err == nil {
-			err = errVal
-		}
-	}()
-	if err := syscall.PivotRoot(rootfs, pivotDir); err != nil {
-		return fmt.Errorf("pivot_root %s", err)
-	}
-	if err := syscall.Chdir("/"); err != nil {
-		return fmt.Errorf("chdir / %s", err)
-	}
-	// path to pivot dir now changed, update
-	pivotDir = filepath.Join(pivotBaseDir, filepath.Base(pivotDir))
-
-	// Make pivotDir rprivate to make sure any of the unmounts don't
-	// propagate to parent.
-	if err := syscall.Mount("", pivotDir, "", syscall.MS_PRIVATE|syscall.MS_REC, ""); err != nil {
-		return err
-	}
-
-	if err := syscall.Unmount(pivotDir, syscall.MNT_DETACH); err != nil {
-		return fmt.Errorf("unmount pivot_root dir %s", err)
-	}
-	return nil
-}
-
-func SetNewRoot(path string) (err error) {
-	if len(path) == 0 || path == "/" {
-		path, err = os.Getwd()
-		if err != nil {
-			return err
-		}
-	}
-	if err := syscall.Chdir(path); err != nil {
-		return err
-	}
-	if err := createDevices(path); err != nil {
-		return err
-	}
-	return pivotRoot(".", "")
-}
-
-func fixStdioPermissions(uid int, gid int) error {
-	var null syscall.Stat_t
-	if err := syscall.Stat("/dev/null", &null); err != nil {
-		return err
-	}
-	for _, fd := range []uintptr{
-		os.Stdin.Fd(),
-		os.Stderr.Fd(),
-		os.Stdout.Fd(),
-	} {
-		var s syscall.Stat_t
-		if err := syscall.Fstat(int(fd), &s); err != nil {
-			return err
-		}
-		// skip chown of /dev/null if it was used as one of the STDIO fds.
-		if s.Rdev == null.Rdev {
-			continue
-		}
-		if err := syscall.Fchown(int(fd), uid, gid); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // Setuid sets the uid of the calling thread to the specified uid.
 func Setuid(uid int) (err error) {
 	_, _, e1 := syscall.RawSyscall(syscall.SYS_SETUID, uintptr(uid), 0, 0)
@@ -302,8 +169,11 @@ func Setgid(gid int) (err error) {
 }
 
 func SetNewUser(uid int, gid int) error {
-	if err := fixStdioPermissions(uid, gid); err != nil {
-		return err
+	//if err := fixStdioPermissions(uid, gid); err != nil {
+	//	return err
+	//}
+	if (gid == 0 || uid == 0) {
+		return nil
 	}
 	if err := Setgid(gid); err != nil {
 		return err
@@ -320,65 +190,6 @@ func Prctl(option int, arg2, arg3, arg4, arg5 uintptr) (err error) {
 		err = e1
 	}
 	return
-}
-
-var Devices []string
-
-func createDevices(rootfs string) error {
-	oldMask := syscall.Umask(0000)
-	for _, node := range Devices {
-		// containers running in a user namespace are not allowed to mknod
-		// devices so we can just bind mount it from the host.
-		dest := filepath.Join(rootfs, node)
-		if err := bindMountDeviceNode(dest, node); err != nil {
-			syscall.Umask(oldMask)
-			return err
-		}
-	}
-	syscall.Umask(oldMask)
-	return nil
-}
-
-func bindMountDeviceNode(dest string, path string) error {
-	f, err := os.Create(dest)
-	if err != nil && !os.IsExist(err) {
-		return err
-	}
-	if f != nil {
-		f.Close()
-	}
-	return syscall.Mount(path, dest, "bind", syscall.MS_BIND, "")
-}
-
-type Namespace struct {
-	Path string
-	Type string
-}
-
-type Namespaces []Namespace
-
-// imported from github.com:opencontainers/runc/libcontainer/configs/namespaces_syscall.go
-var namespaceInfo = map[string]int{
-	"net":   syscall.CLONE_NEWNET,
-	"mount": syscall.CLONE_NEWNS,
-	"user":  syscall.CLONE_NEWUSER,
-	"ipc":   syscall.CLONE_NEWIPC,
-	"uts":   syscall.CLONE_NEWUTS,
-	"pid":   syscall.CLONE_NEWPID,
-	//NEWDATASET:  syscall.CLONE_NEWDATASET,
-}
-
-// CloneFlags parses the container's Namespaces options to set the correct
-// flags on clone, unshare. This function returns flags only for new namespaces.
-func (n Namespaces) CloneFlags() uintptr {
-	var flag int
-	for _, v := range n {
-		if len(v.Path) != 0 {
-			continue
-		}
-		flag |= namespaceInfo[v.Type]
-	}
-	return uintptr(flag)
 }
 
 var Capabilities = []string{

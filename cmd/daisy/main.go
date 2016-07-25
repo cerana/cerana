@@ -3,14 +3,13 @@
 // This is the daisy binary to execute the target program with isolation applied
 package main
 
-import "C"
-
 import (
 	"fmt"
 	"os"
-	"runtime"
+	//"runtime"
 	"strconv"
 	"strings"
+	"syscall"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/pkg/seccomp"
@@ -18,67 +17,74 @@ import (
 )
 
 const (
-	argSep  = "="
-	defScmp = "SCMP_ACT_ERRNO"
+	ArgSep  = "="
+	DefScmp = "SCMP_ACT_ERRNO"
 )
 
-func main() {
+func init() {
 	// pin main goroutine to thread
-	runtime.LockOSThread()
-	log.SetLevel(log.FatalLevel)
+	//runtime.LockOSThread()
+	log.SetLevel(log.DebugLevel)
+}
 
-	var coordinator, namespaces, rootDir, binPath string
+func main() {
+
+	var coordinator, namespaces, extNamespaces, rootFs string
 	var uid, gid, uidrange, gidrange int
 	var kvm bool
-	var extNamespaces, binArgs []string
+	var execArgs []string
+	var nsList Namespaces
 	var scmp = seccomp.Whitelist
 
-	flags.StringVarP(&rootDir, "root directory", "r", "/", "location of the container root")
-	flags.StringVarP(&binPath, "executable path", "p", "/bin/sh", "relative path and args of the program to exec")
-	flags.IntVarP(&uid, "uid", "u", 0, "user id to use as base")
-	flags.IntVarP(&gid, "gid", "g", 0, "group id to use as base")
+	if os.Args[0] == "child" {
+		err := child()
+		dieOnError(err)
+		os.Exit(1)
+	}
+
+	flags.StringVarP(&rootFs, "root directory", "r", "", "location of the container root")
+	flags.IntVarP(&uid, "uid", "u", os.Getuid(), "user id to use as base")
+	flags.IntVarP(&gid, "gid", "g", os.Getgid(), "group id to use as base")
 	flags.IntVarP(&uidrange, "uid range", "U", 1000, "length of mapped user id range")
 	flags.IntVarP(&gidrange, "gid range", "G", 1000, "length of mapped group id range")
 	flags.BoolVarP(&kvm, "kvm mode", "k", false, "whether we are running just qemu")
 	flags.StringVarP(&namespaces, "namespace list", "n", "user,mount,uts,pid,ipc", "list of namespaces to unshare")
-	flags.StringSliceVarP(&extNamespaces, "external namespace", "x", []string{}, fmt.Sprintf("list of external namespaces of the form'type%spath'. can be set multiple times", argSep))
+	flags.StringVarP(&extNamespaces, "external namespace", "x", "", fmt.Sprintf("list of external namespaces of the form'type%spath'", ArgSep))
 	flags.StringVarP(&coordinator, "coordinator_url", "c", "", "url of the coordinator")
 	flags.Parse()
 
 	// extract argv for executable
-	binArgs = strings.Split(binPath, " ")
-	binPath = binArgs[0]
+	execArgs = flags.Args()
+	if len(execArgs) == 0 {
+		log.Fatalf("Missing path to executable")
+		os.Exit(1)
+	}
 
-	args, err := parseArgs(extNamespaces)
-	dieOnError(err)
-
-	if len(args) != 0 {
-		fmt.Println("please use *NS_PATH environment variables to specify namespace paths")
+	for _, ns := range strings.Split(namespaces, ",") {
+		nsList = append(nsList, Namespace{Type: ns, Path: ""})
 	}
 
 	if kvm {
 		scmp = seccomp.WhitelistKVM
 	}
 
-	dieOnError(SetNoNewPrivs(1))
+	//dieOnError(SetNoNewPrivs(1))
 
-	dieOnError(SetNewRoot(rootDir))
+	//dieOnError(seccomp.InitSeccomp(scmp, DefScmp))
 
-	dieOnError(SetSubreaper(1))
+	//capInit()
 
-	dieOnError(seccomp.InitSeccomp(scmp, defScmp))
+	//w, err := newCapWhitelist(Capabilities)
 
-	capInit()
+	//dieOnError(err)
 
-	w, err := newCapWhitelist(Capabilities)
-	dieOnError(err)
 	// drop capabilities in bounding set before changing user
-	dieOnError(w.dropBoundingSet())
+	//dieOnError(w.dropBoundingSet())
 
 	// preserve existing capabilities while we change users
-	dieOnError(SetKeepCaps())
+	//dieOnError(SetKeepCaps())
 
-	dieOnError(SetNewUser(uid, gid))
+	//dieOnError(SetNewUser(uid, gid))
 
 	//dieOnError(makeRequest(coordinator, 'getExtNamespaces', httpAddr))
 
@@ -92,12 +98,22 @@ func main() {
 
 	//dieOnError(selinux.InitLabels(nil));
 	// should update user namespace mapping before this point
-	dieOnError(SetNewUser(0, 0))
-
-	dieOnError(ClearKeepCaps())
-
-	// finally, exec user program
-	Execv(binPath, binArgs, nil)
+	if rootFs != "/" && rootFs != "" {
+		if err := syscall.Chdir(rootFs); err != nil {
+			log.Fatalf("Cannot enter root directory '%s': %v", rootFs, err)
+			os.Exit(1)
+		}
+	}
+	c := &Container{
+		Args:       execArgs,
+		Uid:        uid,
+		Gid:        gid,
+		Namespaces: nsList,
+		Seccomp:    scmp,
+	}
+	if err := c.Start(); err != nil {
+		log.Fatalf("Container start failed: %v", err)
+	}
 }
 
 func dieOnError(err error) {
@@ -138,7 +154,7 @@ func (am argmap) set(keys []string, value interface{}) error {
 	return m.set(keys[1:], value)
 }
 
-func parseArgs(args []string) (map[string]interface{}, error) {
+func parseArgs(args []string, argSep string) (map[string]interface{}, error) {
 	out := make(argmap)
 	for _, in := range args {
 		parts := strings.Split(in, argSep)
