@@ -50,7 +50,7 @@ func (s *DHCPS) SetupSuite() {
 
 	v := coordinator.NewProviderViper()
 	v.Set("lease-duration", 24*time.Hour)
-	v.Set("dns-servers", []string{"10.0.0.1", "10.0.0.2"})
+	v.Set("dns-servers", "10.0.0.1,10.0.0.2")
 	v.Set("gateway", "10.0.0.1")
 	v.Set("network", "10.0.0.1/24")
 
@@ -153,7 +153,8 @@ func (s *DHCPS) TestGetAddressBasic() {
 	resp, url, err = s.dhcp.ack(req)
 	s.Require().Nil(err)
 	s.Require().Nil(url)
-	s.Require().Nil(resp)
+	s.Require().NotNil(resp)
+	s.Equal(lease, resp.(Lease))
 }
 
 func (s *DHCPS) TestGetAlmostFull() {
@@ -190,6 +191,33 @@ func (s *DHCPS) TestGetAlmostFull() {
 
 	lease := resp.(Lease)
 	s.Require().Equal(wantIP.String(), lease.Net.IP.String())
+}
+
+func (s *DHCPS) TestGetFull() {
+	size, bits := s.dhcp.config.Network().Mask.Size()
+	numIPs := (1 << uint(bits-size)) - 2
+
+	const macFormat = "00:ba:dd:be:ef:%02x"
+
+	for i := 1; i < numIPs+1; i++ {
+		ip := dhcp4.IPAdd(s.dhcp.config.Network().IP, i)
+		s.Require().NoError(s.kv.Set(prefix+ip.String(), fmt.Sprintf(macFormat, i)))
+	}
+	time.Sleep(1 * time.Second)
+
+	req, err := acomm.NewRequest(acomm.RequestOptions{
+		Task: "dhcp-offer-lease",
+		Args: Addresses{
+			MAC: "00:00:ba:dd:be:ef",
+		},
+	})
+	s.Require().NoError(err)
+	s.Require().NotNil(req)
+
+	resp, url, err := s.dhcp.get(req)
+	s.Require().NotNil(err)
+	s.Require().Nil(url)
+	s.Nil(resp)
 }
 
 func (s *DHCPS) TestGetTaken() {
@@ -239,8 +267,8 @@ func (s *DHCPS) TestGetTaken() {
 }
 
 func (s *DHCPS) TestNextGetter() {
-	min := uint32(0)
-	max := uint32(7)
+	min := uint32(1)
+	max := uint32(6)
 	tests := []struct {
 		name string
 		ips  []uint32
@@ -266,7 +294,7 @@ func (s *DHCPS) TestNextGetter() {
 
 	for _, t := range tests {
 		closer := make(chan struct{})
-		got := []uint32{}
+		got := make([]uint32, 0, len(t.want))
 		i := 0
 		for ip := range nextGetter(closer, t.ips, min, max) {
 			got = append(got, ip)

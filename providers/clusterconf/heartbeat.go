@@ -11,7 +11,7 @@ import (
 	"github.com/cerana/cerana/acomm"
 )
 
-const heartbeatPrefix = "heartbeats"
+const heartbeatPrefix string = "heartbeats"
 
 // DatasetHeartbeatArgs are arguments for updating a dataset node heartbeat.
 type DatasetHeartbeatArgs struct {

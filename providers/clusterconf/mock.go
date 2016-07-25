@@ -26,6 +26,7 @@ type MockClusterData struct {
 	Nodes      map[string]*Node
 	History    NodesHistory
 	Defaults   *Defaults
+	DHCP       *DHCPConfig
 }
 
 // NewMockClusterConf creates a new MockClusterConf.
@@ -385,5 +386,24 @@ func (c *MockClusterConf) DeleteService(req *acomm.Request) (interface{}, *url.U
 	}
 
 	delete(c.Data.Services, args.ID)
+	return nil, nil, nil
+}
+
+// GetDHCP retrieves mock DHCP settings.
+func (c *MockClusterConf) GetDHCP(req *acomm.Request) (interface{}, *url.URL, error) {
+	return c.Data.DHCP, nil, nil
+}
+
+// SetDHCP updates mock DHCP settings.
+func (c *MockClusterConf) SetDHCP(req *acomm.Request) (interface{}, *url.URL, error) {
+	conf := &DHCPConfig{}
+	if err := req.UnmarshalArgs(conf); err != nil {
+		return nil, nil, err
+	}
+
+	if err := conf.Validate(); err != nil {
+		return nil, nil, err
+	}
+	c.Data.DHCP = conf
 	return nil, nil, nil
 }

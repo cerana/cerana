@@ -254,6 +254,13 @@ func (c *ClusterConf) GetBundle(req *acomm.Request) (interface{}, *url.URL, erro
 ```
 GetBundle retrieves a bundle.
 
+#### func (*ClusterConf) GetDHCP
+
+```go
+func (c *ClusterConf) GetDHCP(*acomm.Request) (interface{}, *url.URL, error)
+```
+GetDHCP retrieves the current cluster DHCP settings.
+
 #### func (*ClusterConf) GetDataset
 
 ```go
@@ -337,6 +344,13 @@ NodeHeartbeat records a new node heartbeat.
 func (c *ClusterConf) RegisterTasks(server *provider.Server)
 ```
 RegisterTasks registers all of Systemd's task handlers with the server.
+
+#### func (*ClusterConf) SetDHCP
+
+```go
+func (c *ClusterConf) SetDHCP(req *acomm.Request) (interface{}, *url.URL, error)
+```
+SetDHCP updates the cluster DHCP settings.
 
 #### func (*ClusterConf) UpdateBundle
 
@@ -433,6 +447,19 @@ type ConfigData struct {
 ```
 
 ConfigData defines the structure of the config data (e.g. in the config file)
+
+#### type DHCPConfig
+
+```go
+type DHCPConfig struct {
+	DNS      []net.IP      `json:"dns"`
+	Duration time.Duration `json:"duration"`
+	Gateway  net.IP        `json:"gateway"`
+	Net      net.IPNet     `json:"net"`
+}
+```
+
+DHCPConfig represents the dhcp settings for the cluster.
 
 #### type Dataset
 
@@ -661,6 +688,13 @@ func (c *MockClusterConf) GetBundle(req *acomm.Request) (interface{}, *url.URL, 
 ```
 GetBundle retrieves a mock bundle.
 
+#### func (*MockClusterConf) GetDHCP
+
+```go
+func (c *MockClusterConf) GetDHCP(req *acomm.Request) (interface{}, *url.URL, error)
+```
+GetDHCP retrieves mock DHCP settings.
+
 #### func (*MockClusterConf) GetDataset
 
 ```go
@@ -745,6 +779,13 @@ func (c *MockClusterConf) RegisterTasks(server *provider.Server)
 ```
 RegisterTasks registers all of MockClusterConf's tasks.
 
+#### func (*MockClusterConf) SetDHCP
+
+```go
+func (c *MockClusterConf) SetDHCP(req *acomm.Request) (interface{}, *url.URL, error)
+```
+SetDHCP updates mock DHCP settings.
+
 #### func (*MockClusterConf) UpdateBundle
 
 ```go
@@ -785,6 +826,7 @@ type MockClusterData struct {
 	Nodes      map[string]*Node
 	History    NodesHistory
 	Defaults   *Defaults
+	DHCP       DHCPConfig
 }
 ```
 
