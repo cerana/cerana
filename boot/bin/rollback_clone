@@ -2,13 +2,17 @@
 
 #
 # Expects two arguments:
-# SOURCE - source snapshot
+# SOURCE - source dataset or snapshot
 # DESTINATION - destination dataset
 #
 # Makes sure that DESTINATION has been rolled back to a pristine snapshot from
 # after it was cloned from SOURCE
 #
-# Will use _CERANA_CLONE_SOURCE and _CERANA_CLONE_DESTINATION environment variables
+# If SOURCE is a snapshot, this is relatively simple
+# If SOURCE is just a dataset, use the newest snapshot of it.
+# I no snapshot exists of the SOURCE dataset, create one to use.
+#
+# This script can use _CERANA_CLONE_SOURCE and _CERANA_CLONE_DESTINATION environment variables
 # if present, but arguments trump environment variables
 
 set -o errexit
@@ -20,18 +24,32 @@ DESTINATION="${2:-${_CERANA_CLONE_DESTINATION}}"
 [[ -n "${DESTINATION}" ]]
 SNAP=pristine
 
-origin_match() { [[ "${SOURCE}" == $(zfs get -H -o value origin "${DESTINATION}") ]]; }
-dest_exists() { zfs list -o name "${DESTINATION}" &>/dev/null; }
-snapshot_exists() { zfs list -o name "${DESTINATION}@${SNAP}" &>/dev/null; }
+zfs_exists() { zfs list -H -o name "${1}" &>/dev/null; }
+zfs_exists_or_snapshot() {
+    zfs_exists "${1}" \
+        || zfs snapshot "${1}"
+}
+zfs_origin() { zfs get -H -o value origin "${1}" 2>/dev/null; }
 
-zfs_clone() { zfs clone "${SOURCE}" "${DESTINATION}"; }
-zfs_snapshot() { zfs snapshot "${DESTINATION}@${SNAP}"; }
-zfs_rollback() { zfs rollback "${DESTINATION}@${SNAP}"; }
-zfs_destroy() { zfs destroy -r "${DESTINATION}"; }
-
-if ! origin_match; then
-    dest_exists && zfs_destroy
-    zfs_clone
+IFS=@ read -r SOURCE_DATASET SOURCE_SNAPSHOT<<<"${SOURCE}"
+if [[ -z "${SOURCE_SNAPSHOT}" ]]; then
+    # If the snapshot name was an empty string then find or create a snapshot.
+    LATEST_SNAPSHOT=$(zfs list -o name -t snapshot -r "${SOURCE_DATASET}" 2>/dev/null | tail -n 1)
+    if [[ -z "${LATEST_SNAPSHOT}" ]]; then
+        # Found no snapshots. Create a snapshot named after the destination.
+        SOURCE="${SOURCE_DATASET}@${DESTINATION##*/}"
+    else
+        # Use the latest snapshot of the originally specified SOURCE.
+        SOURCE=${LATEST_SNAPSHOT}
+    fi
 fi
-snapshot_exists || zfs_snapshot
-zfs_rollback
+
+zfs_exists_or_snapshot "${SOURCE}"
+
+if ! [[ "${SOURCE}" == $(zfs_origin "${DESTINATION}") ]]; then
+    zfs_exists "${DESTINATION}" \
+        && zfs destroy -r "${DESTINATION}"
+    zfs clone "${SOURCE}" "${DESTINATION}"
+fi
+zfs_exists_or_snapshot "${DESTINATION}@${SNAP}"
+zfs rollback -r "${DESTINATION}@${SNAP}"
