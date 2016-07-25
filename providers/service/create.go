@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"path/filepath"
 	"strings"
 
 	"github.com/cerana/cerana/acomm"
@@ -15,6 +16,7 @@ import (
 type CreateArgs struct {
 	ID          string            `json:"id"`
 	BundleID    uint64            `json:"bundleID"`
+	Dataset     string            `json:"dataset"`
 	Description string            `json:"description"`
 	Exec        []string          `json:"exec"`
 	Env         map[string]string `json:"env"`
@@ -35,14 +37,22 @@ func (p *Provider) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 	if len(args.Exec) == 0 {
 		return nil, nil, errors.New("missing arg: exec")
 	}
+	if args.Dataset == "" {
+		return nil, nil, errors.New("missing arg: dataset")
+	}
 
 	name := serviceName(args.BundleID, args.ID)
+	datasetCloneName := filepath.Join(p.config.DatasetClonePath(), name)
 	unitOptions := []*unit.UnitOption{
 		{Section: "Unit", Name: "Description", Value: args.Description},
 		// TODO: Does exec get prepended with daisy?
 		{Section: "Service", Name: "ExecStart", Value: strings.Join(args.Exec, " ")},
 		{Section: "Service", Name: "Type", Value: "forking"},
 		{Section: "Install", Name: "WantedBy", Value: "cerana.Target"},
+
+		{Section: "Service", Name: "ExecStartPre", Value: p.config.DatasetCloneBin()},
+		{Section: "Environment", Name: "_CERANA_CLONE_SOURCE", Value: args.Dataset},
+		{Section: "Environment", Name: "_CERANA_CLONE_DESTINATION", Value: datasetCloneName},
 	}
 	// TODO: Add User= and Group= if not part of daisy
 	for key, val := range args.Env {

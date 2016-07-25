@@ -9,27 +9,31 @@ import (
 )
 
 func (s *Provider) TestCreate() {
+	ds := uuid.New()
 	tests := []struct {
 		id          string
 		bundleID    uint64
+		dataset     string
 		description string
 		exec        []string
 		env         map[string]string
 		err         string
 	}{
-		{"", 219, "working service", []string{"foo", "bar"}, map[string]string{"foo": "bar"}, "missing arg: id"},
-		{uuid.New(), 0, "working service", []string{"foo", "bar"}, map[string]string{"foo": "bar"}, "missing arg: bundleID"},
-		{uuid.New(), 219, "", []string{"foo", "bar"}, map[string]string{"foo": "bar"}, ""},
-		{uuid.New(), 219, "working service", nil, map[string]string{"foo": "bar"}, "missing arg: exec"},
-		{uuid.New(), 219, "working service", []string{}, map[string]string{"foo": "bar"}, "missing arg: exec"},
-		{uuid.New(), 219, "working service", []string{"foo", "bar"}, map[string]string{}, ""},
-		{uuid.New(), 219, "working service", []string{"foo", "bar"}, map[string]string{"foo": "bar"}, ""},
+		{"", 219, ds, "working service", []string{"foo", "bar"}, map[string]string{"foo": "bar"}, "missing arg: id"},
+		{uuid.New(), 0, ds, "working service", []string{"foo", "bar"}, map[string]string{"foo": "bar"}, "missing arg: bundleID"},
+		{uuid.New(), 219, ds, "", []string{"foo", "bar"}, map[string]string{"foo": "bar"}, ""},
+		{uuid.New(), 219, ds, "working service", nil, map[string]string{"foo": "bar"}, "missing arg: exec"},
+		{uuid.New(), 219, ds, "working service", []string{}, map[string]string{"foo": "bar"}, "missing arg: exec"},
+		{uuid.New(), 219, "", "working service", []string{"foo", "bar"}, map[string]string{}, "missing arg: dataset"},
+		{uuid.New(), 219, ds, "working service", []string{"foo", "bar"}, map[string]string{}, ""},
+		{uuid.New(), 219, ds, "working service", []string{"foo", "bar"}, map[string]string{"foo": "bar"}, ""},
 	}
 
 	for _, test := range tests {
 		args := &service.CreateArgs{
 			ID:          test.id,
 			BundleID:    test.bundleID,
+			Dataset:     test.dataset,
 			Description: test.description,
 			Exec:        test.exec,
 			Env:         test.env,
