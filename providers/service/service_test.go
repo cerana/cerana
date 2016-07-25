@@ -19,7 +19,7 @@ import (
 type Provider struct {
 	suite.Suite
 	coordinator  *test.Coordinator
-	config       *provider.Config
+	config       *service.Config
 	provider     *service.Provider
 	tracker      *acomm.Tracker
 	flagset      *pflag.FlagSet
@@ -41,7 +41,9 @@ func (s *Provider) SetupSuite() {
 
 	v := s.coordinator.NewProviderViper()
 	flagset := pflag.NewFlagSet("service", pflag.PanicOnError)
-	config := provider.NewConfig(flagset, v)
+	v.Set("rollback_clone_cmd", "foo/bar")
+	v.Set("dataset_clone_dir", "tmp")
+	config := service.NewConfig(flagset, v)
 	s.Require().NoError(flagset.Parse([]string{}))
 	s.Require().NoError(config.LoadConfig())
 	s.Require().NoError(config.SetupLogging())
@@ -71,7 +73,7 @@ func (s *Provider) TearDownSuite() {
 }
 
 func (s *Provider) TestRegisterTasks() {
-	server, err := provider.NewServer(s.config)
+	server, err := provider.NewServer(s.config.Config)
 	s.Require().NoError(err)
 
 	s.provider.RegisterTasks(server)

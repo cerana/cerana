@@ -53,6 +53,9 @@ func (m *Mock) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 	if len(args.Exec) == 0 {
 		return nil, nil, errors.New("missing arg: exec")
 	}
+	if args.Dataset == "" {
+		return nil, nil, errors.New("missing arg: dataset")
+	}
 
 	if _, ok := m.Data.Services[args.BundleID]; !ok {
 		m.Data.Services[args.BundleID] = make(map[string]Service)

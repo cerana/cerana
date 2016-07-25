@@ -6,12 +6,71 @@
 
 ## Usage
 
+#### type Config
+
+```go
+type Config struct {
+	*provider.Config
+}
+```
+
+Config holds all configuration for the provider.
+
+#### func  NewConfig
+
+```go
+func NewConfig(flagSet *pflag.FlagSet, v *viper.Viper) *Config
+```
+NewConfig creates a new instance of Config.
+
+#### func (*Config) DatasetCloneBin
+
+```go
+func (c *Config) DatasetCloneBin() string
+```
+DatasetCloneBin returns the full path of the binary to clone/rollback datasets
+for services.
+
+#### func (*Config) DatasetClonePath
+
+```go
+func (c *Config) DatasetClonePath() string
+```
+DatasetClonePath returns the zfs path in which to clone datasets.
+
+#### func (*Config) LoadConfig
+
+```go
+func (c *Config) LoadConfig() error
+```
+LoadConfig loads and validates the config data.
+
+#### func (*Config) Validate
+
+```go
+func (c *Config) Validate() error
+```
+Validate returns whether the config is valid, containing necessary values.
+
+#### type ConfigData
+
+```go
+type ConfigData struct {
+	provider.ConfigData
+	DatasetCloneBin  string `json:"dataset_clone_bin"`
+	DatasetClonePath string `json:"dataset_clone_path"`
+}
+```
+
+ConfigData defines the structure of the config data (e.g. in the config file)
+
 #### type CreateArgs
 
 ```go
 type CreateArgs struct {
 	ID          string            `json:"id"`
 	BundleID    uint64            `json:"bundleID"`
+	Dataset     string            `json:"dataset"`
 	Description string            `json:"description"`
 	Exec        []string          `json:"exec"`
 	Env         map[string]string `json:"env"`
@@ -146,7 +205,7 @@ Provider is a provider of service management functionality.
 #### func  New
 
 ```go
-func New(config *provider.Config, tracker *acomm.Tracker) *Provider
+func New(config *Config, tracker *acomm.Tracker) *Provider
 ```
 New creates a new instance of Provider.
 
