@@ -127,6 +127,7 @@ func pivotRoot(rootfs string, pivotBaseDir string) (err error) {
 	if pivotBaseDir == "" {
 		pivotBaseDir = "/"
 	}
+	// "new_root and put_old must not be on the same filesystem as the current root"
 	if err := syscall.Mount(rootfs, rootfs, "bind", syscall.MS_BIND|syscall.MS_REC, ""); err != nil {
 	    return fmt.Errorf("Mount rootfs to itself error: %v", err)
 	}
@@ -137,8 +138,6 @@ func pivotRoot(rootfs string, pivotBaseDir string) (err error) {
 	pivotDir := filepath.Join(tmpDir, ".pivot_root")
 	if err := os.MkdirAll(pivotDir, 0755); err != nil {
 		return fmt.Errorf("can't create pivot_root dir %s, error %v", pivotDir, err)
-	}
-	if err != nil {
 	}
 	defer func() {
 		errVal := os.Remove(pivotDir)
@@ -274,16 +273,16 @@ func fillCfg() error {
 func child() error {
 	log.Debug("Start child")
 	if err := fillCfg(); err != nil {
-		return err
+		return fmt.Errorf("fillCfg: %v", err)
 	}
 	if err := setup(defaultCfg); err != nil {
-		return err
+		return fmt.Errorf("setup: %v", err)
 	}
 	if err := SetNoNewPrivs(1); err != nil {
-		return err
+		return fmt.Errorf("SetNoNewPrivs: %v", err)
 	}
 	if err := SetSubreaper(1); err != nil {
-		return err
+		return fmt.Errorf("SetSubreaper: %v", err)
 	}
 	//if err := seccomp.InitSeccomp(c.Seccomp, DefScmp); err != nil {
 	//	return err
@@ -296,7 +295,7 @@ func child() error {
 		return err
 	}
 	if err := w.dropBoundingSet(); err != nil {
-		return err
+		return fmt.Errorf("dropBoundingSet: %v", err)
 	}
 
 	return execProc(defaultCfg)
