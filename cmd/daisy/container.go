@@ -186,6 +186,7 @@ func createDevices(cfg Cfg) error {
 		// containers running in a user namespace are not allowed to mknod
 		// devices so we can just bind mount it from the host.
 		dest := filepath.Join(cfg.Rootfs, node)
+		log.Debugf("Mount %s to %s", node, dest)
 		if err := bindMountDeviceNode(dest, node); err != nil {
 			syscall.Umask(oldMask)
 			return err
@@ -284,9 +285,9 @@ func child() error {
 	if err := SetSubreaper(1); err != nil {
 		return fmt.Errorf("SetSubreaper: %v", err)
 	}
-	//if err := seccomp.InitSeccomp(c.Seccomp, DefScmp); err != nil {
-	//	return err
-	//}
+	if err := seccomp.InitSeccomp(seccomp.Whitelist, DefScmp); err != nil {
+		return err
+	}
 
 	capInit()
 
