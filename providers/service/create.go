@@ -51,8 +51,8 @@ func (p *Provider) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 		{Section: "Install", Name: "WantedBy", Value: "cerana.Target"},
 
 		{Section: "Service", Name: "ExecStartPre", Value: p.config.RollbackCloneCmd()},
-		{Section: "Environment", Name: "_CERANA_CLONE_SOURCE", Value: args.Dataset},
-		{Section: "Environment", Name: "_CERANA_CLONE_DESTINATION", Value: datasetCloneName},
+		{Section: "Service", Name: "Environment", Value: "_CERANA_CLONE_SOURCE=" + args.Dataset},
+		{Section: "Service", Name: "Environment", Value: "_CERANA_CLONE_DESTINATION=" + datasetCloneName},
 	}
 	// TODO: Add User= and Group= if not part of daisy
 	for key, val := range args.Env {
