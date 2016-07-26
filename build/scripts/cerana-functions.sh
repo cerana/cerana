@@ -169,8 +169,12 @@ log () {
 }
 
 function die() {
-    error "$@"
-    exit 1
+    if [ -z "$dryrun" ]; then
+        error "$@"
+        exit 1
+    else
+        error "$@"
+    fi
 }
 
 function run() {
