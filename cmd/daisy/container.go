@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -45,42 +46,8 @@ func (n Namespaces) CloneFlags() uintptr {
 type Container struct {
 	Args       []string
 	Namespaces Namespaces
-	Seccomp    []seccomp.SyscallRule
 	Uid        int
 	Gid        int
-}
-
-func (c *Container) Start() error {
-	cmd := &exec.Cmd{
-		Path: "/proc/self/exe",
-		Args: append([]string{"child"}, c.Args...),
-	}
-	flags := c.Namespaces.CloneFlags()
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Cloneflags: flags,
-		UidMappings: []syscall.SysProcIDMap{
-			{
-				ContainerID: 0,
-				HostID:      c.Uid,
-				Size:        1,
-			},
-		},
-		GidMappings: []syscall.SysProcIDMap{
-			{
-				ContainerID: 0,
-				HostID:      c.Gid,
-				Size:        1,
-			},
-		},
-	}
-	if err := cmd.Start(); err != nil {
-		return err
-	}
-	log.Debugf("child PID: %d", cmd.Process.Pid)
-	return cmd.Wait()
 }
 
 type Mount struct {
@@ -92,35 +59,69 @@ type Mount struct {
 }
 
 type Cfg struct {
-	Path     string
-	Args     []string
 	Hostname string
 	Mounts   []Mount
 	Rootfs   string
 	Devices  []string
+	Seccomp  []seccomp.SyscallRule
+}
+
+func (c *Container) Start() error {
+	var uidmap []syscall.SysProcIDMap
+	var gidmap []syscall.SysProcIDMap
+
+	flags := c.Namespaces.CloneFlags()
+	if flags&syscall.CLONE_NEWUSER != 0 {
+		if c.Uid == 0 && c.Gid == 0 {
+			c.Uid, c.Gid = pickIds()
+		}
+
+		uidmap = []syscall.SysProcIDMap{
+			{
+				ContainerID: 0,
+				HostID:      c.Uid,
+				Size:        1,
+			},
+		}
+		gidmap = []syscall.SysProcIDMap{
+			{
+				ContainerID: 0,
+				HostID:      c.Gid,
+				Size:        1,
+			},
+		}
+	}
+
+	cmd := &exec.Cmd{
+		Path: "/proc/self/exe",
+		Args: append([]string{"child"}, os.Args[1:]...),
+		Env: []string{
+			fmt.Sprintf("TERM=%s", os.Getenv("TERM")),
+			fmt.Sprintf("_CERANA_UID=%d", c.Uid),
+			fmt.Sprintf("_CERANA_GID=%d", c.Gid),
+		},
+	}
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Cloneflags:  flags,
+		UidMappings: uidmap,
+		GidMappings: gidmap,
+	}
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	log.Debugf("child PID: %d", cmd.Process.Pid)
+	return cmd.Wait()
 }
 
 var defaultMountFlags = syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV
 
-var defaultCfg = Cfg{
-	Hostname: "daisy",
-	Mounts: []Mount{
-		{
-			Source: "proc",
-			Target: "/proc",
-			Fs:     "proc",
-			Flags:  defaultMountFlags,
-		},
-		{
-			Source: "tmpfs",
-			Target: "/dev",
-			Fs:     "tmpfs",
-			Flags:  syscall.MS_NOSUID | syscall.MS_STRICTATIME,
-			Data:   "mode=755",
-		},
-	},
-	Rootfs:  "",
-	Devices: []string{"/dev/null", "/dev/zero", "/dev/full", "/dev/random", "/dev/urandom", "/dev/tty", "/dev/ptmx", "/dev/zfs"},
+func pickIds() (uid int, gid int) {
+	uid = (os.Getpid() << 16) | rand.Int()
+	gid = uid
+	return uid, gid
 }
 
 func pivotRoot(rootfs string, pivotBaseDir string) (err error) {
@@ -234,6 +235,16 @@ func fixStdioPermissions(uid int, gid int) error {
 }
 
 func setup(cfg Cfg) error {
+	//dieOnError(makeRequest(coordinator, 'getExtNamespaces', httpAddr))
+
+	//select {
+	//case err := <-respErr:
+	//	dieOnError(err)
+	//case result := <-result:
+	//	j, _ := json.Marshal(result)
+	//	fmt.Println(string(j))
+	//}
+
 	if err := syscall.Sethostname([]byte(cfg.Hostname)); err != nil {
 		return fmt.Errorf("Sethostname: %v", err)
 	}
@@ -252,28 +263,26 @@ func setup(cfg Cfg) error {
 	return nil
 }
 
-func execProc(cfg Cfg) error {
-	log.Debugf("Execute %s", append([]string{cfg.Path}, cfg.Args[1:]...))
-	return syscall.Exec(cfg.Path, cfg.Args, os.Environ())
+func execProc(path string, args []string) error {
+	log.Debugf("Execute %s", append([]string{path}, args...))
+	return syscall.Exec(path, args, os.Environ())
 }
 
-func fillCfg() error {
-	wd, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("Error get working dir: %v", err)
-	}
-	defaultCfg.Path = filepath.Join("/", os.Args[1])
-	defaultCfg.Args = os.Args[1:]
-	defaultCfg.Rootfs = wd
+func fillCfg(cfg Cfg) error {
+	//wd, err := os.Getwd()
+	//if err != nil {
+	//	return fmt.Errorf("Error get working dir: %v", err)
+	//}
+	//cfg.Rootfs = wd
 	return nil
 }
 
-func child() error {
+func (c *Container) Child(cfg Cfg) error {
 	log.Debug("Start child")
-	if err := fillCfg(); err != nil {
+	if err := fillCfg(cfg); err != nil {
 		return fmt.Errorf("fillCfg: %v", err)
 	}
-	if err := setup(defaultCfg); err != nil {
+	if err := setup(cfg); err != nil {
 		return fmt.Errorf("setup: %v", err)
 	}
 	if err := SetNoNewPrivs(1); err != nil {
@@ -292,9 +301,23 @@ func child() error {
 	if err != nil {
 		return err
 	}
+
+	// drop capabilities in bounding set before changing user
 	if err := w.dropBoundingSet(); err != nil {
 		return fmt.Errorf("dropBoundingSet: %v", err)
 	}
 
-	return execProc(defaultCfg)
+	// preserve existing capabilities while we change users
+	if err := SetKeepCaps(); err != nil {
+		return fmt.Errorf("SetKeepCaps: %v", err)
+	}
+
+	if err := SetNewUser(c.Uid, c.Gid); err != nil {
+		return fmt.Errorf("SetNewUser: %v", err)
+	}
+
+	//dieOnError(selinux.InitLabels(nil));
+	path := filepath.Join("/", c.Args[0])
+	args := c.Args
+	return execProc(path, args)
 }

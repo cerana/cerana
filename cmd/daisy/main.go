@@ -5,11 +5,13 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	//"runtime"
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/pkg/seccomp"
@@ -21,26 +23,47 @@ const (
 	DefScmp = "SCMP_ACT_ERRNO"
 )
 
+var defaultCfg = Cfg{
+	Hostname: "",
+	Mounts: []Mount{
+		{
+			Source: "proc",
+			Target: "/proc",
+			Fs:     "proc",
+			Flags:  defaultMountFlags,
+		},
+		{
+			Source: "tmpfs",
+			Target: "/dev",
+			Fs:     "tmpfs",
+			Flags:  syscall.MS_NOSUID | syscall.MS_STRICTATIME,
+			Data:   "mode=755",
+		},
+		{
+			Source: "sysfs",
+			Target: "/sys",
+			Fs:     "sysfs",
+			Flags:  defaultMountFlags,
+		},
+	},
+	Rootfs:  "",
+	Devices: []string{},
+}
+
 func init() {
 	// pin main goroutine to thread
 	//runtime.LockOSThread()
 	log.SetLevel(log.DebugLevel)
+	rand.Seed(time.Now().UnixNano())
 }
 
 func main() {
 
-	var coordinator, namespaces, extNamespaces, rootFs string
+	var coordinator, namespaces, extNamespaces, rootFs, hostname, devices string
 	var uid, gid, uidrange, gidrange int
 	var kvm bool
 	var execArgs []string
 	var nsList Namespaces
-	var scmp = seccomp.Whitelist
-
-	if os.Args[0] == "child" {
-		err := child()
-		dieOnError(err)
-		os.Exit(1)
-	}
 
 	flags.StringVarP(&rootFs, "root directory", "r", "", "location of the container root")
 	flags.IntVarP(&uid, "uid", "u", os.Getuid(), "user id to use as base")
@@ -48,6 +71,8 @@ func main() {
 	flags.IntVarP(&uidrange, "uid range", "U", 1000, "length of mapped user id range")
 	flags.IntVarP(&gidrange, "gid range", "G", 1000, "length of mapped group id range")
 	flags.BoolVarP(&kvm, "kvm mode", "k", false, "whether we are running just qemu")
+	flags.StringVarP(&hostname, "hostname", "h", "daisy", "hostname of new uts namespace")
+	flags.StringVarP(&devices, "devices", "d", "null,zero,full,random,urandom,tty,ptmx,zfs", "list of device nodes to allow")
 	flags.StringVarP(&namespaces, "namespace list", "n", "user,mount,uts,pid,ipc", "list of namespaces to unshare")
 	flags.StringVarP(&extNamespaces, "external namespace", "x", "", fmt.Sprintf("list of external namespaces of the form'type%spath'", ArgSep))
 	flags.StringVarP(&coordinator, "coordinator_url", "c", "", "url of the coordinator")
@@ -60,56 +85,61 @@ func main() {
 		os.Exit(1)
 	}
 
+	if os.Args[0] == "child" {
+		var devList []string
+		var scmp = seccomp.Whitelist
+
+		uid, err := strconv.Atoi(os.Getenv("_CERANA_UID"))
+		if err != nil {
+			log.Fatalf("Invalid child environment")
+		}
+		gid, err := strconv.Atoi(os.Getenv("_CERANA_GID"))
+		if err != nil {
+			log.Fatalf("Invalid child environment")
+		}
+		err = os.Unsetenv("_CERANA_UID")
+		err = os.Unsetenv("_CERANA_GID")
+
+		if kvm {
+			scmp = seccomp.WhitelistKVM
+		}
+
+		c := &Container{
+			Args:       execArgs,
+			Uid:        uid,
+			Gid:        gid,
+			Namespaces: nsList,
+		}
+		cfg := defaultCfg
+		cfg.Rootfs = rootFs
+		cfg.Hostname = hostname
+		cfg.Seccomp = scmp
+
+		for _, dev := range strings.Split(devices, ",") {
+			devList = append(devList, "/dev/"+dev)
+		}
+		if err := c.Child(cfg); err != nil {
+			log.Fatalf("Child execution failed: %v", err)
+		}
+		os.Exit(1)
+	}
+
 	for _, ns := range strings.Split(namespaces, ",") {
 		nsList = append(nsList, Namespace{Type: ns, Path: ""})
 	}
 
-	if kvm {
-		scmp = seccomp.WhitelistKVM
-	}
-
-	//dieOnError(SetNoNewPrivs(1))
-
-	//dieOnError(seccomp.InitSeccomp(scmp, DefScmp))
-
-	//capInit()
-
-	//w, err := newCapWhitelist(Capabilities)
-
-	//dieOnError(err)
-
-	// drop capabilities in bounding set before changing user
-	//dieOnError(w.dropBoundingSet())
-
-	// preserve existing capabilities while we change users
-	//dieOnError(SetKeepCaps())
-
-	//dieOnError(SetNewUser(uid, gid))
-
-	//dieOnError(makeRequest(coordinator, 'getExtNamespaces', httpAddr))
-
-	//select {
-	//case err := <-respErr:
-	//	dieOnError(err)
-	//case result := <-result:
-	//	j, _ := json.Marshal(result)
-	//	fmt.Println(string(j))
-	//}
-
-	//dieOnError(selinux.InitLabels(nil));
-	// should update user namespace mapping before this point
 	if rootFs != "/" && rootFs != "" {
 		if err := syscall.Chdir(rootFs); err != nil {
 			log.Fatalf("Cannot enter root directory '%s': %v", rootFs, err)
 			os.Exit(1)
 		}
 	}
+
 	c := &Container{
 		Args:       execArgs,
 		Uid:        uid,
 		Gid:        gid,
 		Namespaces: nsList,
-		Seccomp:    scmp,
 	}
 	if err := c.Start(); err != nil {
 		log.Fatalf("Container start failed: %v", err)
