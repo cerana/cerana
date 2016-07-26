@@ -247,9 +247,7 @@ func (c *ClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL, er
 
 	var wg sync.WaitGroup
 	bundleChan := make(chan *Bundle, len(ids))
-	defer close(bundleChan)
 	errChan := make(chan error, len(ids))
-	defer close(errChan)
 	for id := range ids {
 		fmt.Println("ListBundles: Loop with ID:", id)
 		wg.Add(1)
@@ -276,7 +274,9 @@ func (c *ClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL, er
 
 	wg.Wait()
 
-	fmt.Println("ListBundles: Done waiting for the id loop")
+	fmt.Println("ListBundles: Done waiting for the id loop, closing err and bundle chan")
+	close(bundleChan)
+	close(errChan)
 
 	if len(errChan) > 0 {
 		fmt.Println("ListBundles: pulling error off channel")
