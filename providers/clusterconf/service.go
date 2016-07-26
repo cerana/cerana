@@ -27,6 +27,7 @@ type ServiceConf struct {
 	HealthChecks map[string]HealthCheck `json:"healthChecks"`
 	Limits       ResourceLimits         `json:"limits"`
 	Env          map[string]string      `json:"env"`
+	Cmd          []string               `json:"cmd"`
 }
 
 // ResourceLimits is configuration for resource upper bounds.

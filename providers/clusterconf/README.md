@@ -461,6 +461,13 @@ type DHCPConfig struct {
 
 DHCPConfig represents the dhcp settings for the cluster.
 
+#### func (*DHCPConfig) Validate
+
+```go
+func (c *DHCPConfig) Validate() error
+```
+Validate validates the DHCPConfig settings.
+
 #### type Dataset
 
 ```go
@@ -826,7 +833,7 @@ type MockClusterData struct {
 	Nodes      map[string]*Node
 	History    NodesHistory
 	Defaults   *Defaults
-	DHCP       DHCPConfig
+	DHCP       *DHCPConfig
 }
 ```
 
@@ -932,6 +939,7 @@ type ServiceConf struct {
 	HealthChecks map[string]HealthCheck `json:"healthChecks"`
 	Limits       ResourceLimits         `json:"limits"`
 	Env          map[string]string      `json:"env"`
+	Cmd          []string               `json:"cmd"`
 }
 ```
 
