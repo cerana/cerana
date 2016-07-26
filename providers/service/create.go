@@ -18,7 +18,7 @@ type CreateArgs struct {
 	BundleID    uint64            `json:"bundleID"`
 	Dataset     string            `json:"dataset"`
 	Description string            `json:"description"`
-	Exec        []string          `json:"exec"`
+	Cmd         []string          `json:"cmd"`
 	Env         map[string]string `json:"env"`
 }
 
@@ -34,8 +34,8 @@ func (p *Provider) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 	if args.BundleID == 0 {
 		return nil, nil, errors.New("missing arg: bundleID")
 	}
-	if len(args.Exec) == 0 {
-		return nil, nil, errors.New("missing arg: exec")
+	if len(args.Cmd) == 0 {
+		return nil, nil, errors.New("missing arg: cmd")
 	}
 	if args.Dataset == "" {
 		return nil, nil, errors.New("missing arg: dataset")
@@ -45,8 +45,8 @@ func (p *Provider) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 	datasetCloneName := filepath.Join(p.config.DatasetCloneDir(), name)
 	unitOptions := []*unit.UnitOption{
 		{Section: "Unit", Name: "Description", Value: args.Description},
-		// TODO: Does exec get prepended with daisy?
-		{Section: "Service", Name: "ExecStart", Value: strings.Join(args.Exec, " ")},
+		// TODO: Does cmd get prepended with daisy?
+		{Section: "Service", Name: "ExecStart", Value: strings.Join(args.Cmd, " ")},
 		{Section: "Service", Name: "Type", Value: "forking"},
 		{Section: "Install", Name: "WantedBy", Value: "cerana.Target"},
 

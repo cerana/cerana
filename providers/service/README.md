@@ -23,20 +23,12 @@ func NewConfig(flagSet *pflag.FlagSet, v *viper.Viper) *Config
 ```
 NewConfig creates a new instance of Config.
 
-#### func (*Config) DatasetCloneBin
+#### func (*Config) DatasetCloneDir
 
 ```go
-func (c *Config) DatasetCloneBin() string
+func (c *Config) DatasetCloneDir() string
 ```
-DatasetCloneBin returns the full path of the binary to clone/rollback datasets
-for services.
-
-#### func (*Config) DatasetClonePath
-
-```go
-func (c *Config) DatasetClonePath() string
-```
-DatasetClonePath returns the zfs path in which to clone datasets.
+DatasetCloneDir returns the zfs path in which to clone datasets.
 
 #### func (*Config) LoadConfig
 
@@ -44,6 +36,14 @@ DatasetClonePath returns the zfs path in which to clone datasets.
 func (c *Config) LoadConfig() error
 ```
 LoadConfig loads and validates the config data.
+
+#### func (*Config) RollbackCloneCmd
+
+```go
+func (c *Config) RollbackCloneCmd() string
+```
+RollbackCloneCmd returns the full path of the clone/rollback script datasets for
+services.
 
 #### func (*Config) Validate
 
@@ -57,8 +57,8 @@ Validate returns whether the config is valid, containing necessary values.
 ```go
 type ConfigData struct {
 	provider.ConfigData
-	DatasetCloneBin  string `json:"dataset_clone_bin"`
-	DatasetClonePath string `json:"dataset_clone_path"`
+	RollbackCloneCmd string `json:"rollback_clone_cmd"`
+	DatasetCloneDir  string `json:"dataset_clone_dir"`
 }
 ```
 
@@ -72,7 +72,7 @@ type CreateArgs struct {
 	BundleID    uint64            `json:"bundleID"`
 	Dataset     string            `json:"dataset"`
 	Description string            `json:"description"`
-	Exec        []string          `json:"exec"`
+	Cmd         []string          `json:"cmd"`
 	Env         map[string]string `json:"env"`
 }
 ```
@@ -282,7 +282,7 @@ type Service struct {
 	Description string            `json:"description"`
 	Uptime      time.Duration     `json:"uptime"`
 	ActiveState string            `json:"activeState"`
-	Exec        []string          `json:"exec"`
+	Cmd         []string          `json:"cmd"`
 	UID         uint64            `json:"uid"`
 	GID         uint64            `json:"gid"`
 	Env         map[string]string `json:"env"`
