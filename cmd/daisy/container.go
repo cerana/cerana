@@ -145,7 +145,8 @@ func pivotRoot(rootfs string, pivotBaseDir string) (err error) {
 			err = errVal
 		}
 	}()
-	if err := syscall.PivotRoot(rootfs, pivotDir); err != nil {
+	//if err := syscall.PivotRoot(rootfs, pivotDir); err != nil {
+	if err := syscall.Chroot(rootfs); err != nil {
 		return fmt.Errorf("pivot_root %s %s", pivotDir, err)
 	}
 	if err := syscall.Chdir("/"); err != nil {
@@ -156,13 +157,13 @@ func pivotRoot(rootfs string, pivotBaseDir string) (err error) {
 
 	// Make pivotDir rprivate to make sure any of the unmounts don't
 	// propagate to parent.
-	if err := syscall.Mount("", pivotDir, "", syscall.MS_PRIVATE|syscall.MS_REC, ""); err != nil {
-		return err
-	}
+	//if err := syscall.Mount("", pivotDir, "", syscall.MS_PRIVATE|syscall.MS_REC, ""); err != nil {
+	//	return err
+	//}
 
-	if err := syscall.Unmount(pivotDir, syscall.MNT_DETACH); err != nil {
-		return fmt.Errorf("unmount pivot_root dir %s", err)
-	}
+	//if err := syscall.Unmount(pivotDir, syscall.MNT_DETACH); err != nil {
+	//	return fmt.Errorf("unmount pivot_root dir %s", err)
+	//}
 	return nil
 }
 
