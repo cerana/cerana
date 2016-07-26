@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 	"sync"
@@ -55,6 +56,8 @@ func (s *statsPusher) startHeartbeat(name string, fn func() error, desiredInterv
 			if since < interval {
 				interval = since
 			}
+
+			fmt.Println("type:", name, "lastStart:", lastStart, "time since:", since, "desiredInterval:", desiredInterval, "wait:", interval)
 
 			select {
 			case <-s.stopChan:
