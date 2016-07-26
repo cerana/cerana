@@ -227,6 +227,9 @@ func (c *ClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL, er
 	if err != nil {
 		return nil, nil, err
 	}
+
+	fmt.Println("ListBundles: BundleKeys:", keys)
+
 	// extract and deduplicate the bundle ids
 	ids := make(map[uint64]bool)
 	for _, key := range keys {
@@ -240,14 +243,18 @@ func (c *ClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL, er
 		ids[id] = true
 	}
 
+	fmt.Println("ListBundles: IDs:", ids)
+
 	var wg sync.WaitGroup
 	bundleChan := make(chan *Bundle, len(ids))
 	defer close(bundleChan)
 	errChan := make(chan error, len(ids))
 	defer close(errChan)
 	for id := range ids {
+		fmt.Println("ListBundles: Loop with ID:", id)
 		wg.Add(1)
 		go func(id uint64) {
+			defer fmt.Println("ListBundles: Finished ID:", id)
 			defer wg.Done()
 			bundle, err := c.getBundle(id)
 			if err != nil {
@@ -264,7 +271,12 @@ func (c *ClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL, er
 			bundleChan <- bundle
 		}(id)
 	}
+
+	fmt.Println("ListBundles: Waiting for the id loop")
+
 	wg.Wait()
+
+	fmt.Println("ListBundles: Done waiting for the id loop")
 
 	if len(errChan) > 0 {
 		err := <-errChan
