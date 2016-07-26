@@ -48,10 +48,6 @@ Usage: $0 [options]
         This option is saved in the file:
         $testceranastatedir/isoimage
         [initrdimage = $isoimage]
-    --bootiso
-        When used this option boots the ISO image instead of the normal kernel
-        and initrd images.
-        This option is NOT saved.
     ==== Target Options ====
     --diskimagedir <dir>
         Where the disk images are stored.
@@ -100,11 +96,14 @@ Usage: $0 [options]
         $testceranastatedir/macbase
         [macbase = $macbase]
     === Boot Options ===
-    --netboot
-        Add options for booting from the network. This uses the option rom image.
+    --boot <device>
+        Boots using a specific device.
+        initrd = Boot using bzImage and initrd
+        iso = Boot using an ISO (CDROM image)
+        net = Boot via the network
         This option is saved in the file:
-        $testceranastatedir/netboot
-        [netboot = $netboot]
+        $testceranastatedir/boot
+        [boot = $boot]
     --pxeoptionrom
         The option ROM image to use for a network boot.
         This option is saved in the file:
@@ -142,7 +141,6 @@ ceranaimagedir:,\
 kernelimage:,\
 initrdimage:,\
 isoimage:,\
-bootiso,\
 diskimagedir:,\
 diskimage:,\
 diskimagesize:,\
@@ -151,8 +149,8 @@ tap:,\
 tapset:,\
 numvmif:,\
 macbase:,\
+boot:,\
 pxeoptionrom:,\
-netboot,\
 rammb:,\
 ramdisksize:,\
 resetdefaults,\
@@ -190,9 +188,6 @@ while [ $# -ge 1 ]; do
             isoimage=$2
             shift
             ;;
-        --bootiso)
-            bootiso=y
-            ;;
         --diskimagedir)
             diskimagedir=$2
             shift
@@ -229,8 +224,9 @@ while [ $# -ge 1 ]; do
             pxeoptionrom=$2
             shift
             ;;
-        --netboot)
-            netboot=y
+        --boot)
+            boot=$2
+            shift
             ;;
         --rammb)
             rammb=$2
@@ -276,7 +272,7 @@ statevars=(
     macbase=DE:AD:BE:EF
     uuid=`uuidgen`
     pxeoptionrom=/usr/share/qemu/pxe-virtio.rom
-    netboot=''
+    boot=initrd
     rammb=2048
     ramdisksize=200000
 )
@@ -307,23 +303,10 @@ verbose The disk image size is: $diskimagesize
 verbose The instance UUID is: $uuid
 verbose TAP device is: $tap
 verbose The VM MAC base address is: $macbase
+u=`printf "%.34s%02x" $uuid $tapset`
+verbose VM UUID = $u
 
-if [ ! -f $kernel ]; then
-    # It's also possible a symlink is used to point to the kernel.
-    if [ ! -h $kernel ]; then
-        die Kernel image $kernel does not exist.
-    fi
-fi
-verbose The kernel image is: $kernel
-
-if [ ! -f $initrd ]; then
-    # It's also possible a symlink is used to point to the initrd.
-    if [ ! -h $initrd ]; then
-        die Initrd image $initrd does not exist.
-    fi
-fi
-verbose The initrd image is: $initrd
-
+# TODO: Add support for multiple disks.
 if [ ! -e "$diskimagedir/$diskimage" ]; then
     warning "Disk image doesn't exist."
     warning "Creating $diskimagedir/$diskimage"
@@ -339,28 +322,6 @@ if [ ! -e "$diskimagedir/$diskimage" ]; then
 fi
 verbose The test disk image is: $diskimagedir/$diskimage
 
-if [ -z "$pxeoptionrom" ]; then
-    pxeoptionrom=$pxeoptionromdefault
-fi
-verbose The PXE boot option ROM is: $pxeoptionrom
-
-if [ -z "$netboot" ]; then
-    netboot=$netbootdefault
-fi
-
-if [ "$netboot" == "y" ]; then
-    verbose Enabling netboot of the VM.
-    if [ -f $pxeoptionrom ]; then
-        netbootoptions=-option-rom $pxeoptionrom -boot n
-    else
-        die "The option ROM image, $pxeoptionrom, doesn't exist."
-    fi
-fi
-
-if [ -n "$dryrun" ]; then
-    message "Just a dry run -- not starting the VM."
-fi
-
 devicelist=""
 
 for n in $(seq 1 $numvmif); do
@@ -372,31 +333,66 @@ for n in $(seq 1 $numvmif); do
         -netdev tap,ifname=$t,id=net$n,script=no"
 done
 
-tip "Starting virtual machine (remember ^A-X to exit)."
-u=`printf "%.34s%02x" $uuid $tapset`
-if [ "$bootiso" == "y" ]; then
-    verbose Booting from ISO image.
-    $dryrun kvm \
-    $netbootoptions \
+commonoptions="\
     -drive if=virtio,file=$diskimagedir/$diskimage \
     -machine accel=kvm -cpu host -smp 2 \
     -uuid $u \
     -global isa-fdc.driveA= \
-    -nographic -m $rammb \
-    $devicelist \
-    -cdrom $ceranaimagedir/$isoimage \
-    -boot d
-else
-    verbose Booting kernel and initrd images.
-    $dryrun kvm \
-    $netbootoptions \
-    -drive if=virtio,file=$diskimagedir/$diskimage \
-    -machine accel=kvm -cpu host -smp 2 \
-    -uuid $u \
-    -global isa-fdc.driveA= \
-    -nographic -m $rammb \
-    $devicelist \
-    -kernel $ceranaimagedir/$kernelimage \
-    -initrd $ceranaimagedir/$initrdimage \
-    -append "noapic acpi=off console=ttyS0 cerana.zfs_config=auto"
+    -nographic -m $rammb"
+
+if [ -n "$dryrun" ]; then
+    message "Just a dry run -- not starting the VM."
 fi
+
+tip "Starting virtual machine (remember ^A-X to exit)."
+case "$boot" in
+    initrd)
+        verbose Booting kernel and initrd images.
+        kernel=$ceranaimagedir/$kernelimage
+        initrd=$ceranaimagedir/$initrdimage
+        if [ ! -e $kernel ]; then
+            die Kernel image $kernel does not exist.
+        fi
+        verbose The kernel image is: $kernel
+
+        if [ ! -e $initrd ]; then
+            die Initrd image $initrd does not exist.
+        fi
+        verbose The initrd image is: $initrd
+
+        $dryrun kvm \
+        $commonoptions \
+        $devicelist \
+        -kernel $kernel \
+        -initrd $initrd \
+        -append "noapic acpi=off console=ttyS0 cerana.zfs_config=auto"
+        ;;
+
+    iso)
+        iso=$ceranaimagedir/$isoimage
+        if [ ! -e $iso ]; then
+            die ISO $iso does not exist.
+        fi
+
+        verbose Booting from ISO image.
+        $dryrun kvm \
+        $commonoptions \
+        $devicelist \
+        -cdrom $iso \
+        -boot d
+        ;;
+
+    net)
+        verbose Booting from ISO image.
+        $dryrun kvm \
+        $commonoptions \
+        $devicelist \
+        -option-rom $pxeoptionrom -boot n
+        ;;
+
+    *)
+        error "Invalid boot option: $1"
+        usage
+        exit 1
+        ;;
+esac
