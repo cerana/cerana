@@ -281,9 +281,9 @@ func child() error {
 	if err := SetSubreaper(1); err != nil {
 		return fmt.Errorf("SetSubreaper: %v", err)
 	}
-	if err := seccomp.InitSeccomp(seccomp.Whitelist, DefScmp); err != nil {
-		return err
-	}
+	//if err := seccomp.InitSeccomp(seccomp.Whitelist, DefScmp); err != nil {
+	//	return err
+	//}
 
 	capInit()
 
