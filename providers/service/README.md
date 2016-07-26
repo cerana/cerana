@@ -72,7 +72,7 @@ type CreateArgs struct {
 	BundleID    uint64            `json:"bundleID"`
 	Dataset     string            `json:"dataset"`
 	Description string            `json:"description"`
-	Exec        []string          `json:"exec"`
+	Cmd         []string          `json:"cmd"`
 	Env         map[string]string `json:"env"`
 }
 ```
@@ -282,7 +282,7 @@ type Service struct {
 	Description string            `json:"description"`
 	Uptime      time.Duration     `json:"uptime"`
 	ActiveState string            `json:"activeState"`
-	Exec        []string          `json:"exec"`
+	Cmd         []string          `json:"exec"`
 	UID         uint64            `json:"uid"`
 	GID         uint64            `json:"gid"`
 	Env         map[string]string `json:"env"`

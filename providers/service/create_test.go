@@ -16,15 +16,15 @@ func (s *Provider) TestCreate() {
 		bundleID    uint64
 		dataset     string
 		description string
-		exec        []string
+		cmd         []string
 		env         map[string]string
 		err         string
 	}{
 		{"", 219, ds, "working service", []string{"foo", "bar"}, map[string]string{"foo": "bar"}, "missing arg: id"},
 		{uuid.New(), 0, ds, "working service", []string{"foo", "bar"}, map[string]string{"foo": "bar"}, "missing arg: bundleID"},
 		{uuid.New(), 219, ds, "", []string{"foo", "bar"}, map[string]string{"foo": "bar"}, ""},
-		{uuid.New(), 219, ds, "working service", nil, map[string]string{"foo": "bar"}, "missing arg: exec"},
-		{uuid.New(), 219, ds, "working service", []string{}, map[string]string{"foo": "bar"}, "missing arg: exec"},
+		{uuid.New(), 219, ds, "working service", nil, map[string]string{"foo": "bar"}, "missing arg: cmd"},
+		{uuid.New(), 219, ds, "working service", []string{}, map[string]string{"foo": "bar"}, "missing arg: cmd"},
 		{uuid.New(), 219, "", "working service", []string{"foo", "bar"}, map[string]string{}, "missing arg: dataset"},
 		{uuid.New(), 219, ds, "working service", []string{"foo", "bar"}, map[string]string{}, ""},
 		{uuid.New(), 219, ds, "working service", []string{"foo", "bar"}, map[string]string{"foo": "bar"}, ""},
@@ -37,7 +37,7 @@ func (s *Provider) TestCreate() {
 			BundleID:    test.bundleID,
 			Dataset:     test.dataset,
 			Description: test.description,
-			Exec:        test.exec,
+			Cmd:         test.cmd,
 			Env:         test.env,
 		}
 		desc := fmt.Sprintf("%+v", args)
@@ -64,7 +64,7 @@ func (s *Provider) TestCreate() {
 			s.Equal(test.id, getResult.Service.ID, desc)
 			s.Equal(test.bundleID, getResult.Service.BundleID, desc)
 			s.Equal(test.description, getResult.Service.Description, desc)
-			s.Equal(test.exec, getResult.Service.Exec, desc)
+			s.Equal(test.cmd, getResult.Service.Cmd, desc)
 			for key, val := range test.env {
 				if strings.HasPrefix(key, "_CERANA_") {
 					_, ok := getResult.Service.Env[key]
