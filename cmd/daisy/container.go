@@ -52,7 +52,7 @@ type Container struct {
 
 func (c *Container) Start() error {
 	cmd := &exec.Cmd{
-		Path: os.Args[0],
+		Path: "/proc/self/exe",
 		Args: append([]string{"child"}, c.Args...),
 	}
 	flags := c.Namespaces.CloneFlags()
@@ -129,7 +129,7 @@ func pivotRoot(rootfs string, pivotBaseDir string) (err error) {
 	}
 	// "new_root and put_old must not be on the same filesystem as the current root"
 	if err := syscall.Mount(rootfs, rootfs, "bind", syscall.MS_BIND|syscall.MS_REC, ""); err != nil {
-	    return fmt.Errorf("Mount rootfs to itself error: %v", err)
+		return fmt.Errorf("Mount rootfs to itself error: %v", err)
 	}
 	tmpDir := filepath.Join(rootfs, pivotBaseDir)
 	if err := os.MkdirAll(tmpDir, 0755); err != nil {
@@ -257,16 +257,12 @@ func execProc(cfg Cfg) error {
 }
 
 func fillCfg() error {
-	name, err := exec.LookPath(os.Args[1])
-	if err != nil {
-		return fmt.Errorf("LookPath: %v", err)
-	}
-	defaultCfg.Path = name
-	defaultCfg.Args = os.Args[1:]
 	wd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("Error get working dir: %v", err)
 	}
+	defaultCfg.Path = filepath.Join("/", os.Args[1])
+	defaultCfg.Args = os.Args[1:]
 	defaultCfg.Rootfs = wd
 	return nil
 }
