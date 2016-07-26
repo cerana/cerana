@@ -133,7 +133,7 @@ func (s *statsPusher) getIP() (net.IP, error) {
 	for _, iface := range data.Interfaces {
 		for _, ifaceAddr := range iface.Addrs {
 			fmt.Println("Addr: " + ifaceAddr.Addr)
-			ip := net.ParseIP(ifaceAddr.Addr)
+			ip, _, _ := net.ParseCIDR(ifaceAddr.Addr)
 			if ip != nil && !ip.IsLoopback() {
 				return ip, nil
 			}
