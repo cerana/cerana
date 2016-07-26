@@ -121,6 +121,26 @@ Usage: $0 [options]
         This option is saved in the file:
         $testceranastatedir/ramdisksize
         [ramdisksize = $ramdisksize]
+    ==== Image Download ====
+    --download
+        Download the CeranaOS images into the image directory and boot those.
+    --downloadurl <URL>
+        The base URL to download from. NOTE: This assumes a directory structure
+        created by a Jenkins job. The full URL becomes:
+            <downloadurl>/<job>/<build>
+        This option is saved in the file:
+        $testceranastatedir/downloadurl
+        [downloadurl = $downloadurl]
+    --job <job>
+        The name of the Jenkins job to download from.
+        This option is saved in the file:
+        $testceranastatedir/job
+        [job = $job]
+    --build <build>
+        The Jenkins build number to download from.
+        This option is saved in the file:
+        $testceranastatedir/build
+        [build = $build]
     ==== Other ====
     --resetdefaults
         Reset options back to their default values.
@@ -153,6 +173,10 @@ boot:,\
 pxeoptionrom:,\
 rammb:,\
 ramdisksize:,\
+download,\
+downloadurl:,\
+job:,\
+build:,\
 resetdefaults,\
 verbose,\
 dryrun,\
@@ -236,6 +260,21 @@ while [ $# -ge 1 ]; do
             ramdisksize=$2
             shift
             ;;
+        --download)
+            download=y
+            ;;
+        --downloadurl)
+            downloadurl=$2
+            shift
+            ;;
+        --job)
+            job=$2
+            shift
+            ;;
+        --build)
+            build=$2
+            shift
+            ;;
         --resetdefaults)
             resetdefaults=y
             ;;
@@ -275,6 +314,9 @@ statevars=(
     boot=initrd
     rammb=2048
     ramdisksize=200000
+    downloadurl=http://omniti-cerana-artifacts.s3.amazonaws.com/CeranaOS/jobs
+    job=build-cerana
+    build=""
 )
 for v in "${statevars[@]}"
 do
@@ -294,10 +336,6 @@ fi
 
 message CeranaOS image directory is: $ceranaimagedir
 
-if [ ! -d "$ceranaimagedir" ]; then
-    die "The CeranaOS image directory doesn't exist."
-fi
-
 verbose The disk image is: $diskimagedir/$diskimage
 verbose The disk image size is: $diskimagesize
 verbose The instance UUID is: $uuid
@@ -305,6 +343,53 @@ verbose TAP device is: $tap
 verbose The VM MAC base address is: $macbase
 u=`printf "%.34s%02x" $uuid $tapset`
 verbose VM UUID = $u
+
+if [ -n "$download" ]; then
+    if [ -z "$build" ]; then
+        die The build number has not been specified.
+    fi
+    verbose Downloading $job/$build images
+    run mkdir -p $ceranaimagedir/$job/$build
+    for f in bzImage initrd cerana.iso
+    do
+        df=$ceranaimagedir/$job/$build/$f
+        verbose df
+        # TODO Added verification of MD5 sums.
+        if [ -e $df ]; then
+            message File $df exists.
+        else
+            run curl -o $df \
+                $downloadurl/$job/$build/$f
+        fi
+    done
+    verbose Setting image symlinks.
+    for f in $kernelimage $initrdimage $isoimage
+    do
+        verbose Checking $f for symlink.
+        e=0
+        if [ -e  $ceranaimagedir/$f ]; then
+            if [ -h $ceranaimagedir/$f ]; then
+                verbose Replacing symlink $ceranaimagedir/$f
+                rm $ceranaimagedir/$f
+            else
+                error Cannot replace file $ceranaimagedir/$f with a symlink.
+                e=1
+            fi
+        else
+            verbose The file  $ceranaimagedir/$f does not exist.
+        fi
+    done
+    if [ $e -gt 0 ]; then
+        die Files exist. Either remove them or use a different image directory.
+    fi
+    run ln -s $ceranaimagedir/$job/$build/bzImage $ceranaimagedir/$kernelimage
+    run ln -s $ceranaimagedir/$job/$build/initrd $ceranaimagedir/$initrdimage
+    run ln -s $ceranaimagedir/$job/$build/cerana.iso $ceranaimagedir/$isoimage
+fi
+
+if [ ! -d "$ceranaimagedir" ]; then
+    die "The CeranaOS image directory doesn't exist."
+fi
 
 # TODO: Add support for multiple disks.
 if [ ! -e "$diskimagedir/$diskimage" ]; then
@@ -391,7 +476,7 @@ case "$boot" in
         ;;
 
     *)
-        error "Invalid boot option: $1"
+        error "Invalid boot option: $boot"
         usage
         exit 1
         ;;
