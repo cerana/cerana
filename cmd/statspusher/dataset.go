@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"net"
 	"path/filepath"
 
@@ -132,7 +131,6 @@ func (s *statsPusher) getIP() (net.IP, error) {
 	}
 	for _, iface := range data.Interfaces {
 		for _, ifaceAddr := range iface.Addrs {
-			fmt.Println("Addr: " + ifaceAddr.Addr)
 			ip, _, _ := net.ParseCIDR(ifaceAddr.Addr)
 			if ip != nil && !ip.IsLoopback() {
 				return ip, nil
