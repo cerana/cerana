@@ -60,6 +60,11 @@ Usage: $0 [options]
         This option is saved in the file:
         $testceranastatedir/diskimage
         [diskimage = $diskimage]
+    --numdisks <n>
+        The number of disk images per VM.
+        This option is saved in the file:
+        $testceranastatedir/numdisks
+        [numdisks = $numdisks]
     --diskimagesize <size>
         The size of the disk image to use. e.g. 1G = 1 gigabyte.
         This option is saved in the file:
@@ -82,6 +87,7 @@ Usage: $0 [options]
         This option defaults to the interface created by the vm-network script.
         [tap = $tap]
     --tapset <set>
+        NOTE: This needs to become a VM number which will then match a tapset.
         Which TAP interface set to use for the VM. The TAP interface set can also
         be thought of as an ID for the VM being started. e.g. VM 1 uses TAP set 1.
         [tapset = $tapset]
@@ -163,6 +169,7 @@ initrdimage:,\
 isoimage:,\
 diskimagedir:,\
 diskimage:,\
+numdisks:,\
 diskimagesize:,\
 uuid:,\
 tap:,\
@@ -218,6 +225,10 @@ while [ $# -ge 1 ]; do
             ;;
         --diskimage)
             diskimage=$2
+            shift
+            ;;
+        --numdisks)
+            numdisks=$2
             shift
             ;;
         --diskimagesize)
@@ -303,7 +314,8 @@ statevars=(
     initrdimage=initrd
     isoimage=cerana.iso
     diskimagedir=images
-    diskimage=sas1.img
+    diskimage=sas
+    numdisks=1
     diskimagesize=1G
     tap=tap
     tapset=1
@@ -336,8 +348,6 @@ fi
 
 message CeranaOS image directory is: $ceranaimagedir
 
-verbose The disk image is: $diskimagedir/$diskimage
-verbose The disk image size is: $diskimagesize
 verbose The instance UUID is: $uuid
 verbose TAP device is: $tap
 verbose The VM MAC base address is: $macbase
@@ -391,21 +401,26 @@ if [ ! -d "$ceranaimagedir" ]; then
     die "The CeranaOS image directory doesn't exist."
 fi
 
-# TODO: Add support for multiple disks.
-if [ ! -e "$diskimagedir/$diskimage" ]; then
-    warning "Disk image doesn't exist."
-    warning "Creating $diskimagedir/$diskimage"
-    if [ -n "$dryrun" ]; then
-        message Will create $diskimage of size $diskimagesize
-    else
-        mkdir -p $diskimagedir
-        qemu-img create -f raw -o size=$diskimagesize $diskimagedir/$diskimage
+disklist=""
+for n in $(seq $numdisks); do
+    i=$diskimagedir/$diskimage-$tapset-$n.img
+    if [ ! -e "$i" ]; then
+        warning "Disk image doesn't exist."
+        warning "Creating $i"
+        if [ -n "$dryrun" ]; then
+            message Will create $i of size $diskimagesize
+        else
+            run mkdir -p $diskimagedir
+            run qemu-img create -f raw -o size=$diskimagesize $i
+        fi
+        if [ $? -gt 0 ]; then
+            die Error when attempting to create the disk image: $i
+        fi
     fi
-    if [ $? -gt 0 ]; then
-        die Error when attempting to create the disk image: $diskimagedir/$diskimage
-    fi
-fi
-verbose The test disk image is: $diskimagedir/$diskimage
+    verbose Adding test disk image: $i
+    disklist+="\
+        -drive if=virtio,file=$i"
+done
 
 devicelist=""
 
@@ -419,7 +434,6 @@ for n in $(seq 1 $numvmif); do
 done
 
 commonoptions="\
-    -drive if=virtio,file=$diskimagedir/$diskimage \
     -machine accel=kvm -cpu host -smp 2 \
     -uuid $u \
     -global isa-fdc.driveA= \
@@ -447,6 +461,7 @@ case "$boot" in
 
         $dryrun kvm \
         $commonoptions \
+        $disklist \
         $devicelist \
         -kernel $kernel \
         -initrd $initrd \
@@ -462,6 +477,7 @@ case "$boot" in
         verbose Booting from ISO image.
         $dryrun kvm \
         $commonoptions \
+        $disklist \
         $devicelist \
         -cdrom $iso \
         -boot d
@@ -471,6 +487,7 @@ case "$boot" in
         verbose Booting from ISO image.
         $dryrun kvm \
         $commonoptions \
+        $disklist \
         $devicelist \
         -option-rom $pxeoptionrom -boot n
         ;;
