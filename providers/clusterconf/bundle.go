@@ -279,13 +279,19 @@ func (c *ClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL, er
 	fmt.Println("ListBundles: Done waiting for the id loop")
 
 	if len(errChan) > 0 {
+		fmt.Println("ListBundles: pulling error off channel")
 		err := <-errChan
+		fmt.Println("ListBundles: returning error")
 		return nil, nil, err
 	}
+
+	fmt.Println("ListBundles: making bundle array for result from bundle chan")
 	bundles := make([]*Bundle, 0, len(bundleChan))
 	for bundle := range bundleChan {
 		bundles = append(bundles, bundle)
 	}
+
+	fmt.Println("ListBundles: Returning bundle list")
 
 	return &BundleListResult{
 		Bundles: bundles,
