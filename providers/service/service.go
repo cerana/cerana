@@ -7,12 +7,12 @@ import (
 
 // Provider is a provider of service management functionality.
 type Provider struct {
-	config  *provider.Config
+	config  *Config
 	tracker *acomm.Tracker
 }
 
 // New creates a new instance of Provider.
-func New(config *provider.Config, tracker *acomm.Tracker) *Provider {
+func New(config *Config, tracker *acomm.Tracker) *Provider {
 	return &Provider{
 		config:  config,
 		tracker: tracker,

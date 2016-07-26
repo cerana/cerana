@@ -13,13 +13,15 @@ import (
 func main() {
 	log.SetFormatter(&logx.JSONFormatter{})
 
-	config := provider.NewConfig(nil, nil)
+	config := service.NewConfig(nil, nil)
+	flag.StringP("rollback_clone_cmd", "r", "/run/current-system/sw/bin/rollback_clone", "full path to dataset clone/rollback tool")
+	flag.StringP("dataset_clone_dir", "d", "data/running-clones", "destination for dataset clones used by running services")
 	flag.Parse()
 
 	dieOnError(config.LoadConfig())
 	dieOnError(config.SetupLogging())
 
-	server, err := provider.NewServer(config)
+	server, err := provider.NewServer(config.Config)
 	dieOnError(err)
 	s := service.New(config, server.Tracker())
 	s.RegisterTasks(server)
