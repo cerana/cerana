@@ -125,7 +125,7 @@ func systemdUnitToService(systemdUnit systemd.UnitStatus) (*Service, error) {
 	execStartInterface, ok := systemdUnit.UnitTypeProperties["ExecStart"]
 	var execStart []string
 	if ok {
-		tmp := execStartInterface.([][]interface{})[0][1]
+		tmp := execStartInterface.([][]interface{})[0][1].([]string)
 		execStart = make([]string, len(tmp))
 		for i, v := range tmp {
 			execStart[i] = v.(string)
