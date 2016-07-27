@@ -13,8 +13,7 @@
 # NOTE: It is assumed this script is invoked from the same directory in which
 # the testcerana script resides.
 #-
-
-source scripts/cerana-functions.sh
+source `dirname "$(readlink -f "$0")"`/cerana-functions.sh
 
 dhcpdconf=$testceranastatedir/$id-dhcpd.conf
 dhcpdpidfile=$testceranastatedir/$id-dhcpd-pid
