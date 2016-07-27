@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/providers/systemd"
 )
@@ -125,6 +126,7 @@ func systemdUnitToService(systemdUnit systemd.UnitStatus) (*Service, error) {
 	execStartInterface, ok := systemdUnit.UnitTypeProperties["ExecStart"]
 	var execStart []string
 	if ok {
+		logrus.WithField("ExecStartInterface", execStartInterface).Info("systemd ExecStart from UnitTypeProperties")
 		execStart = execStartInterface.([][]interface{})[0][1].([]string)
 	}
 
