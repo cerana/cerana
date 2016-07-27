@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"path/filepath"
 	"strings"
 
 	"github.com/cerana/cerana/acomm"
@@ -15,8 +16,9 @@ import (
 type CreateArgs struct {
 	ID          string            `json:"id"`
 	BundleID    uint64            `json:"bundleID"`
+	Dataset     string            `json:"dataset"`
 	Description string            `json:"description"`
-	Exec        []string          `json:"exec"`
+	Cmd         []string          `json:"cmd"`
 	Env         map[string]string `json:"env"`
 }
 
@@ -32,20 +34,32 @@ func (p *Provider) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 	if args.BundleID == 0 {
 		return nil, nil, errors.New("missing arg: bundleID")
 	}
-	if len(args.Exec) == 0 {
-		return nil, nil, errors.New("missing arg: exec")
+	if len(args.Cmd) == 0 {
+		return nil, nil, errors.New("missing arg: cmd")
+	}
+	if args.Dataset == "" {
+		return nil, nil, errors.New("missing arg: dataset")
 	}
 
 	name := serviceName(args.BundleID, args.ID)
+	datasetCloneName := filepath.Join(p.config.DatasetCloneDir(), name)
 	unitOptions := []*unit.UnitOption{
 		{Section: "Unit", Name: "Description", Value: args.Description},
-		// TODO: Does exec get prepended with daisy?
-		{Section: "Service", Name: "ExecStart", Value: strings.Join(args.Exec, " ")},
+		// TODO: Does cmd get prepended with daisy?
+		{Section: "Service", Name: "ExecStart", Value: strings.Join(args.Cmd, " ")},
 		{Section: "Service", Name: "Type", Value: "forking"},
 		{Section: "Install", Name: "WantedBy", Value: "cerana.Target"},
+
+		{Section: "Service", Name: "ExecStartPre", Value: p.config.RollbackCloneCmd()},
+		{Section: "Service", Name: "Environment", Value: "_CERANA_CLONE_SOURCE=" + args.Dataset},
+		{Section: "Service", Name: "Environment", Value: "_CERANA_CLONE_DESTINATION=" + datasetCloneName},
 	}
 	// TODO: Add User= and Group= if not part of daisy
 	for key, val := range args.Env {
+		// do not allow custom overrides of the internal cerana env variables
+		if strings.HasPrefix(key, "_CERANA_") {
+			continue
+		}
 		unitOptions = append(unitOptions, &unit.UnitOption{
 			Section: "Service",
 			Name:    "Environment",

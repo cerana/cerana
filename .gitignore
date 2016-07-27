@@ -1,7 +1,9 @@
 # Compiled cmds
+cmd/bootserver/bootserver
 cmd/clusterconfig-provider/clusterconfig-provider
 cmd/coordinator-cli/coordinator-cli
 cmd/coordinator/coordinator
+cmd/datatrade-provider/datatrade-provider
 cmd/dhcp-provider/dhcp-provider
 cmd/health-provider/health-provider
 cmd/kv-provider/kv-provider

@@ -26,6 +26,7 @@ type MockClusterData struct {
 	Nodes      map[string]*Node
 	History    NodesHistory
 	Defaults   *Defaults
+	DHCP       *DHCPConfig
 }
 
 // NewMockClusterConf creates a new MockClusterConf.
@@ -61,6 +62,7 @@ func (c *MockClusterConf) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("set-default-options", c.UpdateDefaults)
 	server.RegisterTask("node-heartbeat", c.NodeHeartbeat)
 	server.RegisterTask("get-node", c.GetNode)
+	server.RegisterTask("list-nodes", c.ListNodes)
 	server.RegisterTask("get-nodes-history", c.GetNodesHistory)
 	server.RegisterTask("get-service", c.GetService)
 	server.RegisterTask("update-service", c.UpdateService)
@@ -295,6 +297,15 @@ func (c *MockClusterConf) GetNode(req *acomm.Request) (interface{}, *url.URL, er
 	return &NodePayload{node}, nil, nil
 }
 
+// ListNodes lists all mock nodes.
+func (c *MockClusterConf) ListNodes(req *acomm.Request) (interface{}, *url.URL, error) {
+	nodes := make([]Node, 0, len(c.Data.Nodes))
+	for _, node := range c.Data.Nodes {
+		nodes = append(nodes, *node)
+	}
+	return ListNodesResult{nodes}, nil, nil
+}
+
 // GetNodesHistory retrieves mock nodes history.
 func (c *MockClusterConf) GetNodesHistory(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args NodeHistoryArgs
@@ -375,5 +386,24 @@ func (c *MockClusterConf) DeleteService(req *acomm.Request) (interface{}, *url.U
 	}
 
 	delete(c.Data.Services, args.ID)
+	return nil, nil, nil
+}
+
+// GetDHCP retrieves mock DHCP settings.
+func (c *MockClusterConf) GetDHCP(req *acomm.Request) (interface{}, *url.URL, error) {
+	return c.Data.DHCP, nil, nil
+}
+
+// SetDHCP updates mock DHCP settings.
+func (c *MockClusterConf) SetDHCP(req *acomm.Request) (interface{}, *url.URL, error) {
+	conf := &DHCPConfig{}
+	if err := req.UnmarshalArgs(conf); err != nil {
+		return nil, nil, err
+	}
+
+	if err := conf.Validate(); err != nil {
+		return nil, nil, err
+	}
+	c.Data.DHCP = conf
 	return nil, nil, nil
 }

@@ -50,8 +50,11 @@ func (m *Mock) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 	if args.BundleID == 0 {
 		return nil, nil, errors.New("missing arg: bundleID")
 	}
-	if len(args.Exec) == 0 {
-		return nil, nil, errors.New("missing arg: exec")
+	if len(args.Cmd) == 0 {
+		return nil, nil, errors.New("missing arg: cmd")
+	}
+	if args.Dataset == "" {
+		return nil, nil, errors.New("missing arg: dataset")
 	}
 
 	if _, ok := m.Data.Services[args.BundleID]; !ok {
@@ -63,7 +66,7 @@ func (m *Mock) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 		Description: args.Description,
 		Uptime:      time.Minute,
 		ActiveState: "Running",
-		Exec:        args.Exec,
+		Cmd:         args.Cmd,
 		UID:         uint64(rand.Int63n(60000)),
 		GID:         uint64(rand.Int63n(60000)),
 		Env:         args.Env,

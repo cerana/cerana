@@ -1,0 +1,55 @@
+#!/bin/bash
+
+#
+# Expects two arguments:
+# SOURCE - source dataset or snapshot
+# DESTINATION - destination dataset
+#
+# Makes sure that DESTINATION has been rolled back to a pristine snapshot from
+# after it was cloned from SOURCE
+#
+# If SOURCE is a snapshot, this is relatively simple
+# If SOURCE is just a dataset, use the newest snapshot of it.
+# If no snapshot exists of the SOURCE dataset, create one to use.
+#
+# This script can use _CERANA_CLONE_SOURCE and _CERANA_CLONE_DESTINATION environment variables
+# if present, but arguments trump environment variables
+
+set -o errexit
+
+SOURCE="${1:-${_CERANA_CLONE_SOURCE}}"
+DESTINATION="${2:-${_CERANA_CLONE_DESTINATION}}"
+
+[[ -n "${SOURCE}" ]]
+[[ -n "${DESTINATION}" ]]
+SNAP=pristine
+
+zfs_exists() { zfs list -H -o name "${1}" &>/dev/null; }
+zfs_exists_or_snapshot() {
+    zfs_exists "${1}" \
+        || zfs snapshot "${1}"
+}
+zfs_origin() { zfs get -H -o value origin "${1}" 2>/dev/null; }
+
+IFS=@ read -r SOURCE_DATASET SOURCE_SNAPSHOT<<<"${SOURCE}"
+if [[ -z "${SOURCE_SNAPSHOT}" ]]; then
+    # If the snapshot name was an empty string then find or create a snapshot.
+    LATEST_SNAPSHOT=$(zfs list -o name -t snapshot -r "${SOURCE_DATASET}" 2>/dev/null | tail -n 1)
+    if [[ -z "${LATEST_SNAPSHOT}" ]]; then
+        # Found no snapshots. Create a snapshot named after the destination.
+        SOURCE="${SOURCE_DATASET}@${DESTINATION##*/}"
+    else
+        # Use the latest snapshot of the originally specified SOURCE.
+        SOURCE=${LATEST_SNAPSHOT}
+    fi
+fi
+
+zfs_exists_or_snapshot "${SOURCE}"
+
+if ! [[ "${SOURCE}" == $(zfs_origin "${DESTINATION}") ]]; then
+    zfs_exists "${DESTINATION}" \
+        && zfs destroy -r "${DESTINATION}"
+    zfs clone "${SOURCE}" "${DESTINATION}"
+fi
+zfs_exists_or_snapshot "${DESTINATION}@${SNAP}"
+zfs rollback -r "${DESTINATION}@${SNAP}"

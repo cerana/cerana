@@ -22,7 +22,7 @@ type Bundle struct {
 	ID         uint64                   `json:"id"`
 	Datasets   map[string]BundleDataset `json:"datasets"`
 	Services   map[string]BundleService `json:"services"`
-	Redundancy int                      `json:"redundancy"`
+	Redundancy uint64                   `json:"redundancy"`
 	Ports      BundlePorts              `json:"ports"`
 	// ModIndex should be treated as opaque, but passed back on updates.
 	ModIndex uint64 `json:"modIndex"`
@@ -38,7 +38,7 @@ type BundleDataset struct {
 	Name  string            `json:"name"`
 	ID    string            `json:"id"`
 	Type  BundleDatasetType `json:"type"`
-	Quota int               `json:"type"`
+	Quota uint64            `json:"type"`
 }
 ```
 
@@ -108,7 +108,7 @@ BundleHeartbeatList is the result of a ListBundleHeartbeats.
 func (b BundleHeartbeatList) MarshalJSON() ([]byte, error)
 ```
 MarshalJSON marshals BundleHeartbeatList into a JSON map, converting uint keys
-to strings.
+to strings. TODO: Needed until go 1.7 is released
 
 #### func (*BundleHeartbeatList) UnmarshalJSON
 
@@ -116,7 +116,7 @@ to strings.
 func (b *BundleHeartbeatList) UnmarshalJSON(data []byte) error
 ```
 UnmarshalJSON unmarshals JSON into a BundleHeartbeatList, converting string keys
-to uints.
+to uints. TODO: Needed until go 1.7 is released
 
 #### type BundleHeartbeats
 
@@ -254,6 +254,13 @@ func (c *ClusterConf) GetBundle(req *acomm.Request) (interface{}, *url.URL, erro
 ```
 GetBundle retrieves a bundle.
 
+#### func (*ClusterConf) GetDHCP
+
+```go
+func (c *ClusterConf) GetDHCP(*acomm.Request) (interface{}, *url.URL, error)
+```
+GetDHCP retrieves the current cluster DHCP settings.
+
 #### func (*ClusterConf) GetDataset
 
 ```go
@@ -317,6 +324,13 @@ func (c *ClusterConf) ListDatasets(req *acomm.Request) (interface{}, *url.URL, e
 ```
 ListDatasets returns a list of all Datasets.
 
+#### func (*ClusterConf) ListNodes
+
+```go
+func (c *ClusterConf) ListNodes(req *acomm.Request) (interface{}, *url.URL, error)
+```
+ListNodes list all current nodes.
+
 #### func (*ClusterConf) NodeHeartbeat
 
 ```go
@@ -330,6 +344,13 @@ NodeHeartbeat records a new node heartbeat.
 func (c *ClusterConf) RegisterTasks(server *provider.Server)
 ```
 RegisterTasks registers all of Systemd's task handlers with the server.
+
+#### func (*ClusterConf) SetDHCP
+
+```go
+func (c *ClusterConf) SetDHCP(req *acomm.Request) (interface{}, *url.URL, error)
+```
+SetDHCP updates the cluster DHCP settings.
 
 #### func (*ClusterConf) UpdateBundle
 
@@ -427,6 +448,26 @@ type ConfigData struct {
 
 ConfigData defines the structure of the config data (e.g. in the config file)
 
+#### type DHCPConfig
+
+```go
+type DHCPConfig struct {
+	DNS      []net.IP      `json:"dns"`
+	Duration time.Duration `json:"duration"`
+	Gateway  net.IP        `json:"gateway"`
+	Net      net.IPNet     `json:"net"`
+}
+```
+
+DHCPConfig represents the dhcp settings for the cluster.
+
+#### func (*DHCPConfig) Validate
+
+```go
+func (c *DHCPConfig) Validate() error
+```
+Validate validates the DHCPConfig settings.
+
 #### type Dataset
 
 ```go
@@ -436,8 +477,8 @@ type Dataset struct {
 	ParentSameMachine bool   `json:"parentSameMachine"`
 	ReadOnly          bool   `json:"readOnly"`
 	NFS               bool   `json:"nfs"`
-	Redundancy        int    `json:"redundancy"`
-	Quota             int    `json:"quota"`
+	Redundancy        uint64 `json:"redundancy"`
+	Quota             uint64 `json:"quota"`
 	// ModIndex should be treated as opaque, but passed back on updates.
 	ModIndex uint64 `json:"modIndex"`
 }
@@ -585,6 +626,16 @@ type ListBundleArgs struct {
 
 ListBundleArgs are args for retrieving a bundle list.
 
+#### type ListNodesResult
+
+```go
+type ListNodesResult struct {
+	Nodes []Node `json:"nodes"`
+}
+```
+
+ListNodesResult is the result of ListNodes.
+
 #### type MockClusterConf
 
 ```go
@@ -643,6 +694,13 @@ DeleteService removes a mock service.
 func (c *MockClusterConf) GetBundle(req *acomm.Request) (interface{}, *url.URL, error)
 ```
 GetBundle retrieves a mock bundle.
+
+#### func (*MockClusterConf) GetDHCP
+
+```go
+func (c *MockClusterConf) GetDHCP(req *acomm.Request) (interface{}, *url.URL, error)
+```
+GetDHCP retrieves mock DHCP settings.
 
 #### func (*MockClusterConf) GetDataset
 
@@ -707,6 +765,13 @@ func (c *MockClusterConf) ListDatasets(req *acomm.Request) (interface{}, *url.UR
 ```
 ListDatasets lists all mock datasets.
 
+#### func (*MockClusterConf) ListNodes
+
+```go
+func (c *MockClusterConf) ListNodes(req *acomm.Request) (interface{}, *url.URL, error)
+```
+ListNodes lists all mock nodes.
+
 #### func (*MockClusterConf) NodeHeartbeat
 
 ```go
@@ -720,6 +785,13 @@ NodeHeartbeat adds a mock node heartbeat.
 func (c *MockClusterConf) RegisterTasks(server *provider.Server)
 ```
 RegisterTasks registers all of MockClusterConf's tasks.
+
+#### func (*MockClusterConf) SetDHCP
+
+```go
+func (c *MockClusterConf) SetDHCP(req *acomm.Request) (interface{}, *url.URL, error)
+```
+SetDHCP updates mock DHCP settings.
 
 #### func (*MockClusterConf) UpdateBundle
 
@@ -761,6 +833,7 @@ type MockClusterData struct {
 	Nodes      map[string]*Node
 	History    NodesHistory
 	Defaults   *Defaults
+	DHCP       *DHCPConfig
 }
 ```
 
@@ -866,6 +939,7 @@ type ServiceConf struct {
 	HealthChecks map[string]HealthCheck `json:"healthChecks"`
 	Limits       ResourceLimits         `json:"limits"`
 	Env          map[string]string      `json:"env"`
+	Cmd          []string               `json:"cmd"`
 }
 ```
 

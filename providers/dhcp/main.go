@@ -14,7 +14,7 @@ import (
 	"github.com/krolaw/dhcp4"
 )
 
-const prefix string = "dhcp/"
+const prefix string = "dhcp-leases/"
 
 var ttlOffer = 1 * time.Minute
 
@@ -23,7 +23,6 @@ type DHCP struct {
 	coordinator *url.URL
 	tracker     *acomm.Tracker
 	config      *Config
-	maxIP       net.IP
 	randIP      func() net.IP
 }
 
@@ -35,10 +34,10 @@ type Addresses struct {
 
 // Lease specifies the dhcp lease returned from the "dhcp-offer-lease" endpoint.
 type Lease struct {
-	Net      net.IPNet     `json:"net"`
-	Gateway  net.IP        `json:"gateway"`
-	Duration time.Duration `json:"duration"`
 	DNS      []net.IP      `json:"dns"`
+	Duration time.Duration `json:"duration"`
+	Gateway  net.IP        `json:"gateway"`
+	Net      net.IPNet     `json:"net"`
 }
 
 // New creates a new instance of DHCP.
@@ -46,13 +45,10 @@ func New(config *Config, tracker *acomm.Tracker) (*DHCP, error) {
 	network := config.Network()
 	ones, bits := network.Mask.Size()
 	size := 1<<uint(bits-ones) - 2
-	maxIP := dhcp4.IPAdd(network.IP, size+2)
-
 	return &DHCP{
 		coordinator: config.CoordinatorURL(),
 		tracker:     tracker,
 		config:      config,
-		maxIP:       maxIP,
 		randIP: func() net.IP {
 			num := rand.Intn(size) + 1
 			return dhcp4.IPAdd(network.IP, num)
@@ -160,17 +156,9 @@ func refreshLeaseAck(tracker *acomm.Tracker, coord *url.URL, mac, ip string, ttl
 
 func nextGetter(closer <-chan struct{}, taken []uint32, min, max uint32) <-chan uint32 {
 	ch := make(chan uint32)
-	next := min
 	go func() {
-		for {
-			next++
-			// make sure we stop before max
-			if next == max {
-				close(ch)
-				return
-			}
-
-			// check if ip in in the taken list, if so pop it from the list
+		for next := min; next <= max; next++ {
+			// check if ip is in the taken list, if so pop it from the list
 			if len(taken) > 0 {
 				if next == taken[0] {
 					taken = taken[1:]
@@ -184,6 +172,7 @@ func nextGetter(closer <-chan struct{}, taken []uint32, min, max uint32) <-chan 
 				return
 			}
 		}
+		close(ch)
 	}()
 
 	return ch
@@ -216,7 +205,7 @@ func getAllAllocations(tracker *acomm.Tracker, coord *url.URL) (map[string]strin
 		ResponseHook:   tracker.URL(),
 		SuccessHandler: handler,
 		ErrorHandler:   handler,
-		Args:           kv.GetArgs{Key: "dhcp"},
+		Args:           kv.GetArgs{Key: prefix},
 	})
 	if err != nil {
 		return nil, err
@@ -258,12 +247,12 @@ func (d *DHCP) get(req *acomm.Request) (interface{}, *url.URL, error) {
 	}
 
 	lease := Lease{
+		DNS:      d.config.DNSServers(),
+		Duration: d.config.LeaseDuration(),
+		Gateway:  d.config.Gateway(),
 		Net: net.IPNet{
 			Mask: d.config.Network().Mask,
 		},
-		Gateway:  d.config.Gateway(),
-		Duration: d.config.LeaseDuration(),
-		DNS:      d.config.DNSServers(),
 	}
 
 	// shortcut client renewing ip
@@ -316,7 +305,7 @@ func (d *DHCP) get(req *acomm.Request) (interface{}, *url.URL, error) {
 
 	for range [5]struct{}{} {
 		ip := d.randIP()
-		if !d.config.Network().Contains(ip) {
+		if !d.config.ipInRange(ip) {
 			continue
 		}
 		if _, ok := leases[ip.String()]; ok {
@@ -352,7 +341,9 @@ func (d *DHCP) get(req *acomm.Request) (interface{}, *url.URL, error) {
 
 	closer := make(chan struct{}, 1)
 	defer close(closer)
-	for uIP := range nextGetter(closer, ips, ipToU32(d.config.Network().IP), ipToU32(d.maxIP)) {
+
+	min, max := d.config.ipRange()
+	for uIP := range nextGetter(closer, ips, min, max) {
 		ip := u32ToIP(uIP)
 
 		addrs.IP = ip.String()
@@ -390,5 +381,18 @@ func (d *DHCP) ack(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.New("requested ip not assigned to this mac")
 	}
 
-	return nil, nil, refreshLeaseAck(d.tracker, d.coordinator, addrs.MAC, addrs.IP, d.config.LeaseDuration())
+	err = refreshLeaseAck(d.tracker, d.coordinator, addrs.MAC, addrs.IP, d.config.LeaseDuration())
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return Lease{
+		DNS:      d.config.DNSServers(),
+		Duration: d.config.LeaseDuration(),
+		Gateway:  d.config.Gateway(),
+		Net: net.IPNet{
+			IP:   net.ParseIP(addrs.IP),
+			Mask: d.config.Network().Mask,
+		},
+	}, nil, nil
 }
