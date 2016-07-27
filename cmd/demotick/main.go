@@ -177,7 +177,7 @@ func (d *demotick) replicateDatasets(datasets map[string]map[string]clusterconf.
 		}
 
 		var sourceIP string
-		destinationIPs := make([]string, replicateN)
+		destinationIPs := make([]string, 0, replicateN)
 		for _, node := range nodes {
 			if _, ok := heartbeats[node.ID]; ok {
 				if sourceIP == "" {
@@ -332,7 +332,7 @@ func (d *demotick) runBundles(bundles []*clusterconf.Bundle, bundleHeartbeats ma
 			continue
 		}
 
-		destinationIPs := make([]string, replicateN)
+		destinationIPs := make([]string, 0, replicateN)
 		for _, node := range nodes {
 			if heartbeats == nil {
 				destinationIPs = append(destinationIPs, node.ID)
