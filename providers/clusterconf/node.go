@@ -3,7 +3,6 @@ package clusterconf
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/url"
 	"path"
 	"time"
@@ -209,54 +208,12 @@ func (n *Node) update() error {
 	currentKey := path.Join(nodesPrefix, n.ID)
 	historicalKey := path.Join(historicalPrefix, n.ID, n.Heartbeat.Format(time.RFC3339))
 
-	multiRequest := acomm.NewMultiRequest(n.c.tracker, 0)
-
-	currentReq, err := acomm.NewRequest(acomm.RequestOptions{
-		Task: "kv-ephemeral",
-		Args: map[string]interface{}{
-			"key":   currentKey,
-			"value": n,
-			"ttl":   n.c.config.NodeTTL(),
-		},
-	})
-	if err != nil {
-		return err
-	}
-	historicalReq, err := acomm.NewRequest(acomm.RequestOptions{
-		Task: "kv-update",
-		Args: map[string]interface{}{
-			"key":   historicalKey,
-			"value": n,
-		},
-	})
-	if err != nil {
+	if err := n.c.kvEphemeral(currentKey, n, n.c.config.NodeTTL()); err != nil {
 		return err
 	}
 
-	requests := map[string]*acomm.Request{
-		"current":    currentReq,
-		"historical": historicalReq,
-	}
-
-	for name, req := range requests {
-		if err := multiRequest.AddRequest(name, req); err != nil {
-			continue
-		}
-		if err := acomm.Send(n.c.config.CoordinatorURL(), req); err != nil {
-			multiRequest.RemoveRequest(req)
-			continue
-		}
-	}
-
-	responses := multiRequest.Responses()
-	for name := range requests {
-		resp, ok := responses[name]
-		if !ok {
-			return fmt.Errorf("failed to send request: %s", name)
-		}
-		if resp.Error != nil {
-			return fmt.Errorf("request failed: %s: %s", name, resp.Error)
-		}
+	if _, err := n.c.kvUpdate(historicalKey, n, 0); err != nil {
+		return err
 	}
 
 	return nil
