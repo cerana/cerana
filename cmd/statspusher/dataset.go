@@ -34,7 +34,7 @@ func (s *statsPusher) getDatasets(ip net.IP) ([]clusterconf.DatasetHeartbeatArgs
 	}{
 		"datasets":  {task: "zfs-list", coordinator: s.config.nodeDataURL(), args: zfs.ListArgs{Name: s.config.datasetDir()}, respData: &zfs.ListResult{}},
 		"bundles":   {task: "list-bundles", coordinator: s.config.clusterDataURL(), respData: &clusterconf.BundleListResult{}},
-		"bundleHBs": {task: "list-bundle-heartbeats", coordinator: s.config.nodeDataURL(), respData: &clusterconf.BundleHeartbeatList{}},
+		"bundleHBs": {task: "list-bundle-heartbeats", coordinator: s.config.clusterDataURL(), respData: &clusterconf.BundleHeartbeatList{}},
 	}
 
 	multiRequest := acomm.NewMultiRequest(s.tracker, s.config.requestTimeout())
