@@ -48,7 +48,7 @@ func (p *Provider) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 		// TODO: Does cmd get prepended with daisy?
 		{Section: "Service", Name: "ExecStart", Value: strings.Join(args.Cmd, " ")},
 		{Section: "Service", Name: "Type", Value: "forking"},
-		{Section: "Install", Name: "WantedBy", Value: "cerana.Target"},
+		{Section: "Install", Name: "WantedBy", Value: "cerana.target"},
 
 		{Section: "Service", Name: "ExecStartPre", Value: p.config.RollbackCloneCmd()},
 		{Section: "Service", Name: "Environment", Value: "_CERANA_CLONE_SOURCE=" + args.Dataset},
