@@ -32,7 +32,7 @@ func main() {
 	var nodeCoordinatorPort uint
 
 	pflag.StringVarP(&urlS, "coordinator_url", "c", "", "layer2 coordinator url")
-	pflag.StringVarP(&datasetDir, "dataset_dir", "d", "/data/datasets", "directory containing datasets on nodes")
+	pflag.StringVarP(&datasetDir, "dataset_dir", "d", "data/datasets", "directory containing datasets on nodes")
 	pflag.StringVarP(&logLevel, "log_leveL", "l", "info", "log level: debug/info/warn/error/fatal/panic")
 	pflag.DurationVarP(&requestTimeout, "request_timeout", "r", 10*time.Second, "request timeout")
 	pflag.UintVarP(&nodeCoordinatorPort, "node_coordinator_port", "n", 8080, "node coordinator port")
