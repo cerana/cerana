@@ -235,7 +235,7 @@ func (c *ClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL, er
 	for _, key := range keys {
 		// keys are full paths and include all child keys.
 		// e.g. {prefix}/{id}/{rest/of/path}
-		idS := strings.Split(strings.TrimPrefix(key, bundlesPrefix), "/")[0]
+		idS := strings.Split(strings.TrimPrefix(key, bundlesPrefix+"/"), "/")[0]
 		id, err := strconv.ParseUint(idS, 10, 64)
 		if err != nil {
 			return nil, nil, errors.New("invalid bundle id")
