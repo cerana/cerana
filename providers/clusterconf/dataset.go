@@ -73,9 +73,7 @@ func (c *ClusterConf) ListDatasets(req *acomm.Request) (interface{}, *url.URL, e
 
 	var wg sync.WaitGroup
 	dsChan := make(chan *Dataset, len(ids))
-	defer close(dsChan)
 	errChan := make(chan error, len(ids))
-	defer close(errChan)
 	for id := range ids {
 		wg.Add(1)
 		go func(id string) {
@@ -89,6 +87,9 @@ func (c *ClusterConf) ListDatasets(req *acomm.Request) (interface{}, *url.URL, e
 		}(id)
 	}
 	wg.Wait()
+
+	close(dsChan)
+	close(errChan)
 
 	if len(errChan) > 0 {
 		err := <-errChan
