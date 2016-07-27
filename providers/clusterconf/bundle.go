@@ -148,6 +148,10 @@ func (s BundleService) overlayOn(base *Service) (BundleService, error) {
 		}
 	}
 
+	if result.Cmd == nil {
+		result.Cmd = base.Cmd
+	}
+
 	return result, nil
 }
 
