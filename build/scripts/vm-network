@@ -133,7 +133,7 @@ function check_interface_in_bridge() {
     return $?
 }
 
-function shutdowndhcp() {
+function shutdowndhcpd() {
     verbose Shutting down the dhcp server.
     ps -C dhcpd
     if [ $? -gt 0 ]; then
@@ -159,7 +159,7 @@ function shutdown() {
     #   2: The root name of the tap interface
     #   3: The number of tap sets
     #   4: The number of tap interfaces per set
-    shutdowndhcp
+    shutdowndhcpd
     verbose Checking bridge $1
     check_interface_exists $1
     if [ $? -eq 0 ]; then
@@ -339,9 +339,9 @@ if [ "$shutdown" == "y" ]; then
     exit
 fi
 
-if [ "$shutdowndhcp" == "y" ]; then
+if [ "$shutdowndhcpd" == "y" ]; then
     message Shutting the dhcp server down.
-    shutdowndhcp
+    shutdowndhcpd
     exit
 fi
 

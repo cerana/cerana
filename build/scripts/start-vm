@@ -123,7 +123,7 @@ Usage: $0 [options]
     --ramdisksize <kilobytes>
         The amount of RAM to allocate to the ram disk (in kilobytes).
         NOTE: If this is not sufficient for the actual RAM disk the kernel will
-        default to half of avialable RAM.
+        default to half of available RAM.
         This option is saved in the file:
         $testceranastatedir/ramdisksize
         [ramdisksize = $ramdisksize]
@@ -392,9 +392,9 @@ if [ -n "$download" ]; then
     if [ $e -gt 0 ]; then
         die Files exist. Either remove them or use a different image directory.
     fi
-    run ln -s $ceranaimagedir/$job/$build/bzImage $ceranaimagedir/$kernelimage
-    run ln -s $ceranaimagedir/$job/$build/initrd $ceranaimagedir/$initrdimage
-    run ln -s $ceranaimagedir/$job/$build/cerana.iso $ceranaimagedir/$isoimage
+    run ln -s $job/$build/bzImage $ceranaimagedir/$kernelimage
+    run ln -s $job/$build/initrd $ceranaimagedir/$initrdimage
+    run ln -s $job/$build/cerana.iso $ceranaimagedir/$isoimage
 fi
 
 if [ ! -d "$ceranaimagedir" ]; then
