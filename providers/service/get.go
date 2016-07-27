@@ -134,16 +134,24 @@ func systemdUnitToService(systemdUnit systemd.UnitStatus) (*Service, error) {
 		}
 	}
 
+	var err error
+
 	uidInterface, ok := systemdUnit.UnitTypeProperties["User"]
 	uid := uint64(0)
 	if ok {
-		uid = uint64(uidInterface.(float64))
+		uid, err = strconv.ParseUint(uidInterface.(string), 10, 64)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	gidInterface, ok := systemdUnit.UnitTypeProperties["Group"]
 	gid := uint64(0)
 	if ok {
-		gid = uint64(gidInterface.(float64))
+		gid, err = strconv.ParseUint(gidInterface.(string), 10, 64)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	descriptionInterface, ok := systemdUnit.UnitProperties["Description"]
