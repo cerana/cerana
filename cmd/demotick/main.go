@@ -110,7 +110,7 @@ func (d *demotick) getNodes() ([]clusterconf.Node, error) {
 		return nil, err
 	}
 	var result clusterconf.ListNodesResult
-	if err := resp.UnmarshalResult(result); err != nil {
+	if err := resp.UnmarshalResult(&result); err != nil {
 		return nil, err
 	}
 	return result.Nodes, nil
