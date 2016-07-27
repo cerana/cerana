@@ -35,6 +35,7 @@ function set_test_default() {
     # Parameters:
     #   1: option name
     #   2: value
+    mkdir -p $(dirname $testceranastatedir/$1)
     echo "$2">$testceranastatedir/$1
     verbose The test default $1 has been set to $2
 }
@@ -94,22 +95,45 @@ function init_test_variable() {
     e=(`echo "$1" | tr "$d" " "`)
     verbose ""
     verbose State variable default: "${e[0]} = ${e[1]}"
-    eval val=\$${e[0]}
+    var=$(basename ${e[0]})
+    verbose Variable name is: $var
+    eval val=\$${var}
+
     if [ -z "$val" ]; then
-        verbose Setting ${e[0]} to default: ${e[1]}
-        eval ${e[0]}=$(get_test_default ${e[0]} ${e[1]})
+        verbose Setting ${var} to default: ${e[1]}
+        eval ${var}=$(get_test_default ${e[0]} ${e[1]})
     else
         if [ "$val" = "default" ]; then
             verbose Setting ${e[0]} to default: ${e[1]}
-            eval ${e[0]}=${e[1]}
+            eval ${var}=${e[1]}
         else
-            eval ${e[0]}=$val
+            eval ${var}=$val
         fi
     fi
-    eval val=\$${e[0]}
-    verbose "State variable: ${e[0]} = $val"
+    eval val=\$${var}
+    verbose "State variable: ${var} = $val"
     verbose Saving current settings.
     set_test_default ${e[0]} $val
+}
+
+function get_test_variable() {
+    # Parameters:
+    #   1: variable name and default value pair delimited by the delimeter (2)
+    #   2: an optional delimeter character (defaults to '=')
+    if [ -z "$2" ]; then
+        d='='
+    else
+        d=$2
+    fi
+    e=(`echo "$1" | tr "$d" " "`)
+    verbose ""
+    verbose State variable default: "${e[0]} = ${e[1]}"
+    var=$(basename ${e[0]})
+    verbose Variable name is: $var
+    verbose Setting ${var} to default: ${e[1]}
+    eval ${var}=$(get_test_default ${e[0]} ${e[1]})
+    eval val=\$${var}
+    verbose "State variable: ${var} = $val"
 }
 
 function get_ceranaos_version() {

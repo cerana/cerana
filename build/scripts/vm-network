@@ -19,6 +19,17 @@ dhcpdconf=$testceranastatedir/$id-dhcpd.conf
 dhcpdpidfile=$testceranastatedir/$id-dhcpd-pid
 leasesfile=$testceranastatedir/$id-dhcpd-leases
 
+statevars=(
+    tap=tap
+    numtaps=1
+    numsets=1
+    tapmac=DE:AD:BE:EF
+    bridge=ceranabr0
+    bridgeip=10.0.2.2
+    nameserver=10.0.3.1
+    maskbits=24
+)
+
 u=$USER
 
 usage () {
@@ -47,6 +58,7 @@ Usage: $0 [options]
     will check the configuration and repair missing parts if necessary.
 
     Options:
+    === Network ===
     --tap <tap>
         The root name of the tap interface to use.
         [tap = $tap]
@@ -75,11 +87,17 @@ Usage: $0 [options]
     --nameserver <ip>
         The IP of the name server for the dhcpd to serve to VMs.
         [nameserver=$nameserver]
+    === Shutdown ===
     --shutdown
         Shutdown the interfaces and services created by this script.
     --shutdowndhcpd
         Shutdown only the dhcpd server. This is useful when a VM will be running
         a dhcp server.
+    === Other ===
+    --config <config>
+        Which network configuration to use. This allows a variety of network
+        configurations to be used. If a different configuration is specified
+        the first configuration is shutdown before setting up the new configuration.
     --resetdefaults
         Reset options back to their default values.
     --verbose
@@ -146,23 +164,30 @@ function shutdown() {
     check_interface_exists $1
     if [ $? -eq 0 ]; then
         sudo ip link set $1 down
-        for s in $(seq 1 $3); do
-            for n in $(seq 1 $4); do
-                i=$2.$s.$n
-                check_interface_exists $i
-                if [ $? -eq 0 ]; then
-                    verbose Shutting down $i
-                    sudo ip link set dev $i nomaster
-                    sudo tunctl -d $i
-                else
-                    warn Interface $i does not exist.
-                fi
-            done
+        for i in `brctl showstp ceranabr0 | grep $2 | cut -d ' ' -f 1`
+        do
+            check_interface_exists $i
+            if [ $? -eq 0 ]; then
+                verbose Shutting down $i
+                sudo ip link set dev $i nomaster
+                sudo tunctl -d $i
+            else
+                warn Interface $i does not exist.
+            fi
         done
         sudo ip link delete $1
     else
         error Bridge $1 does not exist.
     fi
+}
+
+function init_variables () {
+    # Parameters:
+    #   1: The name of the configuration to use.
+    for v in "${statevars[@]}"
+    do
+        init_test_variable $1/$v
+    done
 }
 
 #+
@@ -177,6 +202,7 @@ bridge:,\
 bridgeip:,\
 maskbits:,\
 nameserver:,\
+config:,\
 shutdown,\
 shutdowndhcpd,\
 resetdefaults,\
@@ -230,6 +256,10 @@ while [ $# -ge 1 ]; do
             maskbits=$2
             shift
             ;;
+        --config)
+            config=$2
+            shift
+            ;;
         --shutdown)
             shutdown=y
             ;;
@@ -258,24 +288,13 @@ while [ $# -ge 1 ]; do
     shift
 done
 
-statevars=(
-    tap=tap
-    numtaps=1
-    numsets=1
-    tapmac=DE:AD:BE:EF
-    bridge=ceranabr0
-    bridgeip=10.0.2.2
-    nameserver=10.0.3.1
-    maskbits=24
-)
-for v in "${statevars[@]}"
-do
-    if [ ! -z "$resetdefaults" ]; then
-        clear_test_variable $v
-    fi
-    init_test_variable $v
-done
+init_test_variable current=single
+init_test_variable config=$current
 
+message Current configuration is: $current
+message New configuration is: $config
+
+init_variables $config
 if [ ! -z "$showusage" ]; then
     usage
     if [ ! -z "$errorexit" ]; then
@@ -283,6 +302,15 @@ if [ ! -z "$showusage" ]; then
     fi
     exit 0
 fi
+
+if [ "$config" != "$current" ]; then
+    verbose Switching from $current to $config
+    b=$(get_test_default $current/bridge "" )
+    t=$(get_test_default $current/tap "" )
+    shutdown $b $t
+fi
+
+set_test_default current $config
 
 verbose The root TAP device is: $tap
 verbose Number of TAP interface sets is: $numsets
@@ -293,7 +321,7 @@ verbose Bridge device mask bits are: $maskbits
 verbose The name server is: $nameserver
 
 message Verifying tools.
-for t in tunctl ip dhcpd; do
+for t in brctl tunctl ip dhcpd; do
     check_installed $t
     if [ $? -ge 0 ]; then
         e=$?
@@ -306,7 +334,7 @@ fi
 
 if [ "$shutdown" == "y" ]; then
     message Shutting down VM related interfaces and services.
-    shutdown $bridge $tap $numsets $numtaps
+    shutdown $bridge $tap
     message VM related interfaces and services have been shutdown.
     exit
 fi
