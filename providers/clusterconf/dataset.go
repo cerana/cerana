@@ -67,7 +67,7 @@ func (c *ClusterConf) ListDatasets(req *acomm.Request) (interface{}, *url.URL, e
 	for _, key := range keys {
 		// keys are full paths and include all child keys.
 		// e.g. {prefix}/{id}/{rest/of/path}
-		id := strings.Split(strings.TrimPrefix(key, datasetsPrefix), "/")[0]
+		id := strings.Split(strings.TrimPrefix(key, datasetsPrefix+"/"), "/")[0]
 		ids[id] = true
 	}
 
