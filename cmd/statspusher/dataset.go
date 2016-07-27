@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"net"
+	"net/url"
 	"path/filepath"
 
 	"github.com/cerana/cerana/acomm"
@@ -26,25 +27,29 @@ func (s *statsPusher) datasetHeartbeats() error {
 
 func (s *statsPusher) getDatasets(ip net.IP) ([]clusterconf.DatasetHeartbeatArgs, error) {
 	requests := map[string]struct {
-		task     string
-		args     interface{}
-		respData interface{}
+		task        string
+		coordinator *url.URL
+		args        interface{}
+		respData    interface{}
 	}{
-		"datasets":  {task: "zfs-list", args: zfs.ListArgs{Name: s.config.datasetDir()}, respData: &zfs.ListResult{}},
-		"bundles":   {task: "list-bundles", respData: &clusterconf.BundleListResult{}},
-		"bundleHBs": {task: "list-bundle-heartbeats", respData: &clusterconf.BundleHeartbeatList{}},
+		"datasets":  {task: "zfs-list", coordinator: s.config.nodeDataURL(), args: zfs.ListArgs{Name: s.config.datasetDir()}, respData: &zfs.ListResult{}},
+		"bundles":   {task: "list-bundles", coordinator: s.config.clusterDataURL(), respData: &clusterconf.BundleListResult{}},
+		"bundleHBs": {task: "list-bundle-heartbeats", coordinator: s.config.nodeDataURL(), respData: &clusterconf.BundleHeartbeatList{}},
 	}
 
 	multiRequest := acomm.NewMultiRequest(s.tracker, s.config.requestTimeout())
 	for name, args := range requests {
-		req, err := acomm.NewRequest(acomm.RequestOptions{Task: args.task})
+		req, err := acomm.NewRequest(acomm.RequestOptions{
+			Task: args.task,
+			Args: args.args,
+		})
 		if err != nil {
 			return nil, err
 		}
 		if err := multiRequest.AddRequest(name, req); err != nil {
 			return nil, err
 		}
-		if err := acomm.Send(s.config.nodeDataURL(), req); err != nil {
+		if err := acomm.Send(args.coordinator, req); err != nil {
 			multiRequest.RemoveRequest(req)
 			return nil, err
 		}
