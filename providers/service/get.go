@@ -139,6 +139,7 @@ func systemdUnitToService(systemdUnit systemd.UnitStatus) (*Service, error) {
 	uidInterface, ok := systemdUnit.UnitTypeProperties["User"]
 	uid := uint64(0)
 	if ok {
+		logrus.WithField("User", uidInterface).Info("systemd User")
 		uid, err = strconv.ParseUint(uidInterface.(string), 10, 64)
 		if err != nil {
 			return nil, err
@@ -148,6 +149,7 @@ func systemdUnitToService(systemdUnit systemd.UnitStatus) (*Service, error) {
 	gidInterface, ok := systemdUnit.UnitTypeProperties["Group"]
 	gid := uint64(0)
 	if ok {
+		logrus.WithField("Group", gidInterface).Info("systemd Group")
 		gid, err = strconv.ParseUint(gidInterface.(string), 10, 64)
 		if err != nil {
 			return nil, err
