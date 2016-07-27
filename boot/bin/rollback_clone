@@ -24,6 +24,8 @@ DESTINATION="${2:-${_CERANA_CLONE_DESTINATION}}"
 [[ -n "${DESTINATION}" ]]
 SNAP=pristine
 
+export PATH=/run/current-system/sw/bin/
+
 zfs_exists() { zfs list -H -o name "${1}" &>/dev/null; }
 zfs_exists_or_snapshot() {
     zfs_exists "${1}" \
