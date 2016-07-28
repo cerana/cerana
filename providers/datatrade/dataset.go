@@ -60,6 +60,12 @@ func (p *Provider) DatasetImport(req *acomm.Request) (interface{}, *url.URL, err
 		return nil, nil, err
 	}
 
+	if args.ReadOnly {
+		if err := p.datasetSnapshot(node.ID, dataset.ID); err != nil {
+			return nil, nil, err
+		}
+	}
+
 	return DatasetImportResult{Dataset: dataset, NodeID: node.ID}, nil, p.datasetConfig(dataset)
 
 }
@@ -97,6 +103,25 @@ func (p *Provider) datasetImport(nodeID, datasetID string, streamURL *url.URL) e
 		},
 	}
 	logrus.WithField("requestOpts", opts).Info("sending dataset import request to node")
+	_, err = p.tracker.SyncRequest(p.config.CoordinatorURL(), opts, p.config.RequestTimeout())
+	return err
+}
+
+func (p *Provider) datasetSnapshot(nodeID, datasetID string) error {
+	taskURL, err := url.ParseRequestURI(fmt.Sprintf("http://%s:%d", nodeID, p.config.NodeCoordinatorPort()))
+	if err != nil {
+		return err
+	}
+	opts := acomm.RequestOptions{
+		Task:    "zfs-snapshot",
+		TaskURL: taskURL,
+		Args: zfs.SnapshotArgs{
+			Name:      filepath.Join(p.config.DatasetDir(), datasetID),
+			SnapName:  datasetID,
+			Recursive: false,
+		},
+	}
+	logrus.WithField("requestOpts", opts).Info("snapshotting imported dataset on node")
 	_, err = p.tracker.SyncRequest(p.config.CoordinatorURL(), opts, p.config.RequestTimeout())
 	return err
 }
