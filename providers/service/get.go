@@ -148,7 +148,7 @@ func systemdUnitToService(systemdUnit systemd.UnitStatus) (*Service, error) {
 
 	gidS, ok := systemdUnit.UnitTypeProperties["Group"].(string)
 	gid := uint64(0)
-	if ok {
+	if ok && gidS != "" {
 		logrus.WithField("Group", gidS).Info("systemd Group")
 		gid, err = strconv.ParseUint(gidS, 10, 64)
 		if err != nil {
