@@ -241,6 +241,13 @@ func (d *demotick) replicateDatasets(datasets map[string]map[string]clusterconf.
 }
 
 func (d *demotick) sendActionRequest(opts acomm.RequestOptions, ip string, trackErr func(string, error)) {
+	u, err := url.Parse(fmt.Sprintf("http://%s:%d", ip, d.nodeCoordinatorPort))
+	if err != nil {
+		trackErr(opts.Task, err)
+		return
+	}
+	opts.TaskURL = u
+
 	req, err := acomm.NewRequest(opts)
 	if err != nil {
 		trackErr(req.Task, err)
@@ -250,12 +257,8 @@ func (d *demotick) sendActionRequest(opts acomm.RequestOptions, ip string, track
 		trackErr(req.Task, err)
 		return
 	}
-	u, err := url.Parse(fmt.Sprintf("http://%s:%d", ip, d.nodeCoordinatorPort))
-	if err != nil {
-		trackErr(req.Task, err)
-		return
-	}
-	if err = acomm.Send(u, req); err != nil {
+
+	if err = acomm.Send(d.coordinatorURL, req); err != nil {
 		d.tracker.RemoveRequest(req)
 		trackErr(req.Task, err)
 		return
