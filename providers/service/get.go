@@ -136,21 +136,21 @@ func systemdUnitToService(systemdUnit systemd.UnitStatus) (*Service, error) {
 
 	var err error
 
-	uidInterface, ok := systemdUnit.UnitTypeProperties["User"]
+	uidS, ok := systemdUnit.UnitTypeProperties["User"].(string)
 	uid := uint64(0)
-	if ok {
-		logrus.WithField("User", uidInterface).Info("systemd User")
-		uid, err = strconv.ParseUint(uidInterface.(string), 10, 64)
+	if ok && uidS != "" {
+		logrus.WithField("User", uidS).Info("systemd User")
+		uid, err = strconv.ParseUint(uidS, 10, 64)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	gidInterface, ok := systemdUnit.UnitTypeProperties["Group"]
+	gidS, ok := systemdUnit.UnitTypeProperties["Group"].(string)
 	gid := uint64(0)
 	if ok {
-		logrus.WithField("Group", gidInterface).Info("systemd Group")
-		gid, err = strconv.ParseUint(gidInterface.(string), 10, 64)
+		logrus.WithField("Group", gidS).Info("systemd Group")
+		gid, err = strconv.ParseUint(gidS, 10, 64)
 		if err != nil {
 			return nil, err
 		}
