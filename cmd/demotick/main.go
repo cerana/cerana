@@ -219,7 +219,7 @@ func (d *demotick) replicateDatasets(datasets map[string]map[string]clusterconf.
 			opts := acomm.RequestOptions{
 				Task:           "zfs-send",
 				ResponseHook:   d.tracker.URL(),
-				Args:           zfs.CommonArgs{Name: datasetName},
+				Args:           zfs.CommonArgs{Name: fmt.Sprintf("%s@%s", datasetName, datasetID)},
 				ErrorHandler:   genErrorHandler(trackErr),
 				SuccessHandler: genSuccessHandler(datasetName, destinationIP, trackErr),
 			}
