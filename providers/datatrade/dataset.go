@@ -51,16 +51,19 @@ func (p *Provider) DatasetImport(req *acomm.Request) (interface{}, *url.URL, err
 		Redundancy: args.Redundancy,
 	}
 
+	logrus.Info("selecting import node for dataset")
 	node, err := p.datasetImportNode()
 	if err != nil {
 		return nil, nil, err
 	}
 
+	logrus.Info("importing dataset")
 	if err := p.datasetImport(node.ID, dataset.ID, req.StreamURL); err != nil {
 		return nil, nil, err
 	}
 
 	if args.ReadOnly {
+		logrus.Info("taking snapshot of imported ro dataset")
 		if err := p.datasetSnapshot(node.ID, dataset.ID); err != nil {
 			return nil, nil, err
 		}
@@ -127,10 +130,12 @@ func (p *Provider) datasetSnapshot(nodeID, datasetID string) error {
 }
 
 func (p *Provider) datasetConfig(dataset clusterconf.Dataset) error {
+	logrus.Info("updating clusterconf with dataset info")
 	opts := acomm.RequestOptions{
 		Task: "update-dataset",
 		Args: clusterconf.DatasetPayload{Dataset: &dataset},
 	}
 	_, err := p.tracker.SyncRequest(p.config.CoordinatorURL(), opts, p.config.RequestTimeout())
+	logrus.Info("done updating clusterconf with dataset info")
 	return err
 }

@@ -2,7 +2,6 @@ package acomm
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -184,7 +183,10 @@ func ProxyStreamHandler(w http.ResponseWriter, r *http.Request) {
 	if err := Stream(w, addr); err != nil {
 		if opErr, ok := err.(*net.OpError); ok {
 			// TODO: find out what the result is for not exist and return 404
-			fmt.Printf("%+v\n", opErr)
+			log.WithFields(log.Fields{
+				"addr":  addr,
+				"error": opErr,
+			}).Error("failed to proxy stream")
 		}
 		http.Error(w, "failed to stream data", http.StatusInternalServerError)
 		return
