@@ -162,6 +162,7 @@ func (t *Tracker) handleConn(conn net.Conn) {
 // HandleResponse associates a response with a request and either forwards the
 // response or calls the request's handler.
 func (t *Tracker) HandleResponse(resp *Response) {
+	log.WithField("response", resp).Debug("tracker received response")
 	req := t.retrieveRequest(resp.ID)
 	if req == nil {
 		err := errors.New("response does not have tracked request")
@@ -185,6 +186,7 @@ func (t *Tracker) HandleResponse(resp *Response) {
 	// request has already been removed from the tracker, it will only happen
 	// once.
 	if !req.proxied {
+		log.WithField("response", resp).Debug("not a proxied request, handle locally")
 		req.HandleResponse(resp)
 		return
 	}
@@ -196,6 +198,8 @@ func (t *Tracker) HandleResponse(resp *Response) {
 		}
 		resp.StreamURL = streamURL
 	}
+
+	log.WithField("response", resp).Debug("proxied response")
 
 	// Forward the response along
 	_ = req.Respond(resp)

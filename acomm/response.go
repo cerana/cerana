@@ -102,6 +102,11 @@ func (r *Response) UnmarshalResult(dest interface{}) error {
 
 // Send attempts send the payload to the specified URL.
 func Send(addr *url.URL, payload interface{}) error {
+	log.WithFields(log.Fields{
+		"component": "acomm.Send",
+		"addr":      addr,
+		"payload":   payload,
+	}).Debug("sending payload")
 	if addr == nil {
 		err := errors.New("missing addr")
 		log.WithFields(log.Fields{

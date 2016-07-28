@@ -189,6 +189,7 @@ func (s *Server) acceptInternalRequest(conn net.Conn) {
 }
 
 func (s *Server) handleRequest(req *acomm.Request) error {
+	log.WithField("request", req).Debug("received request")
 	var err error
 	if req.TaskURL == nil {
 		err = s.localTask(req)
@@ -196,6 +197,10 @@ func (s *Server) handleRequest(req *acomm.Request) error {
 		err = s.externalTask(req)
 	}
 	if err != nil {
+		log.WithFields(log.Fields{
+			"request": req,
+			"error":   err,
+		}).Error("request handling failed, removing from tracker")
 		_ = s.proxy.RemoveRequest(req)
 	}
 	return err
@@ -217,6 +222,11 @@ func (s *Server) localTask(req *acomm.Request) error {
 	if err != nil {
 		return err
 	}
+
+	log.WithFields(log.Fields{
+		"request":       req,
+		"proxyRequeset": proxyReq,
+	}).Debug("local request after ProxyUnix")
 
 	// Cycle through available providers until one accepts the request
 	for _, providerSocket := range providerSockets {
@@ -246,6 +256,11 @@ func (s *Server) externalTask(req *acomm.Request) error {
 		// Don't proxy local requests
 		proxyReq.TaskURL = nil
 	}
+	log.WithFields(log.Fields{
+		"request":       req,
+		"proxyRequeset": proxyReq,
+		"taskURL":       taskURL,
+	}).Debug("external request after ProxyExternal")
 	return acomm.Send(taskURL, proxyReq)
 }
 
