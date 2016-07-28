@@ -182,6 +182,8 @@ func ProxyStreamHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.WithField("addr", addr).Info("proxying stream")
+
 	if err := Stream(w, addr); err != nil {
 		if opErr, ok := err.(*net.OpError); ok {
 			// TODO: find out what the result is for not exist and return 404

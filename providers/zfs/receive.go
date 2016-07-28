@@ -26,6 +26,8 @@ func (z *ZFS) Receive(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.New("missing request stream-url")
 	}
 
+	logrus.WithField("streamURL", req.StreamURL).Info("dataset stream url for receive")
+
 	r, w := io.Pipe()
 	go func() {
 		defer logrusx.LogReturnedErr(w.Close, nil, "failed to close writer")
