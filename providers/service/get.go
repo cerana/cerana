@@ -126,7 +126,6 @@ func systemdUnitToService(systemdUnit systemd.UnitStatus) (*Service, error) {
 	execStartInterface, ok := systemdUnit.UnitTypeProperties["ExecStart"]
 	var execStart []string
 	if ok {
-		logrus.WithField("ExecStartInterface", execStartInterface).Info("systemd ExecStart from UnitTypeProperties")
 		tmp := execStartInterface.([]interface{})[0].([]interface{})[1].([]interface{})
 		execStart = make([]string, len(tmp))
 		for i, v := range tmp {
