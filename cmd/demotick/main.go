@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"path/filepath"
 	"sync"
@@ -23,11 +24,12 @@ type demotick struct {
 	nodeCoordinatorPort uint
 	requestTimeout      time.Duration
 	tracker             *acomm.Tracker
+	responseHook        *url.URL
 }
 
 func main() {
 	logrus.SetFormatter(&logrusx.JSONFormatter{})
-	var urlS, logLevel, datasetDir string
+	var urlS, logLevel, datasetDir, responseAddr string
 	var requestTimeout time.Duration
 	var nodeCoordinatorPort uint
 
@@ -36,6 +38,7 @@ func main() {
 	pflag.StringVarP(&logLevel, "log_leveL", "l", "info", "log level: debug/info/warn/error/fatal/panic")
 	pflag.DurationVarP(&requestTimeout, "request_timeout", "r", 10*time.Second, "request timeout")
 	pflag.UintVarP(&nodeCoordinatorPort, "node_coordinator_port", "n", 8080, "node coordinator port")
+	pflag.StringVarP(&responseAddr, "response_addr", "r", ":20000", "demotick external response port")
 	pflag.Parse()
 
 	dieOnError(logrusx.SetLevel(logLevel))
@@ -50,6 +53,9 @@ func main() {
 	u, err := url.Parse(urlS)
 	dieOnError(err)
 
+	responseHook, err := url.ParseRequestURI(fmt.Sprintf("http://%s/response", responseAddr))
+	dieOnError(err)
+
 	tracker, err := acomm.NewTracker("", nil, nil, requestTimeout)
 	dieOnError(err)
 	dieOnError(tracker.Start())
@@ -60,7 +66,10 @@ func main() {
 		nodeCoordinatorPort: nodeCoordinatorPort,
 		requestTimeout:      requestTimeout,
 		tracker:             tracker,
+		responseHook:        responseHook,
 	}
+
+	d.startHTTPResponseServer(responseAddr)
 
 	logrus.Info("running cluster tick")
 	dieOnError(d.run())
@@ -195,7 +204,7 @@ func (d *demotick) replicateDatasets(datasets map[string]map[string]clusterconf.
 				logrus.WithField("DatasetStreamURL", resp.StreamURL).Info("zfs-stream url")
 				opts := acomm.RequestOptions{
 					Task:         "zfs-receive",
-					ResponseHook: d.tracker.URL(),
+					ResponseHook: d.responseHook,
 					Args:         zfs.CommonArgs{Name: name},
 					StreamURL:    resp.StreamURL,
 					ErrorHandler: genErrorHandler(trackErr),
@@ -219,7 +228,7 @@ func (d *demotick) replicateDatasets(datasets map[string]map[string]clusterconf.
 
 			opts := acomm.RequestOptions{
 				Task:           "zfs-send",
-				ResponseHook:   d.tracker.URL(),
+				ResponseHook:   d.responseHook,
 				Args:           zfs.CommonArgs{Name: fmt.Sprintf("%s@%s", datasetName, datasetID)},
 				ErrorHandler:   genErrorHandler(trackErr),
 				SuccessHandler: genSuccessHandler(datasetName, destinationIP, trackErr),
@@ -357,7 +366,7 @@ func (d *demotick) runBundles(bundles []*clusterconf.Bundle, bundleHeartbeats ma
 
 				opts := acomm.RequestOptions{
 					Task:         "service-create",
-					ResponseHook: d.tracker.URL(),
+					ResponseHook: d.responseHook,
 					Args: service.CreateArgs{
 						ID:       serviceConf.ID,
 						BundleID: bundle.ID,
@@ -392,6 +401,15 @@ func genErrorHandler(trackErr func(string, error)) acomm.ResponseHandler {
 	return func(req *acomm.Request, resp *acomm.Response) {
 		trackErr(req.Task, resp.Error)
 	}
+}
+
+func (d *demotick) startHTTPResponseServer(addr string) {
+	http.HandleFunc("/response", d.tracker.ProxyExternalHandler)
+	go func() {
+		if err := http.ListenAndServe(addr, nil); err != nil {
+			dieOnError(err)
+		}
+	}()
 }
 
 func dieOnError(err error) {
