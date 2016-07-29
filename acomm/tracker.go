@@ -489,6 +489,11 @@ func ReplaceLocalhost(u *url.URL, replacement string) error {
 		return nil
 	}
 
+	log.WithFields(log.Fields{
+		"url":         u,
+		"replacement": replacement,
+	}).Info("ReplaceLocalhost called")
+
 	host, port, err := net.SplitHostPort(u.Host)
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "missing port in address") {
@@ -518,5 +523,9 @@ func ReplaceLocalhost(u *url.URL, replacement string) error {
 			u.Host += ":" + port
 		}
 	}
+
+	log.WithFields(log.Fields{
+		"url": u,
+	}).Info("ReplaceLocalhost finished")
 	return nil
 }
