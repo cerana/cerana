@@ -3,6 +3,32 @@ updated: 2016-07-06T16:33:44.726331912-04:00
 imports:
 - name: github.com/BurntSushi/toml
   version: bbd5bb678321a0d6e58f1099321dfa73391c1b6f
+- name: github.com/cerana/cerana
+  version: 01495927114d8d3788db9d7fef5f00e5ebfb4a48
+  subpackages:
+  - pkg/logrusx
+  - acomm
+  - provider
+  - providers/dhcp
+  - providers/clusterconf
+  - coordinator
+  - pkg/seccomp
+  - providers/datatrade
+  - providers/health
+  - providers/kv
+  - providers/metrics
+  - providers/namespace
+  - zfs/nv
+  - providers/service
+  - providers/zfs
+  - providers/systemd
+  - zfs
+  - pkg/kv
+  - pkg/kv/consul
+  - provider/examples/simple
+  - internal/tests/common
+  - pkg/errorutils
+  - pkg/test
 - name: github.com/coreos/etcd
   version: 6335fdc595ff03d27007db04e5b545189b9647c6
   subpackages:
@@ -75,6 +101,8 @@ imports:
   version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:
   - difflib
+- name: github.com/seccomp/libseccomp-golang
+  version: 32f571b70023028bd57d9288c20efbcb237f3ce0
 - name: github.com/shirou/gopsutil
   version: 22a03b5be3f384f558742929065778aa26471033
   subpackages:
@@ -108,6 +136,10 @@ imports:
   - suite
   - assert
   - require
+- name: github.com/syndtr/gocapability
+  version: 2c00daeb6c3b45114c80ac44119e7b8801fdd852
+  subpackages:
+  - capability
 - name: github.com/tylerb/graceful
   version: ecde8c8f16df93a994dda8936c8f60f0c26c28ab
 - name: golang.org/x/net
