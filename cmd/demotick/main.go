@@ -192,6 +192,7 @@ func (d *demotick) replicateDatasets(datasets map[string]map[string]clusterconf.
 
 		genSuccessHandler := func(name, dIP string, trackErr func(string, error)) func(*acomm.Request, *acomm.Response) {
 			return func(_ *acomm.Request, resp *acomm.Response) {
+				logrus.WithField("DatasetStreamURL", resp.StreamURL).Info("zfs-stream url")
 				opts := acomm.RequestOptions{
 					Task:         "zfs-receive",
 					ResponseHook: d.tracker.URL(),
