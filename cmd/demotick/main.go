@@ -38,7 +38,7 @@ func main() {
 	pflag.StringVarP(&logLevel, "log_leveL", "l", "info", "log level: debug/info/warn/error/fatal/panic")
 	pflag.DurationVarP(&requestTimeout, "request_timeout", "r", 10*time.Second, "request timeout")
 	pflag.UintVarP(&nodeCoordinatorPort, "node_coordinator_port", "n", 8080, "node coordinator port")
-	pflag.StringVarP(&responseAddr, "response_addr", "r", ":20000", "demotick external response port")
+	pflag.StringVarP(&responseAddr, "response_addr", "a", ":20000", "demotick external response port")
 	pflag.Parse()
 
 	dieOnError(logrusx.SetLevel(logLevel))
