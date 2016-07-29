@@ -71,6 +71,8 @@ func (t *task) acceptRequest(conn net.Conn) {
 		respErr = err
 	}
 
+	log.WithField("request", req).Debug("received request")
+
 	if err := req.Validate(); err != nil {
 		respErr = err
 	}

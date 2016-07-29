@@ -53,13 +53,13 @@ func NewServer(config *Config) (*Server, error) {
 		"response",
 		config.ServiceName()+".sock")
 
-	streamURL, err := url.ParseRequestURI(fmt.Sprintf("http://%s:%d/stream", getLocalIP(), config.ExternalPort()))
+	streamURL, err := url.ParseRequestURI(fmt.Sprintf("http://localhost:%d/stream", config.ExternalPort()))
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
 		}).Error("failed to generate stream url")
 	}
-	proxyURL, err := url.ParseRequestURI(fmt.Sprintf("http://%s:%d/proxy", getLocalIP(), config.ExternalPort()))
+	proxyURL, err := url.ParseRequestURI(fmt.Sprintf("http://localhost:%d/proxy", config.ExternalPort()))
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
@@ -131,6 +131,15 @@ func (s *Server) externalHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := acomm.ReplaceLocalhost(req.ResponseHook, r.RemoteAddr); err != nil {
+		respErr = err
+		return
+	}
+	if err := acomm.ReplaceLocalhost(req.StreamURL, r.RemoteAddr); err != nil {
+		respErr = err
+		return
+	}
+
 	respErr = s.handleRequest(req)
 }
 
@@ -189,6 +198,7 @@ func (s *Server) acceptInternalRequest(conn net.Conn) {
 }
 
 func (s *Server) handleRequest(req *acomm.Request) error {
+	log.WithField("request", req).Debug("received request")
 	var err error
 	if req.TaskURL == nil {
 		err = s.localTask(req)
@@ -196,6 +206,10 @@ func (s *Server) handleRequest(req *acomm.Request) error {
 		err = s.externalTask(req)
 	}
 	if err != nil {
+		log.WithFields(log.Fields{
+			"request": req,
+			"error":   err,
+		}).Error("request handling failed, removing from tracker")
 		_ = s.proxy.RemoveRequest(req)
 	}
 	return err
@@ -217,6 +231,11 @@ func (s *Server) localTask(req *acomm.Request) error {
 	if err != nil {
 		return err
 	}
+
+	log.WithFields(log.Fields{
+		"request":       req,
+		"proxyRequeset": proxyReq,
+	}).Debug("local request after ProxyUnix")
 
 	// Cycle through available providers until one accepts the request
 	for _, providerSocket := range providerSockets {
@@ -246,6 +265,11 @@ func (s *Server) externalTask(req *acomm.Request) error {
 		// Don't proxy local requests
 		proxyReq.TaskURL = nil
 	}
+	log.WithFields(log.Fields{
+		"request":       req,
+		"proxyRequeset": proxyReq,
+		"taskURL":       taskURL,
+	}).Debug("external request after ProxyExternal")
 	return acomm.Send(taskURL, proxyReq)
 }
 
@@ -344,24 +368,4 @@ func (s *Server) StopOnSignal(signals ...os.Signal) {
 	}).Info("signal received, stopping")
 
 	s.Stop()
-}
-
-func getLocalIP() string {
-	addrs, err := net.InterfaceAddrs()
-	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-		}).Error("failed to list interface addrs")
-		return ""
-	}
-
-	for _, address := range addrs {
-		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-			if ipnet.IP.To4() != nil {
-				return ipnet.IP.String()
-			}
-		}
-	}
-
-	return ""
 }

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/providers/systemd"
 )
@@ -125,23 +126,33 @@ func systemdUnitToService(systemdUnit systemd.UnitStatus) (*Service, error) {
 	execStartInterface, ok := systemdUnit.UnitTypeProperties["ExecStart"]
 	var execStart []string
 	if ok {
-		tmp := execStartInterface.([][]interface{})[0][1]
+		tmp := execStartInterface.([]interface{})[0].([]interface{})[1].([]interface{})
 		execStart = make([]string, len(tmp))
 		for i, v := range tmp {
 			execStart[i] = v.(string)
 		}
 	}
 
-	uidInterface, ok := systemdUnit.UnitTypeProperties["User"]
+	var err error
+
+	uidS, ok := systemdUnit.UnitTypeProperties["User"].(string)
 	uid := uint64(0)
-	if ok {
-		uid = uint64(uidInterface.(float64))
+	if ok && uidS != "" {
+		logrus.WithField("User", uidS).Info("systemd User")
+		uid, err = strconv.ParseUint(uidS, 10, 64)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	gidInterface, ok := systemdUnit.UnitTypeProperties["Group"]
+	gidS, ok := systemdUnit.UnitTypeProperties["Group"].(string)
 	gid := uint64(0)
-	if ok {
-		gid = uint64(gidInterface.(float64))
+	if ok && gidS != "" {
+		logrus.WithField("Group", gidS).Info("systemd Group")
+		gid, err = strconv.ParseUint(gidS, 10, 64)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	descriptionInterface, ok := systemdUnit.UnitProperties["Description"]

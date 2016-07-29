@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"path/filepath"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/providers/clusterconf"
 	"github.com/cerana/cerana/providers/zfs"
@@ -50,13 +51,22 @@ func (p *Provider) DatasetImport(req *acomm.Request) (interface{}, *url.URL, err
 		Redundancy: args.Redundancy,
 	}
 
+	logrus.Info("selecting import node for dataset")
 	node, err := p.datasetImportNode()
 	if err != nil {
 		return nil, nil, err
 	}
 
+	logrus.Info("importing dataset")
 	if err := p.datasetImport(node.ID, dataset.ID, req.StreamURL); err != nil {
 		return nil, nil, err
+	}
+
+	if args.ReadOnly {
+		logrus.Info("taking snapshot of imported ro dataset")
+		if err := p.datasetSnapshot(node.ID, dataset.ID); err != nil {
+			return nil, nil, err
+		}
 	}
 
 	return DatasetImportResult{Dataset: dataset, NodeID: node.ID}, nil, p.datasetConfig(dataset)
@@ -83,26 +93,49 @@ func (p *Provider) datasetImportNode() (*clusterconf.Node, error) {
 }
 
 func (p *Provider) datasetImport(nodeID, datasetID string, streamURL *url.URL) error {
+	taskURL, err := url.ParseRequestURI(fmt.Sprintf("http://%s:%d", nodeID, p.config.NodeCoordinatorPort()))
+	if err != nil {
+		return err
+	}
 	opts := acomm.RequestOptions{
 		Task:      "zfs-receive",
+		TaskURL:   taskURL,
 		StreamURL: streamURL,
 		Args: zfs.CommonArgs{
 			Name: filepath.Join(p.config.DatasetDir(), datasetID),
 		},
 	}
-	u, err := url.Parse(fmt.Sprintf("http://%s:%d", nodeID, p.config.NodeCoordinatorPort()))
+	logrus.WithField("requestOpts", opts).Info("sending dataset import request to node")
+	_, err = p.tracker.SyncRequest(p.config.CoordinatorURL(), opts, p.config.RequestTimeout())
+	return err
+}
+
+func (p *Provider) datasetSnapshot(nodeID, datasetID string) error {
+	taskURL, err := url.ParseRequestURI(fmt.Sprintf("http://%s:%d", nodeID, p.config.NodeCoordinatorPort()))
 	if err != nil {
 		return err
 	}
-	_, err = p.tracker.SyncRequest(u, opts, p.config.RequestTimeout())
+	opts := acomm.RequestOptions{
+		Task:    "zfs-snapshot",
+		TaskURL: taskURL,
+		Args: zfs.SnapshotArgs{
+			Name:      filepath.Join(p.config.DatasetDir(), datasetID),
+			SnapName:  datasetID,
+			Recursive: false,
+		},
+	}
+	logrus.WithField("requestOpts", opts).Info("snapshotting imported dataset on node")
+	_, err = p.tracker.SyncRequest(p.config.CoordinatorURL(), opts, p.config.RequestTimeout())
 	return err
 }
 
 func (p *Provider) datasetConfig(dataset clusterconf.Dataset) error {
+	logrus.Info("updating clusterconf with dataset info")
 	opts := acomm.RequestOptions{
 		Task: "update-dataset",
 		Args: clusterconf.DatasetPayload{Dataset: &dataset},
 	}
 	_, err := p.tracker.SyncRequest(p.config.CoordinatorURL(), opts, p.config.RequestTimeout())
+	logrus.Info("done updating clusterconf with dataset info")
 	return err
 }

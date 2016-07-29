@@ -2,7 +2,6 @@ package acomm
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -175,6 +174,8 @@ func streamHTTP(dest io.Writer, addr *url.URL) error {
 
 // ProxyStreamHandler is an HTTP HandlerFunc for simple proxy streaming.
 func ProxyStreamHandler(w http.ResponseWriter, r *http.Request) {
+	log.WithField("addr", r.URL.Query().Get("addr")).Debug("proxy stream handler addr")
+
 	addr, err := url.ParseRequestURI(r.URL.Query().Get("addr"))
 	if err != nil {
 		http.Error(w, "invalid addr", http.StatusBadRequest)
@@ -184,7 +185,15 @@ func ProxyStreamHandler(w http.ResponseWriter, r *http.Request) {
 	if err := Stream(w, addr); err != nil {
 		if opErr, ok := err.(*net.OpError); ok {
 			// TODO: find out what the result is for not exist and return 404
-			fmt.Printf("%+v\n", opErr)
+			log.WithFields(log.Fields{
+				"addr":  addr,
+				"error": opErr,
+			}).Error("failed to proxy stream")
+		} else {
+			log.WithFields(log.Fields{
+				"addr":  addr,
+				"error": err,
+			}).Error("failed to proxy stream")
 		}
 		http.Error(w, "failed to stream data", http.StatusInternalServerError)
 		return
