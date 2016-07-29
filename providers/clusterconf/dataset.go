@@ -67,15 +67,13 @@ func (c *ClusterConf) ListDatasets(req *acomm.Request) (interface{}, *url.URL, e
 	for _, key := range keys {
 		// keys are full paths and include all child keys.
 		// e.g. {prefix}/{id}/{rest/of/path}
-		id := strings.Split(strings.TrimPrefix(key, datasetsPrefix), "/")[0]
+		id := strings.Split(strings.TrimPrefix(key, datasetsPrefix+"/"), "/")[0]
 		ids[id] = true
 	}
 
 	var wg sync.WaitGroup
 	dsChan := make(chan *Dataset, len(ids))
-	defer close(dsChan)
 	errChan := make(chan error, len(ids))
-	defer close(errChan)
 	for id := range ids {
 		wg.Add(1)
 		go func(id string) {
@@ -89,6 +87,9 @@ func (c *ClusterConf) ListDatasets(req *acomm.Request) (interface{}, *url.URL, e
 		}(id)
 	}
 	wg.Wait()
+
+	close(dsChan)
+	close(errChan)
 
 	if len(errChan) > 0 {
 		err := <-errChan

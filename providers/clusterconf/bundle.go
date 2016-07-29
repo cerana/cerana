@@ -148,6 +148,10 @@ func (s BundleService) overlayOn(base *Service) (BundleService, error) {
 		}
 	}
 
+	if result.Cmd == nil {
+		result.Cmd = base.Cmd
+	}
+
 	return result, nil
 }
 
@@ -227,12 +231,15 @@ func (c *ClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL, er
 	if err != nil {
 		return nil, nil, err
 	}
+
+	fmt.Println("ListBundles: BundleKeys:", keys)
+
 	// extract and deduplicate the bundle ids
 	ids := make(map[uint64]bool)
 	for _, key := range keys {
 		// keys are full paths and include all child keys.
 		// e.g. {prefix}/{id}/{rest/of/path}
-		idS := strings.Split(strings.TrimPrefix(key, bundlesPrefix), "/")[0]
+		idS := strings.Split(strings.TrimPrefix(key, bundlesPrefix+"/"), "/")[0]
 		id, err := strconv.ParseUint(idS, 10, 64)
 		if err != nil {
 			return nil, nil, errors.New("invalid bundle id")
@@ -240,14 +247,16 @@ func (c *ClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL, er
 		ids[id] = true
 	}
 
+	fmt.Println("ListBundles: IDs:", ids)
+
 	var wg sync.WaitGroup
 	bundleChan := make(chan *Bundle, len(ids))
-	defer close(bundleChan)
 	errChan := make(chan error, len(ids))
-	defer close(errChan)
 	for id := range ids {
+		fmt.Println("ListBundles: Loop with ID:", id)
 		wg.Add(1)
 		go func(id uint64) {
+			defer fmt.Println("ListBundles: Finished ID:", id)
 			defer wg.Done()
 			bundle, err := c.getBundle(id)
 			if err != nil {
@@ -264,16 +273,29 @@ func (c *ClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL, er
 			bundleChan <- bundle
 		}(id)
 	}
+
+	fmt.Println("ListBundles: Waiting for the id loop")
+
 	wg.Wait()
 
+	fmt.Println("ListBundles: Done waiting for the id loop, closing err and bundle chan")
+	close(bundleChan)
+	close(errChan)
+
 	if len(errChan) > 0 {
+		fmt.Println("ListBundles: pulling error off channel")
 		err := <-errChan
+		fmt.Println("ListBundles: returning error")
 		return nil, nil, err
 	}
+
+	fmt.Println("ListBundles: making bundle array for result from bundle chan")
 	bundles := make([]*Bundle, 0, len(bundleChan))
 	for bundle := range bundleChan {
 		bundles = append(bundles, bundle)
 	}
+
+	fmt.Println("ListBundles: Returning bundle list")
 
 	return &BundleListResult{
 		Bundles: bundles,
