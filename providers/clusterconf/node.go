@@ -141,7 +141,7 @@ func (c *ClusterConf) getNodes() ([]Node, error) {
 			continue
 		}
 		var node Node
-		if err := json.Unmarshal(value.Data, node); err != nil {
+		if err := json.Unmarshal(value.Data, &node); err != nil {
 			return nil, err
 		}
 		node.c = c
