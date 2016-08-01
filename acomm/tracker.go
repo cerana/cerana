@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -22,6 +24,8 @@ const (
 	statusStopping
 	statusStopped
 )
+
+var localhostRegexp = regexp.MustCompile(`^(|localhost|127(?:\.\d{1,3}){3}|::1)$`)
 
 // Tracker keeps track of requests waiting on a response.
 type Tracker struct {
@@ -434,6 +438,15 @@ func (t *Tracker) ProxyExternalHandler(w http.ResponseWriter, r *http.Request) {
 	if ack.Error != nil {
 		return
 	}
+
+	if err := ReplaceLocalhost(resp.StreamURL, r.RemoteAddr); err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+			"resp":  resp,
+		}).Error("failed to replace localhost in response streamurl")
+		return
+	}
+
 	t.HandleResponse(resp)
 }
 
@@ -466,4 +479,42 @@ func (t *Tracker) SyncRequest(dest *url.URL, opts RequestOptions, timeout time.D
 
 	resp := <-ch
 	return resp, resp.Error
+}
+
+// ReplaceLocalhost replaces localhost, 127.0.0.1, or ::1 with the specified host.
+func ReplaceLocalhost(u *url.URL, replacement string) error {
+	if u == nil || u.Scheme == "unix" {
+		return nil
+	}
+
+	// isolate the original host for comparison
+	host, port, err := net.SplitHostPort(u.Host)
+	if err != nil {
+		if strings.HasPrefix(err.Error(), "missing port in address") {
+			host = u.Host
+			if host == "[::1]" {
+				host = "::1"
+			}
+		} else {
+			return err
+		}
+	}
+
+	// isolate the replacement host to avoid issues if port is appended
+	newHost, _, err := net.SplitHostPort(replacement)
+	if err != nil {
+		if strings.HasPrefix(err.Error(), "missing port in address") {
+			newHost = replacement
+		} else {
+			return err
+		}
+	}
+
+	if localhostRegexp.MatchString(host) {
+		u.Host = newHost
+		if port != "" {
+			u.Host += ":" + port
+		}
+	}
+	return nil
 }

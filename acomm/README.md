@@ -42,6 +42,13 @@ func ProxyStreamHandler(w http.ResponseWriter, r *http.Request)
 ```
 ProxyStreamHandler is an HTTP HandlerFunc for simple proxy streaming.
 
+#### func  ReplaceLocalhost
+
+```go
+func ReplaceLocalhost(u *url.URL, replacement string) error
+```
+ReplaceLocalhost replaces localhost, 127.0.0.1, or ::1 with the specified host.
+
 #### func  Send
 
 ```go
@@ -209,8 +216,8 @@ type RequestOptions struct {
 	StreamURL          *url.URL
 	StreamURLString    string
 	Args               interface{}
-	SuccessHandler     ResponseHandler
-	ErrorHandler       ResponseHandler
+	SuccessHandler     ResponseHandler `json:"-"`
+	ErrorHandler       ResponseHandler `json:"-"`
 }
 ```
 
