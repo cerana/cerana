@@ -39,8 +39,8 @@ type RequestOptions struct {
 	StreamURL          *url.URL
 	StreamURLString    string
 	Args               interface{}
-	SuccessHandler     ResponseHandler
-	ErrorHandler       ResponseHandler
+	SuccessHandler     ResponseHandler `json:"-"`
+	ErrorHandler       ResponseHandler `json:"-"`
 }
 
 // ResponseHandler is a function to run when a request receives a response.
