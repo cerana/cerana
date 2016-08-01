@@ -242,9 +242,7 @@ func (c *ClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL, er
 
 	var wg sync.WaitGroup
 	bundleChan := make(chan *Bundle, len(ids))
-	defer close(bundleChan)
 	errChan := make(chan error, len(ids))
-	defer close(errChan)
 	for id := range ids {
 		wg.Add(1)
 		go func(id uint64) {
@@ -265,6 +263,9 @@ func (c *ClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL, er
 		}(id)
 	}
 	wg.Wait()
+
+	close(bundleChan)
+	close(errChan)
 
 	if len(errChan) > 0 {
 		err := <-errChan
