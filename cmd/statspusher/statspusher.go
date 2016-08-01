@@ -53,7 +53,9 @@ func (s *statsPusher) startHeartbeat(name string, fn func() error, desiredInterv
 			interval := desiredInterval
 			since := time.Since(lastStart)
 			if since < interval {
-				interval = since
+				interval = interval - since
+			} else {
+				interval = time.Duration(0)
 			}
 
 			select {
