@@ -7,8 +7,8 @@ import (
 	"math/rand"
 	"net/url"
 	"path"
+	"path/filepath"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -229,11 +229,12 @@ func (c *ClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL, er
 	}
 	// extract and deduplicate the bundle ids
 	ids := make(map[uint64]bool)
+	keyFormat := filepath.Join(bundlesPrefix, "%d")
 	for _, key := range keys {
 		// keys are full paths and include all child keys.
 		// e.g. {prefix}/{id}/{rest/of/path}
-		idS := strings.Split(strings.TrimPrefix(key, bundlesPrefix), "/")[0]
-		id, err := strconv.ParseUint(idS, 10, 64)
+		var id uint64
+		_, err := fmt.Sscanf(key, keyFormat, &id)
 		if err != nil {
 			return nil, nil, errors.New("invalid bundle id")
 		}
