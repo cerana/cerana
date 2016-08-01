@@ -7,7 +7,7 @@ source /tmp/cerana-bootcfg
 ## The name of the zpool we're concerned with. Everything revolves around this
 ## being configured and present. Set name accordingly.
 ZPOOL=data
-FILESYSTEMS="datasets datasets/ro datasets/rw running-clones config services logs platform"
+FILESYSTEMS="datasets running-clones config services logs platform"
 
 # Create the expected filesystems on the configured zpool
 configure_filesystems() {
