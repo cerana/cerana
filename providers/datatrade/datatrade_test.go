@@ -19,15 +19,16 @@ import (
 
 type Provider struct {
 	suite.Suite
-	coordinator  *test.Coordinator
-	config       *datatrade.Config
-	provider     *datatrade.Provider
-	tracker      *acomm.Tracker
-	flagset      *pflag.FlagSet
-	viper        *viper.Viper
-	responseHook *url.URL
-	zfs          *zfs.MockZFS
-	clusterConf  *clusterconf.MockClusterConf
+	nodeCoordinator *test.Coordinator
+	coordinator     *test.Coordinator
+	config          *datatrade.Config
+	provider        *datatrade.Provider
+	tracker         *acomm.Tracker
+	flagset         *pflag.FlagSet
+	viper           *viper.Viper
+	responseHook    *url.URL
+	zfs             *zfs.MockZFS
+	clusterConf     *clusterconf.MockClusterConf
 }
 
 func TestProvider(t *testing.T) {
@@ -36,6 +37,9 @@ func TestProvider(t *testing.T) {
 
 func (p *Provider) SetupSuite() {
 	var err error
+	p.nodeCoordinator, err = test.NewCoordinator("")
+	p.Require().NoError(err)
+
 	p.coordinator, err = test.NewCoordinator("")
 	p.Require().NoError(err)
 
@@ -44,7 +48,7 @@ func (p *Provider) SetupSuite() {
 	v := p.coordinator.NewProviderViper()
 	flagset := pflag.NewFlagSet("datatrade", pflag.PanicOnError)
 	v.Set("dataset_dir", "foobar")
-	v.Set("node_coordinator_port", uint(p.coordinator.HTTPPort))
+	v.Set("node_coordinator_port", uint(p.nodeCoordinator.HTTPPort))
 	config := datatrade.NewConfig(flagset, v)
 	p.Require().NoError(flagset.Parse([]string{}))
 	p.Require().NoError(config.LoadConfig())
@@ -61,6 +65,7 @@ func (p *Provider) SetupSuite() {
 	p.setupClusterConf()
 	p.setupZFS()
 
+	p.Require().NoError(p.nodeCoordinator.Start())
 	p.Require().NoError(p.coordinator.Start())
 }
 
@@ -70,18 +75,20 @@ func (p *Provider) setupClusterConf() {
 }
 
 func (p *Provider) setupZFS() {
-	v := p.coordinator.NewProviderViper()
+	v := p.nodeCoordinator.NewProviderViper()
 	flagset := pflag.NewFlagSet("zfs", pflag.PanicOnError)
 	config := provider.NewConfig(flagset, v)
 	p.Require().NoError(flagset.Parse([]string{}))
 	p.Require().NoError(config.LoadConfig())
-	p.zfs = zfs.NewMockZFS(config, p.coordinator.ProviderTracker())
-	p.coordinator.RegisterProvider(p.zfs)
+	p.zfs = zfs.NewMockZFS(config, p.nodeCoordinator.ProviderTracker())
+	p.nodeCoordinator.RegisterProvider(p.zfs)
 }
 
 func (p *Provider) TearDownSuite() {
+	p.nodeCoordinator.Stop()
 	p.coordinator.Stop()
 	p.tracker.Stop()
+	p.Require().NoError(p.nodeCoordinator.Cleanup())
 	p.Require().NoError(p.coordinator.Cleanup())
 }
 

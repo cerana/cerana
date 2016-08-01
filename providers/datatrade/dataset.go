@@ -83,18 +83,19 @@ func (p *Provider) datasetImportNode() (*clusterconf.Node, error) {
 }
 
 func (p *Provider) datasetImport(nodeID, datasetID string, streamURL *url.URL) error {
+	taskURL, err := url.ParseRequestURI(fmt.Sprintf("http://%s:%d", nodeID, p.config.NodeCoordinatorPort()))
+	if err != nil {
+		return err
+	}
 	opts := acomm.RequestOptions{
 		Task:      "zfs-receive",
+		TaskURL:   taskURL,
 		StreamURL: streamURL,
 		Args: zfs.CommonArgs{
 			Name: filepath.Join(p.config.DatasetDir(), datasetID),
 		},
 	}
-	u, err := url.Parse(fmt.Sprintf("http://%s:%d", nodeID, p.config.NodeCoordinatorPort()))
-	if err != nil {
-		return err
-	}
-	_, err = p.tracker.SyncRequest(u, opts, p.config.RequestTimeout())
+	_, err = p.tracker.SyncRequest(p.config.CoordinatorURL(), opts, p.config.RequestTimeout())
 	return err
 }
 
