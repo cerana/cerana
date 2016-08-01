@@ -38,7 +38,8 @@ func NewUnixListener(socketPath string, acceptLimit int) *UnixListener {
 	}
 
 	return &UnixListener{
-		addr: addr,
+		addr:     addr,
+		stopChan: make(chan struct{}),
 		// Note: The chan here just holds conns until they get passed to a
 		// handler. The buffer size does not control conn handling concurrency.
 		connChan:    make(chan net.Conn, 1000),
