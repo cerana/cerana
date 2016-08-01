@@ -41,7 +41,7 @@ func (c *ClusterConf) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("list-datasets", c.ListDatasets)
 	server.RegisterTask("update-dataset", c.UpdateDataset)
 	server.RegisterTask("delete-dataset", c.DeleteDataset)
-	server.RegisterTask("dataset-heartbeat", c.DeleteDataset)
+	server.RegisterTask("dataset-heartbeat", c.DatasetHeartbeat)
 	server.RegisterTask("list-dataset-heartbeats", c.ListDatasetHeartbeats)
 
 	server.RegisterTask("get-default-options", c.GetDefaults)
