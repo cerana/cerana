@@ -219,7 +219,7 @@ func (s *Server) localTask(req *acomm.Request) error {
 	}
 
 	if len(providerSockets) == 0 {
-		return errors.New("no providers available for task")
+		return errors.New("no providers available for task: " + req.Task)
 	}
 
 	proxyReq, err := s.proxy.ProxyUnix(req, 0)
