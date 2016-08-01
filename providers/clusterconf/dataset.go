@@ -3,9 +3,10 @@ package clusterconf
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/url"
 	"path"
-	"strings"
+	"path/filepath"
 	"sync"
 
 	"github.com/cerana/cerana/acomm"
@@ -67,7 +68,11 @@ func (c *ClusterConf) ListDatasets(req *acomm.Request) (interface{}, *url.URL, e
 	for _, key := range keys {
 		// keys are full paths and include all child keys.
 		// e.g. {prefix}/{id}/{rest/of/path}
-		id := strings.Split(strings.TrimPrefix(key, datasetsPrefix), "/")[0]
+		var id string
+		_, err := fmt.Sscanf(key, filepath.Join(datasetsPrefix, "%s"), &id)
+		if err != nil {
+			return nil, nil, errors.New("invalid dataset id")
+		}
 		ids[id] = true
 	}
 
