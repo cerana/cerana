@@ -27,16 +27,23 @@ func main() {
 
 	var coordinator, taskURL, httpAddr, taskName string
 	var taskArgs []string
-	var streamRequest bool
+	var streamRequest, jsonArgs bool
 	flags.StringVarP(&coordinator, "coordinator_url", "c", "", "url of the coordinator")
 	flags.StringVarP(&taskURL, "task_url", "u", "", "url of the task handler if different than coordinator")
 	flags.StringVarP(&taskName, "task", "t", "", "task to run")
 	flags.StringSliceVarP(&taskArgs, "request_arg", "a", []string{}, fmt.Sprintf("task specific argument the form 'key%svalue'. can be set multiple times", argSep))
 	flags.StringVarP(&httpAddr, "http_addr", "r", ":4080", "address for http server to listen for responses and stream request data")
 	flags.BoolVarP(&streamRequest, "stream", "s", false, "stream data from STDIN to provider")
+	flags.BoolVarP(&jsonArgs, "json_args", "j", false, "read a json args object form STDIN")
 	flags.Parse()
 
-	args, err := parseTaskArgs(taskArgs)
+	var args map[string]interface{}
+	var err error
+	if jsonArgs {
+		args, err = parseJSONArgs()
+	} else {
+		args, err = parseTaskArgs(taskArgs)
+	}
 	dieOnError(err)
 
 	result, streamResult, respErr, err := startHTTPServer(httpAddr)
@@ -115,6 +122,15 @@ func parseTaskArgs(taskArgs []string) (map[string]interface{}, error) {
 			return nil, err
 		}
 
+	}
+	return out, nil
+}
+
+func parseJSONArgs() (map[string]interface{}, error) {
+	var out map[string]interface{}
+	decoder := json.NewDecoder(os.Stdin)
+	if err := decoder.Decode(&out); err != nil {
+		return nil, err
 	}
 	return out, nil
 }
