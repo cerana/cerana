@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
-	logx "github.com/cerana/cerana/pkg/logrusx"
+	"github.com/Sirupsen/logrus"
+	"github.com/cerana/cerana/pkg/logrusx"
 )
 
 // UnixListener is a wrapper for a unix socket. It handles creation and
@@ -79,7 +79,7 @@ func (ul *UnixListener) createListener() error {
 	directory := filepath.Dir(ul.Addr())
 	// TODO: Decide on permissions
 	if err := os.MkdirAll(directory, os.ModePerm); err != nil {
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"directory": directory,
 			"perm":      os.ModePerm,
 			"error":     err,
@@ -89,7 +89,7 @@ func (ul *UnixListener) createListener() error {
 
 	listener, err := net.ListenUnix("unix", ul.addr)
 	if err != nil {
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"addr":  ul.Addr(),
 			"error": err,
 		}).Error("failed to create listener")
@@ -104,14 +104,14 @@ func (ul *UnixListener) createListener() error {
 // limit.
 func (ul *UnixListener) listen() {
 	defer ul.waitgroup.Done()
-	defer logx.LogReturnedErr(ul.listener.Close, log.Fields{
+	defer logrusx.LogReturnedErr(ul.listener.Close, logrus.Fields{
 		"addr": ul.Addr(),
 	}, "failed to close listener")
 
 	for i := ul.acceptLimit; i != 0; {
 		select {
 		case <-ul.stopChan:
-			log.WithFields(log.Fields{
+			logrus.WithFields(logrus.Fields{
 				"addr": ul.Addr(),
 			}).Info("stop listening")
 			return
@@ -119,7 +119,7 @@ func (ul *UnixListener) listen() {
 		}
 
 		if err := ul.listener.SetDeadline(time.Now().Add(time.Second)); err != nil {
-			log.WithFields(log.Fields{
+			logrus.WithFields(logrus.Fields{
 				"addr":  ul.Addr(),
 				"error": err,
 			}).Error("failed to set listener deadline")
@@ -132,7 +132,7 @@ func (ul *UnixListener) listen() {
 				continue
 			}
 
-			log.WithFields(log.Fields{
+			logrus.WithFields(logrus.Fields{
 				"addr":  ul.Addr(),
 				"error": err,
 			}).Error("failed to accept new connection")
@@ -178,8 +178,8 @@ func (ul *UnixListener) DoneConn(conn net.Conn) {
 	}
 
 	defer ul.waitgroup.Done()
-	defer logx.LogReturnedErr(conn.Close,
-		log.Fields{
+	defer logrusx.LogReturnedErr(conn.Close,
+		logrus.Fields{
 			"addr": ul.addr,
 		}, "failed to close unix connection",
 	)

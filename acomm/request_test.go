@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/acomm"
 	"github.com/pborman/uuid"
 	"github.com/stretchr/testify/suite"
@@ -18,7 +18,7 @@ type RequestTestSuite struct {
 }
 
 func (s *RequestTestSuite) SetupSuite() {
-	log.SetLevel(log.FatalLevel)
+	logrus.SetLevel(logrus.FatalLevel)
 }
 
 func TestRequestTestSuite(t *testing.T) {

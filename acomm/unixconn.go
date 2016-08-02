@@ -6,7 +6,7 @@ import (
 	"io"
 	"net"
 
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 )
 
 // UnmarshalConnData reads and unmarshals JSON data from the connection into
@@ -14,7 +14,7 @@ import (
 func UnmarshalConnData(conn net.Conn, dest interface{}) error {
 	sizeBytes := make([]byte, 4)
 	if _, err := conn.Read(sizeBytes); err != nil {
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"error": err,
 		}).Error("failed to read size header")
 		return err
@@ -35,7 +35,7 @@ func UnmarshalConnData(conn net.Conn, dest interface{}) error {
 func SendConnData(conn net.Conn, payload interface{}) error {
 	payloadJSON, err := json.Marshal(payload)
 	if err != nil {
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"error":   err,
 			"payload": payload,
 		}).Error("failed to marshal payload json")
@@ -48,7 +48,7 @@ func SendConnData(conn net.Conn, payload interface{}) error {
 	data := append(sizeBytes, payloadJSON...)
 
 	if _, err := conn.Write(data); err != nil {
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"error":   err,
 			"addr":    conn.RemoteAddr(),
 			"payload": payload,

@@ -12,7 +12,7 @@ import (
 	"os"
 	"testing"
 
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/acomm"
 	"github.com/pborman/uuid"
 	"github.com/stretchr/testify/suite"
@@ -24,7 +24,7 @@ type ResponseTestSuite struct {
 }
 
 func (s *ResponseTestSuite) SetupSuite() {
-	log.SetLevel(log.FatalLevel)
+	logrus.SetLevel(logrus.FatalLevel)
 	s.Responses = make(chan *acomm.Response, 10)
 }
 
