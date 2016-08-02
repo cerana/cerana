@@ -1,7 +1,7 @@
 package logrusx
 
 import (
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 )
 
 // DefaultSetup sets the logrus formatter and log level
@@ -10,17 +10,17 @@ func DefaultSetup(logLevel string) error {
 	if err != nil {
 		return err
 	}
-	log.SetFormatter(&JSONFormatter{})
+	logrus.SetFormatter(&JSONFormatter{})
 	return nil
 }
 
 // SetLevel parses and sets the log level
 func SetLevel(logLevel string) error {
-	level, err := log.ParseLevel(logLevel)
+	level, err := logrus.ParseLevel(logLevel)
 	if err != nil {
 		return err
 	}
-	log.SetLevel(level)
+	logrus.SetLevel(level)
 	return nil
 }
 
@@ -28,12 +28,12 @@ func SetLevel(logLevel string) error {
 // and logs any error.
 // Useful for basic defer, e.g.
 // `defer LogReturnedErr(f.Close(),logrus.Fields{"file":f.Name()}, "failed to close file")`
-func LogReturnedErr(fn func() error, fields log.Fields, message string) {
+func LogReturnedErr(fn func() error, fields logrus.Fields, message string) {
 	if err := fn(); err != nil {
 		if fields == nil {
-			fields = log.Fields{}
+			fields = logrus.Fields{}
 		}
 		fields["error"] = err
-		log.WithFields(fields).Error(message)
+		logrus.WithFields(fields).Error(message)
 	}
 }

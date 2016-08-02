@@ -6,28 +6,28 @@ import (
 	"io"
 	"testing"
 
-	log "github.com/Sirupsen/logrus"
-	logx "github.com/cerana/cerana/pkg/logrusx"
+	"github.com/Sirupsen/logrus"
+	"github.com/cerana/cerana/pkg/logrusx"
 	"github.com/stretchr/testify/suite"
 )
 
 type ExtTestSuite struct {
 	suite.Suite
-	DefaultFormatter log.Formatter
-	DefaultLevel     log.Level
+	DefaultFormatter logrus.Formatter
+	DefaultLevel     logrus.Level
 	DefaultOut       io.Writer
 }
 
 func (s *ExtTestSuite) restoreDefaults() {
 	// Restore logrus defaults
-	log.SetFormatter(s.DefaultFormatter)
-	log.SetLevel(s.DefaultLevel)
-	log.SetOutput(s.DefaultOut)
+	logrus.SetFormatter(s.DefaultFormatter)
+	logrus.SetLevel(s.DefaultLevel)
+	logrus.SetOutput(s.DefaultOut)
 }
 
 func (s *ExtTestSuite) SetupSuite() {
 	// Save logrus defaults
-	std := log.StandardLogger()
+	std := logrus.StandardLogger()
 	s.DefaultFormatter = std.Formatter
 	s.DefaultLevel = std.Level
 	s.DefaultOut = std.Out
@@ -49,30 +49,30 @@ func TestExtTestSuite(t *testing.T) {
 
 func (s *ExtTestSuite) TestSetLevel() {
 	// Bad value
-	s.Error(logx.SetLevel("foobar"))
-	s.Equal(s.DefaultLevel, log.GetLevel())
+	s.Error(logrusx.SetLevel("foobar"))
+	s.Equal(s.DefaultLevel, logrus.GetLevel())
 
 	// Good value
-	s.NoError(logx.SetLevel("debug"))
-	s.Equal(log.DebugLevel, log.GetLevel())
+	s.NoError(logrusx.SetLevel("debug"))
+	s.Equal(logrus.DebugLevel, logrus.GetLevel())
 }
 
 func (s *ExtTestSuite) TestDefaultSetup() {
 	// Bad Value
-	s.Error(logx.DefaultSetup("foobar"))
-	s.Equal(s.DefaultLevel, log.GetLevel())
+	s.Error(logrusx.DefaultSetup("foobar"))
+	s.Equal(s.DefaultLevel, logrus.GetLevel())
 
 	// Good Value
-	std := log.StandardLogger()
-	s.NoError(logx.DefaultSetup("debug"))
-	s.Equal(log.DebugLevel, log.GetLevel())
-	s.IsType(&logx.JSONFormatter{}, std.Formatter)
+	std := logrus.StandardLogger()
+	s.NoError(logrusx.DefaultSetup("debug"))
+	s.Equal(logrus.DebugLevel, logrus.GetLevel())
+	s.IsType(&logrusx.JSONFormatter{}, std.Formatter)
 }
 
 func (s *ExtTestSuite) TestLogReturnedErr() {
 	var buffer bytes.Buffer
 	var out string
-	log.SetOutput(&buffer)
+	logrus.SetOutput(&buffer)
 
 	logMsg := "qwerty"
 	errMsg := "foobar"
@@ -82,7 +82,7 @@ func (s *ExtTestSuite) TestLogReturnedErr() {
 		return nil
 	}
 
-	logx.LogReturnedErr(returnsNil, nil, logMsg)
+	logrusx.LogReturnedErr(returnsNil, nil, logMsg)
 	s.Empty(buffer.String())
 
 	// Error logged
@@ -90,7 +90,7 @@ func (s *ExtTestSuite) TestLogReturnedErr() {
 		return errors.New(errMsg)
 	}
 
-	logx.LogReturnedErr(returnsError, nil, logMsg)
+	logrusx.LogReturnedErr(returnsError, nil, logMsg)
 	out = buffer.String()
 	s.Contains(out, logMsg)
 	s.Contains(out, errMsg)

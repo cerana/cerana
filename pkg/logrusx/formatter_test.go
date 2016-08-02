@@ -7,14 +7,14 @@ import (
 	"testing"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
-	logx "github.com/cerana/cerana/pkg/logrusx"
+	"github.com/Sirupsen/logrus"
+	"github.com/cerana/cerana/pkg/logrusx"
 	"github.com/stretchr/testify/suite"
 )
 
 type FormatterTestSuite struct {
 	suite.Suite
-	Log    *log.Logger
+	Log    *logrus.Logger
 	Buffer *bytes.Buffer
 }
 
@@ -22,9 +22,9 @@ func (s *FormatterTestSuite) SetupTest() {
 	s.Buffer = new(bytes.Buffer)
 
 	// Setup a new Logger instance
-	s.Log = log.New()
+	s.Log = logrus.New()
 	s.Log.Out = s.Buffer
-	s.Log.Formatter = &logx.JSONFormatter{}
+	s.Log.Formatter = &logrusx.JSONFormatter{}
 }
 
 func TestFormatterTestSuite(t *testing.T) {
@@ -33,9 +33,9 @@ func TestFormatterTestSuite(t *testing.T) {
 
 func (s *FormatterTestSuite) TestJSONFormatterFormat() {
 	testErr := errors.New("test error message")
-	entry := &log.Entry{
+	entry := &logrus.Entry{
 		Logger: s.Log,
-		Data: log.Fields{
+		Data: logrus.Fields{
 			"error": testErr,
 		},
 		Time:    time.Now(),
@@ -43,7 +43,7 @@ func (s *FormatterTestSuite) TestJSONFormatterFormat() {
 		Message: "test error message",
 	}
 
-	mf := &logx.JSONFormatter{}
+	mf := &logrusx.JSONFormatter{}
 	jsonBytes, err := mf.Format(entry)
 	s.NoError(err)
 	var loggedEntry map[string]interface{}
