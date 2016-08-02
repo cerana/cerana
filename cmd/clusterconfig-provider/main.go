@@ -19,25 +19,18 @@ func main() {
 	flag.DurationP("node_ttl", "o", time.Minute, "ttl for node heartbeats")
 	flag.Parse()
 
-	dieOnError(config.LoadConfig())
-	dieOnError(config.SetupLogging())
+	logrusx.DieOnError(config.LoadConfig(), "load config")
+	logrusx.DieOnError(config.SetupLogging(), "setup logging")
 
 	server, err := provider.NewServer(config.Config)
-	dieOnError(err)
+	logrusx.DieOnError(err, "new server")
 	c := clusterconf.New(config, server.Tracker())
-	dieOnError(err)
 	c.RegisterTasks(server)
 
 	if len(server.RegisteredTasks()) != 0 {
-		dieOnError(server.Start())
+		logrusx.DieOnError(server.Start(), "start server")
 		server.StopOnSignal()
 	} else {
 		logrus.Warn("no registered tasks, exiting")
-	}
-}
-
-func dieOnError(err error) {
-	if err != nil {
-		logrus.Fatal("encountered an error during startup")
 	}
 }

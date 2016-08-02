@@ -17,12 +17,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-func dieOnError(msg string, err error) {
-	if err != nil {
-		logrus.WithError(err).Fatal("failed to " + msg)
-	}
-}
-
 func defaultNetwork() net.IPNet {
 	_, net, _ := net.ParseCIDR("172.16.0.0/16")
 	return *net
@@ -41,23 +35,23 @@ func comm(tracker *acomm.Tracker, coordinator *url.URL, task string, args interf
 		SuccessHandler: handler,
 		ErrorHandler:   handler,
 	})
-	dieOnError("create request object", err)
-	dieOnError("track request", tracker.TrackRequest(req, 0))
-	dieOnError("send request", acomm.Send(coordinator, req))
+	logrusx.DieOnError(err, "create request object")
+	logrusx.DieOnError(tracker.TrackRequest(req, 0), "track request")
+	logrusx.DieOnError(acomm.Send(coordinator, req), "send request")
 
 	aResp := <-ch
 	if aResp.Error != nil {
 		return aResp.Error
 	}
 
-	dieOnError("deserialize result", aResp.UnmarshalResult(resp))
+	logrusx.DieOnError(aResp.UnmarshalResult(resp), "deserialize result")
 	return nil
 }
 
 func getDHCPConfig(tracker *acomm.Tracker, coordinator *url.URL) *clusterconf.DHCPConfig {
 	dconf := &clusterconf.DHCPConfig{}
 	err := comm(tracker, coordinator, "get-dhcp", nil, dconf)
-	dieOnError("get dhcp configuration", err)
+	logrusx.DieOnError(err, "get dhcp configuration")
 	return dconf
 }
 
@@ -76,7 +70,7 @@ func setDHCPConfig(tracker *acomm.Tracker, coordinator *url.URL, config *dhcp.Co
 		Net:      *config.Network(),
 	}
 	err = comm(tracker, coordinator, "set-dhcp", dconf, nil)
-	dieOnError("set dhcp configuration", err)
+	logrusx.DieOnError(err, "set dhcp configuration")
 }
 
 func joinDNS(dns []net.IP) string {
@@ -98,15 +92,15 @@ func main() {
 	f.IPNet("network", defaultNetwork(), "network to manage dhcp addresses on")
 
 	config := dhcp.NewConfig(f, v)
-	dieOnError("parse arguments", f.Parse(os.Args))
-	dieOnError("load configuration", config.LoadConfig())
-	dieOnError("setup logging", config.SetupLogging())
+	logrusx.DieOnError(f.Parse(os.Args), "parse arguments")
+	logrusx.DieOnError(config.LoadConfig(), "load configuration")
+	logrusx.DieOnError(config.SetupLogging(), "setup logging")
 
 	set := v.IsSet("dns-servers") || v.IsSet("gateway") || v.IsSet("lease-duration") || v.IsSet("network")
 
 	server, err := provider.NewServer(config.Config)
-	dieOnError("create provider", err)
-	dieOnError("start tracker", server.Tracker().Start())
+	logrusx.DieOnError(err, "create provider")
+	logrusx.DieOnError(server.Tracker().Start(), "start tracker")
 
 	if set == true {
 		setDHCPConfig(server.Tracker(), config.CoordinatorURL(), config)
@@ -119,7 +113,7 @@ func main() {
 	v.Set("network", storedConfig.Net.String())
 
 	d, err := dhcp.New(config, server.Tracker())
-	dieOnError("create dhcp server", err)
+	logrusx.DieOnError(err, "create dhcp server")
 
 	logrus.WithField("config", storedConfig).Info("starting provider")
 
@@ -128,6 +122,6 @@ func main() {
 		logrus.Warn("no registered tasks, exiting")
 		os.Exit(1)
 	}
-	dieOnError("successfully run dhcp provider", server.Start())
+	logrusx.DieOnError(server.Start(), "successfully run dhcp provider")
 	server.StopOnSignal()
 }

@@ -20,6 +20,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/logrusx"
 	"github.com/cerana/cerana/provider"
 	"github.com/cerana/cerana/providers/dhcp"
 	"github.com/krolaw/dhcp4"
@@ -53,12 +54,6 @@ initrd http://{{.IP}}/initrd
 boot
 `))
 
-func dieOnError(msg string, err error) {
-	if err != nil {
-		logrus.WithError(err).Fatal("failed to " + msg)
-	}
-}
-
 func comm(tracker *acomm.Tracker, coordinator *url.URL, task string, args interface{}, resp interface{}) error {
 	ch := make(chan *acomm.Response, 1)
 	handler := func(_ *acomm.Request, resp *acomm.Response) {
@@ -72,16 +67,16 @@ func comm(tracker *acomm.Tracker, coordinator *url.URL, task string, args interf
 		SuccessHandler: handler,
 		ErrorHandler:   handler,
 	})
-	dieOnError("create request object", err)
-	dieOnError("track request", tracker.TrackRequest(req, 0))
-	dieOnError("send request", acomm.Send(coordinator, req))
+	logrusx.DieOnError(err, "create request object")
+	logrusx.DieOnError(tracker.TrackRequest(req, 0), "track request")
+	logrusx.DieOnError(acomm.Send(coordinator, req), "send request")
 
 	aResp := <-ch
 	if aResp.Error != nil {
 		return aResp.Error
 	}
 
-	dieOnError("deserialize result", aResp.UnmarshalResult(resp))
+	logrusx.DieOnError(aResp.UnmarshalResult(resp), "deserialize result")
 	return nil
 }
 
@@ -103,15 +98,15 @@ func tftpReadHandler(undi []byte) func(string, io.ReaderFrom) error {
 
 func getFile(name string) ([]byte, string, time.Time) {
 	f, err := os.Open(name)
-	dieOnError("open file", err)
+	logrusx.DieOnError(err, "open file")
 
 	h := sha256.New()
 	r := io.TeeReader(bufio.NewReader(f), h)
 	buf, err := ioutil.ReadAll(r)
-	dieOnError("read file", err)
+	logrusx.DieOnError(err, "read file")
 
 	stat, err := f.Stat()
-	dieOnError("stat file", err)
+	logrusx.DieOnError(err, "stat file")
 	_ = f.Close()
 
 	return buf, fmt.Sprintf("%x", h.Sum(nil)), stat.ModTime()
@@ -126,14 +121,14 @@ func stringIP(ip net.IP) string {
 
 func getIfaceIP(addrser addrser) net.IP {
 	ips, err := addrser.Addrs()
-	dieOnError("get interface addresses", err)
+	logrusx.DieOnError(err, "get interface addresses")
 
 	if len(ips) < 1 {
-		dieOnError("get interface addresses", errors.New("interface has no ip addresses configured"))
+		logrusx.DieOnError(errors.New("interface has no ip addresses configured"), "get interface addresses")
 	}
 
 	ip, _, err := net.ParseCIDR(ips[0].String())
-	dieOnError("parse ip address", err)
+	logrusx.DieOnError(err, "parse ip address")
 
 	return ip
 
@@ -185,7 +180,7 @@ func (h *dhcpHandler) ServeDHCP(p dhcp4.Packet, msgType dhcp4.MessageType, optio
 	var responseType dhcp4.MessageType
 	switch msgType {
 	case dhcp4.Discover:
-		dieOnError("get lease offering", comm(h.tracker, h.coordinator, "dhcp-offer-lease", args, &offer))
+		logrusx.DieOnError(comm(h.tracker, h.coordinator, "dhcp-offer-lease", args, &offer), "get lease offering")
 
 		responseType = dhcp4.Offer
 	case dhcp4.Request:
@@ -233,18 +228,18 @@ func main() {
 	f := pflag.NewFlagSet("bootserver", pflag.ExitOnError)
 
 	conf := newConfig(f, v)
-	dieOnError("parse argument", f.Parse(os.Args))
-	dieOnError("load config", conf.LoadConfig())
-	dieOnError("setup logging", conf.SetupLogging())
+	logrusx.DieOnError(f.Parse(os.Args), "parse argument")
+	logrusx.DieOnError(conf.LoadConfig(), "load config")
+	logrusx.DieOnError(conf.SetupLogging(), "setup logging")
 
 	server, err := provider.NewServer(conf.Config)
-	dieOnError("create server", err)
+	logrusx.DieOnError(err, "create server")
 
 	tracker := server.Tracker()
-	dieOnError("start tracker", tracker.Start())
+	logrusx.DieOnError(tracker.Start(), "start tracker")
 
 	iface, err := net.InterfaceByName(conf.iface())
-	dieOnError("get interface", err)
+	logrusx.DieOnError(err, "get interface")
 
 	handler := &dhcpHandler{
 		iface:       iface,
@@ -253,12 +248,12 @@ func main() {
 	}
 
 	dConn, err := net.ListenPacket("udp4", ":67")
-	dieOnError("bind dhcp port", err)
+	logrusx.DieOnError(err, "bind dhcp port")
 
 	undi, _, _ := getFile(conf.iPXE())
 	tftpServer := tftp.NewServer(tftpReadHandler(undi), nil)
 	tConn, err := net.ListenPacket("udp", ":69")
-	dieOnError("bind tfp port", err)
+	logrusx.DieOnError(err, "bind tfp port")
 
 	initrd, initrdHash, initrdMod := getFile(conf.initrd())
 
@@ -267,7 +262,7 @@ func main() {
 		"IP":   getIfaceIP(iface).String(),
 		"Hash": initrdHash,
 	})
-	dieOnError("generate ipxe boot script", err)
+	logrusx.DieOnError(err, "generate ipxe boot script")
 	bootScript := bytes.NewReader(buffer.Bytes())
 	http.HandleFunc("/boot.ipxe", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
@@ -286,7 +281,7 @@ func main() {
 	})
 
 	hConn, err := net.Listen("tcp", ":80")
-	dieOnError("bind http port", err)
+	logrusx.DieOnError(err, "bind http port")
 
 	wg := sync.WaitGroup{}
 	wg.Add(3)

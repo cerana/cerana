@@ -37,3 +37,11 @@ func LogReturnedErr(fn func() error, fields logrus.Fields, message string) {
 		logrus.WithFields(fields).Error(message)
 	}
 }
+
+// DieOnError is a convenience method for checking an error, and if present,
+// logging a Fatal message.
+func DieOnError(err error, msg ...interface{}) {
+	if err != nil {
+		logrus.WithField("error", err).Fatal(msg...)
+	}
+}

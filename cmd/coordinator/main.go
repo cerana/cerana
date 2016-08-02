@@ -1,8 +1,6 @@
 package main
 
 import (
-	"os"
-
 	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/coordinator"
 	"github.com/cerana/cerana/pkg/logrusx"
@@ -15,19 +13,12 @@ func main() {
 	config := coordinator.NewConfig(nil, nil)
 	flag.Parse()
 
-	dieOnError(config.LoadConfig())
-	dieOnError(config.SetupLogging())
+	logrusx.DieOnError(config.LoadConfig(), "load config")
+	logrusx.DieOnError(config.SetupLogging(), "setup logging")
 
 	server, err := coordinator.NewServer(config)
-	dieOnError(err)
+	logrusx.DieOnError(err, "new server")
 
-	dieOnError(server.Start())
+	logrusx.DieOnError(server.Start(), "start server")
 	server.StopOnSignal()
-}
-
-func dieOnError(err error) {
-	if err != nil {
-		logrus.Fatal("encountered an error during startup, error:", err)
-		os.Exit(1)
-	}
 }

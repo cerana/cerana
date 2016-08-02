@@ -14,6 +14,14 @@ func DefaultSetup(logLevel string) error
 ```
 DefaultSetup sets the logrus formatter and log level
 
+#### func  DieOnError
+
+```go
+func DieOnError(err error, msg ...interface{})
+```
+DieOnError is a convenience method for checking an error, and if present,
+logging a Fatal message.
+
 #### func  LogReturnedErr
 
 ```go

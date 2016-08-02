@@ -17,27 +17,20 @@ func main() {
 	flag.StringP("address", "a", "", "kv address (leave blank for default)")
 	flag.Parse()
 
-	dieOnError(config.LoadConfig())
-	dieOnError(config.SetupLogging())
+	logrusx.DieOnError(config.LoadConfig(), "load config")
+	logrusx.DieOnError(config.SetupLogging(), "setup logging")
 
 	server, err := provider.NewServer(config.Config)
-	dieOnError(err)
+	logrusx.DieOnError(err, "new server")
 
 	k, err := kv.New(config, server.Tracker())
-	dieOnError(err)
+	logrusx.DieOnError(err, "new kv")
 	k.RegisterTasks(server)
 
 	if len(server.RegisteredTasks()) == 0 {
 		logrus.Warn("no registered tasks, exiting")
 		os.Exit(1)
 	}
-	dieOnError(server.Start())
+	logrusx.DieOnError(server.Start(), "start server")
 	server.StopOnSignal()
-}
-
-func dieOnError(err error) {
-	if err != nil {
-		logrus.Fatal("encountered an error during startup, error:", err)
-		os.Exit(1)
-	}
 }

@@ -15,6 +15,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/logrusx"
 	flags "github.com/spf13/pflag"
 )
 
@@ -44,28 +45,21 @@ func main() {
 	} else {
 		args, err = parseTaskArgs(taskArgs)
 	}
-	dieOnError(err)
+	logrusx.DieOnError(err, "parse args")
 
 	result, streamResult, respErr, err := startHTTPServer(httpAddr)
-	dieOnError(err)
+	logrusx.DieOnError(err, "start http server")
 
-	dieOnError(makeRequest(coordinator, taskName, httpAddr, taskURL, streamRequest, args))
+	logrusx.DieOnError(makeRequest(coordinator, taskName, httpAddr, taskURL, streamRequest, args), "make request")
 
 	select {
 	case err := <-respErr:
-		dieOnError(err)
+		logrusx.DieOnError(err, "response error")
 	case result := <-result:
 		j, _ := json.Marshal(result)
 		fmt.Println(string(j))
 	case streamResult := <-streamResult:
-		dieOnError(acomm.Stream(os.Stdout, streamResult))
-	}
-}
-
-func dieOnError(err error) {
-	if err != nil {
-		logrus.Fatal("encountered an error during startup, error:", err)
-		os.Exit(1)
+		logrusx.DieOnError(acomm.Stream(os.Stdout, streamResult), "stream result")
 	}
 }
 

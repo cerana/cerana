@@ -17,24 +17,18 @@ func main() {
 
 	flag.Parse()
 
-	dieOnError(config.LoadConfig())
-	dieOnError(config.SetupLogging())
+	logrusx.DieOnError(config.LoadConfig(), "load config")
+	logrusx.DieOnError(config.SetupLogging(), "setup logging")
 
 	server, err := provider.NewServer(config)
-	dieOnError(err)
+	logrusx.DieOnError(err, "new server")
 	s := simple.NewSimple(config, server.Tracker())
 	s.RegisterTasks(server)
 
 	if len(server.RegisteredTasks()) != 0 {
-		dieOnError(server.Start())
+		logrusx.DieOnError(server.Start(), "start server")
 		server.StopOnSignal()
 	} else {
 		logrus.Warn("no registered tasks, exiting")
-	}
-}
-
-func dieOnError(err error) {
-	if err != nil {
-		logrus.Fatal("encountered an error during startup")
 	}
 }

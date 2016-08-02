@@ -16,25 +16,18 @@ func main() {
 	flag.StringP("dataset_dir", "d", "/data/datasets", "node directory for dataset storage")
 	flag.Parse()
 
-	dieOnError(config.LoadConfig())
-	dieOnError(config.SetupLogging())
+	logrusx.DieOnError(config.LoadConfig(), "load config")
+	logrusx.DieOnError(config.SetupLogging(), "setup logging")
 
 	server, err := provider.NewServer(config.Config)
-	dieOnError(err)
+	logrusx.DieOnError(err, "new server")
 	d := datatrade.New(config, server.Tracker())
-	dieOnError(err)
 	d.RegisterTasks(server)
 
 	if len(server.RegisteredTasks()) != 0 {
-		dieOnError(server.Start())
+		logrusx.DieOnError(server.Start(), "start server")
 		server.StopOnSignal()
 	} else {
 		logrus.Warn("no registered tasks, exiting")
-	}
-}
-
-func dieOnError(err error) {
-	if err != nil {
-		logrus.Fatal("encountered an error during startup")
 	}
 }
