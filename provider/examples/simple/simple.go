@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/provider"
 )
@@ -139,7 +139,7 @@ func (s *Simple) SystemStatus(req *acomm.Request) (interface{}, *url.URL, error)
 
 	if resp, ok := responses["CPUInfo"]; ok {
 		if err := resp.UnmarshalResult(&(result.CPUs)); err != nil {
-			log.WithFields(log.Fields{
+			logrus.WithFields(logrus.Fields{
 				"name":  "CPUInfo",
 				"resp":  resp,
 				"error": err,
@@ -149,7 +149,7 @@ func (s *Simple) SystemStatus(req *acomm.Request) (interface{}, *url.URL, error)
 
 	if resp, ok := responses["DiskInfo"]; ok {
 		if err := resp.UnmarshalResult(&(result.Disks)); err != nil {
-			log.WithFields(log.Fields{
+			logrus.WithFields(logrus.Fields{
 				"name":  "DiskInfo",
 				"resp":  resp,
 				"error": err,

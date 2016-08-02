@@ -8,7 +8,7 @@ import (
 	"sync"
 	"syscall"
 
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/acomm"
 )
 
@@ -116,7 +116,7 @@ func (s *Server) StopOnSignal(signals ...os.Signal) {
 	sigChan := make(chan os.Signal)
 	signal.Notify(sigChan, signals...)
 	sig := <-sigChan
-	log.WithFields(log.Fields{
+	logrus.WithFields(logrus.Fields{
 		"signal": sig,
 	}).Info("signal received, stopping")
 

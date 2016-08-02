@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/provider"
 	"github.com/pborman/uuid"
 	flag "github.com/spf13/pflag"
@@ -29,7 +29,7 @@ type ConfigSuite struct {
 }
 
 func (s *ConfigSuite) SetupTest() {
-	log.SetLevel(log.FatalLevel)
+	logrus.SetLevel(logrus.FatalLevel)
 
 	s.configData = &provider.ConfigData{
 		SocketDir:       os.TempDir(),
@@ -199,7 +199,7 @@ func (s *ConfigSuite) TestUnmarshalKey() {
 
 func (s *ConfigSuite) TestSetupLogging() {
 	s.NoError(s.config.SetupLogging(), "failed to setup logging")
-	s.Equal(s.configData.LogLevel, log.GetLevel().String())
+	s.Equal(s.configData.LogLevel, logrus.GetLevel().String())
 }
 
 func testMsgFunc(prefix string) func(...interface{}) string {
