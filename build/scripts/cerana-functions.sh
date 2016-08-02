@@ -2,12 +2,8 @@
 # Some standard functions for Mistify-OS scripts.
 #-
 cmdline="$0 $*"
-projectdir=$PWD    # Save this directory for later.
 
-testceranastatedir=$projectdir/.testcerana
-if [ ! -e $testceranastatedir ]; then
-    mkdir -p $testceranastatedir
-fi
+testceranastatedir=$HOME/.testcerana
 
 # Which branch this script is running with.
 if [ -e .git ]; then
@@ -112,8 +108,10 @@ function init_test_variable() {
     fi
     eval val=\$${var}
     verbose "State variable: ${var} = $val"
-    verbose Saving current settings.
-    set_test_default ${e[0]} $val
+    if [ -z "$showusage" ]; then
+        verbose Saving current settings.
+        set_test_default ${e[0]} $val
+    fi
 }
 
 function get_test_variable() {
