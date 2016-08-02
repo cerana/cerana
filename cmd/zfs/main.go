@@ -7,10 +7,10 @@ import (
 	"os"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/pkg/logrusx"
 	"github.com/cerana/cerana/zfs"
-	cobra "github.com/spf13/cobra"
+	"github.com/spf13/cobra"
 )
 
 type handler func(*cobra.Command, []string) error
@@ -18,9 +18,9 @@ type handler func(*cobra.Command, []string) error
 func genCommand(use, short string, fn handler) *cobra.Command {
 	run := func(cmd *cobra.Command, args []string) {
 		if err := fn(cmd, args); err != nil {
-			log.Fatal(err)
+			logrus.Fatal(err)
 		} else {
-			log.Debug("success")
+			logrus.Debug("success")
 		}
 	}
 	return &cobra.Command{
@@ -44,10 +44,10 @@ func main() {
 			}
 			name, err := cmd.Flags().GetString("name")
 			if err != nil {
-				log.Fatal(err)
+				logrus.Fatal(err)
 			}
 			if name == "" {
-				log.Fatal("missing name")
+				logrus.Fatal("missing name")
 			}
 		},
 		Run: help,
@@ -113,13 +113,13 @@ func main() {
 			name, _ := cmd.Flags().GetString("name")
 			nameParts := strings.Split(name, "@")
 			if len(nameParts) != 2 {
-				log.Fatal("invalid snapshot name")
+				logrus.Fatal("invalid snapshot name")
 			}
 
 			var props map[string]string
 			propJSON, _ := cmd.Flags().GetString("props")
 			if err := json.Unmarshal([]byte(propJSON), &props); err != nil {
-				log.Fatal("bad prop json")
+				logrus.Fatal("bad prop json")
 			}
 
 			ds, err := zfs.GetDataset(nameParts[0])
@@ -157,7 +157,7 @@ func main() {
 			propJSON, _ := cmd.Flags().GetString("props")
 			var props map[string]interface{}
 			if err := json.Unmarshal([]byte(propJSON), &props); err != nil {
-				log.Fatal("bad prop json")
+				logrus.Fatal("bad prop json")
 			}
 
 			if createTypeName == "zvol" {
@@ -189,13 +189,13 @@ func main() {
 				if err != nil {
 					return err
 				}
-				defer logrusx.LogReturnedErr(outputFile.Close, log.Fields{"filename": outputFile.Name()}, "failed to close temp output file")
+				defer logrusx.LogReturnedErr(outputFile.Close, logrus.Fields{"filename": outputFile.Name()}, "failed to close temp output file")
 
 				outputWriter = outputFile
 			} else {
 				// If sending on stdout, don't log anything else unless there's
 				// an error
-				log.SetLevel(log.ErrorLevel)
+				logrus.SetLevel(logrus.ErrorLevel)
 			}
 
 			ds, err := zfs.GetDataset(name)
@@ -213,13 +213,13 @@ func main() {
 			name, _ := cmd.Flags().GetString("name")
 			origin, _ := cmd.Flags().GetString("origin")
 			if origin == "" {
-				log.Fatal("missing origin snapshot name")
+				logrus.Fatal("missing origin snapshot name")
 			}
 
 			var props map[string]interface{}
 			propJSON, _ := cmd.Flags().GetString("props")
 			if err := json.Unmarshal([]byte(propJSON), &props); err != nil {
-				log.Fatal("bad prop json")
+				logrus.Fatal("bad prop json")
 			}
 
 			ds, err := zfs.GetDataset(origin)
@@ -246,7 +246,7 @@ func main() {
 
 			failedName, err := ds.Rename(newName, recursive)
 			if failedName != "" {
-				log.Error(failedName)
+				logrus.Error(failedName)
 			}
 			return err
 		},
@@ -307,12 +307,12 @@ func main() {
 		cmdGet,
 	)
 	if err := root.Execute(); err != nil {
-		log.Fatal("root execute failed:", err)
+		logrus.Fatal("root execute failed:", err)
 	}
 }
 
 func help(cmd *cobra.Command, _ []string) {
 	if err := cmd.Help(); err != nil {
-		log.Fatal("help failed:", err)
+		logrus.Fatal("help failed:", err)
 	}
 }

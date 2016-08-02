@@ -3,15 +3,15 @@ package main
 import (
 	"os"
 
-	log "github.com/Sirupsen/logrus"
-	logx "github.com/cerana/cerana/pkg/logrusx"
+	"github.com/Sirupsen/logrus"
+	"github.com/cerana/cerana/pkg/logrusx"
 	"github.com/cerana/cerana/provider"
 	"github.com/cerana/cerana/providers/service"
 	flag "github.com/spf13/pflag"
 )
 
 func main() {
-	log.SetFormatter(&logx.JSONFormatter{})
+	logrus.SetFormatter(&logrusx.JSONFormatter{})
 
 	config := service.NewConfig(nil, nil)
 	flag.StringP("rollback_clone_cmd", "r", "/run/current-system/sw/bin/rollback_clone", "full path to dataset clone/rollback tool")
@@ -30,13 +30,13 @@ func main() {
 		dieOnError(server.Start())
 		server.StopOnSignal()
 	} else {
-		log.Warn("no registered tasks, exiting")
+		logrus.Warn("no registered tasks, exiting")
 	}
 }
 
 func dieOnError(err error) {
 	if err != nil {
-		log.Fatal("encountered an error during startup, error:", err)
+		logrus.Fatal("encountered an error during startup, error:", err)
 		os.Exit(1)
 	}
 }

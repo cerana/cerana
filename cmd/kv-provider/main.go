@@ -3,15 +3,15 @@ package main
 import (
 	"os"
 
-	log "github.com/Sirupsen/logrus"
-	logx "github.com/cerana/cerana/pkg/logrusx"
+	"github.com/Sirupsen/logrus"
+	"github.com/cerana/cerana/pkg/logrusx"
 	"github.com/cerana/cerana/provider"
 	"github.com/cerana/cerana/providers/kv"
 	flag "github.com/spf13/pflag"
 )
 
 func main() {
-	log.SetFormatter(&logx.JSONFormatter{})
+	logrus.SetFormatter(&logrusx.JSONFormatter{})
 
 	config := kv.NewConfig(nil, nil)
 	flag.StringP("address", "a", "", "kv address (leave blank for default)")
@@ -28,7 +28,7 @@ func main() {
 	k.RegisterTasks(server)
 
 	if len(server.RegisteredTasks()) == 0 {
-		log.Warn("no registered tasks, exiting")
+		logrus.Warn("no registered tasks, exiting")
 		os.Exit(1)
 	}
 	dieOnError(server.Start())
@@ -37,7 +37,7 @@ func main() {
 
 func dieOnError(err error) {
 	if err != nil {
-		log.Fatal("encountered an error during startup, error:", err)
+		logrus.Fatal("encountered an error during startup, error:", err)
 		os.Exit(1)
 	}
 }

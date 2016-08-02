@@ -3,14 +3,14 @@ package main
 import (
 	"os"
 
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/coordinator"
-	logx "github.com/cerana/cerana/pkg/logrusx"
+	"github.com/cerana/cerana/pkg/logrusx"
 	flag "github.com/spf13/pflag"
 )
 
 func main() {
-	log.SetFormatter(&logx.JSONFormatter{})
+	logrus.SetFormatter(&logrusx.JSONFormatter{})
 
 	config := coordinator.NewConfig(nil, nil)
 	flag.Parse()
@@ -27,7 +27,7 @@ func main() {
 
 func dieOnError(err error) {
 	if err != nil {
-		log.Fatal("encountered an error during startup, error:", err)
+		logrus.Fatal("encountered an error during startup, error:", err)
 		os.Exit(1)
 	}
 }

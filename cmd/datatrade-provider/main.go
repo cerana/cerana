@@ -1,15 +1,15 @@
 package main
 
 import (
-	log "github.com/Sirupsen/logrus"
-	logx "github.com/cerana/cerana/pkg/logrusx"
+	"github.com/Sirupsen/logrus"
+	"github.com/cerana/cerana/pkg/logrusx"
 	"github.com/cerana/cerana/provider"
 	"github.com/cerana/cerana/providers/datatrade"
 	flag "github.com/spf13/pflag"
 )
 
 func main() {
-	log.SetFormatter(&logx.JSONFormatter{})
+	logrus.SetFormatter(&logrusx.JSONFormatter{})
 
 	config := datatrade.NewConfig(nil, nil)
 	flag.UintP("node_coordinator_port", "o", 0, "node coordinator external port")
@@ -29,12 +29,12 @@ func main() {
 		dieOnError(server.Start())
 		server.StopOnSignal()
 	} else {
-		log.Warn("no registered tasks, exiting")
+		logrus.Warn("no registered tasks, exiting")
 	}
 }
 
 func dieOnError(err error) {
 	if err != nil {
-		log.Fatal("encountered an error during startup")
+		logrus.Fatal("encountered an error during startup")
 	}
 }

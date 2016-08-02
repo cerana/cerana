@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/acomm"
 	flags "github.com/spf13/pflag"
 )
@@ -23,7 +23,7 @@ const (
 )
 
 func main() {
-	log.SetLevel(log.FatalLevel)
+	logrus.SetLevel(logrus.FatalLevel)
 
 	var coordinator, taskURL, httpAddr, taskName string
 	var taskArgs []string
@@ -64,7 +64,7 @@ func main() {
 
 func dieOnError(err error) {
 	if err != nil {
-		log.Fatal("encountered an error during startup, error:", err)
+		logrus.Fatal("encountered an error during startup, error:", err)
 		os.Exit(1)
 	}
 }
