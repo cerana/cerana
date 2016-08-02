@@ -14,7 +14,7 @@ import (
 	"strings"
 	"syscall"
 
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/acomm"
 	"github.com/tylerb/graceful"
 )
@@ -55,13 +55,13 @@ func NewServer(config *Config) (*Server, error) {
 
 	streamURL, err := url.ParseRequestURI(fmt.Sprintf("http://localhost:%d/stream", config.ExternalPort()))
 	if err != nil {
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"error": err,
 		}).Error("failed to generate stream url")
 	}
 	proxyURL, err := url.ParseRequestURI(fmt.Sprintf("http://localhost:%d/proxy", config.ExternalPort()))
 	if err != nil {
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"error": err,
 		}).Error("failed to generate proxy url")
 	}
@@ -83,7 +83,7 @@ func NewServer(config *Config) (*Server, error) {
 		NoSignalHandling: true,
 	}
 
-	log.WithFields(log.Fields{
+	logrus.WithFields(logrus.Fields{
 		"response": responseSocket,
 		"stream":   streamURL.String(),
 		"internal": internalSocket,
@@ -103,7 +103,7 @@ func (s *Server) externalHandler(w http.ResponseWriter, r *http.Request) {
 		resp, err := acomm.NewResponse(req, nil, nil, respErr)
 		respJSON, err := json.Marshal(resp)
 		if err != nil {
-			log.WithFields(log.Fields{
+			logrus.WithFields(logrus.Fields{
 				"error":    err,
 				"req":      req,
 				"response": resp,
@@ -111,7 +111,7 @@ func (s *Server) externalHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if _, err := w.Write(respJSON); err != nil {
-			log.WithFields(log.Fields{
+			logrus.WithFields(logrus.Fields{
 				"error":    err,
 				"req":      req,
 				"response": resp,
@@ -161,7 +161,7 @@ func (s *Server) acceptInternalRequest(conn net.Conn) {
 		// Respond to the initial request
 		resp, err := acomm.NewResponse(req, nil, nil, respErr)
 		if err != nil {
-			log.WithFields(log.Fields{
+			logrus.WithFields(logrus.Fields{
 				"error":   err,
 				"req":     req,
 				"respErr": respErr,
@@ -170,7 +170,7 @@ func (s *Server) acceptInternalRequest(conn net.Conn) {
 		}
 
 		if err := acomm.SendConnData(conn, resp); err != nil {
-			log.WithFields(log.Fields{
+			logrus.WithFields(logrus.Fields{
 				"error":   err,
 				"req":     req,
 				"respErr": respErr,
@@ -271,7 +271,7 @@ func (s *Server) getProviders(task string) ([]string, error) {
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"error": err,
 			"req":   task,
 			"dir":   taskSocketDir,
@@ -296,7 +296,7 @@ func (s *Server) externalListenAndServe() {
 		// Ignore the error from closing the listener, which is involved in the
 		// graceful shutdown
 		if !strings.Contains(err.Error(), "use of closed network connection") {
-			log.WithField("error", err).Error("server error")
+			logrus.WithField("error", err).Error("server error")
 
 			// Stop the coordinator if this was unexpected
 			s.Stop()
@@ -348,7 +348,7 @@ func (s *Server) StopOnSignal(signals ...os.Signal) {
 	sigChan := make(chan os.Signal)
 	signal.Notify(sigChan, signals...)
 	sig := <-sigChan
-	log.WithFields(log.Fields{
+	logrus.WithFields(logrus.Fields{
 		"signal": sig,
 	}).Info("signal received, stopping")
 
