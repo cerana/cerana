@@ -15,6 +15,7 @@ type ListResult struct {
 // List returns a list of Services and information about each.
 func (p *Provider) List(req *acomm.Request) (interface{}, *url.URL, error) {
 	ch := make(chan *acomm.Response, 1)
+	defer close(ch)
 	rh := func(_ *acomm.Request, resp *acomm.Response) {
 		ch <- resp
 	}
