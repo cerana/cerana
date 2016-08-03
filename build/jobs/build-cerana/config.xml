@@ -22,7 +22,7 @@
     </userRemoteConfigs>
     <branches>
       <hudson.plugins.git.BranchSpec>
-        <name>*/cerana-test5</name>
+        <name>*/ceranaos</name>
       </hudson.plugins.git.BranchSpec>
     </branches>
     <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
@@ -46,18 +46,32 @@
   <builders>
     <hudson.tasks.Shell>
       <command>. ~/.nix-profile/etc/profile.d/nix.sh
+              env
 
-time nix-build  --cores 0 --max-jobs 3 -A netboot nixos/release.nix
-if [ -h result/etc ]; then echo Error: Build resulted /etc as symlink && exit 1; fi
+              time nix-build  --cores 0 --max-jobs 3 -A netboot nixos/release.nix
+              if [ -h result/etc ]; then echo Error: Build resulted /etc as symlink &amp;&amp; exit 1; fi
 
-# Copy results to a location that doesn't rely upon the nix symlinks.
-known_location=artifacts
-mkdir -p $known_location
-rm -f $known_location/*
-cp result/bzImage $known_location
-cp result/initrd $known_location
-nix-store -q result --graph | sed 's/#ff0000/#ffffff/' | dot -Nstyle=bold -Tpng > $known_location/dependencies.png
-nix-store -q result --tree > $known_location/dependencies.txt
+              # Copy results to a location that doesn&apos;t rely upon the nix symlinks.
+              known_location=artifacts
+              mkdir -p $known_location
+              rm -f $known_location/*
+              cp result/bzImage $known_location
+              cp result/initrd $known_location
+
+              #####
+              rm -f result-iso
+              nixos/modules/installer/netboot/build-iso.sh
+
+              mv result-iso $known_location/cerana.iso
+
+              cd $known_location
+              for f in $(ls); do
+                echo Generating signature for $f
+                md5sum $f&gt;$f.md5
+              done
+
+              ls .
+              env | sort &gt;env.txt
       </command>
     </hudson.tasks.Shell>
   </builders>

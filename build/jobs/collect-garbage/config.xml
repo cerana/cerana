@@ -1,0 +1,55 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description>If left alone a /nix/store will eventually use all available disk space. This job periodically runs a garbage collector to release the space if the /nix/store size has exceeded a configurable threshold (see THRESHOLD).&#xd;
+</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>THRESHOLD</name>
+          <description>When the size of the /nix/store exceeds this value run the garbage collection. A typical new build /nix/store can be a little more than 1G. Setting the threshold to 1G or less will likely cause the garbage collection to run after every build. Note a garbage collection run will most likely cause a rebuild of a lot of components.</description>
+          <defaultValue>10G</defaultValue>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers>
+    <hudson.triggers.TimerTrigger>
+      <spec>H H 1,15 * *</spec>
+    </hudson.triggers.TimerTrigger>
+  </triggers>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>. ~/.nix-profile/etc/profile.d/nix.sh
+
+b=`du -s /nix/store | cut -f 1`
+t=`numfmt --from=iec $THRESHOLD`
+echo Bytes: $b
+echo Threshold: $THRESHOLD = $t
+if [ $b -gt $t ]; then
+    # Remove unused packages.
+    time nix-collect-garbage
+fi</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <hudson.tasks.BuildTrigger>
+      <childProjects>build-cerana</childProjects>
+      <threshold>
+        <name>SUCCESS</name>
+        <ordinal>0</ordinal>
+        <color>BLUE</color>
+        <completeBuild>true</completeBuild>
+      </threshold>
+    </hudson.tasks.BuildTrigger>
+  </publishers>
+  <buildWrappers/>
+</project>
