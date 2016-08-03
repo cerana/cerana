@@ -37,6 +37,7 @@ before_script:
   - make lint-required
 
 script:
+  - travis_debug
   - make test -j $(nproc)
 
 after_success:
