@@ -23,7 +23,7 @@ docker build --rm=true --tag cerana-jenkins:1 \
   --build-arg UID=`id -u` --build-arg GID=`id -g` .
 ```
 
-To run the Docker image *cd* to the directory where you'd like the Jenkins home directory and the Nix store to reside and create directories to be shared. If you are running Jenkins as your user then the permissions do not need to be modified (e.g. do not use `-m 777`).
+To run the Docker image *cd* to the directory where you'd like the Jenkins home directory and the Nix store to reside and create directories to be shared. If you are running Jenkins as your user then the permissions do not need to be modified (i.e. do not use `-m 777`).
 
 ```
 mkdir -p -m 777 ${PWD}/cerana/{jenkins_home,nix}
@@ -65,16 +65,18 @@ Because the console output won't be visible it's necessary to get the default ad
 docker logs cerana-jenkins
 ```
 
-Installing the Default Job
---------------------------
+Installing the Default Jobs
+---------------------------
 
-If you want you can now install the default job named `build-cerana` into the Jenkins home directory. Simply copy the default job from the `cerana/build` directory to the Jenkins `jobs` directory. **NOTE:** It's necessary to do this step after starting Jenkins because the job may require one or more of the plugins which are installed the first time Jenkins is run.
+If you want you can now install the default jobs into the Jenkins home directory. Simply copy the default jobs from the `cerana/build` directory to the Jenkins `jobs` directory.
+
+**NOTE:** It's necessary to do this step after starting Jenkins because the job may require one or more of the plugins which are installed the first time Jenkins is run.
 
 ```
 cp -r <ceranaGitDirectory>/build/jobs/* ${PWD}/cerana/jenkins_home/.jenkins/jobs/
 ```
 
-To activate the job you need to tell Jenkins to reload the configuration files (Manage Jenkins -> Reload Configuration from Disk).
+To activate the jobs you need to tell Jenkins to reload the configuration files (Manage Jenkins -> Reload Configuration from Disk).
 
 Connect to a Running Jenkins Container
 --------------------------------------
@@ -109,14 +111,30 @@ Once the container has started and you see the prompt you will need to initializ
 
 All of the nix commands are now available from the command line.
 
-Running the Build
------------------
+### The Default Jobs
 
-The default job is configured to poll every 15 minutes for changes to the *cerana* repository and will run automatically shortly after you load the job configuration.
+#### build-cerana
 
-**NOTE:** If you have a slow network connection you may encounter one or more timeouts when the job initially runs. This is because some fairly large components are downloaded from the repository and Jenkins is configured to timeout after 10 minutes by default and *Nix* may also timeout. Because of this it may be necessary to restart the job. Once the first build finishes this will no longer be a problem.
+This job builds any time it detects a push to the `ceranaos` branch of [cerana/nixpkgs](https://github.com/cerana/nixpkgs).
+
+#### cerana-nixpkgs
+
+This job is designed to build a local clone of [cerana/nixpkgs](https://github.com/cerana/nixpkgs). It will build the active branch. **NOTE:** More information on how to use this job as part of your development workflow is provided in the job description. If you've been following the install instructions then you can read the job description [here](http://localhost:8080/job/cerana-nixpkgs/).
+
+#### collect-garbage
+
+As the number of different builds increases, the Nix store (`/nix/store`) will eventually grow to occupy all available disk space. To help mitigate this problem the `collect-garbage` job is designed to run the [Nix garbage collection](https://nixos.org/releases/nixos/14.12/nixos-14.12.374.61adf9e/manual/sec-nix-gc.html) periodically. This first checks to see if the size of the store has grown beyond a configurable threshold. The job then triggers the `build-cerana` job to ensure the Nix store is current.
+
+**NOTE:** If you have a slow network connection you may encounter one or more timeouts when the job initially runs. This is because some fairly large components are downloaded from the repository and Jenkins is configured to timeout after 10 minutes by default and *Nix* may also timeout. Because of this it may be necessary to restart the job one or more times. Once the first build finishes this will no longer be a problem.
 
 Accessing Your Build Output
 ---------------------------
 
-The build output (e.g. kernel image and ram disk image) can be downloaded using the Jenkins web interface. If you've been using the above examples the URL is: http://localhost:8080/job/build-cerana/ws/result/
+The build output (e.g. kernel image and ram disk image) can be downloaded using the Jenkins web interface. If you've been using the above examples the URL is: http://localhost:8080/job/<job>/ws/result/
+
+If you've been following the above instructions then the build output can also be accessed directly in `cerana/jenkins_home/.jenkins/workspace/<job>/artifacts`. This is especially handy when using the `cerana-nixpkgs` job.
+
+Testing Using Virtual Machines
+------------------------------
+
+Testing Cerana clusters often requires two or more nodes in order to verify the interaction of different Cerana components. Using virtual machines is the easiest and quickest way to setup multi-node systems for testing. Helper scripts for testing using virtual machines in a Linux environment are provided in the `scripts` directory. Their use is described in this [README](scripts/README.md).
