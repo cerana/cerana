@@ -155,7 +155,7 @@ This creates another TAP interface, `tap.2.1`, for the `single` configuration an
 Using Downloaded Images
 -----------------------
 
-The `start-vm` also supports downloading and using specific builds from a server. By default it downloads from the [CeranaOS instance on Amazon S3](http://omniti-cerana-artifacts.s3.amazonaws.com/index.html?prefix=CeranaOS/jobs/). This requires use of the `--job` and the `--build` options. The `--job` option defaults to `build-cerana` and is good for most cases. The `--build` option however has no default and must be set to a valid number (look on S3) before the download will work. For example the following downloads and boots build 121. All other options are whatever were set in a previous run.
+The `start-vm` script also supports downloading and using specific builds from a server. By default it downloads from the [CeranaOS instance on Amazon S3](http://omniti-cerana-artifacts.s3.amazonaws.com/index.html?prefix=CeranaOS/jobs/). This requires use of the `--job` and the `--build` options. The `--job` option defaults to `build-cerana` and is good for most cases. The `--build` option however has no default and must be set to a valid number ([look on S3](http://omniti-cerana-artifacts.s3.amazonaws.com/index.html?prefix=CeranaOS/jobs/build-cerana/)) before the download will work. For example the following downloads and boots build 121. All other options are whatever were set in a previous run.
 
 **NOTE:** Symlinks are used to point to the build to boot. If files exist this script will not removed them. If you want to use the same directory you will need to manually remove the images.
 
