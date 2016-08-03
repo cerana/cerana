@@ -47,6 +47,8 @@ To help booting the first node a DHCP server is started which is configured to l
 start-vm
 --------
 
+The `start-vm` script uses [KVM](http://wiki.qemu.org/KVM) to run virtual machines. A big reason for KVM is it supports nested virtual machines provided your [kernel supports it](https://fedoraproject.org/wiki/How_to_enable_nested_virtualization_in_KVM). Installing QEMU-KVM is outside the scope of this document. Look for instructions relevant to the distro on which you will be running VMs.
+
 **NOTE:** Each VM requires approximately 3GB of RAM.
 
 After using `vm-network` to configure the network for a test scenario the VMs can be started using the `start-vm` script. One VM per *tapset* can be started. Each VM is assigned its own [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier) with the last byte being the same as the *tapset* number used for the VM.
@@ -146,9 +148,20 @@ There are times when an additional interface is needed either to support an addi
 vm-network --verbose --numsets 2 --config single
 ```
 
-This creates another TAP interface, `tap-2.1`, for the `single` configuration and adds it to the `ceranabr0` bridge. It was not necessary to shutdown the test network in this case. This also illustrates that `vm-network` is able to repair a network configuration (within limits) if an interface was deleted for any reason.
+This creates another TAP interface, `tap.2.1`, for the `single` configuration and adds it to the `ceranabr0` bridge. It was not necessary to shutdown the test network in this case. This also illustrates that `vm-network` is able to repair a network configuration (within limits) if an interface was deleted for any reason.
 
 **NOTE:** At this time removing interfaces is possible but the script will not automatically delete TAP interfaces if the new number is smaller than before (e.g. the new `--numsets` is 1 but was 2). This a feature for the future. However, this does not cause a problem because the script will tear down all interfaces linked to a bridge when switching configurations or when the `--shutdown` option is used.
+
+Using Downloaded Images
+-----------------------
+
+The `start-vm` also supports downloading and using specific builds from a server. By default it downloads from the [CeranaOS instance on Amazon S3](http://omniti-cerana-artifacts.s3.amazonaws.com/index.html?prefix=CeranaOS/jobs/). This requires use of the `--job` and the `--build` options. The `--job` option defaults to `build-cerana` and is good for most cases. The `--build` option however has no default and must be set to a valid number (look on S3) before the download will work. For example the following downloads and boots build 121. All other options are whatever were set in a previous run.
+
+**NOTE:** Symlinks are used to point to the build to boot. If files exist this script will not removed them. If you want to use the same directory you will need to manually remove the images.
+
+```
+start-vm --verbose --download --build 121
+```
 
 More
 ----
