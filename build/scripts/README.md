@@ -17,6 +17,8 @@ This script contains a number of helper functions used by the other scripts.
 vm-network
 ----------
 
+**NOTE:** Because this script reconfigures the network this script uses `sudo` to gain root access.
+
 Testing interaction between the various nodes of a Cerana cluster requires a network configuration which allows communication between the nodes but avoids flooding the local network with test messages. This is accomplished using a bridge to connect a number of [TAP](https://en.wikipedia.org/wiki/TUN/TAP) devices. When using this script it helps to keep the following in mind. * A Cerana cluster can be comprised of 1 or more VMs. Each VM can have 1 or more TAP interfaces. The TAP interfaces to be associated with a specific VM is termed a "tapset". The number of *tapsets* is controlled using the option `--numsets`.
 
 By default TAP interfaces are named using using the pattern `tap.<tapset>.<n>` where `<n>` is TAP number within a *tapset*. For example a configuration having three VMs with two interfaces each produces three *tapsets* each having two interfaces. The resulting TAP interfaces become:
@@ -65,3 +67,90 @@ This script creates one or more disk images (`--numdisks`) for each VM which hel
         sas-3-1.img
         sas-3.2.img
 ```
+
+Examples
+========
+
+Single Node
+-----------
+
+This example shows what happens when using only the default values. First `cd` to the directory where you want the various images (i.e. kernel, initrd, disk) to be saved.
+
+```
+vm-network --verbose
+```
+
+**NOTE:** If you've already been running `vm-network` you may want to use the `--resetdefaults` option to return to a known default state.
+
+The interfaces `tap.1.1` and `ceranabr0` were created and `tap.1.1` added to the `ceranabr0` bridge. The `ceranabr0` bridge was assigned the IP address `10.0.2.2`. The `dhcpd` daemon was started and configured to listen only on the `10.0.2.0` subnet.
+
+A configuration named `single` was created and saved in the `~/.testcerana` directory.
+
+In this case the `artifacts` directory must exist and contain the kernel and initrd images.
+
+```
+start-vm --verbose
+```
+
+**NOTE:** If you've already been running `start-vm` you may want to use the `--resetdefaults` option to return to a known default state.
+
+The interface `tap.1.1` is used as the management interface and by virtue of the `dhcpd` daemon is assigned the IP addres `10.0.2.200`.
+
+A disk image named `sas-1-1.img` was created and uses as a virtual disk for the VM.
+
+The boot messages will have spewed to the console and you can log in as the root user (no password).
+
+The root prompt contains the UUID assigned to the VM with the last byte equal to "01" to indicate the single VM in this scenario.
+
+Use `^AX` keystrokes to shutdown the VM.
+
+Two Nodes
+---------
+
+This example requires reconfiguring the network to support two *tapsets* because of using two nodes in the test scenario. It also shows booting an ISO instead of the normal kernel images.
+
+```
+vm-network --verbose --numsets 2 --config two-node
+```
+
+Because this example is also booting the Cerana ISO it is necessary to shutdown the `dhcpd` daemon so that Cerana can take over that function.
+
+```
+vm-network --verbose --shutdowndchpd
+```
+
+This saves another configuration named `two-node` in the `~/.testcerana` directory. The existing network configuration was torn down and the new one created. The interfaces `tap.1.1` and `tap.2.1` have been created and linked to the `ceranabr0` bridge.
+
+```
+start-vm --verbose --boot iso
+```
+
+This boots the ISO image which in turn displays the GRUB menu. Cursor down and select the "CeranaOS Cluster Bootstrap" option. This starts the first node of the two node cluster.
+
+Now open another console and `cd` to the same directory. This time use `start-vm` to start a second VM.
+
+```
+start-vm --verbose --boot iso --tapset 2
+```
+
+This too boots the ISO images which again displays the GRUB menu. This time cursor down and select the "CeranaOS Cluster Join" option.
+
+This causes the second node to use the PXE protocol to boot using images provided by the `bootserver` running on the first node. Its management interface was assigned an IP address by the `dhcp-provider` also running on the first node.
+
+Adding Interfaces to an Existing Configuration
+----------------------------------------------
+
+There are times when an additional interface is needed either to support an additional node or to add an interface for a node. This is a relatively simple thing to do using `vm-network`. Using the "Single Node" example above adding an interface is as simple as:
+
+```
+vm-network --verbose --numsets 2 --config single
+```
+
+This creates another TAP interface, `tap-2.1`, for the `single` configuration and adds it to the `ceranabr0` bridge. It was not necessary to shutdown the test network in this case. This also illustrates that `vm-network` is able to repair a network configuration (within limits) if an interface was deleted for any reason.
+
+**NOTE:** At this time removing interfaces is possible but the script will not automatically delete TAP interfaces if the new number is smaller than before (e.g. the new `--numsets` is 1 but was 2). This a feature for the future. However, this does not cause a problem because the script will tear down all interfaces linked to a bridge when switching configurations or when the `--shutdown` option is used.
+
+More
+----
+
+From time to time more examples will be added to this document to illustrate progressively complex scenarios.
