@@ -345,6 +345,8 @@ if [ "$shutdowndhcpd" == "y" ]; then
     exit
 fi
 
+# TODO: Actually the numtaps variable should be used to create a number of
+# bridges with each VM TAP connected to a different bridge.
 message Checking if $bridge exists.
 check_interface_exists $bridge
 if [ $? -gt 0 ]; then
