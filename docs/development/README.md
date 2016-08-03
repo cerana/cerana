@@ -100,7 +100,7 @@ Setting up a development VM
 
 Testing CeranaOS can at times require verification of interaction between instances running in more than one VM. The local network needs to be configured to support communication between node VMs without flooding the local network with test messages. Verifying the different options for configuring ZFS requires support of multiple disk images. Cerana includes, in the `cerana/build` directory, scripts which support verification of a variety of VMs using a variety of network and disk setups.
 
-An overview of the scripts can be found in the [README](../build/scripts/README.md) for the scripts.
+An overview of the scripts can be found in the [README](../../build/scripts/README.md) for the scripts.
 
 NOTE: These scripts maintain options in a directory named `~/.testcerana` and make it possible to maintain a variety of test configurations and later select which one to use.
 
