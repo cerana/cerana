@@ -176,6 +176,9 @@ func mount(cfg Cfg) error {
 	for _, m := range cfg.Mounts {
 		target := filepath.Join(cfg.Rootfs, m.Target)
 		log.Debugf("Mount %s to %s", m.Source, target)
+		if err := os.MkdirAll(target, 0755); err != nil {
+			return fmt.Errorf("cannot create mountpoint %s, error %v", target, err)
+		}
 		if err := syscall.Mount(m.Source, target, m.Fs, uintptr(m.Flags), m.Data); err != nil {
 			return fmt.Errorf("failed to mount %s to %s: %v", m.Source, target, err)
 		}
