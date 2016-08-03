@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"syscall"
 
 	log "github.com/Sirupsen/logrus"
@@ -59,6 +59,10 @@ type Mount struct {
 }
 
 type Cfg struct {
+	Args     []string
+	Env      []string
+	Uid        int
+	Gid        int
 	Hostname string
 	Mounts   []Mount
 	Rootfs   string
@@ -72,9 +76,9 @@ func (c *Container) Start() error {
 
 	flags := c.Namespaces.CloneFlags()
 	if flags&syscall.CLONE_NEWUSER != 0 {
-		if c.Uid == 0 && c.Gid == 0 {
-			c.Uid, c.Gid = pickIds()
-		}
+		//if c.Uid == 0 && c.Gid == 0 {
+		//	c.Uid, c.Gid = pickIds()
+		//}
 
 		uidmap = []syscall.SysProcIDMap{
 			{
@@ -97,8 +101,8 @@ func (c *Container) Start() error {
 		Args: append([]string{"child"}, os.Args[1:]...),
 		Env: []string{
 			fmt.Sprintf("TERM=%s", os.Getenv("TERM")),
-			fmt.Sprintf("_CERANA_UID=%d", c.Uid),
-			fmt.Sprintf("_CERANA_GID=%d", c.Gid),
+			fmt.Sprintf("_CERANA_DAISY_UID=%d", c.Uid),
+			fmt.Sprintf("_CERANA_DAISY_GID=%d", c.Gid),
 		},
 	}
 	cmd.Stdin = os.Stdin
@@ -118,11 +122,11 @@ func (c *Container) Start() error {
 
 var defaultMountFlags = syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV
 
-func pickIds() (uid int, gid int) {
-	uid = (os.Getpid() << 16) | rand.Int()
-	gid = uid
-	return uid, gid
-}
+//func pickIds() (uid int, gid int) {
+//	uid = (os.Getpid() << 16) | rand.Int()
+//	gid = uid
+//	return uid, gid
+//}
 
 func pivotRoot(rootfs string, pivotBaseDir string) (err error) {
 	if pivotBaseDir == "" {
@@ -248,14 +252,14 @@ func setup(cfg Cfg) error {
 	if err := syscall.Sethostname([]byte(cfg.Hostname)); err != nil {
 		return fmt.Errorf("Sethostname: %v", err)
 	}
-	if err := mount(cfg); err != nil {
-		return err
-	}
 	if err := syscall.Chdir(cfg.Rootfs); err != nil {
-		return err
+		return fmt.Errorf("Cannot enter directory '%s': %v", cfg.Rootfs, err)
+	}
+	if err := mount(cfg); err != nil {
+		return fmt.Errorf("Cannot mount child filesystems: %v", err)
 	}
 	if err := createDevices(cfg); err != nil {
-		return err
+		return fmt.Errorf("Cannot create device nodes: %v", err)
 	}
 	if err := pivotRoot(cfg.Rootfs, ""); err != nil {
 		return fmt.Errorf("Pivot root error: %v", err)
@@ -263,12 +267,24 @@ func setup(cfg Cfg) error {
 	return nil
 }
 
-func execProc(path string, args []string) error {
-	log.Debugf("Execute %s", append([]string{path}, args...))
-	return syscall.Exec(path, args, os.Environ())
+func execProc(cfg Cfg) error {
+	path := filepath.Join("/", cfg.Args[0])
+	log.Debugf("Execute %s", append([]string{path}, cfg.Args...))
+	return syscall.Exec(path, cfg.Args, cfg.Env)
 }
 
 func fillCfg(cfg Cfg) error {
+	uid, err := strconv.Atoi(os.Getenv("_CERANA_DAISY_UID"))
+	if err != nil {
+		log.Fatalf("Invalid child environment")
+	}
+	gid, err := strconv.Atoi(os.Getenv("_CERANA_DAISY_GID"))
+	if err != nil {
+		log.Fatalf("Invalid child environment")
+	}
+	cfg.Uid = uid
+	cfg.Gid = gid
+
 	//wd, err := os.Getwd()
 	//if err != nil {
 	//	return fmt.Errorf("Error get working dir: %v", err)
@@ -277,7 +293,7 @@ func fillCfg(cfg Cfg) error {
 	return nil
 }
 
-func (c *Container) Child(cfg Cfg) error {
+func Child(cfg Cfg) error {
 	log.Debug("Start child")
 	if err := fillCfg(cfg); err != nil {
 		return fmt.Errorf("fillCfg: %v", err)
@@ -299,7 +315,7 @@ func (c *Container) Child(cfg Cfg) error {
 
 	w, err := newCapWhitelist(Capabilities)
 	if err != nil {
-		return err
+		return fmt.Errorf("newCapWhitelist: %v", err)
 	}
 
 	// drop capabilities in bounding set before changing user
@@ -312,12 +328,14 @@ func (c *Container) Child(cfg Cfg) error {
 		return fmt.Errorf("SetKeepCaps: %v", err)
 	}
 
-	if err := SetNewUser(c.Uid, c.Gid); err != nil {
+	if err := SetNewUser(0, 0); err != nil {
 		return fmt.Errorf("SetNewUser: %v", err)
 	}
 
+	if err := ClearKeepCaps(); err != nil {
+		return fmt.Errorf("ClearKeepCaps: %v", err)
+	}
+
 	//dieOnError(selinux.InitLabels(nil));
-	path := filepath.Join("/", c.Args[0])
-	args := c.Args
-	return execProc(path, args)
+	return execProc(cfg)
 }

@@ -40,10 +40,16 @@ var defaultCfg = Cfg{
 			Data:   "mode=755",
 		},
 		{
+			Source: "devpts",
+			Target: "/dev/pts",
+			Fs:     "devpts",
+			Flags:  syscall.MS_NOSUID | syscall.MS_NOEXEC,
+		},
+		{
 			Source: "sysfs",
 			Target: "/sys",
 			Fs:     "sysfs",
-			Flags:  defaultMountFlags,
+			Flags:  syscall.MS_NOSUID | syscall.MS_NOEXEC | syscall.MS_NODEV | syscall.MS_RDONLY,
 		},
 	},
 	Rootfs:  "",
@@ -84,33 +90,21 @@ func main() {
 		log.Fatalf("Missing path to executable")
 		os.Exit(1)
 	}
+	for _, ns := range strings.Split(namespaces, ",") {
+		nsList = append(nsList, Namespace{Type: ns, Path: ""})
+	}
 
 	if os.Args[0] == "child" {
 		var devList []string
 		var scmp = seccomp.Whitelist
 
-		uid, err := strconv.Atoi(os.Getenv("_CERANA_UID"))
-		if err != nil {
-			log.Fatalf("Invalid child environment")
-		}
-		gid, err := strconv.Atoi(os.Getenv("_CERANA_GID"))
-		if err != nil {
-			log.Fatalf("Invalid child environment")
-		}
-		err = os.Unsetenv("_CERANA_UID")
-		err = os.Unsetenv("_CERANA_GID")
-
 		if kvm {
 			scmp = seccomp.WhitelistKVM
 		}
 
-		c := &Container{
-			Args:       execArgs,
-			Uid:        uid,
-			Gid:        gid,
-			Namespaces: nsList,
-		}
 		cfg := defaultCfg
+		cfg.Args = execArgs
+		cfg.Env = []string{ fmt.Sprintf("TERM=%s", os.Getenv("TERM")) }
 		cfg.Rootfs = rootFs
 		cfg.Hostname = hostname
 		cfg.Seccomp = scmp
@@ -118,14 +112,10 @@ func main() {
 		for _, dev := range strings.Split(devices, ",") {
 			devList = append(devList, "/dev/"+dev)
 		}
-		if err := c.Child(cfg); err != nil {
+		if err := Child(cfg); err != nil {
 			log.Fatalf("Child execution failed: %v", err)
 		}
 		os.Exit(1)
-	}
-
-	for _, ns := range strings.Split(namespaces, ",") {
-		nsList = append(nsList, Namespace{Type: ns, Path: ""})
 	}
 
 	if rootFs != "/" && rootFs != "" {
