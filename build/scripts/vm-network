@@ -382,7 +382,7 @@ message Checking $numtaps TAP interfaces.
 if [ $numsets -lt 1 ]; then
     die numsets: Must hava at least 1 set.
 fi
-if [ $numsets -gt 4 ]; then
+if [ $numsets -gt 9 ]; then
     die numsets: Too many interface sets \($numsets\) requested.
 fi
 if [ $numtaps -lt 1 ]; then
