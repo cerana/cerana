@@ -73,6 +73,9 @@ func (k *KV) watch(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.New("missing arg: prefix")
 	}
 
+	if k.kvDown() {
+		return nil, nil, errorKVDown
+	}
 	stop := make(chan struct{})
 	events, errs, err := k.kv.Watch(args.Prefix, args.Index, stop)
 	if err != nil {

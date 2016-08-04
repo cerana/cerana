@@ -38,6 +38,9 @@ func (k *KV) eset(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.New("missing arg: ttl")
 	}
 
+	if k.kvDown() {
+		return nil, nil, errorKVDown
+	}
 	eKey := eKeys.Get(args.Key)
 	if eKey == nil || eKey.Renew() != nil {
 		eKey, err = k.kv.EphemeralKey(args.Key, args.TTL)

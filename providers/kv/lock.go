@@ -30,6 +30,9 @@ func (k *KV) lock(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.New("missing arg: ttl")
 	}
 
+	if k.kvDown() {
+		return nil, nil, errorKVDown
+	}
 	lock, err := k.kv.Lock(args.Key, args.TTL)
 	if err != nil {
 		return nil, nil, err
