@@ -38,8 +38,8 @@ ln -sf "/$ENV" usr/bin/env
 ln -sf "/$INIT" init
 cp /etc/resolv.conf etc/resolv.conf.host
 uuidgen | tr -d "-" >etc/machine-id
-ln -s /nixpkgs root/.nix-defexpr/channels/nixos
-cat >etc/profile.local <<"EOF"
+ln -sf /nixpkgs root/.nix-defexpr/channels/nixos
+cat >etc/bashrc.local <<"EOF"
 export GOPATH=$HOME/go
 alias buildenv='nix-shell -A cerana.bin /nixpkgs/default.nix --command "export GIT_SSL_CAINFO=/etc/ssl/certs/ca-certificates.crt; return"'
 EOF
