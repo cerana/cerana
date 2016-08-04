@@ -3,6 +3,7 @@ package kv
 import (
 	"io/ioutil"
 	"path/filepath"
+	"syscall"
 	"testing"
 	"time"
 
@@ -19,9 +20,10 @@ func TestKV(t *testing.T) {
 
 type KVS struct {
 	common.Suite
-	config *Config
-	KV     *KV
-	keys   []string
+	config  *Config
+	tracker *acomm.Tracker
+	KV      *KV
+	keys    []string
 }
 
 func (s *KVS) SetupSuite() {
@@ -45,10 +47,10 @@ func (s *KVS) SetupSuite() {
 
 	s.keys = []string{"fee", "fi", "fo", "fum"}
 
-	tracker, err := acomm.NewTracker(filepath.Join(dir, "tracker.sock"), nil, nil, 5*time.Second)
+	s.tracker, err = acomm.NewTracker(filepath.Join(dir, "tracker.sock"), nil, nil, 5*time.Second)
 	s.Require().NoError(err)
 
-	s.KV, err = New(s.config, tracker)
+	s.KV, err = New(s.config, s.tracker)
 	s.Require().NoError(err)
 }
 
@@ -65,4 +67,47 @@ func (s *KVS) TestConfig() {
 	addr, err := s.config.Address()
 	s.Require().NoError(err)
 	s.Require().Equal(s.KVURL, addr)
+}
+
+func (s *KVS) TestHandleKVDown() {
+	s.KVCmd.Process.Signal(syscall.SIGSTOP)
+	provider, err := New(s.config, s.tracker)
+	s.Require().NoError(err)
+
+	s.True(provider.kvDown())
+
+	req, err := acomm.NewRequest(acomm.RequestOptions{
+		Task: "kv-get",
+		Args: GetArgs{Key: "some-non-existent-key"},
+	})
+	s.Require().NoError(err)
+	resp, url, err := provider.get(req)
+	s.Nil(resp)
+	s.Nil(url)
+	s.NotNil(err)
+	s.Equal(errorKVDown, err)
+
+	type temporary interface {
+		Temporary() bool
+	}
+	temp, ok := err.(temporary)
+	s.True(ok, "error should implement Temporary interface")
+	s.True(temp.Temporary())
+
+	s.KVCmd.Process.Signal(syscall.SIGCONT)
+
+	kvDown := true
+	for range [5]struct{}{} {
+		kvDown = kvDown && provider.kvDown()
+		if !kvDown {
+			break
+		}
+		time.Sleep(1000 * time.Millisecond)
+	}
+	s.False(kvDown)
+	resp, url, err = provider.get(req)
+	s.Nil(resp)
+	s.Nil(url)
+	s.NotNil(err)
+	s.NotEqual(errorKVDown, err)
 }
