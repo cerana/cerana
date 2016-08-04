@@ -35,6 +35,9 @@ func (k *KV) delete(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.New("missing arg: key")
 	}
 
+	if k.kvDown() {
+		return nil, nil, errorKVDown
+	}
 	return nil, nil, k.kv.Delete(args.Key, args.Recursive)
 }
 
@@ -48,6 +51,9 @@ func (k *KV) get(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.New("missing arg: key")
 	}
 
+	if k.kvDown() {
+		return nil, nil, errorKVDown
+	}
 	kvp, err := k.kv.Get(args.Key)
 	if err != nil {
 		return nil, nil, err
@@ -66,6 +72,9 @@ func (k *KV) getAll(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.New("missing arg: key")
 	}
 
+	if k.kvDown() {
+		return nil, nil, errorKVDown
+	}
 	kvps, err := k.kv.GetAll(args.Key)
 	if err != nil {
 		return nil, nil, err
@@ -84,6 +93,9 @@ func (k *KV) keys(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.New("missing arg: key")
 	}
 
+	if k.kvDown() {
+		return nil, nil, errorKVDown
+	}
 	keys, err := k.kv.Keys(args.Key)
 	if err != nil {
 		return nil, nil, err
@@ -105,5 +117,8 @@ func (k *KV) set(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.New("missing arg: data")
 	}
 
+	if k.kvDown() {
+		return nil, nil, errorKVDown
+	}
 	return nil, nil, k.kv.Set(args.Key, args.Data)
 }

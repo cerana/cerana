@@ -36,6 +36,9 @@ func (k *KV) remove(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.New("missing arg: key")
 	}
 
+	if k.kvDown() {
+		return nil, nil, errorKVDown
+	}
 	return nil, nil, k.kv.Remove(args.Key, args.Index)
 }
 
@@ -57,6 +60,9 @@ func (k *KV) update(req *acomm.Request) (interface{}, *url.URL, error) {
 		Index: args.Index,
 	}
 
+	if k.kvDown() {
+		return nil, nil, errorKVDown
+	}
 	index, err := k.kv.Update(args.Key, value)
 	if err != nil {
 		return nil, nil, err

@@ -1,6 +1,9 @@
 package kv
 
 import (
+	"sync"
+	"time"
+
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/pkg/kv"
 	_ "github.com/cerana/cerana/pkg/kv/consul" // register consul with pkg/kv
@@ -9,13 +12,28 @@ import (
 
 // KV is a provider of kv functionality.
 type KV struct {
-	kv      kv.KV
 	config  *Config
 	tracker *acomm.Tracker
+
+	mu sync.RWMutex
+	kv kv.KV
 }
 
 // Value represents the value stored in a key, including the last modification index of the key
 type Value kv.Value
+
+type eKVDown string
+
+func (e eKVDown) Temporary() bool {
+	return true
+}
+
+func (e eKVDown) Error() string {
+	return string(e)
+}
+
+// errorKVDown indicates that KV has not connected to the KV store yet
+const errorKVDown = eKVDown("kv store is down")
 
 // New creates a new instance of KV.
 func New(config *Config, tracker *acomm.Tracker) (*KV, error) {
@@ -24,12 +42,27 @@ func New(config *Config, tracker *acomm.Tracker) (*KV, error) {
 		return nil, err
 	}
 
-	k, err := kv.New(addr)
-	if err != nil {
-		return nil, err
-	}
+	KV := &KV{config: config, tracker: tracker}
+	go func() {
+		for {
+			k, err := kv.New(addr)
+			if err == nil {
+				KV.mu.Lock()
+				KV.kv = k
+				KV.mu.Unlock()
+				return
 
-	return &KV{kv: k, config: config, tracker: tracker}, nil
+			}
+			time.Sleep(500 * time.Millisecond)
+		}
+	}()
+	return KV, nil
+}
+
+func (k *KV) kvDown() bool {
+	k.mu.RLock()
+	defer k.mu.RUnlock()
+	return k.kv == nil
 }
 
 // RegisterTasks registers all of KV's task handlers with the server.
