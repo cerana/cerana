@@ -2,7 +2,7 @@
 
 [![kv](https://godoc.org/github.com/cerana/cerana/pkg/kv?status.svg)](https://godoc.org/github.com/cerana/cerana/pkg/kv)
 
-Package kv abstracts a distributed/clusted kv store for use with lochness kv
+Package kv abstracts a distributed/clustered kv store for use with cerana kv
 does not aim to be a full-featured generic kv abstraction, but can be useful
 anyway. Only implementors imported by users will be available at runtime. See
 documentation of KV for handled operations.

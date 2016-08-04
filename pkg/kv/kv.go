@@ -1,4 +1,4 @@
-// Package kv abstracts a distributed/clusted kv store for use with lochness
+// Package kv abstracts a distributed/clustered kv store for use with cerana
 // kv does not aim to be a full-featured generic kv abstraction, but can be useful anyway.
 // Only implementors imported by users will be available at runtime.
 // See documentation of KV for handled operations.
