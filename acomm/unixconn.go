@@ -3,6 +3,7 @@ package acomm
 import (
 	"encoding/binary"
 	"encoding/json"
+	"io"
 	"net"
 
 	log "github.com/Sirupsen/logrus"
@@ -20,23 +21,13 @@ func UnmarshalConnData(conn net.Conn, dest interface{}) error {
 	}
 	payloadSize := binary.BigEndian.Uint32(sizeBytes)
 
-	data := make([]byte, int(payloadSize))
-	if _, err := conn.Read(data); err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-		}).Error("failed to read data")
-		return err
-	}
+	// wrap in an io.LimitReader with the expected size to prevent
+	// malformed payloads from blocking the decoder
+	payloadReader := io.LimitReader(conn, int64(payloadSize))
 
-	if err := json.Unmarshal(data, dest); err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-			"data":  string(data),
-		}).Error("failed to unmarshal data")
-		return err
-	}
+	decoder := json.NewDecoder(payloadReader)
 
-	return nil
+	return decoder.Decode(dest)
 }
 
 // SendConnData marshals and writes payload JSON data to the Conn with

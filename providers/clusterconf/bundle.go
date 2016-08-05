@@ -7,8 +7,8 @@ import (
 	"math/rand"
 	"net/url"
 	"path"
+	"path/filepath"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -148,6 +148,10 @@ func (s BundleService) overlayOn(base *Service) (BundleService, error) {
 		}
 	}
 
+	if result.Cmd == nil {
+		result.Cmd = base.Cmd
+	}
+
 	return result, nil
 }
 
@@ -229,11 +233,10 @@ func (c *ClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL, er
 	}
 	// extract and deduplicate the bundle ids
 	ids := make(map[uint64]bool)
+	keyFormat := filepath.Join(bundlesPrefix, "%d")
 	for _, key := range keys {
-		// keys are full paths and include all child keys.
-		// e.g. {prefix}/{id}/{rest/of/path}
-		idS := strings.Split(strings.TrimPrefix(key, bundlesPrefix), "/")[0]
-		id, err := strconv.ParseUint(idS, 10, 64)
+		var id uint64
+		_, err := fmt.Sscanf(key, keyFormat, &id)
 		if err != nil {
 			return nil, nil, errors.New("invalid bundle id")
 		}
@@ -242,9 +245,7 @@ func (c *ClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL, er
 
 	var wg sync.WaitGroup
 	bundleChan := make(chan *Bundle, len(ids))
-	defer close(bundleChan)
 	errChan := make(chan error, len(ids))
-	defer close(errChan)
 	for id := range ids {
 		wg.Add(1)
 		go func(id uint64) {
@@ -265,6 +266,9 @@ func (c *ClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL, er
 		}(id)
 	}
 	wg.Wait()
+
+	close(bundleChan)
+	close(errChan)
 
 	if len(errChan) > 0 {
 		err := <-errChan

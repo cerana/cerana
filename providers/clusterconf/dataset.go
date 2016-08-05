@@ -3,9 +3,10 @@ package clusterconf
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/url"
 	"path"
-	"strings"
+	"path/filepath"
 	"sync"
 
 	"github.com/cerana/cerana/acomm"
@@ -64,18 +65,19 @@ func (c *ClusterConf) ListDatasets(req *acomm.Request) (interface{}, *url.URL, e
 	}
 	// extract and deduplicate the dataset ids
 	ids := make(map[string]bool)
+	keyFormat := filepath.Join(datasetsPrefix, "%s")
 	for _, key := range keys {
-		// keys are full paths and include all child keys.
-		// e.g. {prefix}/{id}/{rest/of/path}
-		id := strings.Split(strings.TrimPrefix(key, datasetsPrefix), "/")[0]
+		var id string
+		_, err := fmt.Sscanf(key, keyFormat, &id)
+		if err != nil {
+			return nil, nil, errors.New("invalid dataset id")
+		}
 		ids[id] = true
 	}
 
 	var wg sync.WaitGroup
 	dsChan := make(chan *Dataset, len(ids))
-	defer close(dsChan)
 	errChan := make(chan error, len(ids))
-	defer close(errChan)
 	for id := range ids {
 		wg.Add(1)
 		go func(id string) {
@@ -89,6 +91,9 @@ func (c *ClusterConf) ListDatasets(req *acomm.Request) (interface{}, *url.URL, e
 		}(id)
 	}
 	wg.Wait()
+
+	close(dsChan)
+	close(errChan)
 
 	if len(errChan) > 0 {
 		err := <-errChan

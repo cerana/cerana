@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net"
 	"time"
 
 	"github.com/cerana/cerana/providers/clusterconf"
@@ -12,7 +13,8 @@ func (s *StatsPusher) TestGetNodeInfo() {
 	if !s.NoError(err) {
 		return
 	}
-	s.Equal(s.metrics.Data.Network.Interfaces[0].Addrs[0].Addr, data.ID)
+	expectedIP, _, _ := net.ParseCIDR(s.metrics.Data.Network.Interfaces[0].Addrs[0].Addr)
+	s.Equal(expectedIP.String(), data.ID)
 	s.Equal(s.metrics.Data.Memory.Virtual.Total, data.MemoryTotal)
 	s.Equal(s.metrics.Data.Memory.Virtual.Available, data.MemoryFree)
 	s.Equal(len(s.metrics.Data.CPU.Info), data.CPUCores)

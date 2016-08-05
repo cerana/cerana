@@ -3,7 +3,6 @@ package systemd
 import (
 	"errors"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -214,9 +213,7 @@ func (s *MockSystemd) ManualEnable(name string) {
 		// properties we know things care about
 		switch unitOption.Name {
 		case "ExecStart":
-			value = []interface{}{"", strings.Split(unitOption.Value, " ")}
-		case "User", "Group":
-			value, _ = strconv.ParseUint(unitOption.Value, 10, 64)
+			value = [][]interface{}{{"", strings.Split(unitOption.Value, " ")}}
 		case "Description":
 			value = unitOption.Value
 			//s.Data.Statuses[name].Description = unitOption.Value

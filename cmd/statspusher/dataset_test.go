@@ -56,7 +56,8 @@ func (s *StatsPusher) TestGetIP() {
 	if !s.NoError(err) {
 		return
 	}
-	s.EqualValues(s.metrics.Data.Network.Interfaces[0].Addrs[0].Addr, ip.String())
+	expected, _, _ := net.ParseCIDR(s.metrics.Data.Network.Interfaces[0].Addrs[0].Addr)
+	s.EqualValues(expected, ip)
 }
 
 func (s *StatsPusher) TestSendDatasetHeartbeats() {
@@ -65,6 +66,6 @@ func (s *StatsPusher) TestSendDatasetHeartbeats() {
 	s.zfs.Data.Datasets[name] = &zfsp.Dataset{Name: name, Properties: &zfs.DatasetProperties{Type: "volume"}}
 	s.clusterConf.Data.Datasets = make(map[string]*clusterconf.Dataset)
 	s.clusterConf.Data.Datasets[name] = &clusterconf.Dataset{ID: name}
-	ip := net.ParseIP(s.metrics.Data.Network.Interfaces[0].Addrs[0].Addr)
+	ip, _, _ := net.ParseCIDR(s.metrics.Data.Network.Interfaces[0].Addrs[0].Addr)
 	s.NoError(s.statsPusher.sendDatasetHeartbeats([]clusterconf.DatasetHeartbeatArgs{{ID: name}}, ip))
 }

@@ -59,6 +59,12 @@ func (p *Provider) DatasetImport(req *acomm.Request) (interface{}, *url.URL, err
 		return nil, nil, err
 	}
 
+	if args.ReadOnly {
+		if err := p.datasetSnapshot(node.ID, dataset.ID); err != nil {
+			return nil, nil, err
+		}
+	}
+
 	return DatasetImportResult{Dataset: dataset, NodeID: node.ID}, nil, p.datasetConfig(dataset)
 
 }
@@ -83,18 +89,37 @@ func (p *Provider) datasetImportNode() (*clusterconf.Node, error) {
 }
 
 func (p *Provider) datasetImport(nodeID, datasetID string, streamURL *url.URL) error {
+	taskURL, err := url.ParseRequestURI(fmt.Sprintf("http://%s:%d", nodeID, p.config.NodeCoordinatorPort()))
+	if err != nil {
+		return err
+	}
 	opts := acomm.RequestOptions{
 		Task:      "zfs-receive",
+		TaskURL:   taskURL,
 		StreamURL: streamURL,
 		Args: zfs.CommonArgs{
 			Name: filepath.Join(p.config.DatasetDir(), datasetID),
 		},
 	}
-	u, err := url.Parse(fmt.Sprintf("http://%s:%d", nodeID, p.config.NodeCoordinatorPort()))
+	_, err = p.tracker.SyncRequest(p.config.CoordinatorURL(), opts, p.config.RequestTimeout())
+	return err
+}
+
+func (p *Provider) datasetSnapshot(nodeID, datasetID string) error {
+	taskURL, err := url.ParseRequestURI(fmt.Sprintf("http://%s:%d", nodeID, p.config.NodeCoordinatorPort()))
 	if err != nil {
 		return err
 	}
-	_, err = p.tracker.SyncRequest(u, opts, p.config.RequestTimeout())
+	opts := acomm.RequestOptions{
+		Task:    "zfs-snapshot",
+		TaskURL: taskURL,
+		Args: zfs.SnapshotArgs{
+			Name:      filepath.Join(p.config.DatasetDir(), datasetID),
+			SnapName:  datasetID,
+			Recursive: false,
+		},
+	}
+	_, err = p.tracker.SyncRequest(p.config.CoordinatorURL(), opts, p.config.RequestTimeout())
 	return err
 }
 

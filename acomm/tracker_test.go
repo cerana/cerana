@@ -220,3 +220,61 @@ func (s *TrackerTestSuite) TestProxyExternal() {
 	s.Equal(0, s.Tracker.NumRequests(), "should have removed the request from tracking")
 
 }
+
+func (s *TrackerTestSuite) TestReplaceLocalhost() {
+	tests := []struct {
+		orig        string
+		replacement string
+		out         string
+	}{
+		{"http://localhost/path", "foobar", "http://foobar/path"},
+		{"http://localhost/path", "foobar:8080", "http://foobar/path"},
+		{"http://localhost:8080/path", "foobar", "http://foobar:8080/path"},
+		{"http://localhost:8080/path", "foobar:1234", "http://foobar:8080/path"},
+		{"http://localhost/path", "[::1]", "http://[::1]/path"},
+		{"http://localhost/path", "[::1]:8080", "http://[::1]/path"},
+		{"http://localhost:8080/path", "[::1]", "http://[::1]:8080/path"},
+		{"http://localhost:8080/path", "[::1]:1234", "http://[::1]:8080/path"},
+		{"http://localhost/path", "127.42.42.42", "http://127.42.42.42/path"},
+		{"http://localhost/path", "127.42.42.42:8080", "http://127.42.42.42/path"},
+		{"http://localhost:8080/path", "127.42.42.42", "http://127.42.42.42:8080/path"},
+		{"http://localhost:8080/path", "127.42.42.42:1234", "http://127.42.42.42:8080/path"},
+		{"http:///path", "foobar", "http://foobar/path"},
+		{"http:///path", "foobar:8080", "http://foobar/path"},
+		{"http://:8080/path", "foobar", "http://foobar:8080/path"},
+		{"http://:8080/path", "foobar:1234", "http://foobar:8080/path"},
+		{"http://127.0.0.1/path", "foobar", "http://foobar/path"},
+		{"http://127.0.0.1/path", "foobar:8080", "http://foobar/path"},
+		{"http://127.0.0.1:8080/path", "foobar", "http://foobar:8080/path"},
+		{"http://127.42.42.42:8080/path", "foobar:1234", "http://foobar:8080/path"},
+		{"http://127.42.42.42/path", "foobar", "http://foobar/path"},
+		{"http://127.42.42.42/path", "foobar:8080", "http://foobar/path"},
+		{"http://127.42.42.42:8080/path", "foobar", "http://foobar:8080/path"},
+		{"http://127.42.42.42:8080/path", "foobar:1234", "http://foobar:8080/path"},
+		{"http://[::1]/path", "foobar", "http://foobar/path"},
+		{"http://[::1]/path", "foobar:8080", "http://foobar/path"},
+		{"http://[::1]:8080/path", "foobar", "http://foobar:8080/path"},
+		{"http://[::1]:8080/path", "foobar:1234", "http://foobar:8080/path"},
+		{"http://[::1]/path", "[::2]", "http://[::2]/path"},
+		{"http://[::1]/path", "[::2]:8080", "http://[::2]/path"},
+		{"http://[::1]:8080/path", "[::2]", "http://[::2]:8080/path"},
+		{"http://[::1]:8080/path", "[::2]:1234", "http://[::2]:8080/path"},
+		{"http://108.1.1.1/path", "foobar", "http://108.1.1.1/path"},
+		{"http://108.1.1.1/path", "foobar:8080", "http://108.1.1.1/path"},
+		{"http://108.1.1.1:8080/path", "foobar", "http://108.1.1.1:8080/path"},
+		{"http://108.1.1.1:8080/path", "foobar:1234", "http://108.1.1.1:8080/path"},
+	}
+
+	for _, test := range tests {
+		desc := fmt.Sprintf("%+v", test)
+		u, err := url.ParseRequestURI(test.orig)
+		if !s.NoError(err, desc) {
+			continue
+		}
+		if !s.NoError(acomm.ReplaceLocalhost(u, test.replacement), desc) {
+			continue
+		}
+		s.Equal(test.out, u.String(), desc)
+	}
+
+}

@@ -4,8 +4,11 @@ Usage
 	$ ./coordinator-cli -h
 	Usage of ./coordinator-cli:
 	-c, --coordinator_url string   url of the coordinator
-	-a, --request_arg value        task specific argument the form 'key:value'. can be set multiple times (default [])
-	-r, --response_addr string     address for response http handler to listen on (default ":4080")
+	-r, --http_addr string         address for http server to listen for responses and stream request data (default ":4080")
+	-j, --json_args                read a json args object form STDIN
+	-a, --request_arg value        task specific argument the form 'key=value'. can be set multiple times (default [])
+	-s, --stream                   stream data from STDIN to provider
 	-t, --task string              task to run
+	-u, --task_url string          url of the task handler if different than coordinator
 */
 package main

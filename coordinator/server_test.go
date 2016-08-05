@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -229,7 +230,9 @@ func (s *ServerSuite) createTaskListener(taskName string, result chan *params) *
 
 func (s *ServerSuite) createResponseHandlers(result chan *params) (*httptest.Server, *acomm.UnixListener) {
 	// HTTP response
-	responseServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	listener, _ := net.Listen("tcp", ":0")
+
+	responseServer := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		resp := &acomm.Response{}
 		decoder := json.NewDecoder(r.Body)
 		_ = decoder.Decode(resp)
@@ -238,6 +241,8 @@ func (s *ServerSuite) createResponseHandlers(result chan *params) (*httptest.Ser
 		_ = resp.UnmarshalResult(p)
 		result <- p
 	}))
+	responseServer.Listener = listener
+	responseServer.Start()
 
 	// Unix response
 	responseListener := acomm.NewUnixListener(filepath.Join(s.configData.SocketDir, "testResponse.sock"), 0)

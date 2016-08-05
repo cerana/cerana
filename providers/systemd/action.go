@@ -39,7 +39,6 @@ func (s *Systemd) systemdAction(action string, req *acomm.Request) (interface{},
 		return nil, nil, errors.New("missing arg: name")
 	}
 
-	resultChan := make(chan string)
 	var actionFn func(string, string, chan<- string) (int, error)
 	switch action {
 	case "start":
@@ -52,16 +51,11 @@ func (s *Systemd) systemdAction(action string, req *acomm.Request) (interface{},
 
 	// Run the action. Ignore jobid since we are waiting for the result; once a
 	// job is completed, the jobid is meaningless.
-	if _, err := actionFn(args.Name, args.Mode, resultChan); err != nil {
+	if _, err := actionFn(args.Name, args.Mode, nil); err != nil {
 		if strings.Contains(err.Error(), "No such file or directory") {
 			err = errors.New("unit not found")
 		}
 		return nil, nil, err
-	}
-	result := <-resultChan
-
-	if result != "done" {
-		return nil, nil, errors.New(result)
 	}
 
 	return nil, nil, nil

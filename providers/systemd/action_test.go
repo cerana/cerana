@@ -30,8 +30,9 @@ func (s *systemd) TestActions() {
 		{"restart", "systemd-test-exit0.service", systemdp.ModeFail, ""},
 		{"restart", "systemd-test-loop.service", systemdp.ModeFail, ""},
 
-		{"stop", "systemd-test-loop.service", systemdp.ModeFail, ""},
-		{"stop", "systemd-test-exit0.service", systemdp.ModeFail, ""},
+		// use the "replace" mode here for testing on slower systems
+		{"stop", "systemd-test-loop.service", systemdp.ModeReplace, ""},
+		{"stop", "systemd-test-exit0.service", systemdp.ModeReplace, ""},
 	}
 
 	for _, test := range tests {
