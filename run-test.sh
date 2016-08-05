@@ -34,5 +34,6 @@ docker exec $cid sh -c "cd /mistify/$dir; ./$name -test.v" >&2 || ret=$?;
 
 docker kill  $cid > /dev/null || :
 docker rm -v $cid > /dev/null || :
-flock /dev/stdout -c "echo '### TEST  $name'; cat $out"
+echo '### TEST  $name'
+cat $out
 exit $ret
