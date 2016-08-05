@@ -8,7 +8,7 @@ set -e
 dir=$(dirname $1)
 name=$(basename $1)
 out="$dir/test.out"
-exec 2> $out
+exec 2> >(tee $out)
 
 which consul &>/dev/null
 
