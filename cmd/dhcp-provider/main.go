@@ -43,7 +43,9 @@ func comm(tracker *acomm.Tracker, coordinator *url.URL, task string, args interf
 	})
 	dieOnError("create request object", err)
 	dieOnError("track request", tracker.TrackRequest(req, 0))
-	dieOnError("send request", acomm.Send(coordinator, req))
+	if err = acomm.Send(coordinator, req); err != nil {
+		return err
+	}
 
 	aResp := <-ch
 	if aResp.Error != nil {
