@@ -52,7 +52,7 @@ test: $(testOutputs)
 # Add /dev/zfs device for zfs to work.
 .SECONDEXPANSION:
 $(testOutputs): %/test.out: $$(call testBinFromDir,%)
-	flock /dev/stdout -c 'echo "RUN   $<"'
+	echo "RUN   $<"
 	./run-test.sh $<
 
 # Build a package's test binaries. Done outside the container so it can be used
@@ -60,7 +60,7 @@ $(testOutputs): %/test.out: $$(call testBinFromDir,%)
 .SECONDARY: $(testBins)
 $(testBins): %.test: FORCE
 	echo BUILD $@
-	cd $(dir $@) && flock -s /dev/stdout go test -c -i
+	cd $(dir $@) && go test -c -i
 
 FORCE:
 

@@ -118,6 +118,10 @@ func (s *Suite) SetupSuite() {
 		if err == nil {
 			break
 		}
+		err = s.KV.Ping()
+		if err == nil {
+			break
+		}
 		time.Sleep(500 * time.Millisecond) // Wait for test kv to be ready
 	}
 	if s.KV == nil {

@@ -37,7 +37,7 @@ before_script:
   - make lint-required
 
 script:
-  - make test -j $(nproc)
+  - make test
 
 after_success:
   - make lint-optional

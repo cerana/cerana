@@ -8,7 +8,7 @@ set -e
 dir=$(dirname $1)
 name=$(basename $1)
 out="$dir/test.out"
-exec 2> $out
+exec 2> >(tee $out)
 
 which consul &>/dev/null
 
@@ -34,5 +34,6 @@ docker exec $cid sh -c "cd /mistify/$dir; ./$name -test.v" >&2 || ret=$?;
 
 docker kill  $cid > /dev/null || :
 docker rm -v $cid > /dev/null || :
-flock /dev/stdout -c "echo '### TEST  $name'; cat $out"
+echo '### TEST  $name'
+cat $out
 exit $ret
