@@ -48,11 +48,9 @@ func comm(tracker *acomm.Tracker, coordinator *url.URL, task string, args interf
 	return nil
 }
 
-func getDHCPConfig(tracker *acomm.Tracker, coordinator *url.URL) *clusterconf.DHCPConfig {
+func getDHCPConfig(tracker *acomm.Tracker, coordinator *url.URL) (*clusterconf.DHCPConfig, error) {
 	dconf := &clusterconf.DHCPConfig{}
-	err := comm(tracker, coordinator, "get-dhcp", nil, dconf)
-	logrusx.DieOnError(err, "get dhcp configuration")
-	return dconf
+	return dconf, comm(tracker, coordinator, "get-dhcp", nil, dconf)
 }
 
 func setDHCPConfig(tracker *acomm.Tracker, coordinator *url.URL, config *dhcp.Config) {
@@ -105,7 +103,14 @@ func main() {
 	if set == true {
 		setDHCPConfig(server.Tracker(), config.CoordinatorURL(), config)
 	}
-	storedConfig := getDHCPConfig(server.Tracker(), config.CoordinatorURL())
+	var storedConfig *clusterconf.DHCPConfig
+	for {
+		storedConfig, err = getDHCPConfig(server.Tracker(), config.CoordinatorURL())
+		if err == nil {
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
 
 	v.Set("dns-servers", joinDNS(storedConfig.DNS))
 	v.Set("gateway", storedConfig.Gateway)
