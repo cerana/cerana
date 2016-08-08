@@ -369,7 +369,7 @@ func (d *demotick) runBundles(bundles []*clusterconf.Bundle, bundleHeartbeats ma
 					Args: service.CreateArgs{
 						ID:       serviceConf.ID,
 						BundleID: bundle.ID,
-						Dataset:  serviceConf.Dataset,
+						Dataset:  filepath.Join(d.datasetDir, serviceConf.Dataset),
 						Cmd:      serviceConf.Cmd,
 						Env:      serviceConf.Env,
 					},
