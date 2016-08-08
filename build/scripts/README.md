@@ -96,7 +96,7 @@ start-vm --verbose
 
 **NOTE:** If you've already been running `start-vm` you may want to use the `--resetdefaults` option to return to a known default state.
 
-The interface `tap.1.1` is used as the management interface and by virtue of the `dhcpd` daemon is assigned the IP addres `10.0.2.200`.
+The interface `tap.1.1` is used as the management interface and by virtue of the `dhcpd` daemon is assigned the IP address `10.0.2.200`.
 
 A disk image named `sas-1-1.img` was created and uses as a virtual disk for the VM.
 
@@ -104,7 +104,7 @@ The boot messages will have spewed to the console and you can log in as the root
 
 The root prompt contains the UUID assigned to the VM with the last byte equal to "01" to indicate the single VM in this scenario.
 
-Use `^AX` keystrokes to shutdown the VM.
+**NOTE:** Use [`^AX`](http://qemu.weilnetz.de/qemu-doc.html#mux_005fkeys) keystrokes to shutdown the VM.
 
 Two Nodes
 ---------
