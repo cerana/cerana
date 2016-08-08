@@ -36,7 +36,10 @@ func comm(tracker *acomm.Tracker, coordinator *url.URL, task string, args interf
 	})
 	logrusx.DieOnError(err, "create request object")
 	logrusx.DieOnError(tracker.TrackRequest(req, 0), "track request")
-	logrusx.DieOnError(acomm.Send(coordinator, req), "send request")
+
+	if err = acomm.Send(coordinator, req); err != nil {
+		return err
+	}
 
 	aResp := <-ch
 	if aResp.Error != nil {
