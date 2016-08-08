@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #+
 # This script starts a VM to run CeranaOS.
@@ -12,7 +12,7 @@
 #   Could not access KVM kernel module: Permisssion denied
 #-
 
-source scripts/cerana-functions.sh
+source `dirname "$(readlink -f "$0")"`/cerana-functions.sh
 
 usage () {
 cat << EOF
@@ -42,6 +42,12 @@ Usage: $0 [options]
         This option is saved in the file:
         $testceranastatedir/initrdimage
         [initrdimage = $initrdimage]
+    --isoimage <image>
+        The CDROM image (iso) to boot when the --iso option is used. This image
+        must be stored in $ceranaimagedir.
+        This option is saved in the file:
+        $testceranastatedir/isoimage
+        [initrdimage = $isoimage]
     ==== Target Options ====
     --diskimagedir <dir>
         Where the disk images are stored.
@@ -54,6 +60,11 @@ Usage: $0 [options]
         This option is saved in the file:
         $testceranastatedir/diskimage
         [diskimage = $diskimage]
+    --numdisks <n>
+        The number of disk images per VM.
+        This option is saved in the file:
+        $testceranastatedir/numdisks
+        [numdisks = $numdisks]
     --diskimagesize <size>
         The size of the disk image to use. e.g. 1G = 1 gigabyte.
         This option is saved in the file:
@@ -61,29 +72,44 @@ Usage: $0 [options]
         [diskimagesize = $diskimagesize]
     --uuid <uuid>
         Use this to specify the UUID to associate with the CeranaOS instance
-        running in the VM. To create a random UUID use \`uuidgen\` for this
-        option.
+        running in the VM. To create a random UUID use "default" for this
+        option. The UUID must be the correct format for a UUID (a requirement of
+        kvm). The last two characters of the UUID are replaced with the tapset
+        number. The full UUID becomes:
+        `printf "%.34s%02x" $uuid $tapset`
         This option is saved in the file:
         $testceranastatedir/uuid
         [uuid = $uuid]
     ==== Network ====
     --tap <tap>
-        The name of the tap interface. This uses the value set by the
+        The root name of the tap interface. This uses the value set by the
         vm-network script.
         This option defaults to the interface created by the vm-network script.
         [tap = $tap]
-    --mac <mac>
-        Use a specific MAC address for the network interface. The default is
-        to use a randomly generated MAC starting with DE:AD:BE:EF.
+    --tapset <set>
+        NOTE: This needs to become a VM number which will then match a tapset.
+        Which TAP interface set to use for the VM. The TAP interface set can also
+        be thought of as an ID for the VM being started. e.g. VM 1 uses TAP set 1.
+        [tapset = $tapset]
+    --numvmif <n>
+        The number of tap interfaces to use for this VM.
+        Each interface becomes $tap.$tapset.1, $tap.$tapset.2 etc.
+        [numvmif = $numvmif]
+    --macbase <macbase>
+        Use a specific MAC address for the management interface. The default is
+        to use a MAC starting with DE:AD:BE:EF
         This option is saved in the file:
-        $testceranastatedir/mac
-        [mac = $mac]
+        $testceranastatedir/macbase
+        [macbase = $macbase]
     === Boot Options ===
-    --netboot
-        Add options for booting from the network. This uses the option rom image.
+    --boot <device>
+        Boots using a specific device.
+        initrd = Boot using bzImage and initrd
+        iso = Boot using an ISO (CDROM image)
+        net = Boot via the network
         This option is saved in the file:
-        $testceranastatedir/netboot
-        [netboot = $netboot]
+        $testceranastatedir/boot
+        [boot = $boot]
     --pxeoptionrom
         The option ROM image to use for a network boot.
         This option is saved in the file:
@@ -97,10 +123,30 @@ Usage: $0 [options]
     --ramdisksize <kilobytes>
         The amount of RAM to allocate to the ram disk (in kilobytes).
         NOTE: If this is not sufficient for the actual RAM disk the kernel will
-        default to half of avialable RAM.
+        default to half of available RAM.
         This option is saved in the file:
         $testceranastatedir/ramdisksize
         [ramdisksize = $ramdisksize]
+    ==== Image Download ====
+    --download
+        Download the CeranaOS images into the image directory and boot those.
+    --downloadurl <URL>
+        The base URL to download from. NOTE: This assumes a directory structure
+        created by a Jenkins job. The full URL becomes:
+            <downloadurl>/<job>/<build>
+        This option is saved in the file:
+        $testceranastatedir/downloadurl
+        [downloadurl = $downloadurl]
+    --job <job>
+        The name of the Jenkins job to download from.
+        This option is saved in the file:
+        $testceranastatedir/job
+        [job = $job]
+    --build <build>
+        The Jenkins build number to download from.
+        This option is saved in the file:
+        $testceranastatedir/build
+        [build = $build]
     ==== Other ====
     --resetdefaults
         Reset options back to their default values.
@@ -120,16 +166,24 @@ a=`getopt -l "\
 ceranaimagedir:,\
 kernelimage:,\
 initrdimage:,\
+isoimage:,\
 diskimagedir:,\
 diskimage:,\
+numdisks:,\
 diskimagesize:,\
 uuid:,\
 tap:,\
-mac:,\
+tapset:,\
+numvmif:,\
+macbase:,\
+boot:,\
 pxeoptionrom:,\
-netboot,\
 rammb:,\
 ramdisksize:,\
+download,\
+downloadurl:,\
+job:,\
+build:,\
 resetdefaults,\
 verbose,\
 dryrun,\
@@ -145,102 +199,141 @@ eval set -- $a
 
 while [ $# -ge 1 ]; do
     case "$1" in
-	--)
-	    shift
-	    break
-	    ;;
-	--ceranaimagedir)
-	    ceranaimagedir=$2
-	    shift
-	    ;;
-	--kernelimage)
-	    kernelimage=$2
-	    shift
-	    ;;
-	--initrdimage)
-	    initrdimage=$2
-	    shift
-	    ;;
-    --diskimagedir)
-        diskimagedir=$2
-        shift
-        ;;
-	--diskimage)
-	    diskimage=$2
-	    shift
-	    ;;
-	--diskimagesize)
-	    diskimagesize=$2
-	    shift
-	    ;;
-	--uuid)
-	    uuid=$2
-	    shift
-	    ;;
-	--tap)
-	    tap=$2
-	    shift
-	    ;;
-	--mac)
-	    mac=$2
-	    shift
-	    ;;
-	--pxeoptionrom)
-	    pxeoptionrom=$2
-	    shift
-	    ;;
-	--netboot)
-	    netboot=y
-	    ;;
-	--rammb)
-	    rammb=$2
-	    shift
-	    ;;
-	--ramdisksize)
-	    ramdisksize=$2
-	    shift
-	    ;;
-	--resetdefaults)
-	    resetdefaults=y
-	    ;;
-	--verbose)
-	    verbose=y
-	    ;;
-	--dryrun)
-	    dryrun=echo
-	    ;;
-	-h|--help)
-	    showusage=y
-	    ;;
-	# using getopt should avoid needing this catchall but just in case...
-	*)
-	    error "Invalid option: $1"
-	    showusage=y
-	    errorexit=y
-	    ;;
+        --)
+            shift
+            break
+            ;;
+        --ceranaimagedir)
+            ceranaimagedir=$2
+            shift
+            ;;
+        --kernelimage)
+            kernelimage=$2
+            shift
+            ;;
+        --initrdimage)
+            initrdimage=$2
+            shift
+            ;;
+        --isoimage)
+            isoimage=$2
+            shift
+            ;;
+        --diskimagedir)
+            diskimagedir=$2
+            shift
+            ;;
+        --diskimage)
+            diskimage=$2
+            shift
+            ;;
+        --numdisks)
+            numdisks=$2
+            shift
+            ;;
+        --diskimagesize)
+            diskimagesize=$2
+            shift
+            ;;
+        --uuid)
+            uuid=$2
+            shift
+            ;;
+        --tap)
+            tap=$2
+            shift
+            ;;
+        --tapset)
+            tapset=$2
+            shift
+            ;;
+        --numvmif)
+            numvmif=$2
+            shift
+            ;;
+        --macbase)
+            macbase=$2
+            shift
+            ;;
+        --pxeoptionrom)
+            pxeoptionrom=$2
+            shift
+            ;;
+        --boot)
+            boot=$2
+            shift
+            ;;
+        --rammb)
+            rammb=$2
+            shift
+            ;;
+        --ramdisksize)
+            ramdisksize=$2
+            shift
+            ;;
+        --download)
+            download=y
+            ;;
+        --downloadurl)
+            downloadurl=$2
+            shift
+            ;;
+        --job)
+            job=$2
+            shift
+            ;;
+        --build)
+            build=$2
+            shift
+            ;;
+        --resetdefaults)
+            resetdefaults=y
+            ;;
+        --verbose)
+            verbose=y
+            ;;
+        --dryrun)
+            dryrun=echo
+            ;;
+        -h|--help)
+            showusage=y
+            ;;
+        # using getopt should avoid needing this catchall but just in case...
+        *)
+            error "Invalid option: $1"
+            showusage=y
+            errorexit=y
+            ;;
     esac
     shift
 done
 
 statevars=(
     ceranaimagedir=artifacts
-    kernelimage=bzImage.cerana
-    initrdimage=initrd.cerana
+    kernelimage=bzImage
+    initrdimage=initrd
+    isoimage=cerana.iso
     diskimagedir=images
-    diskimage=sas1.img
+    diskimage=sas
+    numdisks=1
     diskimagesize=1G
+    tap=tap
+    tapset=1
+    numvmif=1
+    macbase=DE:AD:BE:EF
     uuid=`uuidgen`
-    tap=tap0
-    mac=DE:AD:BE:EF:`printf "%02X:%02X" $(( (RANDOM % 256) )) $(( (RANDOM % 256) ))`
     pxeoptionrom=/usr/share/qemu/pxe-virtio.rom
-    netboot=''
-    rammb=2048
+    boot=initrd
+    rammb=3096
     ramdisksize=200000
+    downloadurl=http://omniti-cerana-artifacts.s3.amazonaws.com/CeranaOS/jobs
+    job=build-cerana
+    build=""
 )
 for v in "${statevars[@]}"
 do
     if [ ! -z "$resetdefaults" ]; then
-	clear_test_variable $v
+        clear_test_variable $v
     fi
     init_test_variable $v
 done
@@ -248,86 +341,160 @@ done
 if [ ! -z "$showusage" ]; then
     usage
     if [ ! -z "$errorexit" ]; then
-      exit 1
+        exit 1
     fi
     exit 0
 fi
 
 message CeranaOS image directory is: $ceranaimagedir
 
+verbose The instance UUID is: $uuid
+verbose TAP device is: $tap
+verbose The VM MAC base address is: $macbase
+u=`printf "%.34s%02x" $uuid $tapset`
+verbose VM UUID = $u
+
+if [ -n "$download" ]; then
+    if [ -z "$build" ]; then
+        die The build number has not been specified.
+    fi
+    verbose Downloading $job/$build images
+    run mkdir -p $ceranaimagedir/$job/$build
+    for f in bzImage initrd cerana.iso
+    do
+        df=$ceranaimagedir/$job/$build/$f
+        verbose df
+        # TODO Added verification of MD5 sums.
+        if [ -e $df ]; then
+            message File $df exists.
+        else
+            run curl -o $df \
+                $downloadurl/$job/$build/$f
+        fi
+    done
+    verbose Setting image symlinks.
+    for f in $kernelimage $initrdimage $isoimage
+    do
+        verbose Checking $f for symlink.
+        e=0
+        if [ -e  $ceranaimagedir/$f ]; then
+            if [ -h $ceranaimagedir/$f ]; then
+                verbose Replacing symlink $ceranaimagedir/$f
+                rm $ceranaimagedir/$f
+            else
+                error Cannot replace file $ceranaimagedir/$f with a symlink.
+                e=1
+            fi
+        else
+            verbose The file  $ceranaimagedir/$f does not exist.
+        fi
+    done
+    if [ $e -gt 0 ]; then
+        die Files exist. Either remove them or use a different image directory.
+    fi
+    run ln -s $job/$build/bzImage $ceranaimagedir/$kernelimage
+    run ln -s $job/$build/initrd $ceranaimagedir/$initrdimage
+    run ln -s $job/$build/cerana.iso $ceranaimagedir/$isoimage
+fi
+
 if [ ! -d "$ceranaimagedir" ]; then
     die "The CeranaOS image directory doesn't exist."
 fi
 
-verbose The disk image is: $diskimagedir/$diskimage
-verbose The disk image size is: $diskimagesize
-verbose The instance UUID is: $uuid
-verbose TAP device is: $tap
-verbose The VM MAC address is: $mac
-
-if [ ! -f $kernel ]; then
-    # It's also possible a symlink is used to point to the kernel.
-    if [ ! -h $kernel ]; then
-	die Kernel image $kernel does not exist.
+disklist=""
+for n in $(seq $numdisks); do
+    i=$diskimagedir/$diskimage-$tapset-$n.img
+    if [ ! -e "$i" ]; then
+        warning "Disk image doesn't exist."
+        warning "Creating $i"
+        if [ -n "$dryrun" ]; then
+            message Will create $i of size $diskimagesize
+        else
+            run mkdir -p $diskimagedir
+            run qemu-img create -f raw -o size=$diskimagesize $i
+        fi
+        if [ $? -gt 0 ]; then
+            die Error when attempting to create the disk image: $i
+        fi
     fi
-fi
-verbose The kernel image is: $kernel
+    verbose Adding test disk image: $i
+    disklist+="\
+        -drive if=virtio,file=$i"
+done
 
-if [ ! -f $initrd ]; then
-    # It's also possible a symlink is used to point to the initrd.
-    if [ ! -h $initrd ]; then
-	die Initrd image $initrd does not exist.
-    fi
-fi
-verbose The initrd image is: $initrd
+devicelist=""
 
-if [ ! -e "$diskimagedir/$diskimage" ]; then
-    warning "Disk image doesn't exist."
-    warning "Creating $diskimagedir/$diskimage"
-    if [ -n "$dryrun" ]; then
-	message Will create $diskimage of size $diskimagesize
-    else
-	mkdir -p $diskimagedir
-	qemu-img create -f raw -o size=$diskimagesize $diskimagedir/$diskimage
-    fi
-    if [ $? -gt 0 ]; then
-	die Error when attempting to create the disk image: $diskimagedir/$diskimage
-    fi
-fi
-verbose The test disk image is: $diskimagedir/$diskimage
+for n in $(seq 1 $numvmif); do
+    m=$macbase:`printf "8%01X:%02X" $tapset $n`
+    t=$tap.$tapset.$n
+    verbose Adding device $t using mac $m
+    devicelist+="\
+        -device e1000,netdev=net$n,mac=$m \
+        -netdev tap,ifname=$t,id=net$n,script=no"
+done
 
-if [ -z "$pxeoptionrom" ]; then
-    pxeoptionrom=$pxeoptionromdefault
-fi
-verbose The PXE boot option ROM is: $pxeoptionrom
-
-if [ -z "$netboot" ]; then
-    netboot=$netbootdefault
-fi
-
-if [ "$netboot" == "y" ]; then
-	verbose Enabling netboot of the VM.
-	if [ -f $pxeoptionrom ]; then
-	    netbootoptions=-option-rom $pxeoptionrom -boot n
-	else
-	    die "The option ROM image, $pxeoptionrom, doesn't exist."
-	fi
-fi
+commonoptions="\
+    -machine accel=kvm -cpu host -smp 2 \
+    -uuid $u \
+    -global isa-fdc.driveA= \
+    -nographic -m $rammb"
 
 if [ -n "$dryrun" ]; then
-  message "Just a dry run -- not running tests."
+    message "Just a dry run -- not starting the VM."
 fi
 
 tip "Starting virtual machine (remember ^A-X to exit)."
-$dryrun kvm \
-$netbootoptions \
--kernel $ceranaimagedir/$kernelimage \
--initrd $ceranaimagedir/$initrdimage \
--drive if=virtio,file=$diskimagedir/$diskimage \
--machine accel=kvm -cpu host -smp 2 \
--uuid $uuid \
--global isa-fdc.driveA= \
--append "noapic acpi=off ramdisk_size=$ramdisksize rw console=ttyS0 cerana.zfs_config=auto cerana.mgmt_mac=$mac" \
--nographic -m $rammb \
--device e1000,netdev=net0,mac=$mac \
--netdev tap,ifname=$tap,id=net0,script=no
+case "$boot" in
+    initrd)
+        verbose Booting kernel and initrd images.
+        kernel=$ceranaimagedir/$kernelimage
+        initrd=$ceranaimagedir/$initrdimage
+        if [ ! -e $kernel ]; then
+            die Kernel image $kernel does not exist.
+        fi
+        verbose The kernel image is: $kernel
+
+        if [ ! -e $initrd ]; then
+            die Initrd image $initrd does not exist.
+        fi
+        verbose The initrd image is: $initrd
+
+        $dryrun kvm \
+        $commonoptions \
+        $disklist \
+        $devicelist \
+        -kernel $kernel \
+        -initrd $initrd \
+        -append "noapic acpi=off console=ttyS0 cerana.zfs_config=auto"
+        ;;
+
+    iso)
+        iso=$ceranaimagedir/$isoimage
+        if [ ! -e $iso ]; then
+            die ISO $iso does not exist.
+        fi
+
+        verbose Booting from ISO image.
+        $dryrun kvm \
+        $commonoptions \
+        $disklist \
+        $devicelist \
+        -cdrom $iso \
+        -boot d
+        ;;
+
+    net)
+        verbose Booting from ISO image.
+        $dryrun kvm \
+        $commonoptions \
+        $disklist \
+        $devicelist \
+        -option-rom $pxeoptionrom -boot n
+        ;;
+
+    *)
+        error "Invalid boot option: $boot"
+        usage
+        exit 1
+        ;;
+esac

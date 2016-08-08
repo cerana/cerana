@@ -2,12 +2,8 @@
 # Some standard functions for Mistify-OS scripts.
 #-
 cmdline="$0 $*"
-projectdir=$PWD    # Save this directory for later.
 
-testceranastatedir=$projectdir/.testcerana
-if [ ! -e $testceranastatedir ]; then
-    mkdir -p $testceranastatedir
-fi
+testceranastatedir=$HOME/.testcerana
 
 # Which branch this script is running with.
 if [ -e .git ]; then
@@ -35,6 +31,7 @@ function set_test_default() {
     # Parameters:
     #   1: option name
     #   2: value
+    mkdir -p $(dirname $testceranastatedir/$1)
     echo "$2">$testceranastatedir/$1
     verbose The test default $1 has been set to $2
 }
@@ -94,22 +91,47 @@ function init_test_variable() {
     e=(`echo "$1" | tr "$d" " "`)
     verbose ""
     verbose State variable default: "${e[0]} = ${e[1]}"
-    eval val=\$${e[0]}
+    var=$(basename ${e[0]})
+    verbose Variable name is: $var
+    eval val=\$${var}
+
     if [ -z "$val" ]; then
-        verbose Setting ${e[0]} to default: ${e[1]}
-        eval ${e[0]}=$(get_test_default ${e[0]} ${e[1]})
+        verbose Setting ${var} to default: ${e[1]}
+        eval ${var}=$(get_test_default ${e[0]} ${e[1]})
     else
         if [ "$val" = "default" ]; then
             verbose Setting ${e[0]} to default: ${e[1]}
-            eval ${e[0]}=${e[1]}
+            eval ${var}=${e[1]}
         else
-            eval ${e[0]}=$val
+            eval ${var}=$val
         fi
     fi
-    eval val=\$${e[0]}
-    verbose "State variable: ${e[0]} = $val"
-    verbose Saving current settings.
-    set_test_default ${e[0]} $val
+    eval val=\$${var}
+    verbose "State variable: ${var} = $val"
+    if [ -z "$showusage" ]; then
+        verbose Saving current settings.
+        set_test_default ${e[0]} $val
+    fi
+}
+
+function get_test_variable() {
+    # Parameters:
+    #   1: variable name and default value pair delimited by the delimeter (2)
+    #   2: an optional delimeter character (defaults to '=')
+    if [ -z "$2" ]; then
+        d='='
+    else
+        d=$2
+    fi
+    e=(`echo "$1" | tr "$d" " "`)
+    verbose ""
+    verbose State variable default: "${e[0]} = ${e[1]}"
+    var=$(basename ${e[0]})
+    verbose Variable name is: $var
+    verbose Setting ${var} to default: ${e[1]}
+    eval ${var}=$(get_test_default ${e[0]} ${e[1]})
+    eval val=\$${var}
+    verbose "State variable: ${var} = $val"
 }
 
 function get_ceranaos_version() {
@@ -169,20 +191,32 @@ log () {
 }
 
 function die() {
-    error "$@"
-    exit 1
+    if [ -z "$dryrun" ]; then
+        error "$@"
+        exit 1
+    else
+        error "$@"
+    fi
 }
 
 function run() {
     verbose "Running: '$@'"
-    "$@"; code=$?; [ $code -ne 0 ] && die "Command [$*] failed with status code $code";
-    return $code
+    if [ -z "$dryrun" ]; then
+        "$@"; code=$?; [ $code -ne 0 ] && die "Command [$*] returned status code $code";
+        return $code
+    else
+        return 0
+    fi
 }
 
 function run_ignore {
     verbose "Running: '$@'"
-    "$@"; code=$?; [ $code -ne 0 ] && verbose "Command [$*] returned status code $code";
-    return $code
+    if [ -z "$dryrun" ]; then
+        "$@"; code=$?; [ $code -ne 0 ] && verbose "Command [$*] returned status code $code";
+        return $code
+    else
+        return 0
+    fi
 }
 
 function confirm () {
