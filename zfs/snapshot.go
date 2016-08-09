@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"syscall"
 
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/zfs/nv"
 )
 
@@ -26,14 +27,14 @@ func snapshot(pool string, snapNames []string, props map[string]string) (map[str
 	encoded := &bytes.Buffer{}
 	err := nv.NewNativeEncoder(encoded).Encode(m)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapv(err, map[string]interface{}{"name": pool, "input": m})
 	}
 
 	out := make([]byte, 1024)
 	err = ioctl(zfs(), pool, encoded.Bytes(), out)
 
 	var errlist map[string]syscall.Errno
-	if errno, ok := err.(syscall.Errno); ok && errno == syscall.EEXIST {
+	if errno, ok := errors.Cause(err).(syscall.Errno); ok && errno == syscall.EEXIST {
 		// Try to get errlist info, but ignore any errors in the attempt
 		errs := map[string]int32{}
 		if nv.NewNativeDecoder(bytes.NewReader(out)).Decode(&errs) == nil {

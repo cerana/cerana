@@ -1,7 +1,6 @@
 package zfs
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -10,6 +9,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/pkg/errorutils"
 	"github.com/cerana/cerana/zfs/nv"
 	gzfs "github.com/mistifyio/go-zfs"
@@ -308,7 +308,7 @@ func GetDataset(name string) (*Dataset, error) {
 		return nil, err
 	}
 	if len(datasets) != 1 {
-		return nil, fmt.Errorf("expected 1 dataset, got %d", len(datasets))
+		return nil, errors.Newv("unexpected number of datasets", map[string]interface{}{"expected": 1, "actual": len(datasets)})
 	}
 	return datasets[0], nil
 }
@@ -483,12 +483,12 @@ func (pfc *pipeFdCloser) Fd() uintptr {
 }
 
 func (pfc *pipeFdCloser) Close() error {
-	return errorutils.First(<-pfc.done, pfc.r.Close(), pfc.w.Close())
+	return errorutils.First(<-pfc.done, errors.Wrap(pfc.r.Close()), errors.Wrap(pfc.w.Close()))
 }
 
 func (pfc *pipeFdCloser) Copy(output io.Writer) {
 	_, err := io.Copy(output, pfc.r)
-	pfc.done <- err
+	pfc.done <- errors.Wrap(err)
 }
 
 type noopFdCloser struct {
@@ -512,7 +512,7 @@ func newFdCloser(output io.Writer) (fdCloser, error) {
 
 	r, w, err := os.Pipe()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
 	pfc := &pipeFdCloser{
 		r:    r,
@@ -593,7 +593,7 @@ func (d *Dataset) Mount(overlay bool, options []string) error {
 	if err != nil {
 		// Fix errors to be more like what zfs will probably return
 		if strings.Contains(err.Error(), "dataset does not exist") {
-			err = syscall.ENOENT
+			err = errors.Wrap(syscall.ENOENT)
 		}
 		return err
 	}
@@ -601,7 +601,7 @@ func (d *Dataset) Mount(overlay bool, options []string) error {
 	if _, err := gzfsDS.Mount(overlay, options); err != nil {
 		// Fix errors to be more like what zfs will probably return
 		if strings.Contains(err.Error(), "already mounted") {
-			return syscall.EBUSY
+			return errors.Wrap(syscall.EBUSY)
 		}
 		return err
 	}
@@ -616,7 +616,7 @@ func (d *Dataset) Unmount(force bool) error {
 	if err != nil {
 		// Fix errors to be more like what zfs will probably return
 		if strings.Contains(err.Error(), "dataset does not exist") {
-			err = syscall.ENOENT
+			err = errors.Wrap(syscall.ENOENT)
 		}
 		return err
 	}
@@ -624,7 +624,7 @@ func (d *Dataset) Unmount(force bool) error {
 	if _, err := gzfsDS.Unmount(force); err != nil {
 		// Fix errors to be more like what zfs will probably return
 		if strings.Contains(err.Error(), "not currently mounted") {
-			return syscall.EINVAL
+			return errors.Wrap(syscall.EINVAL)
 		}
 		return err
 	}

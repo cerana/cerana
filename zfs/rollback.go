@@ -3,6 +3,7 @@ package zfs
 import (
 	"bytes"
 
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/zfs/nv"
 )
 
@@ -15,7 +16,7 @@ func rollback(name string) (string, error) {
 	encoded := &bytes.Buffer{}
 	err := nv.NewNativeEncoder(encoded).Encode(m)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapv(err, map[string]interface{}{"name": name, "input": m})
 	}
 
 	out := make([]byte, 1024)
@@ -26,6 +27,8 @@ func rollback(name string) (string, error) {
 		var results map[string]string
 		if err = nv.NewNativeDecoder(bytes.NewReader(out)).Decode(&results); err == nil {
 			snapName = results["target"]
+		} else {
+			err = errors.Wrapv(err, map[string]interface{}{"name": name, "input": m})
 		}
 	}
 	return snapName, err

@@ -4,11 +4,11 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"io"
 	"os"
 	"syscall"
 
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/pkg/errorutils"
 	"github.com/cerana/cerana/zfs/nv"
 )
@@ -26,19 +26,19 @@ func getSize(r io.Reader) (int64, error) {
 
 	_, err := io.ReadFull(r, buf)
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrap(err, "failed to read size data")
 	}
 
 	h := pipeHeader{}
 	err = binary.Read(bytes.NewReader(buf), binary.LittleEndian, &h)
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrap(err, "failed to read little endian pipe header")
 	}
 
 	if h.Endian != 1 {
 		err := binary.Read(bytes.NewReader(buf), binary.BigEndian, &h)
 		if err != nil {
-			return 0, err
+			return 0, errors.Wrap(err, "failed to read big endian pipe header")
 		}
 	}
 
@@ -49,7 +49,7 @@ func getSize(r io.Reader) (int64, error) {
 		return 0, errors.New("unknown Endian value")
 	}
 	if h.Error != 0 {
-		return 0, syscall.Errno(h.Error)
+		return 0, errors.Wrap(syscall.Errno(h.Error))
 	}
 
 	return int64(h.Size), nil
@@ -74,8 +74,10 @@ func list(name string, types map[string]bool, recurse bool, depth uint64) (ret [
 	if err != nil {
 		return
 	}
+
+	var errData map[string]interface{}
 	defer func() {
-		err = errorutils.First(err, writer.Close(), pipeReader.Close())
+		err = errorutils.First(err, errors.Wrapv(writer.Close(), errData), errors.Wrapv(pipeReader.Close(), errData))
 	}()
 
 	opts := map[string]interface{}{
@@ -98,9 +100,12 @@ func list(name string, types map[string]bool, recurse bool, depth uint64) (ret [
 		"version": uint64(0),
 	}
 
+	errData = map[string]interface{}{"name": name, "input": args}
+
 	encoded := &bytes.Buffer{}
 	err = nv.NewNativeEncoder(encoded).Encode(args)
 	if err != nil {
+		err = errors.Wrapv(err, errData)
 		return
 	}
 
@@ -130,12 +135,14 @@ func list(name string, types map[string]bool, recurse bool, depth uint64) (ret [
 
 		_, err = io.ReadFull(reader, buf)
 		if err != nil {
+			err = errors.Wrapv(err, errData)
 			break
 		}
 
 		m := &dataset{}
 		err = nv.NewXDRDecoder(bytes.NewReader(buf)).Decode(&m)
 		if err != nil {
+			err = errors.Wrapv(err, errData)
 			break
 		}
 

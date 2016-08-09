@@ -4,9 +4,10 @@ package zfs
 // int zfs_ioctl(int, char *, int, void *, int, void *, int);
 import "C"
 import (
-	"errors"
 	"os"
 	"unsafe"
+
+	"github.com/cerana/cerana/pkg/errors"
 )
 
 func ioctl(f *os.File, name string, input, output []byte) error {
@@ -24,5 +25,5 @@ func ioctl(f *os.File, name string, input, output []byte) error {
 		C.CString(name), C.int(len(name)),
 		unsafe.Pointer(in), C.int(len(input)),
 		unsafe.Pointer(out), C.int(len(output)))
-	return err
+	return errors.Wrapv(err, map[string]interface{}{"name": name, "input": input})
 }

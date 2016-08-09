@@ -3,6 +3,7 @@ package zfs
 import (
 	"bytes"
 
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/zfs/nv"
 )
 
@@ -19,7 +20,7 @@ func rename(name, newName string, recursive bool) (string, error) {
 	encoded := &bytes.Buffer{}
 	err := nv.NewNativeEncoder(encoded).Encode(m)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapv(err, map[string]interface{}{"name": name, "input": m})
 	}
 
 	out := make([]byte, 1024)
