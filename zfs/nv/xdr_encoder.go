@@ -3,10 +3,10 @@ package nv
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"io"
 	"reflect"
 
+	"github.com/cerana/cerana/pkg/errors"
 	xdr "github.com/davecgh/go-xdr/xdr2"
 )
 
@@ -44,7 +44,7 @@ func (e XDREncoder) header(h header) error {
 }
 
 func encHeader(w io.Writer, h header) error {
-	return binary.Write(w, binary.BigEndian, h)
+	return errors.Wrapv(binary.Write(w, binary.BigEndian, h), map[string]interface{}{"header": h})
 }
 
 func (e XDREncoder) footer() error {
@@ -52,7 +52,7 @@ func (e XDREncoder) footer() error {
 }
 
 func encFooter(w io.Writer) error {
-	return binary.Write(w, binary.BigEndian, uint64(0))
+	return errors.Wrap(binary.Write(w, binary.BigEndian, uint64(0)))
 }
 
 func (e XDREncoder) item(name string, dtype dataType, value interface{}) error {
@@ -135,7 +135,7 @@ func (e XDREncoder) item(name string, dtype dataType, value interface{}) error {
 	if vbuf.Len() == 0 && p.Type != _boolean {
 		_, err := xdr.NewEncoder(vbuf).Encode(value)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "failed to write value to vbuf")
 		}
 	}
 
@@ -145,16 +145,16 @@ func (e XDREncoder) item(name string, dtype dataType, value interface{}) error {
 	pbuf := &bytes.Buffer{}
 	_, err := xdr.NewEncoder(pbuf).Encode(p)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to write to pbuf")
 	}
 
 	_, err = pbuf.WriteTo(e.w)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to write pbuf")
 	}
 	_, err = vbuf.WriteTo(e.w)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to write vbuf")
 	}
 
 	return nil

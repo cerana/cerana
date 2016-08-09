@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/cerana/cerana/pkg/errors"
 )
 
 func checkArray(t *testing.T, field string, value interface{}, l int, fn func([]string)) {
@@ -443,9 +445,9 @@ func TestDecodeBad(t *testing.T) {
 			t.Fatalf("expected an error, wanted:|%s| payload:|%v|\n",
 				test.err, test.payload)
 		}
-		if test.err != err.Error() {
+		if test.err != errors.Cause(err).Error() {
 			t.Fatalf("error mismatch, want:|%s| got:|%s| payload:|%v|\n",
-				test.err, err.Error(), test.payload)
+				test.err, errors.Cause(err).Error(), test.payload)
 		}
 	}
 }
@@ -457,7 +459,7 @@ func TestDecodeBadArgs(t *testing.T) {
 	}{
 		{
 			arg: struct{}{},
-			err: "cannot decode into non-pointer: reflect.Value",
+			err: "cannot decode into non-pointer",
 		},
 	}
 	for _, test := range badArgs {

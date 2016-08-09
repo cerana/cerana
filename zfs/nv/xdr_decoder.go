@@ -2,11 +2,11 @@ package nv
 
 import (
 	"encoding/binary"
-	"fmt"
 	"io"
 	"reflect"
 	"time"
 
+	"github.com/cerana/cerana/pkg/errors"
 	xdr "github.com/davecgh/go-xdr/xdr2"
 )
 
@@ -32,18 +32,18 @@ func (d *XDRDecoder) Decode(target interface{}) error {
 	if err != nil {
 		return err
 	} else if codec != xdrCodec {
-		return fmt.Errorf("invalid encoding: %v", codec)
+		return errors.Newv("invalid encoding", map[string]interface{}{"codec": codec})
 	} else if endianness != littleEndian {
-		return fmt.Errorf("invalid endianess: %v", endianness)
+		return errors.Newv("invalid endianess", map[string]interface{}{"endianness": endianness})
 	}
 
 	// Validate target
 	targetV := reflect.ValueOf(target)
 	if targetV.Kind() != reflect.Ptr {
-		return fmt.Errorf("cannot decode into non-pointer: %v", reflect.TypeOf(targetV).String())
+		return errors.Newv("cannot decode into non-pointer", map[string]interface{}{"type": reflect.TypeOf(targetV).String()})
 	}
 	if targetV.IsNil() {
-		return fmt.Errorf("cannot decode into nil")
+		return errors.New("cannot decode into nil")
 	}
 
 	return decodeList(d, reflect.Indirect(targetV))
@@ -52,41 +52,40 @@ func (d *XDRDecoder) Decode(target interface{}) error {
 func (d *XDRDecoder) header() (header, error) {
 	var h header
 	err := binary.Read(d.r, binary.BigEndian, &h)
-	return h, err
+	return h, errors.Wrap(err, "failed to decode header")
 }
 
 func (d *XDRDecoder) meta() (string, dataType, error) {
 	_, err := xdr.Unmarshal(d.r, &d.pair)
-	return d.pair.Name, d.pair.Type, err
+	return d.pair.Name, d.pair.Type, errors.Wrap(err, "failed to decode meta")
 }
 
 func (d *XDRDecoder) skip() error {
 	_, err := d.r.Seek(int64(d.pair.EncodedSize-uint32(d.pair.headerSize())), 1)
-	return err
+	return errors.Wrap(err, "failed to skip")
 }
 
 func (d *XDRDecoder) isEnd() (bool, error) {
 	var end uint64
 	err := binary.Read(d.r, binary.BigEndian, &end)
 	if err != nil {
-		return false, err
+		return false, errors.Wrap(err, "failed to check for end")
 	}
 	if end == 0 {
 		return true, nil
 	}
 	_, err = d.r.Seek(-8, 1)
-	return false, err
+	return false, errors.Wrap(err, "failed to seek back")
 }
 
 func (d *XDRDecoder) value(targetType reflect.Type) (reflect.Value, fieldSetFunc, error) {
 	var val reflect.Value
 	var fsf fieldSetFunc
-	err := fmt.Errorf("unknown type: %v", d.pair.Type)
+	var err error
 
 	var v interface{}
 	switch d.pair.Type {
 	case _boolean:
-		err = nil
 		v := Boolean(true)
 		val = reflect.ValueOf(v)
 		fsf = func(field reflect.Value, val reflect.Value) {
@@ -264,6 +263,8 @@ func (d *XDRDecoder) value(targetType reflect.Type) (reflect.Value, fieldSetFunc
 		fsf = func(field reflect.Value, val reflect.Value) {
 			field.Set(val)
 		}
+	default:
+		err = errors.Newv("unknown type", map[string]interface{}{"type": d.pair.Type})
 	}
 	return val, fsf, err
 }

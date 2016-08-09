@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"sort"
+
+	"github.com/cerana/cerana/pkg/errors"
 )
 
 //go:generate sh -c "stringer -type=flag && sed -i 's#_flag_name#flagName#g;s#_flag_index#flagIndex#g' flag_string.go"
@@ -47,7 +49,7 @@ func pretty(src []byte) (map[string]interface{}, error) {
 
 	l := list{}
 	err := NewXDRDecoder(bytes.NewReader(src)).Decode(&l)
-	return l, err
+	return l, errors.Wrap(err)
 }
 
 func prettyPrint(dst io.Writer, m map[string]interface{}, indenter, indent string) {
