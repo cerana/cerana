@@ -172,9 +172,9 @@ func SetNewUser(uid int, gid int) error {
 	//if err := fixStdioPermissions(uid, gid); err != nil {
 	//	return err
 	//}
-	if (gid == 0 || uid == 0) {
-		return nil
-	}
+	//if (gid == 0 || uid == 0) {
+	//	return nil
+	//}
 	if err := Setgid(gid); err != nil {
 		return err
 	}

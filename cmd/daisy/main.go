@@ -44,12 +44,13 @@ var defaultCfg = Cfg{
 			Target: "/dev/pts",
 			Fs:     "devpts",
 			Flags:  syscall.MS_NOSUID | syscall.MS_NOEXEC,
+			Data:   "newinstance,ptmxmode=0666,mode=660",
 		},
 		{
-			Source: "sysfs",
+			Source: "/sys",
 			Target: "/sys",
-			Fs:     "sysfs",
-			Flags:  syscall.MS_NOSUID | syscall.MS_NOEXEC | syscall.MS_NODEV | syscall.MS_RDONLY,
+			Fs:     "bind",
+			Flags:  syscall.MS_BIND | syscall.MS_REC | syscall.MS_RDONLY,
 		},
 	},
 	Rootfs:  "",
@@ -112,6 +113,7 @@ func main() {
 		for _, dev := range strings.Split(devices, ",") {
 			devList = append(devList, "/dev/"+dev)
 		}
+		cfg.Devices = devList
 		if err := Child(cfg); err != nil {
 			log.Fatalf("Child execution failed: %v", err)
 		}
@@ -127,8 +129,8 @@ func main() {
 
 	c := &Container{
 		Args:       execArgs,
-		Uid:        uid,
-		Gid:        gid,
+		Uid:        uint32(uid),
+		Gid:        uint32(gid),
 		Namespaces: nsList,
 	}
 	if err := c.Start(); err != nil {

@@ -46,8 +46,8 @@ func (n Namespaces) CloneFlags() uintptr {
 type Container struct {
 	Args       []string
 	Namespaces Namespaces
-	Uid        int
-	Gid        int
+	Uid        uint32
+	Gid        uint32
 }
 
 type Mount struct {
@@ -83,14 +83,14 @@ func (c *Container) Start() error {
 		uidmap = []syscall.SysProcIDMap{
 			{
 				ContainerID: 0,
-				HostID:      c.Uid,
+				HostID:      int(c.Uid),
 				Size:        1,
 			},
 		}
 		gidmap = []syscall.SysProcIDMap{
 			{
 				ContainerID: 0,
-				HostID:      c.Gid,
+				HostID:      int(c.Gid),
 				Size:        1,
 			},
 		}
@@ -112,6 +112,10 @@ func (c *Container) Start() error {
 		Cloneflags:  flags,
 		UidMappings: uidmap,
 		GidMappings: gidmap,
+		Credential:  &syscall.Credential{
+			Uid: c.Uid,
+			Gid: c.Gid,
+		},
 	}
 	if err := cmd.Start(); err != nil {
 		return err
@@ -181,6 +185,9 @@ func mount(cfg Cfg) error {
 		}
 		if err := syscall.Mount(m.Source, target, m.Fs, uintptr(m.Flags), m.Data); err != nil {
 			return fmt.Errorf("failed to mount %s to %s: %v", m.Source, target, err)
+		}
+		if (m.Flags & syscall.MS_BIND != 0 && m.Flags & syscall.MS_RDONLY != 0) {
+			syscall.Mount(target, target, m.Fs, uintptr(m.Flags | syscall.MS_REMOUNT), m.Data)
 		}
 	}
 	return nil
