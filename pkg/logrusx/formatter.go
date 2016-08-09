@@ -29,7 +29,6 @@ func (f *JSONFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	for k, v := range entry.Data {
 		if err, ok := v.(error); ok {
 			// Get the call stack and remove this function call from it
-			//stack := f.callStack()[1:]
 			stack := f.callStack()
 			var stackStart int
 			for stackStart = 1; stackStart < len(stack); stackStart++ {

@@ -2,17 +2,12 @@
 
 [![errors](https://godoc.org/github.com/cerana/cerana/pkg/errors?status.svg)](https://godoc.org/github.com/cerana/cerana/pkg/errors)
 
-Package errors provides more rich error handling functionality
+Package errors provides richer error handling functionality
 
 Errors created or wrapped include a stack trace, optional additional context
 messages, and optional additional relevant data.
 
 ## Usage
-
-```go
-var StackDepth uint = 32
-```
-StackDepth is the maximum callstack depth that will be used.
 
 #### func  Cause
 

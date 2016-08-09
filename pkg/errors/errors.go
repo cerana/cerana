@@ -10,7 +10,7 @@ import (
 )
 
 // StackDepth is the maximum callstack depth that will be used.
-var StackDepth uint = 32
+const stackDepth uint = 32
 
 type errorExt struct {
 	cause   error
@@ -157,7 +157,7 @@ func Wrapv(err error, values map[string]interface{}) error {
 }
 
 func getPCs(skip int) []uintptr {
-	pcs := make([]uintptr, StackDepth)
+	pcs := make([]uintptr, stackDepth)
 	n := runtime.Callers(skip, pcs)
 	return pcs[0:n]
 }
