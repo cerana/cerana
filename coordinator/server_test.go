@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/coordinator"
 	"github.com/pborman/uuid"
@@ -37,7 +37,7 @@ type params struct {
 }
 
 func (s *ServerSuite) SetupSuite() {
-	log.SetLevel(log.FatalLevel)
+	logrus.SetLevel(logrus.FatalLevel)
 
 	socketDir, err := ioutil.TempDir("", "coordinatorTest-")
 	s.Require().NoError(err, "failed to create socket dir")

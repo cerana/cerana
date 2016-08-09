@@ -14,10 +14,18 @@ func DefaultSetup(logLevel string) error
 ```
 DefaultSetup sets the logrus formatter and log level
 
+#### func  DieOnError
+
+```go
+func DieOnError(err error, msg ...interface{})
+```
+DieOnError is a convenience method for checking an error, and if present,
+logging a Fatal message.
+
 #### func  LogReturnedErr
 
 ```go
-func LogReturnedErr(fn func() error, fields log.Fields, message string)
+func LogReturnedErr(fn func() error, fields logrus.Fields, message string)
 ```
 LogReturnedErr wraps a function that returns an error, calls the function, and
 logs any error. Useful for basic defer, e.g. `defer
@@ -48,7 +56,7 @@ properties, including both when JSON marshaling.
 
 ```go
 type JSONFormatter struct {
-	log.JSONFormatter
+	logrus.JSONFormatter
 }
 ```
 
@@ -58,7 +66,7 @@ handling of error values
 #### func (*JSONFormatter) Format
 
 ```go
-func (f *JSONFormatter) Format(entry *log.Entry) ([]byte, error)
+func (f *JSONFormatter) Format(entry *logrus.Entry) ([]byte, error)
 ```
 Format replaces any error field values with a FieldError and produces a JSON
 formatted log entry

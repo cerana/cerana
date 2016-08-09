@@ -7,13 +7,13 @@ import (
 	"runtime"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 )
 
 type (
 	// JSONFormatter is a custom formatter extending logrus.JSONFormatter with better handling of error values
 	JSONFormatter struct {
-		log.JSONFormatter
+		logrus.JSONFormatter
 	}
 
 	// FieldError contains both the error struct and error message as explicit properties, including both when JSON marshaling.
@@ -25,16 +25,22 @@ type (
 )
 
 // Format replaces any error field values with a FieldError and produces a JSON formatted log entry
-func (f *JSONFormatter) Format(entry *log.Entry) ([]byte, error) {
+func (f *JSONFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	for k, v := range entry.Data {
 		if err, ok := v.(error); ok {
 			// Get the call stack and remove this function call from it
-			stack := f.callStack()[1:]
+			stack := f.callStack()
+			var stackStart int
+			for stackStart = 1; stackStart < len(stack); stackStart++ {
+				if !(strings.Contains(stack[stackStart], "github.com/Sirupsen/logrus") || strings.Contains(stack[stackStart], "github.com/cerana/cerana/pkg/logrusx")) {
+					break
+				}
+			}
 
 			entry.Data[k] = FieldError{
 				Error:   err,
 				Message: err.Error(),
-				Stack:   stack,
+				Stack:   stack[stackStart:],
 			}
 		}
 	}

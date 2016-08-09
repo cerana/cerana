@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/acomm"
 	"github.com/stretchr/testify/suite"
 )
@@ -27,7 +27,7 @@ type TrackerTestSuite struct {
 }
 
 func (s *TrackerTestSuite) SetupSuite() {
-	log.SetLevel(log.FatalLevel)
+	logrus.SetLevel(logrus.FatalLevel)
 	s.Responses = make(chan *acomm.Response, 10)
 
 	// Mock HTTP response server

@@ -12,18 +12,12 @@ func main() {
 	config := newConfig(nil, nil)
 	pflag.Parse()
 
-	dieOnError(config.loadConfig())
-	dieOnError(config.setupLogging())
+	logrusx.DieOnError(config.loadConfig(), "load config")
+	logrusx.DieOnError(config.setupLogging(), "setup logging")
 
 	sp, err := newStatsPusher(config)
-	dieOnError(err)
+	logrusx.DieOnError(err, "new statspusher")
 
-	dieOnError(sp.run())
+	logrusx.DieOnError(sp.run(), "run statspusher")
 	sp.stopOnSignal()
-}
-
-func dieOnError(err error) {
-	if err != nil {
-		logrus.WithField("error", err).Fatal("encountered an error during startup")
-	}
 }

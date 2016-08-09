@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
-	logx "github.com/cerana/cerana/pkg/logrusx"
+	"github.com/Sirupsen/logrus"
+	"github.com/cerana/cerana/pkg/logrusx"
 	"github.com/mitchellh/mapstructure"
 	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -66,7 +66,7 @@ func NewConfig(flagSet *flag.FlagSet, v *viper.Viper) *Config {
 // LoadConfig attempts to load the config. Flags should be parsed first.
 func (c *Config) LoadConfig() error {
 	if err := c.viper.BindPFlags(c.flagSet); err != nil {
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"error": err,
 		}).Error("failed to bind flags")
 		return err
@@ -79,7 +79,7 @@ func (c *Config) LoadConfig() error {
 
 	c.viper.SetConfigFile(filePath)
 	if err := c.viper.ReadInConfig(); err != nil {
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"error":    err,
 			"filePath": filePath,
 		}).Error("failed to parse config file")
@@ -150,7 +150,7 @@ func (c *Config) RequestTimeout() time.Duration {
 func (c *Config) Validate() error {
 	if c.SocketDir() == "" {
 		err := errors.New("missing socket_dir")
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"error": err,
 		}).Error("invalid config")
 		return err
@@ -158,13 +158,13 @@ func (c *Config) Validate() error {
 
 	if c.ServiceName() == "" {
 		err := errors.New("missing service_name")
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"error": err,
 		}).Error("invalid config")
 		return err
 	}
 	if _, err := url.ParseRequestURI(c.viper.GetString("coordinator_url")); err != nil {
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"coordinator_url": c.viper.GetString("coordinator_url"),
 			"error":           err,
 		}).Error("invalid config")
@@ -203,8 +203,8 @@ func (c *Config) UnmarshalKey(key string, rawVal interface{}) error {
 // SetupLogging sets the log level and formatting.
 func (c *Config) SetupLogging() error {
 	logLevel := c.viper.GetString("log_level")
-	if err := logx.SetLevel(logLevel); err != nil {
-		log.WithFields(log.Fields{
+	if err := logrusx.SetLevel(logLevel); err != nil {
+		logrus.WithFields(logrus.Fields{
 			"error": err,
 			"level": logLevel,
 		}).Error("failed to set up logging")

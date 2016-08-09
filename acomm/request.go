@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 	"github.com/pborman/uuid"
 )
 
@@ -95,7 +95,7 @@ func NewRequest(opts RequestOptions) (*Request, error) {
 func (req *Request) SetResponseHook(urlString string) error {
 	responseHook, err := url.ParseRequestURI(urlString)
 	if err != nil {
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"error":        err,
 			"responseHook": urlString,
 		}).Error("invalid response hook url")
@@ -110,7 +110,7 @@ func (req *Request) SetResponseHook(urlString string) error {
 func (req *Request) SetStreamURL(urlString string) error {
 	streamURL, err := url.ParseRequestURI(urlString)
 	if err != nil {
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"error":     err,
 			"streamURL": urlString,
 		}).Error("invalid stream url")
@@ -125,7 +125,7 @@ func (req *Request) SetStreamURL(urlString string) error {
 func (req *Request) SetTaskURL(urlString string) error {
 	taskURL, err := url.ParseRequestURI(urlString)
 	if err != nil {
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"error":   err,
 			"taskURL": urlString,
 		}).Error("invalid task url")
@@ -140,7 +140,7 @@ func (req *Request) SetTaskURL(urlString string) error {
 func (req *Request) SetArgs(args interface{}) error {
 	argsJSON, err := json.Marshal(args)
 	if err != nil {
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"error": err,
 			"args":  args,
 		}).Error("unable to set args")
@@ -162,7 +162,7 @@ func unmarshalFromRaw(src *json.RawMessage, dest interface{}) error {
 
 	err := json.Unmarshal(*src, dest)
 	if err != nil {
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"error": err,
 			"data":  src,
 		}).Error("failed to unmarshal data")
@@ -174,7 +174,7 @@ func unmarshalFromRaw(src *json.RawMessage, dest interface{}) error {
 func (req *Request) Validate() error {
 	if req.ID == "" {
 		err := errors.New("missing id")
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"req":   req,
 			"error": err,
 		}).Error("invalid req")
@@ -182,7 +182,7 @@ func (req *Request) Validate() error {
 	}
 	if req.Task == "" {
 		err := errors.New("missing task")
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"req":   req,
 			"error": err,
 		}).Error("invalid req")

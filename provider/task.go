@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/acomm"
 )
 
@@ -78,7 +78,7 @@ func (t *task) acceptRequest(conn net.Conn) {
 	// Respond to the initial request
 	resp, err := acomm.NewResponse(req, nil, nil, respErr)
 	if err != nil {
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"error":   err,
 			"req":     req,
 			"respErr": respErr,
@@ -110,7 +110,7 @@ func (t *task) handleRequest(req *acomm.Request) {
 	// of the request and response data as well.
 	resp, err := acomm.NewResponse(req, result, streamAddr, taskErr)
 	if err != nil {
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"task":       t.name,
 			"req":        req,
 			"taskResult": result,
@@ -121,7 +121,7 @@ func (t *task) handleRequest(req *acomm.Request) {
 	}
 
 	if err := req.Respond(resp); err != nil {
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"task":       t.name,
 			"req":        req,
 			"taskResult": result,

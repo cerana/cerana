@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"net/url"
 
-	log "github.com/Sirupsen/logrus"
-	logx "github.com/cerana/cerana/pkg/logrusx"
+	"github.com/Sirupsen/logrus"
+	"github.com/cerana/cerana/pkg/logrusx"
 )
 
 // Response is a response data structure for asynchronous requests. The ID
@@ -61,7 +61,7 @@ func (r *Response) UnmarshalJSON(data []byte) error {
 func NewResponse(req *Request, result interface{}, streamURL *url.URL, respErr error) (*Response, error) {
 	if req == nil {
 		err := errors.New("cannot create response without request")
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"errors": err,
 		}).Error(err)
 		return nil, err
@@ -69,7 +69,7 @@ func NewResponse(req *Request, result interface{}, streamURL *url.URL, respErr e
 
 	if result != nil && respErr != nil {
 		err := errors.New("cannot set both result and err")
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"error": err,
 		}).Error(err)
 		return nil, err
@@ -79,7 +79,7 @@ func NewResponse(req *Request, result interface{}, streamURL *url.URL, respErr e
 	if result != nil {
 		resultJSON, err := json.Marshal(result)
 		if err != nil {
-			log.WithFields(log.Fields{
+			logrus.WithFields(logrus.Fields{
 				"error":  err,
 				"result": result,
 			}).Error("failed to marshal response result")
@@ -104,7 +104,7 @@ func (r *Response) UnmarshalResult(dest interface{}) error {
 func Send(addr *url.URL, payload interface{}) error {
 	if addr == nil {
 		err := errors.New("missing addr")
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"error": err,
 		}).Error(err)
 		return err
@@ -116,7 +116,7 @@ func Send(addr *url.URL, payload interface{}) error {
 		return sendHTTP(addr, payload)
 	default:
 		err := errors.New("unknown url type")
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"error": err,
 			"type":  addr.Scheme,
 			"addr":  addr,
@@ -129,15 +129,15 @@ func Send(addr *url.URL, payload interface{}) error {
 func sendUnix(addr *url.URL, payload interface{}) error {
 	conn, err := net.Dial("unix", addr.RequestURI())
 	if err != nil {
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"error":   err,
 			"addr":    addr,
 			"payload": payload,
 		}).Error("failed to connect to unix socket")
 		return err
 	}
-	defer logx.LogReturnedErr(conn.Close,
-		log.Fields{"addr": addr},
+	defer logrusx.LogReturnedErr(conn.Close,
+		logrus.Fields{"addr": addr},
 		"failed to close unix connection",
 	)
 
@@ -157,7 +157,7 @@ func sendUnix(addr *url.URL, payload interface{}) error {
 func sendHTTP(addr *url.URL, payload interface{}) error {
 	payloadJSON, err := json.Marshal(payload)
 	if err != nil {
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"error":   err,
 			"payload": payload,
 		}).Error("failed to marshal payload json")
@@ -166,19 +166,19 @@ func sendHTTP(addr *url.URL, payload interface{}) error {
 
 	httpResp, err := http.Post(addr.String(), "application/json", bytes.NewReader(payloadJSON))
 	if err != nil {
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"error":   err,
 			"addr":    addr,
 			"payload": payload,
 		}).Error("failed to send payload")
 		return err
 	}
-	defer logx.LogReturnedErr(httpResp.Body.Close, nil, "failed to close http body")
+	defer logrusx.LogReturnedErr(httpResp.Body.Close, nil, "failed to close http body")
 
 	body, _ := ioutil.ReadAll(httpResp.Body)
 	resp := &Response{}
 	if err := json.Unmarshal(body, resp); err != nil {
-		log.WithFields(log.Fields{
+		logrus.WithFields(logrus.Fields{
 			"error": err,
 			"body":  string(body),
 		}).Error(err)
