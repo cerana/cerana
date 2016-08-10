@@ -159,8 +159,8 @@ serial --unit=0 --speed=115200
 terminal_input serial
 terminal_output serial
 
-set default 0
-set timeout 10
+set default=0
+set timeout=10
 set color_normal=white/black
 set color_highlight=black/white
 
