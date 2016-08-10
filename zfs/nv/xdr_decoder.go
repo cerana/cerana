@@ -57,7 +57,7 @@ func (d *XDRDecoder) header() (header, error) {
 
 func (d *XDRDecoder) meta() (string, dataType, error) {
 	_, err := xdr.Unmarshal(d.r, &d.pair)
-	return d.pair.Name, d.pair.Type, errors.Wrap(err, "failed to decode meta")
+	return d.pair.Name, d.pair.Type, errors.Wrap(err, "failed to decode nvpair metadata")
 }
 
 func (d *XDRDecoder) skip() error {

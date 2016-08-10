@@ -95,13 +95,13 @@ func decodeNativeEmbeddedListHeader(r io.ReadSeeker) (header, error) {
 func (d *NativeDecoder) meta() (string, dataType, error) {
 	err := binary.Read(d.r, binary.LittleEndian, &d.pair.nativeMeta)
 	if err != nil {
-		return "", 0, errors.Wrap(err, "failed to decode meta")
+		return "", 0, errors.Wrap(err, "failed to decode nvpair metadata")
 	}
 
 	len := uint32(align8(int(d.pair.NameLen)))
 	buf := make([]byte, len)
 	if _, err = d.r.Read(buf); err != nil {
-		return "", 0, errors.Wrap(err, "failed to read meta buffer")
+		return "", 0, errors.Wrap(err, "failed to read nvpair metadata buffer")
 	}
 	if len == 0 {
 		return "", 0, errors.New("wtf")

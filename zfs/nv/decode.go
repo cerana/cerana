@@ -22,7 +22,7 @@ func decodePreamble(r io.Reader, byteOrder binary.ByteOrder) (codec, endianness,
 	if enc.Encoding > maxCodec {
 		err = errors.Newv("invalid encoding", map[string]interface{}{"encoding": enc.Encoding})
 	} else if enc.Endianess > maxEndian {
-		err = errors.Newv("invalid endianess", map[string]interface{}{"endianess": enc.Endianess})
+		err = errors.Newv("invalid endianness", map[string]interface{}{"endianness": enc.Endianess})
 	} else if enc.Reserved1 != 0 {
 		err = errors.Newv("unexpected reserved1 value", map[string]interface{}{"reserved1": enc.Reserved1})
 	} else if enc.Reserved2 != 0 {
