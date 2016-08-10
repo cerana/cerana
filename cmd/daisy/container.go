@@ -67,6 +67,7 @@ type Cfg struct {
 	Mounts   []Mount
 	Rootfs   string
 	Devices  []string
+	Capabilities []string
 	Seccomp  []seccomp.SyscallRule
 }
 
@@ -323,7 +324,7 @@ func Child(cfg Cfg) error {
 
 	capInit()
 
-	w, err := newCapWhitelist(Capabilities)
+	w, err := newCapWhitelist(cfg.Capabilities)
 	if err != nil {
 		return fmt.Errorf("newCapWhitelist: %v", err)
 	}

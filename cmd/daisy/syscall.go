@@ -192,20 +192,45 @@ func Prctl(option int, arg2, arg3, arg4, arg5 uintptr) (err error) {
 	return
 }
 
-var Capabilities = []string{
+var CapabilitiesKVM = []string{
 	"CAP_CHOWN",
 	"CAP_DAC_OVERRIDE",
-	"CAP_FSETID",
 	"CAP_FOWNER",
-	"CAP_MKNOD",
+	"CAP_FSETID",
+	"CAP_NET_ADMIN",
 	"CAP_NET_RAW",
 	"CAP_SETGID",
 	"CAP_SETUID",
 	"CAP_SETFCAP",
 	"CAP_SETPCAP",
 	"CAP_NET_BIND_SERVICE",
-	"CAP_SYS_CHROOT",
 	"CAP_KILL",
+	"CAP_AUDIT_WRITE",
+}
+
+var CapabilitiesDefault = []string{
+	"CAP_CHOWN",
+	"CAP_DAC_OVERRIDE",
+	"CAP_FOWNER",
+	"CAP_FSETID",
+	"CAP_IPC_LOCK",
+	"CAP_IPC_OWNER",
+	"CAP_LEASE",
+	"CAP_MKNOD",
+	"CAP_NET_ADMIN",
+	"CAP_NET_BIND_SERVICE",
+	"CAP_NET_RAW",
+	"CAP_SETGID",
+	"CAP_SETUID",
+	"CAP_SETFCAP",
+	"CAP_SETPCAP",
+	"CAP_SYS_CHROOT",
+	"CAP_SYS_ADMIN",
+	"CAP_SYS_PTRACE",
+	"CAP_SYS_NICE",
+	"CAP_SYS_PACCT",
+	"CAP_KILL",
+	"CAP_SYSLOG",
 	"CAP_AUDIT_WRITE",
 }
 

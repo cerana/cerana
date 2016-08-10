@@ -101,9 +101,11 @@ func main() {
 	if os.Args[0] == "child" {
 		var devList []string
 		var scmp = seccomp.Whitelist
+		var caps = CapabilitiesDefault
 
 		if kvm {
 			scmp = seccomp.WhitelistKVM
+			caps = CapabilitiesKVM
 		}
 
 		cfg := defaultCfg
@@ -112,6 +114,7 @@ func main() {
 		cfg.Rootfs = rootFs
 		cfg.Hostname = hostname
 		cfg.Seccomp = scmp
+		cfg.Capabilities = caps
 
 		for _, dev := range strings.Split(devices, ",") {
 			devList = append(devList, "/dev/"+dev)
