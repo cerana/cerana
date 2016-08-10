@@ -2,6 +2,7 @@ package logrusx
 
 import (
 	"github.com/Sirupsen/logrus"
+	"github.com/cerana/cerana/pkg/errors"
 )
 
 // DefaultSetup sets the logrus formatter and log level
@@ -27,14 +28,10 @@ func SetLevel(logLevel string) error {
 // LogReturnedErr wraps a function that returns an error, calls the function,
 // and logs any error.
 // Useful for basic defer, e.g.
-// `defer LogReturnedErr(f.Close(),logrus.Fields{"file":f.Name()}, "failed to close file")`
-func LogReturnedErr(fn func() error, fields logrus.Fields, message string) {
+// `defer LogReturnedErr(f.Close,logrus.Fields{"file":f.Name()}, "failed to close file")`
+func LogReturnedErr(fn func() error, fields map[string]interface{}, message string) {
 	if err := fn(); err != nil {
-		if fields == nil {
-			fields = logrus.Fields{}
-		}
-		fields["error"] = err
-		logrus.WithFields(fields).Error(message)
+		logrus.WithField("error", errors.Wrapv(err, fields)).Error(message)
 	}
 }
 
@@ -42,6 +39,6 @@ func LogReturnedErr(fn func() error, fields logrus.Fields, message string) {
 // logging a Fatal message.
 func DieOnError(err error, msg ...interface{}) {
 	if err != nil {
-		logrus.WithField("error", err).Fatal(msg...)
+		logrus.WithField("error", errors.Wrap(err)).Fatal(msg...)
 	}
 }

@@ -25,12 +25,11 @@ logging a Fatal message.
 #### func  LogReturnedErr
 
 ```go
-func LogReturnedErr(fn func() error, fields logrus.Fields, message string)
+func LogReturnedErr(fn func() error, fields map[string]interface{}, message string)
 ```
 LogReturnedErr wraps a function that returns an error, calls the function, and
 logs any error. Useful for basic defer, e.g. `defer
-LogReturnedErr(f.Close(),logrus.Fields{"file":f.Name()}, "failed to close
-file")`
+LogReturnedErr(f.Close,logrus.Fields{"file":f.Name()}, "failed to close file")`
 
 #### func  SetLevel
 
