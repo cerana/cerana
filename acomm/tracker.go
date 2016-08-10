@@ -2,7 +2,6 @@ package acomm
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -16,6 +15,7 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/pkg/logrusx"
 )
 
@@ -73,24 +73,24 @@ func generateTempSocketPath(dir, prefix string) (string, error) {
 	// TODO: Decide on permissions
 	if dir != "" {
 		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
-			logrus.WithFields(logrus.Fields{
+			return "", errors.Wrapv(err, map[string]interface{}{
 				"directory": dir,
 				"perm":      os.ModePerm,
-				"error":     err,
-			}).Error("failed to create directory for socket")
-			return "", err
+			})
 		}
 	}
 
 	f, err := ioutil.TempFile(dir, prefix)
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("failed to create temp file for response socket")
-		return "", err
+		return "", errors.Wrapv(err, map[string]interface{}{
+			"dir":    dir,
+			"prefix": prefix,
+		})
 	}
-	_ = f.Close()
-	_ = os.Remove(f.Name())
+	logrusx.LogReturnedErr(f.Close, map[string]interface{}{"name": f.Name()}, "failed to close temp file")
+	if err = os.Remove(f.Name()); err != nil {
+		logrus.WithField("error", errors.Wrapv(err, map[string]interface{}{"name": f.Name()})).Error("failed to remove temp file")
+	}
 
 	return fmt.Sprintf("%s.sock", f.Name()), nil
 }
@@ -155,10 +155,13 @@ func (t *Tracker) handleConn(conn net.Conn) {
 
 	resp := &Response{}
 	if err := UnmarshalConnData(conn, resp); err != nil {
+		logrus.WithField("error", errors.Wrap(err)).Error("fail to unmarshal response")
 		return
 	}
 
-	_ = SendConnData(conn, &Response{})
+	if err := SendConnData(conn, &Response{}); err != nil {
+		logrus.WithField("error", map[string]interface{}{"requestID": resp.ID}).Error("failed to ack response")
+	}
 
 	go t.HandleResponse(resp)
 }
@@ -168,11 +171,8 @@ func (t *Tracker) handleConn(conn net.Conn) {
 func (t *Tracker) HandleResponse(resp *Response) {
 	req := t.retrieveRequest(resp.ID)
 	if req == nil {
-		err := errors.New("response does not have tracked request")
-		logrus.WithFields(logrus.Fields{
-			"error":    err,
-			"response": resp,
-		}).Error(err)
+		err := errors.Newv("no tracked request", map[string]interface{}{"requestID": resp.ID})
+		logrus.WithField("error", err).Error("failed to lookup request")
 		return
 	}
 	defer t.waitgroup.Done()
@@ -196,13 +196,18 @@ func (t *Tracker) HandleResponse(resp *Response) {
 	if resp.StreamURL != nil {
 		streamURL, err := t.ProxyStreamHTTPURL(resp.StreamURL) // Replace the StreamURL with a proxy stream url
 		if err != nil {
+			err = errors.Wrapv(err, map[string]interface{}{"requestID": req.ID})
+			logrus.WithField("error", err).Error("failed to generate proxy stream url")
 			streamURL = nil
 		}
 		resp.StreamURL = streamURL
 	}
 
 	// Forward the response along
-	_ = req.Respond(resp)
+	if err := req.Respond(resp); err != nil {
+		err = errors.Wrapv(err, map[string]interface{}{"requestID": req.ID})
+		logrus.WithField("error", err).Error("failed to respond to request")
+	}
 	return
 }
 
@@ -247,27 +252,25 @@ func (t *Tracker) TrackRequest(req *Request, timeout time.Duration) error {
 
 	if t.status == statusStarted {
 		if _, ok := t.requests[req.ID]; ok {
-			err := errors.New("request id already traacked")
-			logrus.WithFields(logrus.Fields{
-				"request": req,
-				"error":   err,
-			}).Error(err)
-			return err
+			return errors.Newv("request id already traacked", map[string]interface{}{
+				"requestID": req.ID,
+				"request":   req,
+			})
 		}
 		t.waitgroup.Add(1)
 		t.requests[req.ID] = req
 
-		t.setRequestTimeout(req, timeout)
+		if err := t.setRequestTimeout(req, timeout); err != nil {
+			logrus.WithField("error", err).Error("failed to set request timeout")
+		}
 		return nil
 	}
 
-	err := errors.New("failed to track request in unstarted tracker")
-	logrus.WithFields(logrus.Fields{
+	return errors.Newv("failed to track request in unstarted tracker", map[string]interface{}{
+		"requestID":     req.ID,
 		"request":       req,
 		"trackerStatus": t.status,
-		"error":         err,
-	}).Error(err)
-	return err
+	})
 }
 
 // RemoveRequest should be used to remove a tracked request. Use in cases such
@@ -296,21 +299,26 @@ func (t *Tracker) retrieveRequest(id string) *Request {
 	return nil
 }
 
-func (t *Tracker) setRequestTimeout(req *Request, timeout time.Duration) {
+func (t *Tracker) setRequestTimeout(req *Request, timeout time.Duration) error {
 	// Fallback to default timeout
 	if timeout <= 0 {
 		timeout = t.defaultTimeout
 	}
 
-	resp, err := NewResponse(req, nil, nil, errors.New("response timeout"))
+	timeoutErr := errors.Newv("response timeout", map[string]interface{}{
+		"requestID": req.ID,
+		"request":   req,
+		"timeout":   timeout.String(),
+	})
+	resp, err := NewResponse(req, nil, nil, timeoutErr)
 	if err != nil {
-		return
+		return err
 	}
 
 	req.timeout = time.AfterFunc(timeout, func() {
 		t.HandleResponse(resp)
 	})
-	return
+	return nil
 }
 
 // ProxyUnix proxies requests that have response hooks and stream urls of
@@ -322,12 +330,10 @@ func (t *Tracker) setRequestTimeout(req *Request, timeout time.Duration) {
 // so that there can be a single entry and exit point for external
 // communication, while local services can reply directly to each other.
 func (t *Tracker) ProxyUnix(req *Request, timeout time.Duration) (*Request, error) {
+	errData := map[string]interface{}{"requestID": req.ID, "request": req}
+
 	if t.responseListener == nil {
-		err := errors.New("request tracker's response listener not active")
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Error(err)
-		return nil, err
+		return nil, errors.Newv("response listener not active", errData)
 	}
 
 	if req.StreamURL != nil && req.StreamURL.Scheme != "unix" {
@@ -337,16 +343,14 @@ func (t *Tracker) ProxyUnix(req *Request, timeout time.Duration) (*Request, erro
 		go func(src *url.URL) {
 			defer logrusx.LogReturnedErr(w.Close, nil, "failed to close proxy stream writer")
 			if err := Stream(w, src); err != nil {
-				logrus.WithFields(logrus.Fields{
-					"error":     err,
-					"streamURL": src,
-				}).Error("failed to stream")
+				err = errors.Wrapv(err, errData)
+				logrus.WithField("errors", err).Error("failed to proxy stream")
 			}
 		}(req.StreamURL)
 
 		addr, err := t.NewStreamUnix("", r)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapv(err, errData)
 		}
 
 		req.StreamURL = addr
@@ -375,19 +379,13 @@ func (t *Tracker) ProxyUnix(req *Request, timeout time.Duration) (*Request, erro
 
 // ProxyExternal proxies a request intended for an external destination
 func (t *Tracker) ProxyExternal(req *Request, timeout time.Duration) (*Request, error) {
+	errData := map[string]interface{}{"requestID": req.ID, "request": req}
+
 	if t.externalProxyURL == nil {
-		err := errors.New("tracker missing external proxy url")
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Error(err)
-		return nil, err
+		return nil, errors.Newv("tracker missing external proxy url", errData)
 	}
 	if t.responseListener == nil {
-		err := errors.New("request tracker's response listener not active")
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Error(err)
-		return nil, err
+		return nil, errors.Newv("request tracker's response listener not active", errData)
 	}
 
 	externalReq := &Request{
@@ -399,7 +397,7 @@ func (t *Tracker) ProxyExternal(req *Request, timeout time.Duration) (*Request, 
 	if req.StreamURL != nil {
 		streamURL, err := t.ProxyStreamHTTPURL(req.StreamURL) // Replace the StreamURL with a proxy stream url
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapv(err, errData)
 		}
 		externalReq.StreamURL = streamURL
 	}
@@ -421,17 +419,13 @@ func (t *Tracker) ProxyExternalHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	ackJSON, err := json.Marshal(ack)
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-			"ack":   ack,
-		}).Error("failed to marshal ack")
+		err = errors.Wrapv(err, map[string]interface{}{"ack": ack})
+		logrus.WithField("error", err).Error("failed to marshal ack")
 		return
 	}
 	if _, err := w.Write(ackJSON); err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-			"ack":   ack,
-		}).Error("failed to ack response")
+		err = errors.Wrapv(err, map[string]interface{}{"ack": ack, "requestID": resp.ID})
+		logrus.WithField("error", err).Error("failed to ack response")
 		return
 	}
 
@@ -440,10 +434,8 @@ func (t *Tracker) ProxyExternalHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := ReplaceLocalhost(resp.StreamURL, r.RemoteAddr); err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-			"resp":  resp,
-		}).Error("failed to replace localhost in response streamurl")
+		err = errors.Wrapv(err, map[string]interface{}{"requestID": resp.ID})
+		logrus.WithField("error", err).Error("failed to replace localhost in response streamurl")
 		return
 	}
 
@@ -473,8 +465,9 @@ func (t *Tracker) SyncRequest(dest *url.URL, opts RequestOptions, timeout time.D
 	}
 
 	if err := Send(dest, req); err != nil {
+		errData := map[string]interface{}{"requestID": req.ID, "request": req}
 		_ = t.RemoveRequest(req)
-		return nil, err
+		return nil, errors.Wrapv(err, errData)
 	}
 
 	resp := <-ch
@@ -496,7 +489,7 @@ func ReplaceLocalhost(u *url.URL, replacement string) error {
 				host = "::1"
 			}
 		} else {
-			return err
+			return errors.Wrapv(err, map[string]interface{}{"url": u})
 		}
 	}
 
@@ -506,7 +499,7 @@ func ReplaceLocalhost(u *url.URL, replacement string) error {
 		if strings.HasPrefix(err.Error(), "missing port in address") {
 			newHost = replacement
 		} else {
-			return err
+			return errors.Wrapv(err, map[string]interface{}{"replacement": replacement})
 		}
 	}
 

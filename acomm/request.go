@@ -2,11 +2,10 @@ package acomm
 
 import (
 	"encoding/json"
-	"errors"
 	"net/url"
 	"time"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/pborman/uuid"
 )
 
@@ -95,11 +94,7 @@ func NewRequest(opts RequestOptions) (*Request, error) {
 func (req *Request) SetResponseHook(urlString string) error {
 	responseHook, err := url.ParseRequestURI(urlString)
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error":        err,
-			"responseHook": urlString,
-		}).Error("invalid response hook url")
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"requestID": req.ID, "responseHook": urlString})
 	}
 
 	req.ResponseHook = responseHook
@@ -110,11 +105,7 @@ func (req *Request) SetResponseHook(urlString string) error {
 func (req *Request) SetStreamURL(urlString string) error {
 	streamURL, err := url.ParseRequestURI(urlString)
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error":     err,
-			"streamURL": urlString,
-		}).Error("invalid stream url")
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"requestID": req.ID, "streamURL": urlString})
 	}
 
 	req.StreamURL = streamURL
@@ -125,11 +116,7 @@ func (req *Request) SetStreamURL(urlString string) error {
 func (req *Request) SetTaskURL(urlString string) error {
 	taskURL, err := url.ParseRequestURI(urlString)
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error":   err,
-			"taskURL": urlString,
-		}).Error("invalid task url")
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"requestID": req.ID, "taskURL": urlString})
 	}
 
 	req.TaskURL = taskURL
@@ -140,11 +127,7 @@ func (req *Request) SetTaskURL(urlString string) error {
 func (req *Request) SetArgs(args interface{}) error {
 	argsJSON, err := json.Marshal(args)
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-			"args":  args,
-		}).Error("unable to set args")
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"requestID": req.ID, "args": args})
 	}
 	req.Args = (*json.RawMessage)(&argsJSON)
 	return nil
@@ -152,7 +135,7 @@ func (req *Request) SetArgs(args interface{}) error {
 
 // UnmarshalArgs unmarshals the request args into the destination object.
 func (req *Request) UnmarshalArgs(dest interface{}) error {
-	return unmarshalFromRaw(req.Args, dest)
+	return errors.Wrapv(unmarshalFromRaw(req.Args, dest), map[string]interface{}{"requestID": req.ID})
 }
 
 func unmarshalFromRaw(src *json.RawMessage, dest interface{}) error {
@@ -160,33 +143,19 @@ func unmarshalFromRaw(src *json.RawMessage, dest interface{}) error {
 		return nil
 	}
 
-	err := json.Unmarshal(*src, dest)
-	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-			"data":  src,
-		}).Error("failed to unmarshal data")
+	if err := json.Unmarshal(*src, dest); err != nil {
+		return errors.Wrapv(err, map[string]interface{}{"json": string(*src)})
 	}
-	return err
+	return nil
 }
 
 // Validate validates the reqeust
 func (req *Request) Validate() error {
 	if req.ID == "" {
-		err := errors.New("missing id")
-		logrus.WithFields(logrus.Fields{
-			"req":   req,
-			"error": err,
-		}).Error("invalid req")
-		return err
+		return errors.Newv("missing id", map[string]interface{}{"request": req})
 	}
 	if req.Task == "" {
-		err := errors.New("missing task")
-		logrus.WithFields(logrus.Fields{
-			"req":   req,
-			"error": err,
-		}).Error("invalid req")
-		return err
+		return errors.Newv("missing task", map[string]interface{}{"requestID": req.ID, "request": req})
 	}
 
 	return nil
@@ -197,7 +166,7 @@ func (req *Request) Respond(resp *Response) error {
 	if req.ResponseHook == nil {
 		return nil
 	}
-	return Send(req.ResponseHook, resp)
+	return errors.Wrapv(Send(req.ResponseHook, resp), map[string]interface{}{"requestID": req.ID})
 }
 
 // HandleResponse determines whether a response indicates success or error and
