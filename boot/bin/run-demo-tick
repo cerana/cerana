@@ -1,0 +1,3 @@
+#!/bin/bash
+export PATH=/run/current-system/sw/bin/
+demotick -c unix:///task-socket/l2-coordinator/coordinator/l2-coord.sock -d data/datasets -n 8080 -r 60s -l debug 2>&1 | jq . -C | less -R
