@@ -143,12 +143,12 @@ func Wrapf(err error, format string, args ...interface{}) error {
 
 // Wrapv wraps an error, creating a callstack if necessary and associating the
 // supplied data with the error.
-func Wrapv(err error, values map[string]interface{}) error {
+func Wrapv(err error, values map[string]interface{}, msg ...string) error {
 	if err == nil {
 		return nil
 	}
 
-	eExt := fromError(err)
+	eExt := Wrap(err, msg...).(*errorExt)
 	for k, v := range values {
 		eExt.data[k] = v
 	}
