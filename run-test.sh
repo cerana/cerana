@@ -5,10 +5,8 @@ set -e
 # args:
 # $1: relative path to .test file
 
-dir=$(dirname "$1")
 name=$(basename "$1")
-out="$dir/test.out"
-exec 2> >(tee "$out")
+exec 2> >(tee "$(dirname "$1")/test.out")
 
 which consul &>/dev/null
 
@@ -30,10 +28,8 @@ sleep .25
 docker cp "$(which consul)" "$cid:/usr/bin/"
 docker cp "$(which etcd)" "$cid:/usr/bin/"
 
-docker exec "$cid" sh -c "cd /mistify/$dir; ./$name -test.v" >&2 || ret=$?
+docker exec "$cid" sh -c "cd /mistify/$dir; echo '### TEST  $name'; ./$name -test.v" >&2 || ret=$?
 
 docker kill "$cid" >/dev/null || :
 docker rm -v "$cid" >/dev/null || :
-echo "### TEST  $name"
-cat "$out"
 exit $ret
