@@ -66,11 +66,12 @@ func init() {
 
 func main() {
 
-	var coordinator, namespaces, extNamespaces, rootFs, hostname, devices string
+	var coordinator, namespaces, extNamespaces, rootFs, hostname, devices, env string
 	var uid, gid, uidrange, gidrange int
 	var kvm bool
 	var execArgs []string
 	var nsList Namespaces
+	var envList []string
 
 	flags.StringVarP(&rootFs, "root directory", "r", "", "location of the container root")
 	flags.IntVarP(&uid, "uid", "u", os.Getuid(), "user id to use as base")
@@ -78,6 +79,7 @@ func main() {
 	flags.IntVarP(&uidrange, "uid range", "U", 1000, "length of mapped user id range")
 	flags.IntVarP(&gidrange, "gid range", "G", 1000, "length of mapped group id range")
 	flags.BoolVarP(&kvm, "kvm mode", "k", false, "whether we are running just qemu")
+	flags.StringVarP(&env, "environment", "e", "", "list of environment variables to set")
 	flags.StringVarP(&hostname, "hostname", "h", "daisy", "hostname of new uts namespace")
 	flags.StringVarP(&devices, "devices", "d", "null,zero,full,random,urandom,tty,ptmx,zfs", "list of device nodes to allow")
 	flags.StringVarP(&namespaces, "namespace list", "n", "user,mount,uts,pid,ipc", "list of namespaces to unshare")
@@ -91,6 +93,7 @@ func main() {
 		log.Fatalf("Missing path to executable")
 		os.Exit(1)
 	}
+	envList = strings.Split(env, ",")
 	for _, ns := range strings.Split(namespaces, ",") {
 		nsList = append(nsList, Namespace{Type: ns, Path: ""})
 	}
@@ -105,7 +108,7 @@ func main() {
 
 		cfg := defaultCfg
 		cfg.Args = execArgs
-		cfg.Env = []string{ fmt.Sprintf("TERM=%s", os.Getenv("TERM")) }
+		cfg.Env = envList
 		cfg.Rootfs = rootFs
 		cfg.Hostname = hostname
 		cfg.Seccomp = scmp
