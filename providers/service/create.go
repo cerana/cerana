@@ -43,11 +43,16 @@ func (p *Provider) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 
 	name := serviceName(args.BundleID, args.ID)
 	datasetCloneName := filepath.Join(p.config.DatasetCloneDir(), name)
-	nspawnEnvParts := make([]string, 0, len(args.Env))
+	daisyEnvParts := make([]string, 0, len(args.Env))
 	for key, val := range args.Env {
-		nspawnEnvParts = append(nspawnEnvParts, fmt.Sprintf("--setenv=%s=%s", key, val))
+		daisyEnvParts = append(daisyEnvParts, fmt.Sprintf("%s=%s", key, val))
 	}
-	execStart := fmt.Sprintf("/run/current-system/sw/bin/systemd-nspawn %s -D /%s %s", strings.Join(nspawnEnvParts, " "), datasetCloneName, strings.Join(args.Cmd, " "))
+	envArgs := strings.Join(daisyEnvParts, ",")
+	envString := ""
+	if envArgs != "" {
+		envString = "-e " + envArgs
+	}
+	execStart := fmt.Sprintf("/run/current-system/sw/bin/daisy %s -r /%s %s", envString, datasetCloneName, strings.Join(args.Cmd, " "))
 	unitOptions := []*unit.UnitOption{
 		{Section: "Unit", Name: "Description", Value: args.Description},
 		// TODO: Does cmd get prepended with daisy?

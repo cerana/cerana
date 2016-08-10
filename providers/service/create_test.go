@@ -65,7 +65,7 @@ func (s *Provider) TestCreate() {
 			s.Equal(test.bundleID, getResult.Service.BundleID, desc)
 			s.Equal(test.description, getResult.Service.Description, desc)
 			datasetCloneName := getResult.Service.Env["_CERANA_CLONE_DESTINATION"]
-			expectedCmd := fmt.Sprintf("systemd-nspawn -D %s %s", datasetCloneName, strings.Join(test.cmd, " "))
+			expectedCmd := fmt.Sprintf("daisy -r %s %s", datasetCloneName, strings.Join(test.cmd, " "))
 			s.Equal(expectedCmd, strings.Join(getResult.Service.Cmd, " "), desc)
 			for key, val := range test.env {
 				if strings.HasPrefix(key, "_CERANA_") {
