@@ -14,12 +14,11 @@ which consul &>/dev/null
 cid=$(docker run -dti \
     --cap-add SYS_ADMIN \
     --device /dev/zfs:/dev/zfs \
-    --env TMPDIR="$(mktemp -d)" \
     --env KV="${KV:-consul}" \
     --name "$name" \
+    --volume "$(mktemp -d):/tmp" \
     --volume "$PWD:/mistify:ro" \
     --volume /sys/fs/cgroup:/sys/fs/cgroup:ro \
-    --volume /tmp:/tmp \
     mistifyio/mistify-os:zfs-stable-api
 )
 
