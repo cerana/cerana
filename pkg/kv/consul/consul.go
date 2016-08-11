@@ -1,17 +1,17 @@
 package consul
 
 import (
-	"errors"
 	"net/url"
 	"strings"
 	"time"
 
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/pkg/kv"
 	consul "github.com/hashicorp/consul/api"
 	"github.com/hashicorp/consul/watch"
 )
 
-var err404 = errors.New("key not found")
+var err404 = errors.Cause(errors.New("key not found"))
 
 func init() {
 	kv.Register("consul", New)
@@ -34,7 +34,7 @@ func New(addr string) (kv.KV, error) {
 	} else {
 		u, err := url.Parse(addr)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapv(err, map[string]interface{}{"addr": addr}, "failed to parse addr")
 		}
 
 		if u.Scheme != "consul" {
@@ -45,7 +45,7 @@ func New(addr string) (kv.KV, error) {
 
 	client, err := consul.NewClient(config)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapv(err, map[string]interface{}{"config": config}, "failed to create client")
 	}
 
 	return &ckv{c: client.KV(), client: client, config: config}, nil
@@ -58,19 +58,21 @@ func (c *ckv) Delete(key string, recurse bool) error {
 			key += "/"
 		}
 		_, err = c.c.DeleteTree(key, nil)
+		err = errors.Wrap(err)
 	} else {
 		_, err = c.c.Delete(key, nil)
+		err = errors.Wrap(err)
 	}
-	return err
+	return errors.Wrapv(err, map[string]interface{}{"key": key, "recurse": recurse})
 }
 
 func (c *ckv) Get(key string) (kv.Value, error) {
 	kvp, _, err := c.c.Get(key, nil)
 	if err != nil {
-		return kv.Value{}, err
+		return kv.Value{}, errors.Wrapv(err, map[string]interface{}{"key": key})
 	}
 	if kvp == nil || kvp.Value == nil {
-		return kv.Value{}, err404
+		return kv.Value{}, errors.Wrapv(err404, map[string]interface{}{"key": key})
 	}
 	return kv.Value{Data: kvp.Value, Index: kvp.ModifyIndex}, nil
 }
@@ -78,7 +80,7 @@ func (c *ckv) Get(key string) (kv.Value, error) {
 func (c *ckv) GetAll(prefix string) (map[string]kv.Value, error) {
 	pairs, _, err := c.c.List(prefix, nil)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapv(err, map[string]interface{}{"prefix": prefix})
 	}
 	many := make(map[string]kv.Value, len(pairs))
 	for _, kvp := range pairs {
@@ -92,12 +94,12 @@ func (c *ckv) Keys(key string) ([]string, error) {
 		key += "/"
 	}
 	keys, _, err := c.c.Keys(key, "/", nil)
-	return keys, err
+	return keys, errors.Wrapv(err, map[string]interface{}{"key": key})
 }
 
 func (c *ckv) Set(key, value string) error {
 	_, err := c.c.Put(&consul.KVPair{Key: key, Value: []byte(value)}, nil)
-	return err
+	return errors.Wrapv(err, map[string]interface{}{"key": key, "value": value})
 }
 
 func (c *ckv) cas(key string, value kv.Value) error {
@@ -109,12 +111,12 @@ func (c *ckv) cas(key string, value kv.Value) error {
 
 	valid, _, err := c.c.CAS(&kvp, nil)
 	if err != nil {
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"key": key, "value": value})
 	}
 
 	if !valid {
 		// TODO(mm) better error
-		return errors.New("CAS failed")
+		return errors.Newv("CAS failed", map[string]interface{}{"key": key, "value": value})
 	}
 
 	return nil
@@ -137,18 +139,18 @@ func (c *ckv) Update(key string, value kv.Value) (uint64, error) {
 func (c *ckv) Remove(key string, index uint64) error {
 	ok, _, err := c.c.DeleteCAS(&consul.KVPair{Key: key, ModifyIndex: index}, nil)
 	if err != nil {
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"key": key, "index": index})
 	}
 
 	if !ok {
-		err = errors.New("failed to delete atomically")
+		err = errors.Newv("failed to delete atomically", map[string]interface{}{"key": key, "index": index})
 	}
 
 	return err
 }
 
 func (c *ckv) IsKeyNotFound(err error) bool {
-	return err == err404
+	return errors.Cause(err) == err404
 }
 
 func (c *ckv) Watch(prefix string, lastIndex uint64, stop chan struct{}) (chan kv.Event, chan error, error) {
@@ -157,7 +159,7 @@ func (c *ckv) Watch(prefix string, lastIndex uint64, stop chan struct{}) (chan k
 		"prefix": prefix,
 	})
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.Wrapv(err, map[string]interface{}{"type": "keyprefix", "prefix": prefix})
 	}
 
 	events := make(chan kv.Event)
@@ -217,7 +219,7 @@ func (c *ckv) Watch(prefix string, lastIndex uint64, stop chan struct{}) (chan k
 	go func() {
 		err = wp.Run(c.config.Address)
 		if err != nil {
-			errs <- err
+			errs <- errors.Wrapv(err, map[string]interface{}{"addr": c.config.Address})
 		}
 	}()
 
@@ -239,15 +241,15 @@ func (c *ckv) lock(key string, ttl time.Duration, behavior string) (string, erro
 
 	session, _, err := c.client.Session().Create(sEntry, nil)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapv(err, map[string]interface{}{"entry": sEntry}, "failed to create session")
 	}
 
 	ok, _, err := c.c.Acquire(&consul.KVPair{Key: key, Session: session}, nil)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapv(err, map[string]interface{}{"key": key, "session": session})
 	}
 	if !ok {
-		return "", errors.New("lock held by another client")
+		return "", errors.Newv("lock held by another client", map[string]interface{}{"key": key})
 	}
 	return session, nil
 }
@@ -258,11 +260,7 @@ func (c *ckv) Lock(key string, ttl time.Duration) (kv.Lock, error) {
 		return nil, err
 	}
 
-	l := &lock{sessions: c.client.Session(), session: session, kv: c.c, key: key}
-	if err != nil {
-		return nil, err
-	}
-	return l, nil
+	return &lock{sessions: c.client.Session(), session: session, kv: c.c, key: key}, nil
 }
 
 func (c *ckv) EphemeralKey(key string, ttl time.Duration) (kv.EphemeralKey, error) {
@@ -271,17 +269,16 @@ func (c *ckv) EphemeralKey(key string, ttl time.Duration) (kv.EphemeralKey, erro
 		return nil, err
 	}
 
-	l := &ekey{kv: c, lock: lock{kv: c.c, sessions: c.client.Session(), session: session, key: key}}
-	return l, err
+	return &ekey{kv: c, lock: lock{kv: c.c, sessions: c.client.Session(), session: session, key: key}}, nil
 }
 
 func (l *lock) Renew() error {
 	entry, _, err := l.sessions.Renew(l.session, nil)
 	if err != nil {
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"key": l.key, "session": l.session})
 	}
 	if entry == nil {
-		return errors.New("lock not held")
+		return errors.Newv("lock not held", map[string]interface{}{"key": l.key, "session": l.session})
 	}
 	return nil
 }
@@ -296,7 +293,7 @@ func (l *lock) unlock() error {
 		return err
 	}
 	if !ok {
-		return errors.New("lock not held")
+		return errors.Newv("lock not held", map[string]interface{}{"key": l.key, "session": l.session})
 	}
 	return nil
 }
@@ -308,7 +305,7 @@ func (l *lock) Unlock() error {
 // Ping verifies communication with the cluster
 func (c *ckv) Ping() error {
 	_, err := c.client.Agent().NodeName()
-	return err
+	return errors.Wrap(err)
 }
 
 type ekey struct {

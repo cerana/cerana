@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/cerana/cerana/internal/tests/common"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -33,7 +34,7 @@ func (s *ETCD) TestLockEmbeddedValue() {
 
 	lock, err := s.KV.Lock(True, 1*time.Second)
 	s.Error(err)
-	s.EqualError(err, "101: Compare failed ([locked=false != locked=true]) [6]")
+	s.EqualError(errors.Cause(err), "101: Compare failed ([locked=false != locked=true]) [6]")
 	s.Nil(lock)
 
 	lock, err = s.KV.Lock(False, 1*time.Second)
