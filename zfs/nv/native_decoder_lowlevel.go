@@ -6,10 +6,12 @@ import (
 	"encoding/binary"
 	"io"
 	"time"
+
+	"github.com/cerana/cerana/pkg/errors"
 )
 
 func (d NativeDecoder) decode(i interface{}) error {
-	return binary.Read(d.r, binary.LittleEndian, i)
+	return errors.Wrap(binary.Read(d.r, binary.LittleEndian, i))
 }
 
 func (d NativeDecoder) decodeBool() (bool, error) {
@@ -192,5 +194,5 @@ func (d NativeDecoder) decodeStringArray(len int64, nelem uint32) ([]string, err
 		s := string(b)
 		i = append(i, s)
 	}
-	return i, scanner.Err()
+	return i, errors.Wrap(scanner.Err())
 }

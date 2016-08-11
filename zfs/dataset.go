@@ -533,7 +533,7 @@ func (d *Dataset) Send(output io.Writer) error {
 	if err := send(d.Name, fdc.Fd(), "", false, false); err != nil {
 		return err
 	}
-	return fdc.Close()
+	return errors.Wrap(fdc.Close())
 }
 
 // Snapshot creates a new snapshot of the dataset.
