@@ -72,47 +72,48 @@ func (s *zfs) zfsSetup(pool string) {
 	s.files = files
 
 	script := []byte(`
-    set -e
-    pool=` + s.pool + `
-    zpool list $pool &>/dev/null && zpool destroy $pool
-    files=(` + strings.Join(files, " ") + `)
-    for f in ${files[*]}; do
-        truncate -s1G $f
-    done
-    zpool create $pool ${files[*]}
+		set -ex
+		pool=` + s.pool + `
+		zpool list $pool &>/dev/null && zpool destroy $pool
+		files=(` + strings.Join(files, " ") + `)
+		for f in ${files[*]}; do
+		    truncate -s1G "$f"
+		done
+		zpool list
+		zpool create $pool ${files[*]} || dmesg
+		exit 1
 
-	zfs create $pool/fs
-	zfs create $pool/fs/1snap
-	zfs snapshot $pool/fs/1snap@snap
+		zfs create $pool/fs
+		zfs create $pool/fs/1snap
+		zfs snapshot $pool/fs/1snap@snap
 
-	zfs create $pool/fs/3snap
-	zfs snapshot $pool/fs/3snap@snap1
-	zfs snapshot $pool/fs/3snap@snap2
-	zfs snapshot $pool/fs/3snap@snap3
+		zfs create $pool/fs/3snap
+		zfs snapshot $pool/fs/3snap@snap1
+		zfs snapshot $pool/fs/3snap@snap2
+		zfs snapshot $pool/fs/3snap@snap3
 
-	zfs create $pool/fs/hold_snap
-	zfs snapshot $pool/fs/hold_snap@snap
-	zfs hold hold $pool/fs/hold_snap@snap
+		zfs create $pool/fs/hold_snap
+		zfs snapshot $pool/fs/hold_snap@snap
+		zfs hold hold $pool/fs/hold_snap@snap
 
-	zfs create $pool/fs/unmounted
-	zfs unmount $pool/fs/unmounted
+		zfs create $pool/fs/unmounted
+		zfs unmount $pool/fs/unmounted
 
-	zfs create $pool/fs/unmounted_children
-	zfs create $pool/fs/unmounted_children/1
-	zfs create $pool/fs/unmounted_children/2
-	zfs unmount $pool/fs/unmounted_children
+		zfs create $pool/fs/unmounted_children
+		zfs create $pool/fs/unmounted_children/1
+		zfs create $pool/fs/unmounted_children/2
+		zfs unmount $pool/fs/unmounted_children
 
-	zfs snapshot $pool/fs@snap_with_clone
-	zfs clone $pool/fs@snap_with_clone $pool/fs_clone
-	zfs unmount $pool/fs_clone
+		zfs snapshot $pool/fs@snap_with_clone
+		zfs clone $pool/fs@snap_with_clone $pool/fs_clone
+		zfs unmount $pool/fs_clone
 
+		zfs create $pool/vol
+		zfs create -V 8192 $pool/vol/1snap
+		zfs snapshot $pool/vol/1snap@snap
 
-	zfs create $pool/vol
-	zfs create -V 8192 $pool/vol/1snap
-	zfs snapshot $pool/vol/1snap@snap
-
-	exit 0
-    `)
+		exit 0
+	`)
 
 	cmd := command("sudo", "bash", "-c", string(script))
 
