@@ -252,7 +252,7 @@ func (t *Tracker) TrackRequest(req *Request, timeout time.Duration) error {
 
 	if t.status == statusStarted {
 		if _, ok := t.requests[req.ID]; ok {
-			return errors.Newv("request id already traacked", map[string]interface{}{
+			return errors.Newv("request id already tracked", map[string]interface{}{
 				"requestID": req.ID,
 				"request":   req,
 			})
@@ -435,7 +435,7 @@ func (t *Tracker) ProxyExternalHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err := ReplaceLocalhost(resp.StreamURL, r.RemoteAddr); err != nil {
 		err = errors.Wrapv(err, map[string]interface{}{"requestID": resp.ID})
-		logrus.WithField("error", err).Error("failed to replace localhost in response streamurl")
+		logrus.WithField("error", err).Error("failed to replace localhost in response streamURL")
 		return
 	}
 
