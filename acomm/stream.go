@@ -1,25 +1,20 @@
 package acomm
 
 import (
-	"errors"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"net/url"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/pkg/logrusx"
 )
 
 // NewStreamUnix sets up an ad-hoc unix listner to stream data.
 func (t *Tracker) NewStreamUnix(dir string, src io.ReadCloser) (*url.URL, error) {
 	if src == nil {
-		err := errors.New("missing stream src")
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Error(err)
-		return nil, err
+		return nil, errors.New("missing stream src")
 	}
 
 	socketPath, err := generateTempSocketPath(dir, "")
@@ -38,7 +33,7 @@ func (t *Tracker) NewStreamUnix(dir string, src io.ReadCloser) (*url.URL, error)
 
 	go func() {
 		defer func() {
-			_ = src.Close()
+			logrusx.LogReturnedErr(src.Close, map[string]interface{}{"socketPath": socketPath}, "failed to close stream source")
 
 			t.dsLock.Lock()
 			delete(t.dataStreams, socketPath)
@@ -52,10 +47,8 @@ func (t *Tracker) NewStreamUnix(dir string, src io.ReadCloser) (*url.URL, error)
 		defer ul.DoneConn(conn)
 
 		if _, err := io.Copy(conn, src); err != nil {
-			logrus.WithFields(logrus.Fields{
-				"socketPath": socketPath,
-				"error":      err,
-			}).Error("failed to stream data")
+			err = errors.Wrapv(err, map[string]interface{}{"socketPath": socketPath}, "failed to stream data")
+			logrus.WithField("error", err).Error(err.Error())
 			return
 		}
 	}()
@@ -67,19 +60,11 @@ func (t *Tracker) NewStreamUnix(dir string, src io.ReadCloser) (*url.URL, error)
 // socket.
 func (t *Tracker) ProxyStreamHTTPURL(addr *url.URL) (*url.URL, error) {
 	if t.httpStreamURL == nil {
-		err := errors.New("tracker missing http stream url")
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Error(err)
-		return nil, err
+		return nil, errors.New("tracker missing http stream url")
 	}
 
 	if addr == nil {
-		err := errors.New("missing addr")
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Error(err)
-		return nil, err
+		return nil, errors.New("missing addr")
 	}
 	streamAddr := &url.URL{}
 	*streamAddr = *t.httpStreamURL
@@ -93,18 +78,10 @@ func (t *Tracker) ProxyStreamHTTPURL(addr *url.URL) (*url.URL, error) {
 // Stream streams data from a URL to a destination writer.
 func Stream(dest io.Writer, addr *url.URL) error {
 	if dest == nil {
-		err := errors.New("missing dest")
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Error(err)
-		return err
+		return errors.New("missing dest")
 	}
 	if addr == nil {
-		err := errors.New("missing addr")
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Error(err)
-		return err
+		return errors.New("missing addr")
 	}
 
 	switch addr.Scheme {
@@ -113,13 +90,7 @@ func Stream(dest io.Writer, addr *url.URL) error {
 	case "http", "https":
 		return streamHTTP(dest, addr)
 	default:
-		err := errors.New("unknown url type")
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-			"type":  addr.Scheme,
-			"addr":  addr,
-		}).Error("cannot stream from url")
-		return err
+		return errors.Newv("unknown url scheme", map[string]interface{}{"addr": addr})
 	}
 }
 
@@ -127,50 +98,30 @@ func Stream(dest io.Writer, addr *url.URL) error {
 func streamUnix(dest io.Writer, addr *url.URL) error {
 	conn, err := net.Dial("unix", addr.RequestURI())
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"addr":  addr,
-			"error": err,
-		}).Error("failed to connect to stream socket")
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"addr": addr})
 	}
 	defer logrusx.LogReturnedErr(conn.Close,
-		logrus.Fields{"addr": addr},
+		map[string]interface{}{"addr": addr},
 		"failed to close stream connection",
 	)
 
-	if _, err := io.Copy(dest, conn); err != nil {
-		logrus.WithFields(logrus.Fields{
-			"addr":  addr,
-			"error": err,
-		}).Error("failed to stream data")
-		return err
-	}
-	return nil
+	_, err = io.Copy(dest, conn)
+	return errors.Wrapv(err, map[string]interface{}{"addr": addr})
 }
 
 // streamHTTP streams data from an http connection to a destination writer.
 func streamHTTP(dest io.Writer, addr *url.URL) error {
 	httpResp, err := http.Get(addr.String())
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"addr":  addr,
-			"error": err,
-		}).Error("failed to GET stream")
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"addr": addr})
 	}
 	defer logrusx.LogReturnedErr(httpResp.Body.Close,
-		logrus.Fields{"addr": addr},
+		map[string]interface{}{"addr": addr},
 		"failed to close stream response body",
 	)
 
-	if _, err := io.Copy(dest, httpResp.Body); err != nil {
-		logrus.WithFields(logrus.Fields{
-			"addr":  addr,
-			"error": err,
-		}).Error("failed to stream data")
-		return err
-	}
-	return nil
+	_, err = io.Copy(dest, httpResp.Body)
+	return errors.Wrapv(err, map[string]interface{}{"addr": addr})
 }
 
 // ProxyStreamHandler is an HTTP HandlerFunc for simple proxy streaming.
@@ -182,9 +133,9 @@ func ProxyStreamHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := Stream(w, addr); err != nil {
-		if opErr, ok := err.(*net.OpError); ok {
-			// TODO: find out what the result is for not exist and return 404
-			fmt.Printf("%+v\n", opErr)
+		if _, ok := errors.Cause(err).(*net.OpError); ok {
+			// TODO: find out what the result is for "not-exist" and return 404
+			logrus.WithField("error", err).Error("failed to stream data")
 		}
 		http.Error(w, "failed to stream data", http.StatusInternalServerError)
 		return

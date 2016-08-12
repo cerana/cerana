@@ -6,7 +6,7 @@ import (
 	"io"
 	"net"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/cerana/cerana/pkg/errors"
 )
 
 // UnmarshalConnData reads and unmarshals JSON data from the connection into
@@ -14,10 +14,7 @@ import (
 func UnmarshalConnData(conn net.Conn, dest interface{}) error {
 	sizeBytes := make([]byte, 4)
 	if _, err := conn.Read(sizeBytes); err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("failed to read size header")
-		return err
+		return errors.Wrap(err)
 	}
 	payloadSize := binary.BigEndian.Uint32(sizeBytes)
 
@@ -27,7 +24,7 @@ func UnmarshalConnData(conn net.Conn, dest interface{}) error {
 
 	decoder := json.NewDecoder(payloadReader)
 
-	return decoder.Decode(dest)
+	return errors.Wrap(decoder.Decode(dest))
 }
 
 // SendConnData marshals and writes payload JSON data to the Conn with
@@ -35,11 +32,7 @@ func UnmarshalConnData(conn net.Conn, dest interface{}) error {
 func SendConnData(conn net.Conn, payload interface{}) error {
 	payloadJSON, err := json.Marshal(payload)
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error":   err,
-			"payload": payload,
-		}).Error("failed to marshal payload json")
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"payload": payload})
 	}
 
 	sizeBytes := make([]byte, 4)
@@ -48,12 +41,10 @@ func SendConnData(conn net.Conn, payload interface{}) error {
 	data := append(sizeBytes, payloadJSON...)
 
 	if _, err := conn.Write(data); err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error":   err,
-			"addr":    conn.RemoteAddr(),
-			"payload": payload,
-		}).Error("failed to write payload to unix socket")
-		return err
+		return errors.Wrapv(err, map[string]interface{}{
+			"addr": conn.RemoteAddr(),
+			"data": string(data),
+		})
 	}
 
 	return nil

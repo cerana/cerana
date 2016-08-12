@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/pkg/logrusx"
 )
 
@@ -79,21 +80,15 @@ func (ul *UnixListener) createListener() error {
 	directory := filepath.Dir(ul.Addr())
 	// TODO: Decide on permissions
 	if err := os.MkdirAll(directory, os.ModePerm); err != nil {
-		logrus.WithFields(logrus.Fields{
+		return errors.Wrapv(err, map[string]interface{}{
 			"directory": directory,
 			"perm":      os.ModePerm,
-			"error":     err,
-		}).Error("failed to create directory for socket")
-		return err
+		})
 	}
 
 	listener, err := net.ListenUnix("unix", ul.addr)
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"addr":  ul.Addr(),
-			"error": err,
-		}).Error("failed to create listener")
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"addr": ul.Addr()})
 	}
 
 	ul.listener = listener
@@ -104,7 +99,7 @@ func (ul *UnixListener) createListener() error {
 // limit.
 func (ul *UnixListener) listen() {
 	defer ul.waitgroup.Done()
-	defer logrusx.LogReturnedErr(ul.listener.Close, logrus.Fields{
+	defer logrusx.LogReturnedErr(ul.listener.Close, map[string]interface{}{
 		"addr": ul.Addr(),
 	}, "failed to close listener")
 
@@ -119,23 +114,19 @@ func (ul *UnixListener) listen() {
 		}
 
 		if err := ul.listener.SetDeadline(time.Now().Add(time.Second)); err != nil {
-			logrus.WithFields(logrus.Fields{
-				"addr":  ul.Addr(),
-				"error": err,
-			}).Error("failed to set listener deadline")
+			err = errors.Wrapv(err, map[string]interface{}{"addr": ul.Addr()})
+			logrus.WithField("error", err).Error("failed to set listener deadline")
 		}
 
 		conn, err := ul.listener.Accept()
 		if nil != err {
+			err = errors.Wrapv(err, map[string]interface{}{"addr": ul.Addr()})
 			// Don't worry about a timeout
-			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
+			if opErr, ok := errors.Cause(err).(*net.OpError); ok && opErr.Timeout() {
 				continue
 			}
 
-			logrus.WithFields(logrus.Fields{
-				"addr":  ul.Addr(),
-				"error": err,
-			}).Error("failed to accept new connection")
+			logrus.WithField("error", err).Error("failed to accept new connection")
 			continue
 		}
 
@@ -176,11 +167,11 @@ func (ul *UnixListener) DoneConn(conn net.Conn) {
 	if conn == nil {
 		return
 	}
-
-	defer ul.waitgroup.Done()
-	defer logrusx.LogReturnedErr(conn.Close,
-		logrus.Fields{
+	logrusx.LogReturnedErr(conn.Close,
+		map[string]interface{}{
 			"addr": ul.addr,
 		}, "failed to close unix connection",
 	)
+
+	ul.waitgroup.Done()
 }
