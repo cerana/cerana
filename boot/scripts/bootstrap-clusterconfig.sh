@@ -64,7 +64,7 @@ until l2-request -t kv-keys -a key=/ &>/dev/null; do
     sleep 1
 done
 
-l2-request -t set-dhcp -s <<EOF
+l2-request -t set-dhcp -j <<EOF
 {
   "duration": 86400000000000,
   $(gateway_string)
@@ -76,9 +76,10 @@ l2-request -t set-dhcp -s <<EOF
 EOF
 
 LEASE_JSON="{\"mac\":\"${CERANA_MGMT_MAC}\", \"ip\":\"${LOCAL_IP}\"}"
-l2-request -t dhcp-offer-lease -s <<<"${LEASE_JSON}" \
-    && l2-request -t dhcp-ack-lease -s <<<"${LEASE_JSON}"
+until l2-request -t dhcp-offer-lease -j <<<"${LEASE_JSON}"; do
+    sleep 1
+done
 
-# remove the bootstrap flag for future boots
-unset CERANA_CLUSTER_BOOTSTRAP
-declare | grep ^CERANA >/data/config/cerana-bootcfg
+l2-request -t dhcp-ack-lease -j <<<"${LEASE_JSON}" \
+    && unset CERANA_CLUSTER_BOOTSTRAP \
+    && declare | grep ^CERANA >/data/config/cerana-bootcfg
