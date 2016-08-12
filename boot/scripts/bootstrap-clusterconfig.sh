@@ -78,3 +78,7 @@ EOF
 LEASE_JSON="{\"mac\":\"${CERANA_MGMT_MAC}\", \"ip\":\"${LOCAL_IP}\"}"
 l2-request -t dhcp-offer-lease -s <<<"${LEASE_JSON}" \
     && l2-request -t dhcp-ack-lease -s <<<"${LEASE_JSON}"
+
+# remove the bootstrap flag for future boots
+unset CERANA_CLUSTER_BOOTSTRAP
+declare | grep ^CERANA >/data/config/cerana-bootcfg
