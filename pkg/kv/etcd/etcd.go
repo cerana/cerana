@@ -1,10 +1,10 @@
 package etcd
 
 import (
-	"errors"
 	"net/url"
 	"time"
 
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/pkg/kv"
 	etcdErr "github.com/coreos/etcd/error"
 	"github.com/coreos/go-etcd/etcd"
@@ -29,7 +29,7 @@ func New(addr string) (kv.KV, error) {
 	if addr != "" {
 		u, err := url.Parse(addr)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapv(err, map[string]interface{}{"addr": addr}, "failed to parse addr")
 		}
 
 		if u.Scheme == "etcd" {
@@ -46,17 +46,17 @@ func (e *ekv) Delete(key string, recurse bool) error {
 	if err != nil && e.IsKeyNotFound(err) {
 		err = nil
 	}
-	return err
+	return errors.Wrapv(err, map[string]interface{}{"key": key, "recurse": recurse})
 }
 
 func (e *ekv) Get(key string) (kv.Value, error) {
 	resp, err := e.e.Get(key, false, false)
 	if err != nil {
-		return kv.Value{}, err
+		return kv.Value{}, errors.Wrapv(err, map[string]interface{}{"key": key})
 	}
 
 	if resp.Node.Dir {
-		return kv.Value{}, errors.New("key is a directory")
+		return kv.Value{}, errors.Newv("key is a directory", map[string]interface{}{"key": key})
 	}
 
 	return kv.Value{Data: []byte(resp.Node.Value), Index: resp.Node.ModifiedIndex}, nil
@@ -65,7 +65,7 @@ func (e *ekv) Get(key string) (kv.Value, error) {
 func (e *ekv) GetAll(prefix string) (map[string]kv.Value, error) {
 	resp, err := e.e.Get(prefix, false, true)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapv(err, map[string]interface{}{"prefix": prefix})
 	}
 
 	if !resp.Node.Dir {
@@ -93,11 +93,11 @@ func (e *ekv) GetAll(prefix string) (map[string]kv.Value, error) {
 func (e *ekv) Keys(key string) ([]string, error) {
 	resp, err := e.e.Get(key, true, false)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapv(err, map[string]interface{}{"key": key})
 	}
 
 	if !resp.Node.Dir {
-		return nil, errors.New("key is not a directory")
+		return nil, errors.Newv("key is not a directory", map[string]interface{}{"key": key})
 	}
 
 	nodes := resp.Node.Nodes
@@ -106,12 +106,12 @@ func (e *ekv) Keys(key string) ([]string, error) {
 		keys[i] = nodes[i].Key
 	}
 
-	return keys, err
+	return keys, nil
 }
 
 func (e *ekv) Set(key, value string) error {
 	_, err := e.e.Set(key, value, 0)
-	return err
+	return errors.Wrapv(err, map[string]interface{}{"key": key, "value": value})
 }
 
 func (e *ekv) Update(key string, value kv.Value) (uint64, error) {
@@ -119,8 +119,10 @@ func (e *ekv) Update(key string, value kv.Value) (uint64, error) {
 	var resp *etcd.Response
 	if value.Index == 0 {
 		resp, err = e.e.Create(key, string(value.Data), 0)
+		err = errors.Wrapv(err, map[string]interface{}{"key": key, "value": value}, "failed to create key")
 	} else {
 		resp, err = e.e.CompareAndSwap(key, string(value.Data), 0, "", value.Index)
+		err = errors.Wrapv(err, map[string]interface{}{"key": key, "value": value}, "failed to update key")
 	}
 	if err != nil {
 		return 0, err
@@ -130,16 +132,16 @@ func (e *ekv) Update(key string, value kv.Value) (uint64, error) {
 
 func (e *ekv) Remove(key string, index uint64) error {
 	_, err := e.e.CompareAndDelete(key, "", index)
-	return err
+	return errors.Wrapv(err, map[string]interface{}{"key": key, "index": index})
 }
 
 func (e *ekv) IsKeyNotFound(err error) bool {
-	eErr, ok := err.(*etcd.EtcdError)
+	eErr, ok := errors.Cause(err).(*etcd.EtcdError)
 	return ok && eErr.ErrorCode == etcdErr.EcodeKeyNotFound
 }
 
 func (e *ekv) isKeyExists(err error) bool {
-	eErr, ok := err.(*etcd.EtcdError)
+	eErr, ok := errors.Cause(err).(*etcd.EtcdError)
 	return ok && eErr.ErrorCode == etcdErr.EcodeNodeExist
 }
 
@@ -166,23 +168,23 @@ func (e *ekv) Watch(prefix string, index uint64, stop chan struct{}) (chan kv.Ev
 		}
 	}()
 
-	errors := make(chan error)
+	errorChan := make(chan error)
 	stopEtcd := make(chan bool)
 	go func() {
 		<-stop
 		stopEtcd <- true
 		close(events)
-		close(errors)
+		close(errorChan)
 	}()
 
 	go func() {
 		_, err := e.e.Watch(prefix, index, true, responses, stopEtcd)
 		if err != nil && err != etcd.ErrWatchStoppedByUser {
-			errors <- err
+			errorChan <- errors.Wrapv(err, map[string]interface{}{"prefix": prefix, "index": index})
 		}
 	}()
 
-	return events, errors, nil
+	return events, errorChan, nil
 }
 
 type lock struct {
@@ -216,7 +218,7 @@ func (e *ekv) Lock(key string, ttl time.Duration) (kv.Lock, error) {
 		lock.index = resp.Node.ModifiedIndex
 		return lock, nil
 	} else if !e.isKeyExists(err) {
-		return nil, err
+		return nil, errors.Wrapv(err, map[string]interface{}{"key": key, "ttl": ttl.Seconds()}, "failed to create lock")
 	}
 
 	// don't clobber the actual value
@@ -227,12 +229,12 @@ func (e *ekv) Lock(key string, ttl time.Duration) (kv.Lock, error) {
 
 	value := string(v.Data)
 	if value != "locked=true" && value != "locked=false" {
-		return nil, errors.New("key does not contain a valid Lock value")
+		return nil, errors.Newv("key does not contain a valid Lock value", map[string]interface{}{"key": key, "value": value})
 	}
 
 	resp, err = e.e.CompareAndSwap(key, "locked=true", uint64(ttl.Seconds()), "locked=false", v.Index)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapv(err, map[string]interface{}{"key": key, "ttl": ttl.Seconds(), "index": v.Index}, "failed to renew lock")
 	}
 
 	lock.index = resp.Node.ModifiedIndex
@@ -242,7 +244,7 @@ func (e *ekv) Lock(key string, ttl time.Duration) (kv.Lock, error) {
 func (l *lock) Renew() error {
 	resp, err := l.client.CompareAndSwap(l.key, "locked=true", uint64(l.ttl.Seconds()), "", l.index)
 	if err != nil {
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"key": l.key, "ttl": l.ttl.Seconds(), "index": l.index}, "failed to renew lock")
 	}
 
 	l.index = resp.Node.ModifiedIndex
@@ -258,7 +260,7 @@ func (l *lock) Unlock() error {
 
 	_, err = l.client.CompareAndSwap(l.key, "locked=false", uint64(l.ttl.Seconds()), "", l.index)
 	if err != nil {
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"key": l.key, "ttl": l.ttl.Seconds(), "index": l.index}, "failed to release lock")
 	}
 
 	l.index = 0
@@ -285,22 +287,22 @@ func (e *ekv) EphemeralKey(key string, ttl time.Duration) (kv.EphemeralKey, erro
 
 func (e eKey) Set(value string) error {
 	_, err := e.client.Set(e.key, value, e.ttl)
-	return err
+	return errors.Wrapv(err, map[string]interface{}{"key": e.key, "value": value, "ttl": e.ttl})
 }
 
 func (e eKey) Renew() error {
 	if e.value == "" {
 		resp, err := e.client.Get(e.key, false, false)
 		if err != nil {
-			return err
+			return errors.Wrapv(err, map[string]interface{}{"key": e.key})
 		}
 		e.value = resp.Node.Value
 	}
 	_, err := e.client.Set(e.key, e.value, e.ttl)
-	return err
+	return errors.Wrapv(err, map[string]interface{}{"key": e.key, "value": e.value, "ttl": e.ttl})
 }
 
 func (e eKey) Destroy() error {
 	_, err := e.client.Delete(e.key, false)
-	return err
+	return errors.Wrapv(err, map[string]interface{}{"key": e.key})
 }
