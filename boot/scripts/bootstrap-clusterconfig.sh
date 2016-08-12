@@ -76,10 +76,9 @@ l2-request -t set-dhcp -j <<EOF
 EOF
 
 LEASE_JSON="{\"mac\":\"${CERANA_MGMT_MAC}\", \"ip\":\"${LOCAL_IP}\"}"
-until l2-request -t dhcp-offer-lease -j <<<"${LEASE_JSON}"; do
+until l2-request -t dhcp-ack-lease -j <<<"${LEASE_JSON}"; do
     sleep 1
 done
 
-l2-request -t dhcp-ack-lease -j <<<"${LEASE_JSON}" \
-    && unset CERANA_CLUSTER_BOOTSTRAP \
-    && declare | grep ^CERANA >/data/config/cerana-bootcfg
+unset CERANA_CLUSTER_BOOTSTRAP \
+declare | grep ^CERANA >/data/config/cerana-bootcfg
