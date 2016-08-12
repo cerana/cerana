@@ -25,5 +25,5 @@ func ioctl(f *os.File, name string, input, output []byte) error {
 		C.CString(name), C.int(len(name)),
 		unsafe.Pointer(in), C.int(len(input)),
 		unsafe.Pointer(out), C.int(len(output)))
-	return errors.Wrapv(err, map[string]interface{}{"name": name, "input": input})
+	return errors.Wrapv(err, map[string]interface{}{"name": name, "args": input})
 }

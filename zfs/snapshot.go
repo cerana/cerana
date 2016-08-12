@@ -27,7 +27,7 @@ func snapshot(pool string, snapNames []string, props map[string]string) (map[str
 	encoded := &bytes.Buffer{}
 	err := nv.NewNativeEncoder(encoded).Encode(m)
 	if err != nil {
-		return nil, errors.Wrapv(err, map[string]interface{}{"name": pool, "input": m})
+		return nil, errors.Wrapv(err, map[string]interface{}{"name": pool, "args": m})
 	}
 
 	out := make([]byte, 1024)

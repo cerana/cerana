@@ -18,7 +18,7 @@ func holds(name string) ([]string, error) {
 	encoded := &bytes.Buffer{}
 	err := nv.NewNativeEncoder(encoded).Encode(m)
 	if err != nil {
-		return nil, errors.Wrapv(err, map[string]interface{}{"name": name, "input": m})
+		return nil, errors.Wrapv(err, map[string]interface{}{"name": name, "args": m})
 	}
 
 	out := make([]byte, 1024)
@@ -33,7 +33,7 @@ func holds(name string) ([]string, error) {
 
 	err = nv.NewNativeDecoder(bytes.NewReader(out)).Decode(&m)
 	if err != nil {
-		return nil, errors.Wrapv(err, map[string]interface{}{"name": name, "input": m})
+		return nil, errors.Wrapv(err, map[string]interface{}{"name": name, "args": m})
 	}
 
 	names := make([]string, 0, len(m))

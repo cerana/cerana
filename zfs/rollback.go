@@ -16,7 +16,7 @@ func rollback(name string) (string, error) {
 	encoded := &bytes.Buffer{}
 	err := nv.NewNativeEncoder(encoded).Encode(m)
 	if err != nil {
-		return "", errors.Wrapv(err, map[string]interface{}{"name": name, "input": m})
+		return "", errors.Wrapv(err, map[string]interface{}{"name": name, "args": m})
 	}
 
 	out := make([]byte, 1024)
@@ -28,7 +28,7 @@ func rollback(name string) (string, error) {
 		if err = nv.NewNativeDecoder(bytes.NewReader(out)).Decode(&results); err == nil {
 			snapName = results["target"]
 		} else {
-			err = errors.Wrapv(err, map[string]interface{}{"name": name, "input": m})
+			err = errors.Wrapv(err, map[string]interface{}{"name": name, "args": m})
 		}
 	}
 	return snapName, err

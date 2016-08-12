@@ -100,7 +100,7 @@ func list(name string, types map[string]bool, recurse bool, depth uint64) (ret [
 		"version": uint64(0),
 	}
 
-	errData = map[string]interface{}{"name": name, "input": args}
+	errData = map[string]interface{}{"name": name, "args": args}
 
 	encoded := &bytes.Buffer{}
 	err = nv.NewNativeEncoder(encoded).Encode(args)
