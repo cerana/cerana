@@ -2,10 +2,11 @@ package nv
 
 import (
 	"encoding/binary"
-	"fmt"
 	"io"
 	"reflect"
 	"sort"
+
+	"github.com/cerana/cerana/pkg/errors"
 )
 
 var (
@@ -48,14 +49,16 @@ var (
 
 func validValue(v reflect.Value) error {
 	if !v.IsValid() {
-		return fmt.Errorf("type '%s' is invalid", v.Kind().String())
+		return errors.Newv("invalid type", map[string]interface{}{"type": v.Kind().String()})
 	}
 
 	return nil
 }
 
 func encodePreamble(w io.Writer, codec codec, order endianness) error {
-	return binary.Write(w, binary.BigEndian, encoding{Encoding: codec, Endianess: order})
+	enc := encoding{Encoding: codec, Endianess: order}
+	err := errors.Wrap(binary.Write(w, binary.BigEndian, enc), "failed to encode preamble")
+	return errors.Wrapv(err, map[string]interface{}{"encoding": enc})
 }
 
 func encodeList(enc encoder, v reflect.Value) error {
@@ -83,7 +86,7 @@ func encodeList(enc encoder, v reflect.Value) error {
 			}
 		}
 	default:
-		return fmt.Errorf("invalid type '%s', must be a struct", v.Kind().String())
+		return errors.Newv("invalid type, must be a struct", map[string]interface{}{"type": v.Kind().String()})
 	}
 
 	return enc.footer()
@@ -158,7 +161,7 @@ func encodeItem(enc encoder, name string, tags []string, field reflect.Value) er
 	}
 
 	if !ok {
-		return fmt.Errorf("unknown type: %v", field.Kind())
+		return errors.Newv("unknown type", map[string]interface{}{"type": field.Kind()})
 	}
 
 	return enc.item(name, dtype, field.Interface())

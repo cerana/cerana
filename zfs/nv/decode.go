@@ -2,10 +2,10 @@ package nv
 
 import (
 	"encoding/binary"
-	"errors"
-	"fmt"
 	"io"
 	"reflect"
+
+	"github.com/cerana/cerana/pkg/errors"
 )
 
 const (
@@ -16,17 +16,17 @@ func decodePreamble(r io.Reader, byteOrder binary.ByteOrder) (codec, endianness,
 	var err error
 	enc := encoding{}
 	if err = binary.Read(r, byteOrder, &enc); err != nil {
-		return enc.Encoding, enc.Endianess, err
+		return enc.Encoding, enc.Endianess, errors.Wrap(err)
 	}
 
 	if enc.Encoding > maxCodec {
-		err = fmt.Errorf("invalid encoding: %v", enc.Encoding)
+		err = errors.Newv("invalid encoding", map[string]interface{}{"encoding": enc.Encoding})
 	} else if enc.Endianess > maxEndian {
-		err = fmt.Errorf("invalid endianess: %v", enc.Endianess)
+		err = errors.Newv("invalid endianness", map[string]interface{}{"endianness": enc.Endianess})
 	} else if enc.Reserved1 != 0 {
-		err = fmt.Errorf("unexpected reserved1 value: %v", enc.Reserved1)
+		err = errors.Newv("unexpected reserved1 value", map[string]interface{}{"reserved1": enc.Reserved1})
 	} else if enc.Reserved2 != 0 {
-		err = fmt.Errorf("unexpected reserved2 value: %v", enc.Reserved2)
+		err = errors.Newv("unexpected reserved2 value", map[string]interface{}{"reserved2": enc.Reserved2})
 	}
 	return enc.Encoding, enc.Endianess, err
 }
@@ -42,10 +42,10 @@ func decodeList(dec decoder, target reflect.Value) error {
 		return err
 	}
 	if h.Version != 0 {
-		return fmt.Errorf("unexpected version: %v", h.Version)
+		return errors.Newv("unexpected version", map[string]interface{}{"version": h.Version})
 	}
 	if h.Flag < uniqueName || h.Flag > uniqueNameType {
-		return fmt.Errorf("unexpected Flag: %v", h.Flag)
+		return errors.Newv("unexpected flag", map[string]interface{}{"flag": h.Flag})
 	}
 
 	// If the target is a pointer, initialize and dereference.
@@ -183,7 +183,7 @@ func fieldIndexMap(v reflect.Value) (map[string]int, error) {
 			name = tags[0]
 		}
 		if _, ok := vFieldIndexMap[name]; ok {
-			err = fmt.Errorf("more than one field with tag/name: %s", name)
+			err = errors.Newv("more than one field with tag/name", map[string]interface{}{"name": name})
 			return false
 		}
 		vFieldIndexMap[name] = i
