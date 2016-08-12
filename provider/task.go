@@ -8,6 +8,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 )
 
 // TaskHandler if the request handler function for a particular task. It should
@@ -68,25 +69,23 @@ func (t *task) acceptRequest(conn net.Conn) {
 
 	req := &acomm.Request{}
 	if err := acomm.UnmarshalConnData(conn, req); err != nil {
-		respErr = err
+		respErr = errors.Wrap(err, "failed to unmarshal request")
 	}
 
 	if err := req.Validate(); err != nil {
-		respErr = err
+		respErr = errors.Wrapv(err, map[string]interface{}{"request": req})
 	}
 
 	// Respond to the initial request
 	resp, err := acomm.NewResponse(req, nil, nil, respErr)
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error":   err,
-			"req":     req,
-			"respErr": respErr,
-		}).Error("failed to create initial response")
+		err = errors.Wrapv(err, map[string]interface{}{"request": req, "respErr": respErr})
+		logrus.WithField("error", err).Error("failed to create initial response")
 		return
 	}
 
 	if err := acomm.SendConnData(conn, resp); err != nil {
+		logrus.WithField("error", err).Error("failed to send initial response")
 		return
 	}
 
@@ -110,24 +109,24 @@ func (t *task) handleRequest(req *acomm.Request) {
 	// of the request and response data as well.
 	resp, err := acomm.NewResponse(req, result, streamAddr, taskErr)
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
+		err = errors.Wrapv(err, map[string]interface{}{
 			"task":       t.name,
-			"req":        req,
+			"request":    req,
 			"taskResult": result,
 			"taskErr":    taskErr,
-			"error":      err,
-		}).Error("failed to create response")
+		})
+		logrus.WithField("error", err).Error("failed to create response")
 		return
 	}
 
 	if err := req.Respond(resp); err != nil {
-		logrus.WithFields(logrus.Fields{
+		err = errors.Wrapv(err, map[string]interface{}{
 			"task":       t.name,
-			"req":        req,
+			"request":    req,
 			"taskResult": result,
 			"taskErr":    taskErr,
-			"error":      err,
-		}).Error("failed to send response")
+		})
+		logrus.WithField("error", err).Error("failed to send response")
 		return
 	}
 }

@@ -1,13 +1,12 @@
 package provider
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 	"path/filepath"
 	"time"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/pkg/logrusx"
 	"github.com/mitchellh/mapstructure"
 	flag "github.com/spf13/pflag"
@@ -66,10 +65,7 @@ func NewConfig(flagSet *flag.FlagSet, v *viper.Viper) *Config {
 // LoadConfig attempts to load the config. Flags should be parsed first.
 func (c *Config) LoadConfig() error {
 	if err := c.viper.BindPFlags(c.flagSet); err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("failed to bind flags")
-		return err
+		return errors.Wrap(err, "failed to bind flags to viper")
 	}
 
 	filePath := c.viper.GetString("config_file")
@@ -79,11 +75,7 @@ func (c *Config) LoadConfig() error {
 
 	c.viper.SetConfigFile(filePath)
 	if err := c.viper.ReadInConfig(); err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error":    err,
-			"filePath": filePath,
-		}).Error("failed to parse config file")
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"configFile": filePath}, "failed to read config file")
 	}
 
 	return c.Validate()
@@ -149,26 +141,15 @@ func (c *Config) RequestTimeout() time.Duration {
 // Validate returns whether the config is valid, containing necessary values.
 func (c *Config) Validate() error {
 	if c.SocketDir() == "" {
-		err := errors.New("missing socket_dir")
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("invalid config")
-		return err
+		return errors.New("missing socket_dir")
 	}
 
 	if c.ServiceName() == "" {
-		err := errors.New("missing service_name")
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("invalid config")
-		return err
+		return errors.New("missing service_name")
 	}
-	if _, err := url.ParseRequestURI(c.viper.GetString("coordinator_url")); err != nil {
-		logrus.WithFields(logrus.Fields{
-			"coordinator_url": c.viper.GetString("coordinator_url"),
-			"error":           err,
-		}).Error("invalid config")
-		return err
+	coordinatorURL := c.viper.GetString("coordinator_url")
+	if _, err := url.ParseRequestURI(coordinatorURL); err != nil {
+		return errors.Wrapv(err, map[string]interface{}{"coordinatorURL": coordinatorURL}, "failed to parse coordinatorURL")
 	}
 
 	return nil
@@ -182,9 +163,9 @@ func (c *Config) Unmarshal(rawVal interface{}) error {
 	}
 	decoder, err := mapstructure.NewDecoder(config)
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
-	return decoder.Decode(c.viper.AllSettings())
+	return errors.Wrap(decoder.Decode(c.viper.AllSettings()))
 }
 
 // UnmarshalKey unmarshals a single config key into a struct.
@@ -195,20 +176,13 @@ func (c *Config) UnmarshalKey(key string, rawVal interface{}) error {
 	}
 	decoder, err := mapstructure.NewDecoder(config)
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
-	return decoder.Decode(c.viper.Get(key))
+	return errors.Wrapv(decoder.Decode(c.viper.Get(key)), map[string]interface{}{"key": key})
 }
 
 // SetupLogging sets the log level and formatting.
 func (c *Config) SetupLogging() error {
 	logLevel := c.viper.GetString("log_level")
-	if err := logrusx.SetLevel(logLevel); err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-			"level": logLevel,
-		}).Error("failed to set up logging")
-		return err
-	}
-	return nil
+	return logrusx.SetLevel(logLevel)
 }
