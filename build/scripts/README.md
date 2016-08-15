@@ -163,6 +163,181 @@ The `start-vm` script also supports downloading and using specific builds from a
 start-vm --verbose --download --build 121
 ```
 
+A Three Node Demo
+-----------------
+
+This example creates a three node cluster for demonstrating communication of Cerana components between the nodes. Running the demo is described in the [demo documentation](https://github.com/cerana/cerana/blob/demo/docs/demo/README.md). Refer to that document but use these steps to [bootstrap the cluster](https://github.com/cerana/cerana/blob/demo/docs/demo/README.md#bootstrap-the-cluster).
+
+This example is for running the demo using KVM in a Linux environment so the Linux version of the [coordinator-cli](https://us-east.manta.joyent.com/nahamu/public/cerana/demo/coordinator-cli-linux) is needed.
+
+It's recommended that the demo be started in an empty directory. Using the [demo documentation](https://github.com/cerana/cerana/blob/demo/docs/demo/README.md) download the required files to this directory. You should have these files:
+
+```
+backend-in-a-zfs-stream.zfs
+haproxy-in-a-zfs-stream.zfs
+coordinator-cli
+setup-application.sh
+```
+
+Running the demo requires a bridge with an IP address on the 172.16 subnet and no DHCP server. If you haven't done so first shutdown the existing network configuration.
+
+```
+vm-network --shutdown
+```
+
+Now the network can reconfigured for the demo. Because of running three nodes in the demo three *tapsets* are required. The bridge IP address also needs to be confgured for the demo.
+
+```
+vm-network --numsets 3 --bridgeip 172.16.2.2 --maskbits 16
+```
+
+Because the DHCP server by default listens only on the 10.0.3.xx subnet it should not interfere with the Cerana DHCP server but for purity sake shutdown the server.
+
+```
+vm-network --shutdowndhcpd
+```
+
+Four separate consoles are needed to run the demo. One for each node and one to interact with the cluster. For this example these are referred to as `node1`, `node2`, `node3` and `shell`.
+
+### node1
+
+The first node is booted using the `cerana.iso` image which can be downloaded from [S3](http://omniti-cerana-artifacts.s3.amazonaws.com/index.html?prefix=CeranaOS/jobs/build-cerana/). It's recommended the latest build be used for this example.
+
+```
+start-vm --download --build 132 --boot iso --tapset 1
+```
+
+When the GRUB menu appears select the "CeranaOS Cluster Bootstrap" option. This will boot using the kernel and initrd images from `cerana.iso`.
+
+You can verify the network configuration using the node console. Login as root (no password) and:
+
+```
+[root@144cae4e-ff5c-dd43-ad51-076385611e01:~]# ip address
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host
+       valid_lft forever preferred_lft forever
+2: mgmt0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether de:ad:be:ef:81:01 brd ff:ff:ff:ff:ff:ff
+    inet 172.16.10.2/16 brd 172.16.255.255 scope global mgmt0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::dcad:beff:feef:8101/64 scope link
+       valid_lft forever preferred_lft forever
+```
+
+### node2
+
+The second node uses the `dhcp-provider` and `bootserver` from `node1` to boot and requires using the second *tapset*. This boots using images served from `node1`.
+
+```
+start-vm --boot net --tapset 2
+```
+
+When the login prompt appears login as root and:
+
+```
+144cae4e-ff5c-dd43-ad51-076385611e02 login: root
+
+[root@144cae4e-ff5c-dd43-ad51-076385611e02:~]# ip address
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host
+       valid_lft forever preferred_lft forever
+2: mgmt0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether de:ad:be:ef:82:01 brd ff:ff:ff:ff:ff:ff
+    inet 172.16.219.100/16 brd 172.16.255.255 scope global dynamic mgmt0
+       valid_lft 86345sec preferred_lft 86345sec
+    inet6 fe80::dcad:beff:feef:8201/64 scope link
+       valid_lft forever preferred_lft forever
+```
+
+Note the MAC and IP addresses for this node. The `82` in the MAC address indicates this is the second node and the IP address was provided by the `dhcp-provider` running on `node1`. Also, the last two characters in the hostname (UUID in the prompt) are `02` also indicating this is the second node.\`
+
+### node3
+
+Starting the third node is similar to the second but uses the third *tapset*.
+
+```
+start-vm --boot net --tapset 3
+```
+
+Again:
+
+```
+144cae4e-ff5c-dd43-ad51-076385611e03 login: root
+
+[root@144cae4e-ff5c-dd43-ad51-076385611e03:~]# ip address
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host
+       valid_lft forever preferred_lft forever
+2: mgmt0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether de:ad:be:ef:83:01 brd ff:ff:ff:ff:ff:ff
+    inet 172.16.63.98/16 brd 172.16.255.255 scope global dynamic mgmt0
+       valid_lft 86386sec preferred_lft 86386sec
+    inet6 fe80::dcad:beff:feef:8301/64 scope link
+       valid_lft forever preferred_lft forever
+
+```
+
+Note the MAC and IP addresses for this node. The `83` in the MAC address indicates this is the third node and the IP address was provided by the `dhcp-provider` running on `node1`. Also, the last two characters in the hostname (UUID in the prompt) are `03` also indicating this is the third node.
+
+### shell
+
+In the `shell` console verify the nodes are properly connected to the bridge.
+
+Ping the first node using the address disovered for `node`. For this example `node1` has the address `172.16.10.2`. This, by the way, was statically assigned by the GRUB menu.
+
+```
+$ ping 172.16.10.2
+PING 172.16.10.2 (172.16.10.2) 56(84) bytes of data.
+64 bytes from 172.16.10.2: icmp_seq=1 ttl=64 time=1.31 ms
+64 bytes from 172.16.10.2: icmp_seq=2 ttl=64 time=2.02 ms
+64 bytes from 172.16.10.2: icmp_seq=3 ttl=64 time=0.442 ms
+```
+
+Now do the same for the second node. In this example the address was assigned by the `dhcp-provider` running on `node1` and is `172.16.219.100` (from `node2` above).
+
+```
+$ ping 172.16.219.100
+PING 172.16.219.100 (172.16.219.100) 56(84) bytes of data.
+64 bytes from 172.16.219.100: icmp_seq=1 ttl=64 time=1.10 ms
+64 bytes from 172.16.219.100: icmp_seq=2 ttl=64 time=0.379 ms
+64 bytes from 172.16.219.100: icmp_seq=3 ttl=64 time=0.414 ms
+```
+
+And finally, the third node.
+
+```
+$ ping 172.16.63.98
+PING 172.16.63.98 (172.16.63.98) 56(84) bytes of data.
+64 bytes from 172.16.63.98: icmp_seq=1 ttl=64 time=0.572 ms
+64 bytes from 172.16.63.98: icmp_seq=2 ttl=64 time=0.384 ms
+64 bytes from 172.16.63.98: icmp_seq=3 ttl=64 time=0.348 ms
+```
+
+### Run The demo
+
+All three nodes are now ready to run the demo described in the [demo documentation](https://github.com/cerana/cerana/blob/demo/docs/demo/README.md).
+
+### setup-applicaton.sh
+
+This script is used to configure the nodes for the demo after each of the nodes have been started.
+
+```
+wget https://raw.githubusercontent.com/cerana/cerana/demo/docs/demo/setup-application.sh
+```
+
+```
+coordinator-cli-linux coordinator-cli -c http://172.16.10.2:8085 -r :4080 -t kv-keys -a key=/nodes | tr ',' '\n' | tr -d '][nodes/"' | while read ip; do for i in {1..3}; do curl http://$ip:8001/$ip; done; done;
+```
+
 More
 ----
 
