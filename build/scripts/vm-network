@@ -98,6 +98,7 @@ Usage: $0 [options]
         Which network configuration to use. This allows a variety of network
         configurations to be used. If a different configuration is specified
         the first configuration is shutdown before setting up the new configuration.
+        [config = $config]
     --resetdefaults
         Reset options back to their default values.
     --verbose
