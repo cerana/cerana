@@ -17,20 +17,22 @@ type TaskHandler func(*acomm.Request) (interface{}, *url.URL, error)
 
 // task contains the request listener and handler for a task.
 type task struct {
-	name        string
-	handler     TaskHandler
-	reqTimeout  time.Duration
-	reqListener *acomm.UnixListener
-	waitgroup   sync.WaitGroup
+	name         string
+	providerName string
+	handler      TaskHandler
+	reqTimeout   time.Duration
+	reqListener  *acomm.UnixListener
+	waitgroup    sync.WaitGroup
 }
 
 // newTask creates and initializes a new task.
-func newTask(name, socketPath string, reqTimeout time.Duration, handler TaskHandler) *task {
+func newTask(name, providerName, socketPath string, reqTimeout time.Duration, handler TaskHandler) *task {
 	return &task{
-		name:        name,
-		handler:     handler,
-		reqTimeout:  reqTimeout,
-		reqListener: acomm.NewUnixListener(socketPath, 0),
+		name:         name,
+		providerName: providerName,
+		handler:      handler,
+		reqTimeout:   reqTimeout,
+		reqListener:  acomm.NewUnixListener(socketPath, 0),
 	}
 }
 
@@ -104,6 +106,7 @@ func (t *task) handleRequest(req *acomm.Request) {
 
 	// Run the task-specific request handler
 	result, streamAddr, taskErr := t.handler(req)
+	taskErr = errors.Wrap(taskErr, t.providerName, t.Name)
 	errData := map[string]interface{}{
 		"task":       t.name,
 		"request":    req,

@@ -54,7 +54,7 @@ func (s *Server) Tracker() *acomm.Tracker {
 
 // RegisterTask registers a new task and its handler with the server.
 func (s *Server) RegisterTask(taskName string, handler TaskHandler) {
-	s.tasks[taskName] = newTask(taskName, s.TaskSocketPath(taskName), s.config.TaskTimeout(taskName), handler)
+	s.tasks[taskName] = newTask(taskName, s.config.ServiceName(), s.TaskSocketPath(taskName), s.config.TaskTimeout(taskName), handler)
 }
 
 // TaskSocketPath returns the unix socket path for a task
