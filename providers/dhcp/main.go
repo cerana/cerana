@@ -381,7 +381,7 @@ func (d *DHCP) ack(req *acomm.Request) (interface{}, *url.URL, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	if addrs.MAC != mac {
+	if mac != "" && addrs.MAC != mac {
 		return nil, nil, errors.New("requested ip not assigned to this mac")
 	}
 
