@@ -2,14 +2,15 @@ package clusterconf
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/url"
 	"path"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/pborman/uuid"
 )
 
@@ -47,7 +48,7 @@ func (c *ClusterConf) GetDataset(req *acomm.Request) (interface{}, *url.URL, err
 		return nil, nil, err
 	}
 	if args.ID == "" {
-		return nil, nil, errors.New("missing arg: id")
+		return nil, nil, errors.Newv("missing arg: id", map[string]interface{}{"args": args})
 	}
 
 	dataset, err := c.getDataset(args.ID)
@@ -70,7 +71,7 @@ func (c *ClusterConf) ListDatasets(req *acomm.Request) (interface{}, *url.URL, e
 		var id string
 		_, err := fmt.Sscanf(key, keyFormat, &id)
 		if err != nil {
-			return nil, nil, errors.New("invalid dataset id")
+			return nil, nil, errors.Newv("failed to extract valid dataset id", map[string]interface{}{"key": key, "keyFormat": keyFormat})
 		}
 		ids[id] = true
 	}
@@ -116,7 +117,7 @@ func (c *ClusterConf) UpdateDataset(req *acomm.Request) (interface{}, *url.URL, 
 		return nil, nil, err
 	}
 	if args.Dataset == nil {
-		return nil, nil, errors.New("missing arg: dataset")
+		return nil, nil, errors.Newv("missing arg: dataset", map[string]interface{}{"args": args})
 	}
 	args.Dataset.c = c
 
@@ -137,7 +138,7 @@ func (c *ClusterConf) DeleteDataset(req *acomm.Request) (interface{}, *url.URL, 
 		return nil, nil, err
 	}
 	if args.ID == "" {
-		return nil, nil, errors.New("missing arg: id")
+		return nil, nil, errors.Newv("missing arg: id", map[string]interface{}{"args": args})
 	}
 
 	dataset, err := c.getDataset(args.ID)
@@ -167,14 +168,14 @@ func (d *Dataset) reload() error {
 	key := path.Join(datasetsPrefix, d.ID, "config")
 	value, err := d.c.kvGet(key)
 	if err != nil {
-		if err.Error() == "key not found" {
-			err = errors.New("dataset config not found")
+		if strings.Contains(err.Error(), "key not found") {
+			err = errors.Newv("dataset config not found", map[string]interface{}{"datasetID": d.ID})
 		}
 		return err
 	}
 
 	if err = json.Unmarshal(value.Data, &d); err != nil {
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"json": string(value.Data)})
 	}
 	d.ModIndex = value.Index
 	return nil
@@ -182,7 +183,7 @@ func (d *Dataset) reload() error {
 
 func (d *Dataset) delete() error {
 	key := path.Join(datasetsPrefix, d.ID)
-	return d.c.kvDelete(key, d.ModIndex)
+	return errors.Wrapv(d.c.kvDelete(key, d.ModIndex), map[string]interface{}{"datasetID": d.ID})
 }
 
 // update saves the core dataset config.
@@ -191,7 +192,7 @@ func (d *Dataset) update() error {
 
 	index, err := d.c.kvUpdate(key, d, d.ModIndex)
 	if err != nil {
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"datasetID": d.ID})
 	}
 	d.ModIndex = index
 	return nil
