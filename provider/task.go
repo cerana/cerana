@@ -104,28 +104,30 @@ func (t *task) handleRequest(req *acomm.Request) {
 
 	// Run the task-specific request handler
 	result, streamAddr, taskErr := t.handler(req)
+	errData := map[string]interface{}{
+		"task":       t.name,
+		"request":    req,
+		"taskResult": result,
+		"streamAddr": streamAddr,
+		"taskErr":    taskErr,
+	}
+
+	if taskErr != nil {
+		err := errors.Wrapv(taskErr, errData)
+		logrus.WithField("error", err).Error("task handler error")
+	}
 
 	// Note: The acomm calls log the error already, but we want to have a log
 	// of the request and response data as well.
 	resp, err := acomm.NewResponse(req, result, streamAddr, taskErr)
 	if err != nil {
-		err = errors.Wrapv(err, map[string]interface{}{
-			"task":       t.name,
-			"request":    req,
-			"taskResult": result,
-			"taskErr":    taskErr,
-		})
+		err = errors.Wrapv(err, errData)
 		logrus.WithField("error", err).Error("failed to create response")
 		return
 	}
 
 	if err := req.Respond(resp); err != nil {
-		err = errors.Wrapv(err, map[string]interface{}{
-			"task":       t.name,
-			"request":    req,
-			"taskResult": result,
-			"taskErr":    taskErr,
-		})
+		err = errors.Wrapv(err, errData)
 		logrus.WithField("error", err).Error("failed to send response")
 		return
 	}
