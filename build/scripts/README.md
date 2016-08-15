@@ -326,18 +326,6 @@ PING 172.16.63.98 (172.16.63.98) 56(84) bytes of data.
 
 All three nodes are now ready to run the demo described in the [demo documentation](https://github.com/cerana/cerana/blob/demo/docs/demo/README.md).
 
-### setup-applicaton.sh
-
-This script is used to configure the nodes for the demo after each of the nodes have been started.
-
-```
-wget https://raw.githubusercontent.com/cerana/cerana/demo/docs/demo/setup-application.sh
-```
-
-```
-coordinator-cli-linux coordinator-cli -c http://172.16.10.2:8085 -r :4080 -t kv-keys -a key=/nodes | tr ',' '\n' | tr -d '][nodes/"' | while read ip; do for i in {1..3}; do curl http://$ip:8001/$ip; done; done;
-```
-
 More
 ----
 
