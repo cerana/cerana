@@ -2,12 +2,12 @@ package clusterconf
 
 import (
 	"encoding/json"
-	"errors"
 	"net/url"
 	"path"
 	"time"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/shirou/gopsutil/load"
 )
 
@@ -67,7 +67,7 @@ func (c *ClusterConf) NodeHeartbeat(req *acomm.Request) (interface{}, *url.URL, 
 		return nil, nil, err
 	}
 	if args.Node == nil {
-		return nil, nil, errors.New("missing arg: node")
+		return nil, nil, errors.Newv("missing arg: node", map[string]interface{}{"args": args})
 	}
 	args.Node.c = c
 
@@ -81,7 +81,7 @@ func (c *ClusterConf) GetNode(req *acomm.Request) (interface{}, *url.URL, error)
 		return nil, nil, err
 	}
 	if args.ID == "" {
-		return nil, nil, errors.New("missing arg: id")
+		return nil, nil, errors.Newv("missing arg: id", map[string]interface{}{"args": args})
 	}
 
 	node, err := c.getNode(args.ID)
@@ -120,10 +120,10 @@ func (c *ClusterConf) getNode(id string) (*Node, error) {
 	key := path.Join(nodesPrefix, id)
 	value, err := c.kvGet(key)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapv(err, map[string]interface{}{"nodeID": id})
 	}
 	if err := json.Unmarshal(value.Data, node); err != nil {
-		return nil, err
+		return nil, errors.Wrapv(err, map[string]interface{}{"json": string(value.Data)})
 	}
 	node.c = c
 	return node, nil
@@ -142,7 +142,7 @@ func (c *ClusterConf) getNodes() ([]Node, error) {
 		}
 		var node Node
 		if err := json.Unmarshal(value.Data, &node); err != nil {
-			return nil, err
+			return nil, errors.Wrapv(err, map[string]interface{}{"json": string(value.Data)})
 		}
 		node.c = c
 		nodes = append(nodes, node)
@@ -184,7 +184,7 @@ func (c *ClusterConf) getNodesHistory(filters ...nodeFilter) (*NodesHistory, err
 	for _, value := range values {
 		var node Node
 		if err := json.Unmarshal(value.Data, &node); err != nil {
-			return nil, err
+			return nil, errors.Wrapv(err, map[string]interface{}{"json": string(value.Data)})
 		}
 
 		for _, fn := range filters {
@@ -209,11 +209,11 @@ func (n *Node) update() error {
 	historicalKey := path.Join(historicalPrefix, n.ID, n.Heartbeat.Format(time.RFC3339))
 
 	if err := n.c.kvEphemeral(currentKey, n, n.c.config.NodeTTL()); err != nil {
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"nodeID": n.ID})
 	}
 
 	if _, err := n.c.kvUpdate(historicalKey, n, 0); err != nil {
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"nodeID": n.ID})
 	}
 
 	return nil

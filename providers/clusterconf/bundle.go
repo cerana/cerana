@@ -2,7 +2,6 @@ package clusterconf
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/rand"
 	"net/url"
@@ -14,6 +13,7 @@ import (
 	"time"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 )
 
 const bundlesPrefix string = "bundles"
@@ -50,7 +50,8 @@ func (p BundlePorts) MarshalJSON() ([]byte, error) {
 	for port, value := range p {
 		ports[strconv.Itoa(port)] = value
 	}
-	return json.Marshal(ports)
+	j, err := json.Marshal(ports)
+	return j, errors.Wrap(err)
 }
 
 // UnmarshalJSON unmarshals JSON into a BundlePorts, converting string keys to
@@ -58,14 +59,14 @@ func (p BundlePorts) MarshalJSON() ([]byte, error) {
 func (p BundlePorts) UnmarshalJSON(data []byte) error {
 	ports := make(map[string]BundlePort)
 	if err := json.Unmarshal(data, &ports); err != nil {
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"json": string(data)})
 	}
 
 	p = make(BundlePorts)
 	for port, value := range ports {
 		portI, err := strconv.Atoi(port)
 		if err != nil {
-			return err
+			return errors.Wrapv(err, map[string]interface{}{"port": port})
 		}
 		p[portI] = value
 	}
@@ -82,7 +83,10 @@ type BundleDataset struct {
 
 func (d BundleDataset) overlayOn(base *Dataset) (BundleDataset, error) {
 	if d.ID != base.ID {
-		return d, errors.New("dataset ids do not match")
+		return d, errors.Newv("dataset ids do not match", map[string]interface{}{
+			"bundleDatasetID": d.ID,
+			"datasetID":       base.ID,
+		})
 	}
 
 	// overlay data
@@ -102,7 +106,10 @@ type BundleService struct {
 
 func (s BundleService) overlayOn(base *Service) (BundleService, error) {
 	if s.ID != base.ID {
-		return s, errors.New("service ids do not match")
+		return s, errors.Newv("service ids do not match", map[string]interface{}{
+			"bundleServiceID": s.ID,
+			"serviceID":       base.ID,
+		})
 	}
 
 	// maps are pointers, so need to be duplicated separately.
@@ -205,7 +212,7 @@ func (c *ClusterConf) GetBundle(req *acomm.Request) (interface{}, *url.URL, erro
 		return nil, nil, err
 	}
 	if args.ID == 0 {
-		return nil, nil, errors.New("missing arg: id")
+		return nil, nil, errors.Newv("missing arg: id", map[string]interface{}{"args": args})
 	}
 
 	bundle, err := c.getBundle(args.ID)
@@ -239,7 +246,7 @@ func (c *ClusterConf) ListBundles(req *acomm.Request) (interface{}, *url.URL, er
 		var id uint64
 		_, err := fmt.Sscanf(key, keyFormat, &id)
 		if err != nil {
-			return nil, nil, errors.New("invalid bundle id")
+			return nil, nil, errors.Newv("failed to extract valid bundle id", map[string]interface{}{"key": key, "keyFormat": keyFormat})
 		}
 		ids[id] = true
 	}
@@ -292,7 +299,7 @@ func (c *ClusterConf) UpdateBundle(req *acomm.Request) (interface{}, *url.URL, e
 		return nil, nil, err
 	}
 	if args.Bundle == nil {
-		return nil, nil, errors.New("missing arg: bundle")
+		return nil, nil, errors.Newv("missing arg: bundle", map[string]interface{}{"args": args})
 	}
 	args.Bundle.c = c
 
@@ -314,7 +321,7 @@ func (c *ClusterConf) DeleteBundle(req *acomm.Request) (interface{}, *url.URL, e
 		return nil, nil, err
 	}
 	if args.ID == 0 {
-		return nil, nil, errors.New("missing arg: id")
+		return nil, nil, errors.Newv("missing arg: id", map[string]interface{}{"args": args})
 	}
 
 	bundle, err := c.getBundle(args.ID)
@@ -345,13 +352,13 @@ func (b *Bundle) reload() error {
 	value, err := b.c.kvGet(key)
 	if err != nil {
 		if strings.Contains(err.Error(), "key not found") {
-			err = errors.New("bundle config not found")
+			err = errors.Newv("bundle config not found", map[string]interface{}{"bundleID": b.ID})
 		}
 		return err
 	}
 
 	if err = json.Unmarshal(value.Data, &b); err != nil {
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"json": string(value.Data)})
 	}
 	b.ModIndex = value.Index
 
@@ -360,7 +367,7 @@ func (b *Bundle) reload() error {
 
 func (b *Bundle) delete() error {
 	key := path.Join(bundlesPrefix, strconv.FormatUint(b.ID, 10))
-	return b.c.kvDelete(key, b.ModIndex)
+	return errors.Wrapv(b.c.kvDelete(key, b.ModIndex), map[string]interface{}{"bundleID": b.ID})
 }
 
 // update saves the core bundle config.
@@ -369,7 +376,7 @@ func (b *Bundle) update() error {
 
 	index, err := b.c.kvUpdate(key, b, b.ModIndex)
 	if err != nil {
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"bundleID": b.ID})
 	}
 	b.ModIndex = index
 
@@ -387,10 +394,10 @@ func (b *Bundle) combinedOverlay() (*Bundle, error) {
 	var result Bundle
 	tmp, err := json.Marshal(b)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapv(err, map[string]interface{}{"bundle": b}, "failed to marshal bundle")
 	}
 	if err := json.Unmarshal(tmp, &result); err != nil {
-		return nil, err
+		return nil, errors.Wrapv(err, map[string]interface{}{"bundle": b, "json": string(tmp)}, "failed to unmarshal bundle")
 	}
 
 	result.Datasets = make(map[string]BundleDataset)
@@ -448,15 +455,15 @@ func (b *Bundle) combinedOverlay() (*Bundle, error) {
 		return &result, nil
 	}
 
-	errors := make([]error, len(errorChan))
+	errs := make([]error, len(errorChan))
 Loop:
 	for {
 		select {
 		case err := <-errorChan:
-			errors = append(errors, err)
+			errs = append(errs, err)
 		default:
 			break Loop
 		}
 	}
-	return nil, fmt.Errorf("bundle overlay failed: %+v", errors)
+	return nil, errors.Wrapv(errors.Newf("bundle overlay failed: %+v", errs), map[string]interface{}{"bundleID": b.ID})
 }

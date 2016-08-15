@@ -2,13 +2,13 @@ package clusterconf_test
 
 import (
 	"encoding/json"
-	"errors"
 	"math/rand"
 	"net"
 	"path"
 	"strconv"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/providers/clusterconf"
 	"github.com/pborman/uuid"
 )
@@ -183,13 +183,16 @@ func (s *clusterConf) TestBundleHeartbeat() {
 }
 
 func (s *clusterConf) TestBundleHeartbeatJSON() {
+	id := uint64(1)
+	serial := uuid.New()
+	hbID := uuid.New()
 	heartbeatList := clusterconf.BundleHeartbeatList{
 		Heartbeats: map[uint64]clusterconf.BundleHeartbeats{
-			uint64(1): {
-				uuid.New(): clusterconf.BundleHeartbeat{
+			id: {
+				serial: clusterconf.BundleHeartbeat{
 					IP: net.ParseIP("192.168.1.1"),
 					HealthErrors: map[string]error{
-						uuid.New(): errors.New("test"),
+						hbID: errors.New("test"),
 					},
 				},
 			},
@@ -202,7 +205,8 @@ func (s *clusterConf) TestBundleHeartbeatJSON() {
 
 	var heartbeatList2 clusterconf.BundleHeartbeatList
 	s.NoError(json.Unmarshal(j, &heartbeatList2))
-
+	heartbeatList.Heartbeats[id][serial].HealthErrors[hbID] = nil
+	heartbeatList2.Heartbeats[id][serial].HealthErrors[hbID] = nil
 	s.Equal(heartbeatList, heartbeatList2)
 }
 

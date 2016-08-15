@@ -2,11 +2,11 @@ package clusterconf
 
 import (
 	"encoding/json"
-	"errors"
 	"net/url"
 	"strings"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 )
 
 const defaultsPrefix string = "cluster"
@@ -45,7 +45,7 @@ func (c *ClusterConf) UpdateDefaults(req *acomm.Request) (interface{}, *url.URL,
 		return nil, nil, err
 	}
 	if args.Defaults == nil {
-		return nil, nil, errors.New("missing arg: defaults")
+		return nil, nil, errors.Newv("missing arg: defaults", map[string]interface{}{"args": args})
 	}
 
 	args.Defaults.c = c
@@ -77,7 +77,7 @@ func (d *Defaults) reload() error {
 	}
 
 	if err := json.Unmarshal(value.Data, &d.DefaultsConf); err != nil {
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"json": string(value.Data)})
 	}
 	d.ModIndex = value.Index
 	return nil
