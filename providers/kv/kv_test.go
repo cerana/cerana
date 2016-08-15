@@ -70,7 +70,7 @@ func (s *KVS) TestConfig() {
 }
 
 func (s *KVS) TestHandleKVDown() {
-	s.KVCmd.Process.Signal(syscall.SIGSTOP)
+	s.Require().NoError(s.KVCmd.Process.Signal(syscall.SIGSTOP))
 	provider, err := New(s.config, s.tracker)
 	s.Require().NoError(err)
 
@@ -94,7 +94,7 @@ func (s *KVS) TestHandleKVDown() {
 	s.True(ok, "error should implement Temporary interface")
 	s.True(temp.Temporary())
 
-	s.KVCmd.Process.Signal(syscall.SIGCONT)
+	s.Require().NoError(s.KVCmd.Process.Signal(syscall.SIGCONT))
 
 	kvDown := true
 	for range [5]struct{}{} {
