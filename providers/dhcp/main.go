@@ -373,6 +373,10 @@ func (d *DHCP) ack(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.New("missing arg: ip")
 	}
 
+	if !d.config.ipInRange(net.ParseIP(addrs.IP)) {
+		return nil, nil, errors.New("invalid ip")
+	}
+
 	mac, err := lookupMAC(d.tracker, d.coordinator, addrs.IP)
 	if err != nil {
 		return nil, nil, err
