@@ -58,26 +58,29 @@ func (s *clusterConf) TestSetDHCP() {
 
 	tests := []struct {
 		desc string
-		ok   bool
+		err  string
 		conf clusterconf.DHCPConfig
 	}{
-		{desc: "duration is invalid"},
-		{desc: "duration is invalid",
-			conf: clusterconf.DHCPConfig{
-				Duration: 25 * time.Hour,
-			},
-		},
-		{desc: "duration is invalid",
+		{desc: "duration too short",
+			err: "duration is invalid",
 			conf: clusterconf.DHCPConfig{
 				Duration: 30 * time.Minute,
 			},
 		},
-		{desc: "net.IP is required",
+		{desc: "duration too long",
+			err: "duration is invalid",
+			conf: clusterconf.DHCPConfig{
+				Duration: 25 * time.Hour,
+			},
+		},
+		{desc: "missing network",
+			err: "net.IP is required",
 			conf: clusterconf.DHCPConfig{
 				Duration: 1 * time.Hour,
 			},
 		},
-		{desc: "net.IP must be IPv4",
+		{desc: "IPv6",
+			err: "net.IP must be IPv4",
 			conf: clusterconf.DHCPConfig{
 				Duration: 1 * time.Hour,
 				Net: net.IPNet{
@@ -85,7 +88,8 @@ func (s *clusterConf) TestSetDHCP() {
 				},
 			},
 		},
-		{desc: "net.IP must not be 0.0.0.0",
+		{desc: "IPv4zero",
+			err: "net.IP must not be 0.0.0.0",
 			conf: clusterconf.DHCPConfig{
 				Duration: 1 * time.Hour,
 				Net: net.IPNet{
@@ -93,7 +97,8 @@ func (s *clusterConf) TestSetDHCP() {
 				},
 			},
 		},
-		{desc: "net.Mask is required",
+		{desc: "missing netmask",
+			err: "net.Mask is required",
 			conf: clusterconf.DHCPConfig{
 				Duration: 1 * time.Hour,
 				Net: net.IPNet{
@@ -101,7 +106,8 @@ func (s *clusterConf) TestSetDHCP() {
 				},
 			},
 		},
-		{desc: "gateway is unreachable",
+		{desc: "unreachable gateway",
+			err: "gateway is unreachable",
 			conf: clusterconf.DHCPConfig{
 				Duration: 1 * time.Hour,
 				Gateway:  net.IPv4(10, 0, 10, byte(rand.Intn(255))),
@@ -111,7 +117,7 @@ func (s *clusterConf) TestSetDHCP() {
 				},
 			},
 		},
-		{desc: "", ok: true,
+		{desc: "good",
 			conf: clusterconf.DHCPConfig{
 				DNS: []net.IP{
 					net.IPv4(10, 100, 1, byte(rand.Intn(255))),
@@ -137,8 +143,8 @@ func (s *clusterConf) TestSetDHCP() {
 		resp, url, err := s.clusterConf.SetDHCP(req)
 		s.Nil(resp, t.desc)
 		s.Nil(url, t.desc)
-		if !t.ok {
-			s.Contains(err.Error(), t.desc)
+		if t.err != "" {
+			s.Contains(err.Error(), t.err, t.desc)
 			continue
 		}
 		if !s.NoError(err, t.desc) {
