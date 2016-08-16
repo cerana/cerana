@@ -2,6 +2,7 @@ package clusterconf_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/rand"
 	"net"
 	"time"
@@ -44,18 +45,16 @@ func (d DHCPConfigStrs) toConfig() clusterconf.DHCPConfig {
 }
 
 func (s *clusterConf) TestGetDHCP() {
-	conf := clusterconf.DHCPConfig{
-		DNS: []net.IP{
-			net.IPv4(10, 10, 1, byte(rand.Intn(255))),
-			net.IPv4(10, 10, 2, byte(rand.Intn(255))),
+	sconf := DHCPConfigStrs{
+		DNS: []string{
+			fmt.Sprintf("10.10.1.%d", rand.Intn(255)),
+			fmt.Sprintf("10.10.2.%d", rand.Intn(255)),
 		},
-		Duration: 5*time.Hour + time.Hour*time.Duration(rand.Intn(11)+1),
-		Gateway:  net.IPv4(10, 10, 10, byte(rand.Intn(255))),
-		Net: net.IPNet{
-			IP:   net.IPv4(10, 10, 10, 0),
-			Mask: net.IPMask{255, 255, 255, 0},
-		},
+		Duration: fmt.Sprintf("%dh", 1+rand.Intn(24)),
+		Gateway:  fmt.Sprintf("10.10.10.%d", rand.Intn(255)),
+		Net:      "10.10.10.0/24",
 	}
+	conf := sconf.toConfig()
 
 	_, _, err := s.clusterConf.GetDHCP(nil)
 	s.Error(err, "expected no dhcp settings")
