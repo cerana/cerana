@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/pkg/logrusx"
 	"github.com/cerana/cerana/providers/namespace"
 )
@@ -48,7 +49,7 @@ func (s *Namespace) TestSetUser() {
 			if !s.NotNil(err, desc) {
 				continue
 			}
-			s.EqualError(err.(*os.PathError).Err, test.expectedErr, desc)
+			s.EqualError(errors.Cause(err).(*os.PathError).Err, test.expectedErr, desc)
 			continue
 		} else {
 			s.Nil(err, desc)

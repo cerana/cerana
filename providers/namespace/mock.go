@@ -4,6 +4,7 @@ import (
 	"net/url"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/provider"
 )
 
@@ -29,5 +30,5 @@ func (n *Mock) RegisterTasks(server *provider.Server) {
 
 // SetUser sets mock uid and gid mappings.
 func (n *Mock) SetUser(req *acomm.Request) (interface{}, *url.URL, error) {
-	return nil, nil, n.Data.SetUserErr
+	return nil, nil, errors.Wrap(n.Data.SetUserErr)
 }
