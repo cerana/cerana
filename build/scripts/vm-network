@@ -165,7 +165,7 @@ function shutdown() {
     check_interface_exists $1
     if [ $? -eq 0 ]; then
         sudo ip link set $1 down
-        for i in `brctl showstp ceranabr0 | grep $2 | cut -d ' ' -f 1`
+        for i in `brctl showstp $1 | grep $2 | cut -d ' ' -f 1`
         do
             check_interface_exists $i
             if [ $? -eq 0 ]; then
