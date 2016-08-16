@@ -16,6 +16,33 @@ func (s *clusterConf) setupDHCP(config clusterconf.DHCPConfig) {
 	s.Require().NoError(s.kv.Set("dhcp", string(buf)))
 }
 
+type DHCPConfigStrs struct {
+	DNS      []string
+	Duration string
+	Gateway  string
+	Net      string
+}
+
+func (d DHCPConfigStrs) toConfig() clusterconf.DHCPConfig {
+	c := clusterconf.DHCPConfig{
+		DNS:     make([]net.IP, len(d.DNS)),
+		Gateway: net.ParseIP(d.Gateway),
+	}
+
+	for i, dns := range d.DNS {
+		c.DNS[i] = net.ParseIP(dns)
+	}
+
+	c.Duration, _ = time.ParseDuration(d.Duration)
+	_, subnet, _ := net.ParseCIDR(d.Net)
+	if subnet != nil {
+		c.Net.IP = subnet.IP.To16()
+		c.Net.Mask = subnet.Mask
+	}
+
+	return c
+}
+
 func (s *clusterConf) TestGetDHCP() {
 	conf := clusterconf.DHCPConfig{
 		DNS: []net.IP{
