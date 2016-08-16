@@ -30,15 +30,16 @@ func makeEventReader(events chan kv.Event, errs chan error) io.ReadCloser {
 
 	go func() {
 		var err error
-		var ok bool
 		defer logrusx.LogReturnedErr(r.Close, nil, "")
 		defer logrusx.LogReturnedErr(w.Close, nil, "")
 		defer logrusx.LogReturnedErr(func() error { return err }, nil, "event reader failed")
 
 		var event Event
 		for {
+			var ev kv.Event
+			var ok bool
 			select {
-			case ev, ok := <-events:
+			case ev, ok = <-events:
 				if !ok {
 					return
 				}
