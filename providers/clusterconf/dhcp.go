@@ -53,17 +53,18 @@ func (c *ClusterConf) GetDHCP(*acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 
-	config := DHCPConfig{}
-	if err := json.Unmarshal(value.Data, &config); err != nil {
+	conf := DHCPConfig{}
+	if err := json.Unmarshal(value.Data, &conf); err != nil {
 		return nil, nil, errors.Wrapv(err, map[string]interface{}{"json": string(value.Data)})
 	}
-	return config, nil, nil
+
+	return conf, nil, nil
 }
 
 // SetDHCP updates the cluster DHCP settings.
 func (c *ClusterConf) SetDHCP(req *acomm.Request) (interface{}, *url.URL, error) {
-	conf := &DHCPConfig{}
-	if err := req.UnmarshalArgs(conf); err != nil {
+	conf := DHCPConfig{}
+	if err := req.UnmarshalArgs(&conf); err != nil {
 		return nil, nil, err
 	}
 
