@@ -1,11 +1,11 @@
 package kv
 
 import (
-	"errors"
 	"net/url"
 	"time"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/pkg/kv"
 )
 
@@ -24,14 +24,14 @@ func (k *KV) lock(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 	if args.Key == "" {
-		return nil, nil, errors.New("missing arg: key")
+		return nil, nil, errors.Newv("missing arg: key", map[string]interface{}{"args": args})
 	}
 	if args.TTL == 0 {
-		return nil, nil, errors.New("missing arg: ttl")
+		return nil, nil, errors.Newv("missing arg: ttl", map[string]interface{}{"args": args})
 	}
 
 	if k.kvDown() {
-		return nil, nil, errorKVDown
+		return nil, nil, errors.Wrap(errorKVDown)
 	}
 	lock, err := k.kv.Lock(args.Key, args.TTL)
 	if err != nil {
@@ -54,7 +54,7 @@ func (k *KV) renew(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 	if args.Cookie == 0 {
-		return nil, nil, errors.New("missing arg: cookie")
+		return nil, nil, errors.Newv("missing arg: cookie", map[string]interface{}{"args": args})
 	}
 
 	iface, err := locks.Peek(args.Cookie)
@@ -79,7 +79,7 @@ func (k *KV) unlock(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 	if args.Cookie == 0 {
-		return nil, nil, errors.New("missing arg: cookie")
+		return nil, nil, errors.Newv("missing arg: cookie", map[string]interface{}{"args": args})
 	}
 
 	iface, err := locks.Get(args.Cookie)
