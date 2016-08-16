@@ -1,13 +1,13 @@
 package health
 
 import (
-	"errors"
 	"io/ioutil"
 	"net"
 	"net/url"
 	"regexp"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/pkg/logrusx"
 )
 
@@ -27,37 +27,38 @@ func (h *Health) TCPResponse(req *acomm.Request) (interface{}, *url.URL, error) 
 	}
 
 	if args.Address == "" {
-		return nil, nil, errors.New("missing arg: address")
+		return nil, nil, errors.Newv("missing arg: address", map[string]interface{}{"args": args})
 	}
 	if args.Regexp == "" {
-		return nil, nil, errors.New("missing arg: regexp")
+		return nil, nil, errors.Newv("missing arg: regexp", map[string]interface{}{"args": args})
 	}
 	re, err := regexp.Compile(args.Regexp)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.Wrapv(err, map[string]interface{}{"regexp": args.Regexp})
 	}
 
 	conn, err := net.DialTimeout("tcp", args.Address, h.config.RequestTimeout())
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.Wrapv(err, map[string]interface{}{"url": args.Address, "timeout": h.config.RequestTimeout()})
 	}
 	defer logrusx.LogReturnedErr(conn.Close, nil, "failed to close tcp conn")
+
 	if len(args.Body) > 0 {
 		if _, err = conn.Write(args.Body); err != nil {
-			return nil, nil, err
+			return nil, nil, errors.Wrap(err)
 		}
 		if err = conn.(*net.TCPConn).CloseWrite(); err != nil {
-			return nil, nil, err
+			return nil, nil, errors.Wrap(err)
 		}
 	}
 
 	tcpResp, err := ioutil.ReadAll(conn)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.Wrap(err)
 	}
 
 	if !re.Match(tcpResp) {
-		return nil, nil, errors.New("response did not match")
+		return nil, nil, errors.Newv("response did not match", map[string]interface{}{"response": string(tcpResp), "regexp": args.Regexp})
 	}
 	return nil, nil, nil
 }
