@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/url"
 	"path"
+	"strings"
 
 	"github.com/cerana/cerana/acomm"
 	"github.com/pborman/uuid"
@@ -100,7 +101,7 @@ func (c *ClusterConf) DeleteService(req *acomm.Request) (interface{}, *url.URL, 
 
 	service, err := c.getService(args.ID)
 	if err != nil {
-		if err.Error() == "service config not found" {
+		if strings.Contains(err.Error(), "service config not found") {
 			return nil, nil, nil
 		}
 		return nil, nil, err
@@ -124,7 +125,7 @@ func (s *Service) reload() error {
 	key := path.Join(servicesPrefix, s.ID, "config")
 	value, err := s.c.kvGet(key)
 	if err != nil {
-		if err.Error() == "key not found" {
+		if strings.Contains(err.Error(), "key not found") {
 			err = errors.New("service config not found")
 		}
 		return err

@@ -138,7 +138,7 @@ func (s *clusterConf) TestSetDHCP() {
 		s.Nil(resp)
 		s.Nil(url)
 		if !t.ok {
-			s.EqualError(err, t.desc)
+			s.Contains(err.Error(), t.desc)
 			continue
 		}
 		if !s.NoError(err) {

@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"path"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/cerana/cerana/acomm"
@@ -142,7 +143,7 @@ func (c *ClusterConf) DeleteDataset(req *acomm.Request) (interface{}, *url.URL, 
 
 	dataset, err := c.getDataset(args.ID)
 	if err != nil {
-		if err.Error() == "dataset config not found" {
+		if strings.Contains(err.Error(), "dataset config not found") {
 			return nil, nil, nil
 		}
 		return nil, nil, err
@@ -167,7 +168,7 @@ func (d *Dataset) reload() error {
 	key := path.Join(datasetsPrefix, d.ID, "config")
 	value, err := d.c.kvGet(key)
 	if err != nil {
-		if err.Error() == "key not found" {
+		if strings.Contains(err.Error(), "key not found") {
 			err = errors.New("dataset config not found")
 		}
 		return err
