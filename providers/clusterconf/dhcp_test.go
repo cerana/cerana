@@ -132,24 +132,24 @@ func (s *clusterConf) TestSetDHCP() {
 			Task: "clusterconf-set-dhcp",
 			Args: t.conf,
 		})
-		s.Require().NoError(err)
+		s.Require().NoError(err, t.desc)
 
 		resp, url, err := s.clusterConf.SetDHCP(req)
-		s.Nil(resp)
-		s.Nil(url)
+		s.Nil(resp, t.desc)
+		s.Nil(url, t.desc)
 		if !t.ok {
 			s.Contains(err.Error(), t.desc)
 			continue
 		}
-		if !s.NoError(err) {
+		if !s.NoError(err, t.desc) {
 			continue
 		}
 
 		resp, url, err = s.clusterConf.GetDHCP(nil)
-		s.Require().NoError(err)
+		s.Require().NoError(err, t.desc)
 		s.Nil(url)
 
 		got := resp.(clusterconf.DHCPConfig)
-		s.Equal(t.conf, got)
+		s.Equal(t.conf, got, t.desc)
 	}
 }
