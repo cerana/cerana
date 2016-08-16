@@ -59,7 +59,7 @@ func NewServer(config *Config) (*Server, error) {
 		return nil, errors.Wrapv(err, map[string]interface{}{
 			"externalPort": config.ExternalPort(),
 			"streamURL":    streamURLS,
-		}, "failed to parse streamURL")
+		}, "failed to generate valid streamURL")
 	}
 	proxyURLS := fmt.Sprintf("http://localhost:%d/proxy", config.ExternalPort())
 	proxyURL, err := url.ParseRequestURI(proxyURLS)
@@ -67,7 +67,7 @@ func NewServer(config *Config) (*Server, error) {
 		return nil, errors.Wrapv(err, map[string]interface{}{
 			"externalPort": config.ExternalPort(),
 			"proxyURL":     proxyURLS,
-		}, "failed to parse proxyURL")
+		}, "failed to generate valid proxyURL")
 	}
 	s.proxy, err = acomm.NewTracker(responseSocket, streamURL, proxyURL, config.RequestTimeout())
 	if err != nil {
