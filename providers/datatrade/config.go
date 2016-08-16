@@ -1,8 +1,7 @@
 package datatrade
 
 import (
-	"errors"
-
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/provider"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
