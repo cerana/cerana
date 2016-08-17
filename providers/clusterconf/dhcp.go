@@ -84,12 +84,9 @@ func (c *ClusterConf) SetDHCP(req *acomm.Request) (interface{}, *url.URL, error)
 		return nil, nil, err
 	}
 
-	index := uint64(0)
-	value, err := c.kvGet(dhcpPrefix)
-	if err == nil {
-		index = value.Index
+	_, err := c.kvUpdate(dhcpPrefix, conf, 0)
+	if err != nil {
+		err = errors.New("dhcp configuration can not be altered")
 	}
-
-	_, err = c.kvUpdate(dhcpPrefix, conf, index)
 	return nil, nil, err
 }

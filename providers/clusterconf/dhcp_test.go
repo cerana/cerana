@@ -102,6 +102,18 @@ func (s *clusterConf) TestSetDHCP() {
 				Net:      "10.100.10.0/24",
 			},
 		},
+		{desc: "dhcp is set in stone",
+			err: "dhcp configuration can not be altered",
+			conf: clusterconf.DHCPConfig{
+				DNS: []string{
+					fmt.Sprintf("10.100.1.%d", rand.Intn(255)),
+					fmt.Sprintf("10.100.2.%d", rand.Intn(255)),
+				},
+				Duration: "2h",
+				Gateway:  fmt.Sprintf("10.100.10.%d", rand.Intn(255)),
+				Net:      "10.100.10.0/24",
+			},
+		},
 	}
 
 	for _, t := range tests {
