@@ -85,76 +85,64 @@ func (s *clusterConf) TestSetDHCP() {
 	tests := []struct {
 		desc string
 		err  string
-		conf clusterconf.DHCPConfig
+		conf DHCPConfigStrs
 	}{
 		{desc: "duration too short",
 			err: "duration is invalid",
-			conf: clusterconf.DHCPConfig{
-				Duration: 30 * time.Minute,
+			conf: DHCPConfigStrs{
+				Duration: "30m",
 			},
 		},
 		{desc: "duration too long",
 			err: "duration is invalid",
-			conf: clusterconf.DHCPConfig{
-				Duration: 25 * time.Hour,
+			conf: DHCPConfigStrs{
+				Duration: "25h",
 			},
 		},
 		{desc: "missing network",
 			err: "net.IP is required",
-			conf: clusterconf.DHCPConfig{
-				Duration: 1 * time.Hour,
+			conf: DHCPConfigStrs{
+				Duration: "1h",
 			},
 		},
 		{desc: "IPv6",
 			err: "net.IP must be IPv4",
-			conf: clusterconf.DHCPConfig{
-				Duration: 1 * time.Hour,
-				Net: net.IPNet{
-					IP: net.ParseIP("::1"),
-				},
+			conf: DHCPConfigStrs{
+				Duration: "1h",
+				Net:      "::1/128",
 			},
 		},
 		{desc: "IPv4zero",
 			err: "net.IP must not be 0.0.0.0",
-			conf: clusterconf.DHCPConfig{
-				Duration: 1 * time.Hour,
-				Net: net.IPNet{
-					IP: net.IPv4zero,
-				},
+			conf: DHCPConfigStrs{
+				Duration: "1h",
+				Net:      "0.0.0.0/0",
 			},
 		},
 		{desc: "missing netmask",
-			err: "net.Mask is required",
-			conf: clusterconf.DHCPConfig{
-				Duration: 1 * time.Hour,
-				Net: net.IPNet{
-					IP: net.ParseIP("127.0.0.1"),
-				},
+			err: "net.IP is required",
+			conf: DHCPConfigStrs{
+				Duration: "1h",
+				Net:      "10.100.10.0",
 			},
 		},
 		{desc: "unreachable gateway",
 			err: "gateway is unreachable",
-			conf: clusterconf.DHCPConfig{
-				Duration: 1 * time.Hour,
-				Gateway:  net.IPv4(10, 0, 10, byte(rand.Intn(255))),
-				Net: net.IPNet{
-					IP:   net.IPv4(10, 100, 10, 0),
-					Mask: net.IPMask{255, 255, 255, 0},
-				},
+			conf: DHCPConfigStrs{
+				Duration: "1h",
+				Gateway:  fmt.Sprintf("10.0.10.%d", rand.Intn(255)),
+				Net:      "10.100.10.0/24",
 			},
 		},
 		{desc: "good",
-			conf: clusterconf.DHCPConfig{
-				DNS: []net.IP{
-					net.IPv4(10, 100, 1, byte(rand.Intn(255))),
-					net.IPv4(10, 100, 2, byte(rand.Intn(255))),
+			conf: DHCPConfigStrs{
+				DNS: []string{
+					fmt.Sprintf("10.100.1.%d", rand.Intn(255)),
+					fmt.Sprintf("10.100.2.%d", rand.Intn(255)),
 				},
-				Duration: 1 * time.Hour,
-				Gateway:  net.IPv4(10, 100, 10, byte(rand.Intn(255))),
-				Net: net.IPNet{
-					IP:   net.IPv4(10, 100, 10, 0),
-					Mask: net.IPMask{255, 255, 255, 0},
-				},
+				Duration: "1h",
+				Gateway:  fmt.Sprintf("10.100.10.%d", rand.Intn(255)),
+				Net:      "10.100.10.0/24",
 			},
 		},
 	}
@@ -162,7 +150,7 @@ func (s *clusterConf) TestSetDHCP() {
 	for _, t := range tests {
 		req, err := acomm.NewRequest(acomm.RequestOptions{
 			Task: "clusterconf-set-dhcp",
-			Args: t.conf,
+			Args: t.conf.toConfig(),
 		})
 		s.Require().NoError(err, t.desc)
 
@@ -182,6 +170,6 @@ func (s *clusterConf) TestSetDHCP() {
 		s.Nil(url)
 
 		got := resp.(clusterconf.DHCPConfig)
-		s.Equal(t.conf, got, t.desc)
+		s.Equal(t.conf.toConfig(), got, t.desc)
 	}
 }
