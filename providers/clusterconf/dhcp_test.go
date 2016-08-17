@@ -83,6 +83,20 @@ func (s *clusterConf) TestSetDHCP() {
 				Net:      "10.100.10.0",
 			},
 		},
+		{desc: "junk network",
+			err: "invalid CIDR address: 256.256.256.256/32",
+			conf: clusterconf.DHCPConfig{
+				Duration: "1h",
+				Net:      "256.256.256.256/32",
+			},
+		},
+		{desc: "junk netmask",
+			err: "invalid CIDR address: 10.100.10.0/33",
+			conf: clusterconf.DHCPConfig{
+				Duration: "1h",
+				Net:      "10.100.10.0/33",
+			},
+		},
 		{desc: "unreachable gateway",
 			err: "gateway is unreachable",
 			conf: clusterconf.DHCPConfig{
