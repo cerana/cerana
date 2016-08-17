@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -11,7 +10,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/pkg/logrusx"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -108,10 +107,7 @@ func canonicalFlagName(f *pflag.FlagSet, name string) pflag.NormalizedName {
 
 func (c *config) loadConfig() error {
 	if err := c.viper.BindPFlags(c.flagSet); err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("failed to bind flags")
-		return err
+		return errors.Wrap(err, "failed to bind flags")
 	}
 
 	filePath := c.viper.GetString("configFile")
@@ -121,11 +117,7 @@ func (c *config) loadConfig() error {
 
 	c.viper.SetConfigFile(filePath)
 	if err := c.viper.ReadInConfig(); err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error":    err,
-			"filePath": filePath,
-		}).Error("failed to parse config file")
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"path": filePath}, "failed to parse config file")
 	}
 
 	return c.validate()
@@ -166,10 +158,6 @@ func (c *config) datasetDir() string {
 func (c *config) setupLogging() error {
 	logLevel := c.viper.GetString("logLevel")
 	if err := logrusx.SetLevel(logLevel); err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-			"level": logLevel,
-		}).Error("failed to set up logging")
 		return err
 	}
 	return nil
@@ -208,11 +196,7 @@ func (c *config) validateURL(name string) error {
 		return errors.New("missing " + name)
 	}
 	if _, err := url.ParseRequestURI(u); err != nil {
-		logrus.WithFields(logrus.Fields{
-			name:    u,
-			"error": err,
-		}).Error("invalid config")
-		return errors.New("invalid " + name)
+		return errors.Wrapv(err, map[string]interface{}{"url": u}, "invalid "+name)
 	}
 	return nil
 }

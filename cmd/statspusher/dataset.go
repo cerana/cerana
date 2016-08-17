@@ -1,12 +1,12 @@
 package main
 
 import (
-	"errors"
 	"net"
 	"net/url"
 	"path/filepath"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/providers/clusterconf"
 	"github.com/cerana/cerana/providers/metrics"
 	"github.com/cerana/cerana/providers/zfs"
@@ -59,7 +59,7 @@ func (s *statsPusher) getDatasets(ip net.IP) ([]clusterconf.DatasetHeartbeatArgs
 	for name, args := range requests {
 		resp := responses[name]
 		if resp.Error != nil {
-			return nil, resp.Error
+			return nil, errors.Wrap(resp.Error)
 		}
 		if err := resp.UnmarshalResult(args.respData); err != nil {
 			return nil, err
@@ -127,7 +127,7 @@ func (s *statsPusher) getIP() (net.IP, error) {
 
 	resp := <-doneChan
 	if resp.Error != nil {
-		return nil, resp.Error
+		return nil, errors.Wrap(resp.Error)
 	}
 
 	var data metrics.NetworkResult
