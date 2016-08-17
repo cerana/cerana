@@ -1,12 +1,12 @@
 package systemd
 
 import (
-	"errors"
 	"net/url"
 	"strings"
 	"time"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/provider"
 	"github.com/coreos/go-systemd/dbus"
 	"github.com/coreos/go-systemd/unit"
