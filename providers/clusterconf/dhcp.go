@@ -14,33 +14,45 @@ const dhcpPrefix string = "dhcp"
 
 // DHCPConfig represents the dhcp settings for the cluster.
 type DHCPConfig struct {
-	DNS      []net.IP      `json:"dns"`
-	Duration time.Duration `json:"duration"`
-	Gateway  net.IP        `json:"gateway"`
-	Net      net.IPNet     `json:"net"`
+	DNS      []string `json:"dns"`
+	Duration string   `json:"duration"`
+	Gateway  string   `json:"gateway"`
+	Net      string   `json:"net"`
 }
 
 // Validate validates the DHCPConfig settings.
 func (c *DHCPConfig) Validate() error {
-	if c.Duration < 1*time.Hour || c.Duration > 24*time.Hour {
-		return errors.Newv("duration is invalid", map[string]interface{}{"duration": c.Duration})
+	duration, err := time.ParseDuration(c.Duration)
+	if err != nil {
+		return errors.Wrapv(err, map[string]interface{}{"duration": c.Duration}, "unable to parse duration")
 	}
-	if c.Net.IP == nil {
-		return errors.New("net.IP is required")
+	if duration < 1*time.Hour || duration > 24*time.Hour {
+		return errors.Newv("duration is invalid", map[string]interface{}{"duration": duration})
 	}
-	c.Net.IP = c.Net.IP.To4()
-	if c.Net.IP == nil {
-		return errors.Newv("net.IP must be IPv4", map[string]interface{}{"ip": c.Net.IP})
+
+	_, subnet, err := net.ParseCIDR(c.Net)
+	if err != nil {
+		return errors.Wrapv(err, map[string]interface{}{"net": c.Net}, "unable to parse subnet CIDR")
 	}
-	if c.Net.IP.Equal(net.IPv4zero) {
-		return errors.New("net.IP must not be 0.0.0.0")
+
+	if subnet.IP.To4() == nil {
+		return errors.Newv("net.ip must be IPv4", map[string]interface{}{"ip": subnet.IP})
 	}
-	if c.Net.Mask == nil {
-		return errors.New("net.Mask is required")
+	if subnet.IP.Equal(net.IPv4zero) {
+		return errors.New("net.ip must not be 0.0.0.0")
 	}
-	if c.Gateway != nil {
-		if !c.Net.Contains(c.Gateway) {
-			return errors.Newv("gateway is unreachable", map[string]interface{}{"net": c.Net, "gateway": c.Gateway})
+
+	gateway := net.ParseIP(c.Gateway)
+	if gateway != nil {
+		if !subnet.Contains(gateway) {
+			return errors.Newv("gateway is unreachable", map[string]interface{}{"net": subnet, "gateway": gateway})
+		}
+
+		for _, dns := range c.DNS {
+			ip := net.ParseIP(dns)
+			if ip == nil {
+				return errors.Newv("failed to parse DNS IP", map[string]interface{}{"ip": dns})
+			}
 		}
 	}
 	return nil
