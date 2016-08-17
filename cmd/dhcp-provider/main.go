@@ -49,7 +49,7 @@ func comm(tracker *acomm.Tracker, coordinator *url.URL, task string, args interf
 
 func getDHCPConfig(tracker *acomm.Tracker, coordinator *url.URL) *clusterconf.DHCPConfig {
 	dconf := &clusterconf.DHCPConfig{}
-	err := comm(tracker, coordinator, "get-dhcp", nil, dconf)
+	err := comm(tracker, coordinator, "get-dhcp-config", nil, dconf)
 	logrusx.DieOnError(err, "get dhcp configuration")
 	return dconf
 }
