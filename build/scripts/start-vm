@@ -27,48 +27,32 @@ Usage: $0 [options]
     ==== CeranaOS ====
     --ceranaimagedir <dir>
         Where the CeranaOS kernel and initrd images are stored.
-        This option is saved in the file:
-        $testceranastatedir/ceranaimagedir
         [ceranaimagedir = $ceranaimagedir]
     --kernelimage <image>
         The kernel image to boot into the VM. This image must be stored in
         $ceranaimagedir.
-        This option is saved in the file:
-        $testceranastatedir/kernelimage
         [kernelimage = $kernelimage]
     --initrdimage <image>
         The RAM file system image (initrd) to boot into the VM. This image must
         be stored in $ceranaimagedir.
-        This option is saved in the file:
-        $testceranastatedir/initrdimage
         [initrdimage = $initrdimage]
     --isoimage <image>
         The CDROM image (iso) to boot when the --iso option is used. This image
         must be stored in $ceranaimagedir.
-        This option is saved in the file:
-        $testceranastatedir/isoimage
         [initrdimage = $isoimage]
     ==== Target Options ====
     --diskimagedir <dir>
         Where the disk images are stored.
-        This option is saved in the file:
-        $testceranastatedir/ceranaimagedir
         [diskimagedir = $diskimagedir]
     --diskimage
         The name file to use for the test disk image. If the file is created if
         it does not exist.
-        This option is saved in the file:
-        $testceranastatedir/diskimage
         [diskimage = $diskimage]
     --numdisks <n>
         The number of disk images per VM.
-        This option is saved in the file:
-        $testceranastatedir/numdisks
         [numdisks = $numdisks]
     --diskimagesize <size>
         The size of the disk image to use. e.g. 1G = 1 gigabyte.
-        This option is saved in the file:
-        $testceranastatedir/diskimagesize
         [diskimagesize = $diskimagesize]
     --uuid <uuid>
         Use this to specify the UUID to associate with the CeranaOS instance
@@ -77,8 +61,6 @@ Usage: $0 [options]
         kvm). The last two characters of the UUID are replaced with the tapset
         number. The full UUID becomes:
         `printf "%.34s%02x" $uuid $tapset`
-        This option is saved in the file:
-        $testceranastatedir/uuid
         [uuid = $uuid]
     ==== Network ====
     --tap <tap>
@@ -98,8 +80,6 @@ Usage: $0 [options]
     --macbase <macbase>
         Use a specific MAC address for the management interface. The default is
         to use a MAC starting with DE:AD:BE:EF
-        This option is saved in the file:
-        $testceranastatedir/macbase
         [macbase = $macbase]
     === Boot Options ===
     --boot <device>
@@ -107,25 +87,17 @@ Usage: $0 [options]
         initrd = Boot using bzImage and initrd
         iso = Boot using an ISO (CDROM image)
         net = Boot via the network
-        This option is saved in the file:
-        $testceranastatedir/boot
         [boot = $boot]
     --pxeoptionrom
         The option ROM image to use for a network boot.
-        This option is saved in the file:
-        $testceranastatedir/pxeoptionrom
         [pxeoptionrom = $pxeoptionrom]
     --rammb <megabytes>
         The amount of RAM to allocate to the virtual machine (in megabytes).
-        This option is saved in the file:
-        $testceranastatedir/rammb
         [rammb = $rammb]
     --ramdisksize <kilobytes>
         The amount of RAM to allocate to the ram disk (in kilobytes).
         NOTE: If this is not sufficient for the actual RAM disk the kernel will
         default to half of available RAM.
-        This option is saved in the file:
-        $testceranastatedir/ramdisksize
         [ramdisksize = $ramdisksize]
     ==== Image Download ====
     --download
@@ -134,18 +106,12 @@ Usage: $0 [options]
         The base URL to download from. NOTE: This assumes a directory structure
         created by a Jenkins job. The full URL becomes:
             <downloadurl>/<job>/<build>
-        This option is saved in the file:
-        $testceranastatedir/downloadurl
         [downloadurl = $downloadurl]
     --job <job>
         The name of the Jenkins job to download from.
-        This option is saved in the file:
-        $testceranastatedir/job
         [job = $job]
     --build <build>
         The Jenkins build number to download from.
-        This option is saved in the file:
-        $testceranastatedir/build
         [build = $build]
     ==== Other ====
     --resetdefaults
@@ -157,6 +123,15 @@ Usage: $0 [options]
    --help
         Show this help information.
 EOF
+}
+
+function get_current_config() {
+    if [ -f $testceranastatedir/current ]; then
+        r=`cat $testceranastatedir/current`
+    else
+        r=''
+    fi
+    echo $r
 }
 
 #+
@@ -317,7 +292,7 @@ statevars=(
     diskimage=sas
     numdisks=1
     diskimagesize=1G
-    tap=tap
+    tap=ceranatap
     tapset=1
     numvmif=1
     macbase=DE:AD:BE:EF
@@ -330,17 +305,25 @@ statevars=(
     job=build-cerana
     build=""
 )
+config=$(get_current_config)
+if [ -z "$config" ]; then
+    usage
+    die The current configuration does not exist and is required -- run vm-network.
+fi
+
 for v in "${statevars[@]}"
 do
     if [ ! -z "$resetdefaults" ]; then
-        clear_test_variable $v
+        clear_test_variable $config/$v
     fi
-    init_test_variable $v
+    init_test_variable $config/$v
 done
 
-if [ ! -z "$showusage" ]; then
+message Using configuration: $config
+
+if [ -n "$showusage" ]; then
     usage
-    if [ ! -z "$errorexit" ]; then
+    if [ -n "$errorexit" ]; then
         exit 1
     fi
     exit 0
