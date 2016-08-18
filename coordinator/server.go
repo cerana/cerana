@@ -2,7 +2,6 @@ package coordinator
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -16,6 +15,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/tylerb/graceful"
 )
 
@@ -53,17 +53,21 @@ func NewServer(config *Config) (*Server, error) {
 		"response",
 		config.ServiceName()+".sock")
 
-	streamURL, err := url.ParseRequestURI(fmt.Sprintf("http://localhost:%d/stream", config.ExternalPort()))
+	streamURLS := fmt.Sprintf("http://localhost:%d/stream", config.ExternalPort())
+	streamURL, err := url.ParseRequestURI(streamURLS)
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("failed to generate stream url")
+		return nil, errors.Wrapv(err, map[string]interface{}{
+			"externalPort": config.ExternalPort(),
+			"streamURL":    streamURLS,
+		}, "failed to generate valid streamURL")
 	}
-	proxyURL, err := url.ParseRequestURI(fmt.Sprintf("http://localhost:%d/proxy", config.ExternalPort()))
+	proxyURLS := fmt.Sprintf("http://localhost:%d/proxy", config.ExternalPort())
+	proxyURL, err := url.ParseRequestURI(proxyURLS)
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("failed to generate proxy url")
+		return nil, errors.Wrapv(err, map[string]interface{}{
+			"externalPort": config.ExternalPort(),
+			"proxyURL":     proxyURLS,
+		}, "failed to generate valid proxyURL")
 	}
 	s.proxy, err = acomm.NewTracker(responseSocket, streamURL, proxyURL, config.RequestTimeout())
 	if err != nil {
@@ -101,42 +105,40 @@ func (s *Server) externalHandler(w http.ResponseWriter, r *http.Request) {
 	// Send the immediate response
 	defer func() {
 		resp, err := acomm.NewResponse(req, nil, nil, respErr)
+		errData := map[string]interface{}{
+			"request":  req,
+			"response": resp,
+		}
 		respJSON, err := json.Marshal(resp)
 		if err != nil {
-			logrus.WithFields(logrus.Fields{
-				"error":    err,
-				"req":      req,
-				"response": resp,
-			}).Error("failed to marshal initial response")
+			err = errors.Wrapv(err, errData)
+			logrus.WithField("error", err).Error("failed to marshal initial response")
 		}
 
 		if _, err := w.Write(respJSON); err != nil {
-			logrus.WithFields(logrus.Fields{
-				"error":    err,
-				"req":      req,
-				"response": resp,
-			}).Error("failed to send initial response")
+			err = errors.Wrapv(err, errData)
+			logrus.WithField("error", err).Error("failed to send initial response")
 		}
 	}()
 
 	// Parse the request
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		respErr = err
+		respErr = errors.Wrap(err, "failed to read request body")
 		return
 	}
 
 	if err := json.Unmarshal(body, req); err != nil {
-		respErr = err
+		respErr = errors.Wrapv(err, map[string]interface{}{"json": string(body)}, "failed to unmarshal request")
 		return
 	}
 
 	if err := acomm.ReplaceLocalhost(req.ResponseHook, r.RemoteAddr); err != nil {
-		respErr = err
+		respErr = errors.Wrapv(err, map[string]interface{}{"request": req}, "responseHook")
 		return
 	}
 	if err := acomm.ReplaceLocalhost(req.StreamURL, r.RemoteAddr); err != nil {
-		respErr = err
+		respErr = errors.Wrapv(err, map[string]interface{}{"request": req}, "streamURL")
 		return
 	}
 
@@ -160,41 +162,34 @@ func (s *Server) acceptInternalRequest(conn net.Conn) {
 	defer func() {
 		// Respond to the initial request
 		resp, err := acomm.NewResponse(req, nil, nil, respErr)
+		errData := map[string]interface{}{
+			"request":  req,
+			"response": resp,
+		}
 		if err != nil {
-			logrus.WithFields(logrus.Fields{
-				"error":   err,
-				"req":     req,
-				"respErr": respErr,
-			}).Error("failed to create initial response")
+			err = errors.Wrapv(err, errData)
+			logrus.WithField("error", err).Error("failed to marshal initial response")
 			return
 		}
 
 		if err := acomm.SendConnData(conn, resp); err != nil {
-			logrus.WithFields(logrus.Fields{
-				"error":   err,
-				"req":     req,
-				"respErr": respErr,
-			}).Error("failed to create initial response")
+			err = errors.Wrapv(err, errData)
+			logrus.WithField("error", err).Error("failed to send initial response")
 			return
 		}
 	}()
 
 	if err := acomm.UnmarshalConnData(conn, req); err != nil {
-		respErr = err
+		respErr = errors.Wrap(err, "failed to unmarshal request")
 		return
 	}
 
 	if err := req.Validate(); err != nil {
-		respErr = err
+		respErr = errors.Wrapv(err, map[string]interface{}{"request": req})
 		return
 	}
 
-	if err := s.handleRequest(req); err != nil {
-		respErr = err
-		return
-	}
-
-	return
+	respErr = s.handleRequest(req)
 }
 
 func (s *Server) handleRequest(req *acomm.Request) error {
@@ -207,7 +202,7 @@ func (s *Server) handleRequest(req *acomm.Request) error {
 	if err != nil {
 		_ = s.proxy.RemoveRequest(req)
 	}
-	return err
+	return errors.Wrapv(err, map[string]interface{}{"request": req})
 }
 
 // localTask handles proxying and forwarding a request to a provider for
@@ -219,7 +214,7 @@ func (s *Server) localTask(req *acomm.Request) error {
 	}
 
 	if len(providerSockets) == 0 {
-		return errors.New("no providers available for task: " + req.Task)
+		return errors.Newv("no providers available for task", map[string]interface{}{"task": req.Task})
 	}
 
 	proxyReq, err := s.proxy.ProxyUnix(req, 0)
@@ -271,12 +266,7 @@ func (s *Server) getProviders(task string) ([]string, error) {
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-			"req":   task,
-			"dir":   taskSocketDir,
-		}).Warn("failed to read task dir")
-		return nil, err
+		return nil, errors.Wrapv(err, map[string]interface{}{"task": task, "taskSocketDir": taskSocketDir})
 	}
 
 	// Filter out any non-socket files
@@ -296,7 +286,7 @@ func (s *Server) externalListenAndServe() {
 		// Ignore the error from closing the listener, which is involved in the
 		// graceful shutdown
 		if !strings.Contains(err.Error(), "use of closed network connection") {
-			logrus.WithField("error", err).Error("server error")
+			logrus.WithField("error", errors.Wrap(err)).Error("server error")
 
 			// Stop the coordinator if this was unexpected
 			s.Stop()
