@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"math/rand"
 	"net"
@@ -9,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/pkg/test"
 	"github.com/cerana/cerana/providers/dhcp"
 	"github.com/krolaw/dhcp4"
