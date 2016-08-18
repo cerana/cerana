@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/providers/clusterconf"
 	"github.com/cerana/cerana/providers/service"
 	"github.com/shirou/gopsutil/host"
@@ -28,7 +29,7 @@ func (s *statsPusher) bundleHeartbeats() error {
 	}
 	healthResults, errs := s.runHealthChecks(bundles)
 	if len(errs) != 0 {
-		return fmt.Errorf("bundle health check errors: %v", errs)
+		return errors.Newv("bundle health check errors", map[string]interface{}{"errors": errs})
 	}
 	return s.sendBundleHeartbeats(healthResults, serial, ip)
 }
@@ -63,7 +64,7 @@ func (s *statsPusher) getBundles() ([]*clusterconf.Bundle, error) {
 	for name, args := range requests {
 		resp := responses[name]
 		if resp.Error != nil {
-			return nil, resp.Error
+			return nil, errors.Wrap(resp.Error)
 		}
 		if err := resp.UnmarshalResult(args.respData); err != nil {
 			return nil, err
@@ -117,7 +118,7 @@ func (s *statsPusher) getSerial() (string, error) {
 
 	resp := <-doneChan
 	if resp.Error != nil {
-		return "", resp.Error
+		return "", errors.Wrap(resp.Error)
 	}
 
 	var data host.InfoStat
@@ -167,7 +168,7 @@ func (s *statsPusher) sendBundleHeartbeats(bundles map[uint64]map[string]error, 
 	}
 
 	if len(errored) > 0 {
-		return fmt.Errorf("one or more bundle heartbeats unsuccessful: %+v", errored)
+		return errors.Newv("one or more bundle heartbeats unsuccessful", map[string]interface{}{"errors": errored})
 	}
 	return nil
 }
@@ -176,7 +177,7 @@ func (s *statsPusher) runHealthChecks(bundles []*clusterconf.Bundle) (map[uint64
 	multiRequest := acomm.NewMultiRequest(s.tracker, 0)
 
 	requests := make(map[string]*acomm.Request)
-	errors := make(map[string]error)
+	errs := make(map[string]error)
 	for _, bundle := range bundles {
 		for serviceID, service := range bundle.Services {
 			for healthID, healthCheck := range service.HealthChecks {
@@ -186,7 +187,7 @@ func (s *statsPusher) runHealthChecks(bundles []*clusterconf.Bundle) (map[uint64
 					Args: healthCheck.Args,
 				})
 				if err != nil {
-					errors[name] = fmt.Errorf("health check request creation for %s failed: %v", name, err)
+					errs[name] = errors.Wrapv(err, map[string]interface{}{"name": name}, "health check request creation failed")
 					continue
 				}
 				requests[name] = req
@@ -196,12 +197,12 @@ func (s *statsPusher) runHealthChecks(bundles []*clusterconf.Bundle) (map[uint64
 
 	for name, req := range requests {
 		if err := multiRequest.AddRequest(name, req); err != nil {
-			errors[name] = err
+			errs[name] = err
 			continue
 		}
 		if err := acomm.Send(s.config.nodeDataURL(), req); err != nil {
 			multiRequest.RemoveRequest(req)
-			errors[name] = err
+			errs[name] = err
 		}
 	}
 
@@ -215,11 +216,11 @@ func (s *statsPusher) runHealthChecks(bundles []*clusterconf.Bundle) (map[uint64
 			healthResults[bundleID] = make(map[string]error)
 		}
 		if resp.Error != nil {
-			healthResults[bundleID][healthCheck] = fmt.Errorf("health check failed: %v", resp.Error)
+			healthResults[bundleID][healthCheck] = errors.Wrap(resp.Error)
 		}
 	}
 
-	return healthResults, errors
+	return healthResults, errs
 }
 
 func extractBundles(services []service.Service) []uint64 {
