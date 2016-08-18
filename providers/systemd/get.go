@@ -1,13 +1,13 @@
 package systemd
 
 import (
-	"errors"
 	"net/url"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/coreos/go-systemd/dbus"
 )
 
@@ -36,17 +36,17 @@ func (s *Systemd) Get(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 	if args.Name == "" {
-		return nil, nil, errors.New("missing arg: name")
+		return nil, nil, errors.Newv("missing arg: name", map[string]interface{}{"args": args})
 	}
 
 	list, err := s.dconn.ListUnits()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.Wrap(err)
 	}
 
 	// Try to find the requested unit in the list
 	var res *GetResult
-	err = errors.New("unit not found")
+	err = errors.Newv("unit not found", map[string]interface{}{"name": args.Name})
 	for _, unit := range list {
 		if unit.Name == args.Name {
 			err = nil
@@ -69,14 +69,14 @@ func (s *Systemd) unitStatus(unit dbus.UnitStatus) (*UnitStatus, error) {
 
 	unitProps, err := s.dconn.GetUnitProperties(unit.Name)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapv(err, map[string]interface{}{"name": unit.Name})
 	}
 	unitStatus.UnitProperties = unitProps
 
 	unitType := strings.Title(strings.TrimLeft(filepath.Ext(unit.Name), "."))
 	unitTypeProps, err := s.dconn.GetUnitTypeProperties(unit.Name, unitType)
 	if err != nil && !strings.Contains(err.Error(), "Unknown interface") {
-		return nil, err
+		return nil, errors.Wrapv(err, map[string]interface{}{"name": unit.Name, "unitType": unitType})
 	}
 	unitStatus.UnitTypeProperties = unitTypeProps
 

@@ -4,6 +4,7 @@ import (
 	"net/url"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 )
 
 // ListResult is the result of the List handler.
@@ -14,6 +15,10 @@ type ListResult struct {
 // List retuns a list of unit statuses.
 func (s *Systemd) List(req *acomm.Request) (interface{}, *url.URL, error) {
 	list, err := s.dconn.ListUnits()
+	if err != nil {
+		return nil, nil, errors.Wrap(err)
+	}
+
 	units := make([]UnitStatus, len(list))
 	for i, unit := range list {
 		var unitStatus *UnitStatus
@@ -24,5 +29,5 @@ func (s *Systemd) List(req *acomm.Request) (interface{}, *url.URL, error) {
 		units[i] = *unitStatus
 	}
 
-	return &ListResult{units}, nil, err
+	return &ListResult{units}, nil, nil
 }

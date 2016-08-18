@@ -1,10 +1,9 @@
 package systemd
 
 import (
-	"errors"
 	"path/filepath"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/provider"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -35,10 +34,12 @@ func (c *Config) UnitFilePath(name string) (string, error) {
 
 	baseName := filepath.Base(name)
 	if baseName != name || name == "/" || name == "." || name == ".." {
-		return "", errors.New("invalid name")
+		return "", errors.Newv("invalid name", map[string]interface{}{"name": name})
 	}
 
-	return filepath.Abs(filepath.Join(unitFileDir, name))
+	joinedPath := filepath.Join(unitFileDir, name)
+	p, err := filepath.Abs(joinedPath)
+	return p, errors.Wrapv(err, map[string]interface{}{"path": joinedPath})
 }
 
 // Validate returns whether the config is valid, containing necessary values.
@@ -49,18 +50,10 @@ func (c *Config) Validate() error {
 
 	var unitFileDir string
 	if err := c.UnmarshalKey("unit_file_dir", &unitFileDir); err != nil {
-		err = errors.New("invalid unit_file_dir")
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("invalid config")
-		return err
+		return errors.Wrap(err, "invalid unit_file_dir")
 	}
 	if unitFileDir == "" {
-		err := errors.New("missing unit_file_dir")
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("invalid config")
-		return err
+		return errors.New("missing unit_file_dir")
 	}
 
 	return nil
