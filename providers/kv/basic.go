@@ -1,10 +1,10 @@
 package kv
 
 import (
-	"errors"
 	"net/url"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 )
 
 // DeleteArgs specify the arguments to the "kv-delete" endpoint.
@@ -32,11 +32,11 @@ func (k *KV) delete(req *acomm.Request) (interface{}, *url.URL, error) {
 	}
 
 	if !args.Recursive && args.Key == "" {
-		return nil, nil, errors.New("missing arg: key")
+		return nil, nil, errors.Newv("missing arg: key", map[string]interface{}{"args": args})
 	}
 
 	if k.kvDown() {
-		return nil, nil, errorKVDown
+		return nil, nil, errors.Wrap(errorKVDown)
 	}
 	return nil, nil, k.kv.Delete(args.Key, args.Recursive)
 }
@@ -48,11 +48,11 @@ func (k *KV) get(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 	if args.Key == "" {
-		return nil, nil, errors.New("missing arg: key")
+		return nil, nil, errors.Newv("missing arg: key", map[string]interface{}{"args": args})
 	}
 
 	if k.kvDown() {
-		return nil, nil, errorKVDown
+		return nil, nil, errors.Wrap(errorKVDown)
 	}
 	kvp, err := k.kv.Get(args.Key)
 	if err != nil {
@@ -69,11 +69,11 @@ func (k *KV) getAll(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 	if args.Key == "" {
-		return nil, nil, errors.New("missing arg: key")
+		return nil, nil, errors.Newv("missing arg: key", map[string]interface{}{"args": args})
 	}
 
 	if k.kvDown() {
-		return nil, nil, errorKVDown
+		return nil, nil, errors.Wrap(errorKVDown)
 	}
 	kvps, err := k.kv.GetAll(args.Key)
 	if err != nil {
@@ -90,11 +90,11 @@ func (k *KV) keys(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 	if args.Key == "" {
-		return nil, nil, errors.New("missing arg: key")
+		return nil, nil, errors.Newv("missing arg: key", map[string]interface{}{"args": args})
 	}
 
 	if k.kvDown() {
-		return nil, nil, errorKVDown
+		return nil, nil, errors.Wrap(errorKVDown)
 	}
 	keys, err := k.kv.Keys(args.Key)
 	if err != nil {
@@ -111,14 +111,14 @@ func (k *KV) set(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 	if args.Key == "" {
-		return nil, nil, errors.New("missing arg: key")
+		return nil, nil, errors.Newv("missing arg: key", map[string]interface{}{"args": args})
 	}
 	if args.Data == "" {
-		return nil, nil, errors.New("missing arg: data")
+		return nil, nil, errors.Newv("missing arg: data", map[string]interface{}{"args": args})
 	}
 
 	if k.kvDown() {
-		return nil, nil, errorKVDown
+		return nil, nil, errors.Wrap(errorKVDown)
 	}
 	return nil, nil, k.kv.Set(args.Key, args.Data)
 }

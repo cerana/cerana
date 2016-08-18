@@ -1,10 +1,10 @@
 package kv
 
 import (
-	"errors"
 	"math/rand"
 	"sync"
 
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/pkg/kv"
 )
 
@@ -44,7 +44,7 @@ func (c *chanMap) Get(cookie uint64) (chan struct{}, error) {
 
 	ch, exists := c.cookies[cookie]
 	if !exists {
-		return nil, errors.New("non-existent cookie")
+		return nil, errors.Newv("non-existent cookie", map[string]interface{}{"cookie": cookie})
 	}
 
 	delete(c.cookies, cookie)
@@ -57,7 +57,7 @@ func (c *chanMap) Peek(cookie uint64) (chan struct{}, error) {
 
 	ch, exists := c.cookies[cookie]
 	if !exists {
-		return nil, errors.New("non-existent cookie")
+		return nil, errors.Newv("non-existent cookie", map[string]interface{}{"cookie": cookie})
 	}
 
 	return ch, nil
@@ -80,7 +80,7 @@ func (e *eKeyMap) Destroy(key string) error {
 
 	eKey, ok := e.keys[key]
 	if !ok {
-		return errors.New("unknown ephemeral key")
+		return errors.Newv("unknown ephemeral key", map[string]interface{}{"key": key})
 	}
 
 	if err := eKey.Destroy(); err != nil {
@@ -132,7 +132,7 @@ func (l *lockMap) Add(lock kv.Lock) (uint64, error) {
 	l.Unlock()
 
 	if exists {
-		return 0, errors.New("failed to create random cookie, try again")
+		return 0, errors.Newv("failed to create random cookie, try again", map[string]interface{}{"lock": lock})
 	}
 	return uint64(cookie), nil
 }
@@ -143,7 +143,7 @@ func (l *lockMap) Get(cookie uint64) (kv.Lock, error) {
 
 	lock, exists := l.cookies[cookie]
 	if !exists {
-		return nil, errors.New("non-existent cookie")
+		return nil, errors.Newv("non-existent cookie", map[string]interface{}{"cookie": cookie})
 	}
 
 	delete(l.cookies, cookie)
@@ -156,7 +156,7 @@ func (l *lockMap) Peek(cookie uint64) (kv.Lock, error) {
 
 	lock, exists := l.cookies[cookie]
 	if !exists {
-		return nil, errors.New("non-existent cookie")
+		return nil, errors.Newv("non-existent cookie", map[string]interface{}{"cookie": cookie})
 	}
 
 	return lock, nil

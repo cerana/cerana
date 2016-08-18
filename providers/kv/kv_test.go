@@ -9,6 +9,7 @@ import (
 
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/internal/tests/common"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/suite"
@@ -73,9 +74,7 @@ func (s *KVS) TestHandleKVDown() {
 	s.Require().NoError(s.KVCmd.Process.Signal(syscall.SIGSTOP))
 	provider, err := New(s.config, s.tracker)
 	s.Require().NoError(err)
-
 	s.True(provider.kvDown())
-
 	req, err := acomm.NewRequest(acomm.RequestOptions{
 		Task: "kv-get",
 		Args: GetArgs{Key: "some-non-existent-key"},
@@ -84,18 +83,18 @@ func (s *KVS) TestHandleKVDown() {
 	resp, url, err := provider.get(req)
 	s.Nil(resp)
 	s.Nil(url)
-	s.NotNil(err)
-	s.Equal(errorKVDown, err)
-
-	type temporary interface {
-		Temporary() bool
+	if s.NotNil(err) {
+		err = errors.Cause(err)
+		s.Equal(errorKVDown, err)
+		type temporary interface {
+			Temporary() bool
+		}
+		temp, ok := err.(temporary)
+		if s.True(ok, "error should implement Temporary interface") {
+			s.True(temp.Temporary())
+		}
 	}
-	temp, ok := err.(temporary)
-	s.True(ok, "error should implement Temporary interface")
-	s.True(temp.Temporary())
-
 	s.Require().NoError(s.KVCmd.Process.Signal(syscall.SIGCONT))
-
 	kvDown := true
 	for range [5]struct{}{} {
 		kvDown = kvDown && provider.kvDown()
