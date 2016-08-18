@@ -50,6 +50,7 @@ func (c *DHCPConfig) Validate() error {
 func (c *ClusterConf) GetDHCP(*acomm.Request) (interface{}, *url.URL, error) {
 	value, err := c.kvGet(dhcpPrefix)
 	if err != nil {
+		return nil, nil, err
 	}
 
 	config := DHCPConfig{}
