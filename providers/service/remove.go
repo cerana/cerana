@@ -21,10 +21,10 @@ func (p *Provider) Remove(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 	if args.ID == "" {
-		return nil, nil, errors.Newv("missing arg: id", map[string]interface{}{"args": args})
+		return nil, nil, errors.Newv("missing arg: id", map[string]interface{}{"args": args, "missing": "id"})
 	}
 	if args.BundleID == 0 {
-		return nil, nil, errors.Newv("missing arg: bundleID", map[string]interface{}{"args": args})
+		return nil, nil, errors.Newv("missing arg: bundleID", map[string]interface{}{"args": args, "missing": "bundleID"})
 	}
 
 	name := serviceName(args.BundleID, args.ID)

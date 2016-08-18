@@ -31,15 +31,19 @@ func (p *Provider) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 	argErrData := map[string]interface{}{"args": args}
 
 	if args.ID == "" {
+		argErrData["missing"] = "id"
 		return nil, nil, errors.Newv("missing arg: id", argErrData)
 	}
 	if args.BundleID == 0 {
+		argErrData["missing"] = "bundleID"
 		return nil, nil, errors.Newv("missing arg: bundleID", argErrData)
 	}
 	if len(args.Cmd) == 0 {
+		argErrData["missing"] = "cmd"
 		return nil, nil, errors.Newv("missing arg: cmd", argErrData)
 	}
 	if args.Dataset == "" {
+		argErrData["missing"] = "dataset"
 		return nil, nil, errors.Newv("missing arg: dataset", argErrData)
 	}
 
