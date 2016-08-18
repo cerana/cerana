@@ -2,12 +2,12 @@ package clusterconf
 
 import (
 	"encoding/json"
-	"errors"
 	"net/url"
 	"path"
 	"strings"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/pborman/uuid"
 )
 
@@ -58,7 +58,7 @@ func (c *ClusterConf) GetService(req *acomm.Request) (interface{}, *url.URL, err
 		return nil, nil, err
 	}
 	if args.ID == "" {
-		return nil, nil, errors.New("missing arg: id")
+		return nil, nil, errors.Newv("missing arg: id", map[string]interface{}{"args": args})
 	}
 
 	service, err := c.getService(args.ID)
@@ -75,7 +75,7 @@ func (c *ClusterConf) UpdateService(req *acomm.Request) (interface{}, *url.URL, 
 		return nil, nil, err
 	}
 	if args.Service == nil {
-		return nil, nil, errors.New("missing arg: service")
+		return nil, nil, errors.Newv("missing arg: service", map[string]interface{}{"args": args})
 	}
 	args.Service.c = c
 
@@ -96,7 +96,7 @@ func (c *ClusterConf) DeleteService(req *acomm.Request) (interface{}, *url.URL, 
 		return nil, nil, err
 	}
 	if args.ID == "" {
-		return nil, nil, errors.New("missing arg: id")
+		return nil, nil, errors.Newv("missing arg: id", map[string]interface{}{"args": args})
 	}
 
 	service, err := c.getService(args.ID)
@@ -126,13 +126,13 @@ func (s *Service) reload() error {
 	value, err := s.c.kvGet(key)
 	if err != nil {
 		if strings.Contains(err.Error(), "key not found") {
-			err = errors.New("service config not found")
+			err = errors.Newv("service config not found", map[string]interface{}{"serviceID": s.ID})
 		}
 		return err
 	}
 
 	if err := json.Unmarshal(value.Data, &s.ServiceConf); err != nil {
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"json": string(value.Data)})
 	}
 	s.ModIndex = value.Index
 	return nil
@@ -140,7 +140,7 @@ func (s *Service) reload() error {
 
 func (s *Service) delete() error {
 	key := path.Join(servicesPrefix, s.ID)
-	return s.c.kvDelete(key, s.ModIndex)
+	return errors.Wrapv(s.c.kvDelete(key, s.ModIndex), map[string]interface{}{"serviceID": s.ID})
 }
 
 // update saves the service config.
@@ -149,7 +149,7 @@ func (s *Service) update() error {
 
 	modIndex, err := s.c.kvUpdate(key, s.ServiceConf, s.ModIndex)
 	if err != nil {
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"serviceID": s.ID})
 	}
 	s.ModIndex = modIndex
 

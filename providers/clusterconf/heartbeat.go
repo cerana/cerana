@@ -2,13 +2,13 @@ package clusterconf
 
 import (
 	"encoding/json"
-	"errors"
 	"net"
 	"net/url"
 	"path"
 	"strconv"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 )
 
 const heartbeatPrefix string = "heartbeats"
@@ -38,14 +38,14 @@ func (c *ClusterConf) DatasetHeartbeat(req *acomm.Request) (interface{}, *url.UR
 		return nil, nil, err
 	}
 	if args.ID == "" {
-		return nil, nil, errors.New("missing arg: id")
+		return nil, nil, errors.Newv("missing arg: id", map[string]interface{}{"args": args})
 	}
 	if args.IP == nil {
-		return nil, nil, errors.New("missing arg: ip")
+		return nil, nil, errors.Newv("missing arg: ip", map[string]interface{}{"args": args})
 	}
 
 	key := path.Join(heartbeatPrefix, datasetsPrefix, args.ID, args.IP.String())
-	return nil, nil, c.kvEphemeral(key, args.InUse, c.config.DatasetTTL())
+	return nil, nil, errors.Wrapv(c.kvEphemeral(key, args.InUse, c.config.DatasetTTL()), map[string]interface{}{"datasetID": args.ID})
 }
 
 // ListDatasetHeartbeats returns a list of all active dataset heartbeats.
@@ -65,7 +65,7 @@ func (c *ClusterConf) ListDatasetHeartbeats(req *acomm.Request) (interface{}, *u
 		ip := net.ParseIP(path.Base(key))
 		var inUse bool
 		if err := json.Unmarshal(value.Data, &inUse); err != nil {
-			return nil, nil, err
+			return nil, nil, errors.Wrapv(err, map[string]interface{}{"json": string(value.Data)})
 		}
 		if _, ok := heartbeats[id]; !ok {
 			heartbeats[id] = make(map[string]DatasetHeartbeat)
@@ -94,17 +94,18 @@ type BundleHeartbeat struct {
 // values to strings.
 func (b BundleHeartbeat) MarshalJSON() ([]byte, error) {
 	type Alias BundleHeartbeat
-	errors := make(map[string]string)
+	errs := make(map[string]string)
 	for key, err := range b.HealthErrors {
-		errors[key] = err.Error()
+		errs[key] = err.Error()
 	}
-	return json.Marshal(&struct {
+	j, err := json.Marshal(&struct {
 		HealthErrors map[string]string `json:"healthErrors"`
 		Alias
 	}{
-		HealthErrors: errors,
+		HealthErrors: errs,
 		Alias:        (Alias)(b),
 	})
+	return j, errors.Wrap(err)
 }
 
 // UnmarshalJSON unmarshals JSON into a BundleHeartbeat, converting string
@@ -118,7 +119,7 @@ func (b *BundleHeartbeat) UnmarshalJSON(data []byte) error {
 		Alias: (*Alias)(b),
 	}
 	if err := json.Unmarshal(data, &aux); err != nil {
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"json": string(data)})
 	}
 	b.HealthErrors = make(map[string]error)
 	for key, errS := range aux.HealthErrors {
@@ -144,13 +145,14 @@ func (b BundleHeartbeatList) MarshalJSON() ([]byte, error) {
 	for id, value := range b.Heartbeats {
 		hbs[strconv.FormatUint(id, 10)] = value
 	}
-	return json.Marshal(&struct {
+	j, err := json.Marshal(&struct {
 		Heartbeats map[string]BundleHeartbeats `json:"heartbeats"`
 		Alias
 	}{
 		Heartbeats: hbs,
 		Alias:      (Alias)(b),
 	})
+	return j, errors.Wrap(err)
 }
 
 // UnmarshalJSON unmarshals JSON into a BundleHeartbeatList, converting string
@@ -165,13 +167,13 @@ func (b *BundleHeartbeatList) UnmarshalJSON(data []byte) error {
 		Alias: (*Alias)(b),
 	}
 	if err := json.Unmarshal(data, &aux); err != nil {
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"json": string(data)})
 	}
 	b.Heartbeats = make(map[uint64]BundleHeartbeats)
 	for idS, value := range aux.Heartbeats {
 		id, err := strconv.ParseUint(idS, 10, 64)
 		if err != nil {
-			return err
+			return errors.Wrapv(err, map[string]interface{}{"id": idS}, "failed to parse ID")
 		}
 		b.Heartbeats[id] = value
 	}
@@ -185,13 +187,13 @@ func (c *ClusterConf) BundleHeartbeat(req *acomm.Request) (interface{}, *url.URL
 		return nil, nil, err
 	}
 	if args.ID == 0 {
-		return nil, nil, errors.New("missing arg: id")
+		return nil, nil, errors.Newv("missing arg: id", map[string]interface{}{"args": args})
 	}
 	if args.Serial == "" {
-		return nil, nil, errors.New("missing arg: serial")
+		return nil, nil, errors.Newv("missing arg: serial", map[string]interface{}{"args": args})
 	}
 	if args.IP == nil {
-		return nil, nil, errors.New("missing arg: ip")
+		return nil, nil, errors.Newv("missing arg: ip", map[string]interface{}{"args": args})
 	}
 
 	heartbeat := BundleHeartbeat{
@@ -200,7 +202,7 @@ func (c *ClusterConf) BundleHeartbeat(req *acomm.Request) (interface{}, *url.URL
 	}
 
 	key := path.Join(heartbeatPrefix, bundlesPrefix, strconv.FormatUint(args.ID, 10), args.Serial)
-	return nil, nil, c.kvEphemeral(key, heartbeat, c.config.BundleTTL())
+	return nil, nil, errors.Wrapv(c.kvEphemeral(key, heartbeat, c.config.BundleTTL()), map[string]interface{}{"bundleID": args.ID})
 }
 
 // ListBundleHeartbeats returns a list of all active bundle heartbeats.
@@ -218,12 +220,12 @@ func (c *ClusterConf) ListBundleHeartbeats(req *acomm.Request) (interface{}, *ur
 		// key: {base}/{id}/{serial}
 		id, err := strconv.ParseUint(path.Base(path.Dir(key)), 10, 64)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, errors.Wrapv(err, map[string]interface{}{"id": path.Base(path.Dir(key))})
 		}
 		serial := path.Base(key)
 		var hb BundleHeartbeat
 		if err := json.Unmarshal(value.Data, &hb); err != nil {
-			return nil, nil, err
+			return nil, nil, errors.Wrapv(err, map[string]interface{}{"json": string(value.Data)})
 		}
 		if _, ok := heartbeats[id]; !ok {
 			heartbeats[id] = make(BundleHeartbeats)
