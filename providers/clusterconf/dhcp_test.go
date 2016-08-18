@@ -69,19 +69,6 @@ func (s *clusterConf) TestGetDHCP() {
 }
 
 func (s *clusterConf) TestSetDHCP() {
-	s.setupDHCP(clusterconf.DHCPConfig{
-		DNS: []net.IP{
-			net.IPv4(10, 10, 1, byte(rand.Intn(255))),
-			net.IPv4(10, 10, 2, byte(rand.Intn(255))),
-		},
-		Duration: 5*time.Hour + time.Hour*time.Duration(rand.Intn(11)+1),
-		Gateway:  net.IPv4(10, 10, 10, byte(rand.Intn(255))),
-		Net: net.IPNet{
-			IP:   net.IPv4(10, 10, 10, 0),
-			Mask: net.IPMask{255, 255, 255, 0},
-		},
-	})
-
 	tests := []struct {
 		desc string
 		err  string
