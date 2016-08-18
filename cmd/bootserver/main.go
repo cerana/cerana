@@ -127,7 +127,7 @@ func getIfaceIP(addrser addrser) net.IP {
 	}
 
 	ip, _, err := net.ParseCIDR(ips[0].String())
-	logrusx.DieOnError(errors.Wrapv(err, map[string]interface{}{"ip": ips[0].String()}), "parse ip address")
+	logrusx.DieOnError(errors.Wrapv(err, map[string]interface{}{"net": ips[0].String()}), "parse ip address")
 
 	return ip
 }
