@@ -8,6 +8,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 )
 
 // TaskHandler if the request handler function for a particular task. It should
@@ -16,20 +17,22 @@ type TaskHandler func(*acomm.Request) (interface{}, *url.URL, error)
 
 // task contains the request listener and handler for a task.
 type task struct {
-	name        string
-	handler     TaskHandler
-	reqTimeout  time.Duration
-	reqListener *acomm.UnixListener
-	waitgroup   sync.WaitGroup
+	name         string
+	providerName string
+	handler      TaskHandler
+	reqTimeout   time.Duration
+	reqListener  *acomm.UnixListener
+	waitgroup    sync.WaitGroup
 }
 
 // newTask creates and initializes a new task.
-func newTask(name, socketPath string, reqTimeout time.Duration, handler TaskHandler) *task {
+func newTask(name, providerName, socketPath string, reqTimeout time.Duration, handler TaskHandler) *task {
 	return &task{
-		name:        name,
-		handler:     handler,
-		reqTimeout:  reqTimeout,
-		reqListener: acomm.NewUnixListener(socketPath, 0),
+		name:         name,
+		providerName: providerName,
+		handler:      handler,
+		reqTimeout:   reqTimeout,
+		reqListener:  acomm.NewUnixListener(socketPath, 0),
 	}
 }
 
@@ -68,25 +71,23 @@ func (t *task) acceptRequest(conn net.Conn) {
 
 	req := &acomm.Request{}
 	if err := acomm.UnmarshalConnData(conn, req); err != nil {
-		respErr = err
+		respErr = errors.Wrap(err, "failed to unmarshal request")
 	}
 
 	if err := req.Validate(); err != nil {
-		respErr = err
+		respErr = errors.Wrapv(err, map[string]interface{}{"request": req})
 	}
 
 	// Respond to the initial request
 	resp, err := acomm.NewResponse(req, nil, nil, respErr)
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error":   err,
-			"req":     req,
-			"respErr": respErr,
-		}).Error("failed to create initial response")
+		err = errors.Wrapv(err, map[string]interface{}{"request": req, "respErr": respErr})
+		logrus.WithField("error", err).Error("failed to create initial response")
 		return
 	}
 
 	if err := acomm.SendConnData(conn, resp); err != nil {
+		logrus.WithField("error", err).Error("failed to send initial response")
 		return
 	}
 
@@ -105,29 +106,32 @@ func (t *task) handleRequest(req *acomm.Request) {
 
 	// Run the task-specific request handler
 	result, streamAddr, taskErr := t.handler(req)
+	taskErr = errors.Wrap(taskErr, t.providerName, t.name)
+	errData := map[string]interface{}{
+		"task":       t.name,
+		"request":    req,
+		"taskResult": result,
+		"streamAddr": streamAddr,
+		"taskErr":    taskErr,
+	}
+
+	if taskErr != nil {
+		err := errors.Wrapv(taskErr, errData)
+		logrus.WithField("error", err).Error("task handler error")
+	}
 
 	// Note: The acomm calls log the error already, but we want to have a log
 	// of the request and response data as well.
 	resp, err := acomm.NewResponse(req, result, streamAddr, taskErr)
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"task":       t.name,
-			"req":        req,
-			"taskResult": result,
-			"taskErr":    taskErr,
-			"error":      err,
-		}).Error("failed to create response")
+		err = errors.Wrapv(err, errData)
+		logrus.WithField("error", err).Error("failed to create response")
 		return
 	}
 
 	if err := req.Respond(resp); err != nil {
-		logrus.WithFields(logrus.Fields{
-			"task":       t.name,
-			"req":        req,
-			"taskResult": result,
-			"taskErr":    taskErr,
-			"error":      err,
-		}).Error("failed to send response")
+		err = errors.Wrapv(err, errData)
+		logrus.WithField("error", err).Error("failed to send response")
 		return
 	}
 }

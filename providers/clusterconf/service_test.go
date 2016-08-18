@@ -30,7 +30,7 @@ func (s *clusterConf) TestGetService() {
 		result, streamURL, err := s.clusterConf.GetService(req)
 		s.Nil(streamURL, test.id)
 		if test.err != "" {
-			s.EqualError(err, test.err, test.id)
+			s.Contains(err.Error(), test.err, test.id)
 			s.Nil(result, test.id)
 		} else {
 			s.NoError(err, test.id)
@@ -76,7 +76,7 @@ func (s *clusterConf) TestUpdateService() {
 		result, streamURL, err := s.clusterConf.UpdateService(req)
 		s.Nil(streamURL, test.desc)
 		if test.err != "" {
-			s.EqualError(err, test.err, test.desc)
+			s.Contains(err.Error(), test.err, test.desc)
 			s.Nil(result, test.desc)
 		} else {
 			s.NoError(err, test.desc)
@@ -118,7 +118,7 @@ func (s *clusterConf) TestDeleteService() {
 		s.Nil(streamURL, test.id)
 		s.Nil(result, test.id)
 		if test.err != "" {
-			s.EqualError(err, test.err, test.id)
+			s.Contains(err.Error(), test.err, test.id)
 		} else {
 			s.NoError(err, test.id)
 		}

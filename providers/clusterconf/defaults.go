@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/url"
+	"strings"
 
 	"github.com/cerana/cerana/acomm"
 )
@@ -69,7 +70,7 @@ func (c *ClusterConf) getDefaults() (*Defaults, error) {
 func (d *Defaults) reload() error {
 	value, err := d.c.kvGet(defaultsPrefix)
 	if err != nil {
-		if err.Error() == "key not found" {
+		if strings.Contains(err.Error(), "key not found") {
 			return nil
 		}
 		return err

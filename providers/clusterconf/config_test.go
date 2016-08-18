@@ -57,7 +57,7 @@ func (s *clusterConf) TestValidate() {
 			if test.valid {
 				s.NoError(err, desc)
 			} else {
-				s.EqualError(err, fmt.Sprintf("invalid %s", ttlType), desc)
+				s.Contains(err.Error(), fmt.Sprintf("invalid %s", ttlType), desc)
 			}
 		}
 	}

@@ -43,7 +43,7 @@ func (s *clusterConf) TestGetBundle() {
 		result, streamURL, err := s.clusterConf.GetBundle(req)
 		s.Nil(streamURL, test.desc)
 		if test.err != "" {
-			s.EqualError(err, test.err, test.desc)
+			s.Contains(err.Error(), test.err, test.desc)
 			s.Nil(result, test.desc)
 		} else {
 			s.NoError(err, test.desc)
@@ -95,7 +95,7 @@ func (s *clusterConf) TestUpdateBundle() {
 		result, streamURL, err := s.clusterConf.UpdateBundle(req)
 		s.Nil(streamURL, test.desc)
 		if test.err != "" {
-			s.EqualError(err, test.err, test.desc)
+			s.Contains(err.Error(), test.err, test.desc)
 			s.Nil(result, test.desc)
 		} else {
 			s.NoError(err, test.desc)
@@ -138,7 +138,7 @@ func (s *clusterConf) TestDeleteBundle() {
 		s.Nil(streamURL, desc)
 		s.Nil(result, desc)
 		if test.err != "" {
-			s.EqualError(err, test.err, desc)
+			s.Contains(err.Error(), test.err, desc)
 		} else {
 			s.NoError(err, desc)
 		}
@@ -173,7 +173,7 @@ func (s *clusterConf) TestBundleHeartbeat() {
 		result, streamURL, err := s.clusterConf.BundleHeartbeat(req)
 		s.Nil(streamURL, args)
 		if test.err != "" {
-			s.EqualError(err, test.err, args)
+			s.Contains(err.Error(), test.err, args)
 			s.Nil(result, args)
 		} else {
 			s.NoError(err, args)

@@ -45,7 +45,7 @@ func (s *health) TestUptime() {
 		if test.expectedErr == "" {
 			s.Nil(err, desc)
 		} else {
-			s.EqualError(err, test.expectedErr, desc)
+			s.Contains(err.Error(), test.expectedErr, desc)
 		}
 	}
 }

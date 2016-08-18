@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -318,7 +319,7 @@ func (c *ClusterConf) DeleteBundle(req *acomm.Request) (interface{}, *url.URL, e
 
 	bundle, err := c.getBundle(args.ID)
 	if err != nil {
-		if err.Error() == "bundle config not found" {
+		if strings.Contains(err.Error(), "bundle config not found") {
 			return nil, nil, nil
 		}
 		return nil, nil, err
@@ -343,7 +344,7 @@ func (b *Bundle) reload() error {
 	key := path.Join(bundlesPrefix, strconv.FormatUint(b.ID, 10), "config")
 	value, err := b.c.kvGet(key)
 	if err != nil {
-		if err.Error() == "key not found" {
+		if strings.Contains(err.Error(), "key not found") {
 			err = errors.New("bundle config not found")
 		}
 		return err

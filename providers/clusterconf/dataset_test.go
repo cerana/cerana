@@ -31,7 +31,7 @@ func (s *clusterConf) TestGetDataset() {
 		result, streamURL, err := s.clusterConf.GetDataset(req)
 		s.Nil(streamURL, test.id)
 		if test.err != "" {
-			s.EqualError(err, test.err, test.id)
+			s.Contains(err.Error(), test.err, test.id)
 			s.Nil(result, test.id)
 		} else {
 			s.NoError(err, test.id)
@@ -77,7 +77,7 @@ func (s *clusterConf) TestUpdateDataset() {
 		result, streamURL, err := s.clusterConf.UpdateDataset(req)
 		s.Nil(streamURL, test.desc)
 		if test.err != "" {
-			s.EqualError(err, test.err, test.desc)
+			s.Contains(err.Error(), test.err, test.desc)
 			s.Nil(result, test.desc)
 		} else {
 			s.NoError(err, test.desc)
@@ -119,7 +119,7 @@ func (s *clusterConf) TestDeleteDataset() {
 		s.Nil(streamURL, test.id)
 		s.Nil(result, test.id)
 		if test.err != "" {
-			s.EqualError(err, test.err, test.id)
+			s.Contains(err.Error(), test.err, test.id)
 		} else {
 			s.NoError(err, test.id)
 		}
@@ -154,7 +154,7 @@ func (s *clusterConf) TestDatasetHeartbeat() {
 		result, streamURL, err := s.clusterConf.DatasetHeartbeat(req)
 		s.Nil(streamURL, args)
 		if test.err != "" {
-			s.EqualError(err, test.err, args)
+			s.Contains(err.Error(), test.err, args)
 			s.Nil(result, args)
 		} else {
 			s.NoError(err, args)
