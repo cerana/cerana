@@ -465,5 +465,5 @@ Loop:
 			break Loop
 		}
 	}
-	return nil, errors.Wrapv(errors.Newf("bundle overlay failed: %+v", errs), map[string]interface{}{"bundleID": b.ID})
+	return nil, errors.Newv("bundle overlay failed", map[string]interface{}{"bundleID": b.ID, "errors": errs})
 }
