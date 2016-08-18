@@ -1,7 +1,6 @@
 package service
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 	"regexp"
@@ -10,6 +9,7 @@ import (
 	"time"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/providers/systemd"
 )
 
@@ -44,10 +44,10 @@ func (p *Provider) Get(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 	if args.ID == "" {
-		return nil, nil, errors.New("missing arg: id")
+		return nil, nil, errors.Newv("missing arg: id", map[string]interface{}{"args": args, "missing": "id"})
 	}
 	if args.BundleID == 0 {
-		return nil, nil, errors.New("missing arg: bundleID")
+		return nil, nil, errors.Newv("missing arg: bundleID", map[string]interface{}{"args": args, "missing": "bundleID"})
 	}
 
 	service, err := p.getService(args.BundleID, args.ID)
@@ -76,7 +76,7 @@ func (p *Provider) getService(bundleID uint64, id string) (*Service, error) {
 		ErrorHandler:   rh,
 	})
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
 	if err := p.tracker.TrackRequest(req, 0); err != nil {
 		return nil, err
@@ -88,7 +88,7 @@ func (p *Provider) getService(bundleID uint64, id string) (*Service, error) {
 
 	resp := <-ch
 	if resp.Error != nil {
-		return nil, resp.Error
+		return nil, errors.Wrap(resp.Error)
 	}
 
 	var getResult systemd.GetResult
@@ -108,7 +108,7 @@ func systemdUnitToService(systemdUnit systemd.UnitStatus) (*Service, error) {
 
 	idParts := r.FindStringSubmatch(systemdUnit.Name)
 	if len(idParts) != 3 {
-		return nil, errors.New("service name not correct format")
+		return nil, errors.Newv("service name not correct format", map[string]interface{}{"serviceName": systemdUnit.Name})
 	}
 
 	// only a valid uint would make it this far
@@ -140,7 +140,7 @@ func systemdUnitToService(systemdUnit systemd.UnitStatus) (*Service, error) {
 	if ok && uidS != "" {
 		uid, err = strconv.ParseUint(uidS, 10, 64)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapv(err, map[string]interface{}{"uid": uidS})
 		}
 	}
 
@@ -149,7 +149,7 @@ func systemdUnitToService(systemdUnit systemd.UnitStatus) (*Service, error) {
 	if ok && gidS != "" {
 		gid, err = strconv.ParseUint(gidS, 10, 64)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapv(err, map[string]interface{}{"gid": gid})
 		}
 	}
 

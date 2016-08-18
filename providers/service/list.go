@@ -4,6 +4,7 @@ import (
 	"net/url"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/providers/systemd"
 )
 
@@ -38,7 +39,7 @@ func (p *Provider) List(req *acomm.Request) (interface{}, *url.URL, error) {
 
 	resp := <-ch
 	if resp.Error != nil {
-		return nil, nil, resp.Error
+		return nil, nil, errors.Wrap(resp.Error)
 	}
 
 	var listResult systemd.ListResult
