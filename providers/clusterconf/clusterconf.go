@@ -57,8 +57,8 @@ func (c *ClusterConf) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("update-service", c.UpdateService)
 	server.RegisterTask("delete-service", c.DeleteService)
 
-	server.RegisterTask("get-dhcp", c.GetDHCP)
-	server.RegisterTask("set-dhcp", c.SetDHCP)
+	server.RegisterTask("get-dhcp-config", c.GetDHCP)
+	server.RegisterTask("set-dhcp-config", c.SetDHCP)
 }
 
 func (c *ClusterConf) kvReq(task string, args map[string]interface{}) (*acomm.Response, error) {

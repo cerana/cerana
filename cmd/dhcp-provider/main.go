@@ -5,7 +5,6 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/acomm"
@@ -50,27 +49,9 @@ func comm(tracker *acomm.Tracker, coordinator *url.URL, task string, args interf
 
 func getDHCPConfig(tracker *acomm.Tracker, coordinator *url.URL) *clusterconf.DHCPConfig {
 	dconf := &clusterconf.DHCPConfig{}
-	err := comm(tracker, coordinator, "get-dhcp", nil, dconf)
+	err := comm(tracker, coordinator, "get-dhcp-config", nil, dconf)
 	logrusx.DieOnError(err, "get dhcp configuration")
 	return dconf
-}
-
-func setDHCPConfig(tracker *acomm.Tracker, coordinator *url.URL, config *dhcp.Config) {
-	dconf := clusterconf.DHCPConfig{}
-	err := comm(tracker, coordinator, "get-dhcp", nil, &dconf)
-	if err == nil {
-		logrus.Warn("dhcp configuration exists, not overriding it")
-		return
-	}
-
-	dconf = clusterconf.DHCPConfig{
-		DNS:      config.DNSServers(),
-		Duration: config.LeaseDuration(),
-		Gateway:  config.Gateway(),
-		Net:      *config.Network(),
-	}
-	err = comm(tracker, coordinator, "set-dhcp", dconf, nil)
-	logrusx.DieOnError(err, "set dhcp configuration")
 }
 
 func joinDNS(dns []net.IP) string {
@@ -86,31 +67,22 @@ func main() {
 
 	v := viper.New()
 	f := pflag.NewFlagSet("dhcp-provider", pflag.ExitOnError)
-	f.String("dns-servers", "", "[optional] comma separated list of dns servers ")
-	f.IP("gateway", nil, "[optional] default gateway")
-	f.Duration("lease-duration", 24*time.Hour, "default lease duration")
-	f.IPNet("network", defaultNetwork(), "network to manage dhcp addresses on")
 
 	config := dhcp.NewConfig(f, v)
 	logrusx.DieOnError(f.Parse(os.Args), "parse arguments")
 	logrusx.DieOnError(config.LoadConfig(), "load configuration")
 	logrusx.DieOnError(config.SetupLogging(), "setup logging")
 
-	set := v.IsSet("dns-servers") || v.IsSet("gateway") || v.IsSet("lease-duration") || v.IsSet("network")
-
 	server, err := provider.NewServer(config.Config)
 	logrusx.DieOnError(err, "create provider")
 	logrusx.DieOnError(server.Tracker().Start(), "start tracker")
 
-	if set == true {
-		setDHCPConfig(server.Tracker(), config.CoordinatorURL(), config)
-	}
 	storedConfig := getDHCPConfig(server.Tracker(), config.CoordinatorURL())
 
-	v.Set("dns-servers", joinDNS(storedConfig.DNS))
+	v.Set("dns-servers", storedConfig.DNS)
 	v.Set("gateway", storedConfig.Gateway)
 	v.Set("lease-duration", storedConfig.Duration)
-	v.Set("network", storedConfig.Net.String())
+	v.Set("network", storedConfig.Net)
 
 	d, err := dhcp.New(config, server.Tracker())
 	logrusx.DieOnError(err, "create dhcp server")
