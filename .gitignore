@@ -10,6 +10,7 @@ cmd/health-provider/health-provider
 cmd/kv-provider/kv-provider
 cmd/metrics-provider/metrics-provider
 cmd/namespace-provider/namespace-provider
+cmd/node-heartbeat/node-heartbeat
 cmd/nvprint/nvprint
 cmd/service-provider/service-provider
 cmd/statspusher/statspusher
