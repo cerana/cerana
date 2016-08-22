@@ -168,16 +168,14 @@ A Three Node Demo
 
 This example creates a three node cluster for demonstrating communication of Cerana components between the nodes. Running the demo is described in the [demo documentation](https://github.com/cerana/cerana/blob/demo/docs/demo/README.md). Refer to that document but use these steps to [bootstrap the cluster](https://github.com/cerana/cerana/blob/demo/docs/demo/README.md#bootstrap-the-cluster).
 
-This example is for running the demo using KVM in a Linux environment so the Linux version of the [coordinator-cli](https://us-east.manta.joyent.com/nahamu/public/cerana/demo/coordinator-cli-linux) is needed.
+This example is for running the demo using KVM in a Linux environment so the Linux version of the [coordinator-cli](http://omniti-cerana-artifacts.s3.amazonaws.com/CeranaOS/testdata/coordinator-cli) is needed.
 
-It's recommended that the demo be started in an empty directory. Using the [demo documentation](https://github.com/cerana/cerana/blob/demo/docs/demo/README.md) download the required files to this directory. You should have these files:
+It's recommended that the demo be started in an empty directory. The [demo documentation](https://github.com/cerana/cerana/blob/demo/docs/demo/README.md) lists some files which are required files run the demo. You can download the files using the links provided here. You should have these files:
 
-```
-backend-in-a-zfs-stream.zfs
-haproxy-in-a-zfs-stream.zfs
-coordinator-cli
-setup-application.sh
-```
+-	[backend-in-a-zfs-stream.zfs](http://omniti-cerana-artifacts.s3.amazonaws.com/CeranaOS/testdata/backend-in-a-zfs-stream.zfs)
+-	[haproxy-in-a-zfs-stream.zfs](http://omniti-cerana-artifacts.s3.amazonaws.com/CeranaOS/testdata/haproxy-in-a-zfs-stream.zfs)
+-	[coordinator-cli](http://omniti-cerana-artifacts.s3.amazonaws.com/CeranaOS/testdata/coordinator-cli) (**NOTE:** This is the Linux version)
+-	[setup-application.sh](http://omniti-cerana-artifacts.s3.amazonaws.com/CeranaOS/testdata/setup-application.sh)
 
 Running the demo requires a bridge with an IP address on the 172.16 subnet and no DHCP server. If you haven't done so first shutdown the existing network configuration.
 
