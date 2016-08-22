@@ -19,7 +19,7 @@ func DefaultSetup(logLevel string) error {
 func SetLevel(logLevel string) error {
 	level, err := logrus.ParseLevel(logLevel)
 	if err != nil {
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"logLevel": logLevel})
 	}
 	logrus.SetLevel(level)
 	return nil

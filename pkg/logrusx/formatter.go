@@ -3,11 +3,10 @@
 package logrusx
 
 import (
-	"fmt"
-	"runtime"
-	"strings"
+	"encoding/json"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/cerana/cerana/pkg/errors"
 )
 
 type (
@@ -15,53 +14,21 @@ type (
 	JSONFormatter struct {
 		logrus.JSONFormatter
 	}
-
-	// FieldError contains both the error struct and error message as explicit properties, including both when JSON marshaling.
-	FieldError struct {
-		Error   error
-		Message string
-		Stack   []string
-	}
 )
 
-// Format replaces any error field values with a FieldError and produces a JSON formatted log entry
+// Format wraps the logrus.JSONFormatter.Format to pre-marshal wrapped errors
+// rather than simply use the error message.
 func (f *JSONFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	for k, v := range entry.Data {
 		if err, ok := v.(error); ok {
 			// Get the call stack and remove this function call from it
-			stack := f.callStack()
-			var stackStart int
-			for stackStart = 1; stackStart < len(stack); stackStart++ {
-				if !(strings.Contains(stack[stackStart], "github.com/Sirupsen/logrus") || strings.Contains(stack[stackStart], "github.com/cerana/cerana/pkg/logrusx")) {
-					break
-				}
+			j, e := json.Marshal(errors.Wrap(err))
+			if e != nil {
+				return nil, errors.Wrap(e)
 			}
-
-			entry.Data[k] = FieldError{
-				Error:   err,
-				Message: err.Error(),
-				Stack:   stack[stackStart:],
-			}
+			raw := json.RawMessage(j)
+			entry.Data[k] = &raw
 		}
 	}
 	return f.JSONFormatter.Format(entry)
-}
-
-func (f *JSONFormatter) callStack() []string {
-	stack := make([]string, 0, 4)
-	for i := 1; ; i++ {
-		// TODO: use runtime.Callers && runtime.CallersFrames when go1.7 is out
-		pc, file, line, ok := runtime.Caller(i)
-		if !ok {
-			break
-		}
-		// Look up the function name (package.FnName)
-		fnName := runtime.FuncForPC(pc).Name()
-		// Add the line to the stack, skipping anything from within the logrus
-		// package so it starts at the log caller
-		if !strings.HasPrefix(fnName, "github.com/Sirupsen/logrus.") {
-			stack = append(stack, fmt.Sprintf("%s:%d (%s)", file, line, fnName))
-		}
-	}
-	return stack
 }
