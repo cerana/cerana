@@ -32,6 +32,8 @@ What is next (rest of Q4 goals):
 - Create optimal dataset garbage collection
 - Add ZFS feature for mapping arbitrary user operations to root
 - Demo software using Cerana Platform
+- Website and clean documentation
+- Shrinking CeranaOS image
 -- Simple user access based cloud provider
 -- Docker endpoint for cluster
 -- Datalake software test
