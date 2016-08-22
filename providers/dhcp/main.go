@@ -220,7 +220,7 @@ func getAllAllocations(tracker *acomm.Tracker, coord *url.URL) (map[string]strin
 	}
 
 	resp := <-ch
-	if resp.Error != nil {
+	if err = resp.Error; err != nil {
 		return nil, err
 	}
 

@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/acomm"
@@ -36,7 +37,10 @@ func comm(tracker *acomm.Tracker, coordinator *url.URL, task string, args interf
 	})
 	logrusx.DieOnError(err, "create request object")
 	logrusx.DieOnError(tracker.TrackRequest(req, 0), "track request")
-	logrusx.DieOnError(acomm.Send(coordinator, req), "send request")
+
+	if err = acomm.Send(coordinator, req); err != nil {
+		return err
+	}
 
 	aResp := <-ch
 	if aResp.Error != nil {
@@ -47,11 +51,9 @@ func comm(tracker *acomm.Tracker, coordinator *url.URL, task string, args interf
 	return nil
 }
 
-func getDHCPConfig(tracker *acomm.Tracker, coordinator *url.URL) *clusterconf.DHCPConfig {
+func getDHCPConfig(tracker *acomm.Tracker, coordinator *url.URL) (*clusterconf.DHCPConfig, error) {
 	dconf := &clusterconf.DHCPConfig{}
-	err := comm(tracker, coordinator, "get-dhcp-config", nil, dconf)
-	logrusx.DieOnError(err, "get dhcp configuration")
-	return dconf
+	return dconf, comm(tracker, coordinator, "get-dhcp-config", nil, dconf)
 }
 
 func joinDNS(dns []net.IP) string {
@@ -77,7 +79,15 @@ func main() {
 	logrusx.DieOnError(err, "create provider")
 	logrusx.DieOnError(server.Tracker().Start(), "start tracker")
 
-	storedConfig := getDHCPConfig(server.Tracker(), config.CoordinatorURL())
+	var storedConfig *clusterconf.DHCPConfig
+	for {
+		storedConfig, err = getDHCPConfig(server.Tracker(), config.CoordinatorURL())
+		if err == nil {
+			break
+		}
+		logrus.Debug(err)
+		time.Sleep(1 * time.Second)
+	}
 
 	v.Set("dns-servers", storedConfig.DNS)
 	v.Set("gateway", storedConfig.Gateway)
