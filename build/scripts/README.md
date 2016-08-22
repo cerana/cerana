@@ -21,20 +21,20 @@ vm-network
 
 Testing interaction between the various nodes of a Cerana cluster requires a network configuration which allows communication between the nodes but avoids flooding the local network with test messages. This is accomplished using a bridge to connect a number of [TAP](https://en.wikipedia.org/wiki/TUN/TAP) devices. When using this script it helps to keep the following in mind. * A Cerana cluster can be comprised of 1 or more VMs. Each VM can have 1 or more TAP interfaces. The TAP interfaces to be associated with a specific VM is termed a "tapset". The number of *tapsets* is controlled using the option `--numsets`.
 
-By default TAP interfaces are named using using the pattern `tap.<tapset>.<n>` where `<n>` is TAP number within a *tapset*. For example a configuration having three VMs with two interfaces each produces three *tapsets* each having two interfaces. The resulting TAP interfaces become:
+By default TAP interfaces are named using using the pattern `ceranatap.<tapset>.<n>` where `<n>` is TAP number within a *tapset*. For example a configuration having three VMs with two interfaces each produces three *tapsets* each having two interfaces. The resulting TAP interfaces become:
 
 ```
-        tap.1.1
-        tap.1.2
-        tap.2.1
-        tap.2.2
-        tap.3.1
-        tap.3.2
+        ceranatap.1.1
+        ceranatap.1.2
+        ceranatap.2.1
+        ceranatap.2.2
+        ceranatap.3.1
+        ceranatap.3.2
 ```
 
 Each TAP interface is assigned a MAC address beginning with the default pattern "DE:AD:BE:EF". The 5th byte of the MAC address is the number of the corresponding *tapset* and the 6th byte is the TAP number within the *tapset*.
 
-These are then all linked to a single bridge having the default name `ceranabr0`.
+These are then all linked to a single bridge having the default name `ceranabr.1`.
 
 **NOTE:** Currently only a single bridge is created. In the future multiple bridges will be used to better support testing VMs having multiple TAP interfaces. For example one bridge can be used for the node management interfaces while a second bridge can be used for a connection to a wider network.
 
@@ -84,7 +84,7 @@ vm-network --verbose
 
 **NOTE:** If you've already been running `vm-network` you may want to use the `--resetdefaults` option to return to a known default state.
 
-The interfaces `tap.1.1` and `ceranabr0` were created and `tap.1.1` added to the `ceranabr0` bridge. The `ceranabr0` bridge was assigned the IP address `10.0.2.2`. The `dhcpd` daemon was started and configured to listen only on the `10.0.2.0` subnet.
+The interfaces `ceranatap.1.1` and `ceranabr.1` were created and `ceranatap.1.1` added to the `ceranabr.1` bridge. The `ceranabr.1` bridge was assigned the IP address `10.0.2.2`. The `dhcpd` daemon was started and configured to listen only on the `10.0.2.0` subnet.
 
 A configuration named `single` was created and saved in the `~/.testcerana` directory.
 
@@ -96,7 +96,7 @@ start-vm --verbose
 
 **NOTE:** If you've already been running `start-vm` you may want to use the `--resetdefaults` option to return to a known default state.
 
-The interface `tap.1.1` is used as the management interface and by virtue of the `dhcpd` daemon is assigned the IP address `10.0.2.200`.
+The interface `ceranatap.1.1` is used as the management interface and by virtue of the `dhcpd` daemon is assigned the IP address `10.0.2.200`.
 
 A disk image named `sas-1-1.img` was created and uses as a virtual disk for the VM.
 
@@ -121,7 +121,7 @@ Because this example is also booting the Cerana ISO it is necessary to shutdown 
 vm-network --verbose --shutdowndchpd
 ```
 
-This saves another configuration named `two-node` in the `~/.testcerana` directory. The existing network configuration was torn down and the new one created. The interfaces `tap.1.1` and `tap.2.1` have been created and linked to the `ceranabr0` bridge.
+This saves another configuration named `two-node` in the `~/.testcerana` directory. The existing network configuration was torn down and the new one created. The interfaces `ceranatap.1.1` and `ceranatap.2.1` have been created and linked to the `ceranabr.1` bridge.
 
 ```
 start-vm --verbose --boot iso
@@ -148,7 +148,7 @@ There are times when an additional interface is needed either to support an addi
 vm-network --verbose --numsets 2 --config single
 ```
 
-This creates another TAP interface, `tap.2.1`, for the `single` configuration and adds it to the `ceranabr0` bridge. It was not necessary to shutdown the test network in this case. This also illustrates that `vm-network` is able to repair a network configuration (within limits) if an interface was deleted for any reason.
+This creates another TAP interface, `ceranatap.2.1`, for the `single` configuration and adds it to the `ceranabr.1` bridge. It was not necessary to shutdown the test network in this case. This also illustrates that `vm-network` is able to repair a network configuration (within limits) if an interface was deleted for any reason.
 
 **NOTE:** At this time removing interfaces is possible but the script will not automatically delete TAP interfaces if the new number is smaller than before (e.g. the new `--numsets` is 1 but was 2). This a feature for the future. However, this does not cause a problem because the script will tear down all interfaces linked to a bridge when switching configurations or when the `--shutdown` option is used.
 
