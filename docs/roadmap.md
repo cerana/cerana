@@ -9,20 +9,20 @@ What has been completed:
 
 What comes immediately next (two sprints):
 - Creating initial Cerana Platform ticks that run on a schedule, replacing the demo tick
--- Service Bundle tick
--- Dataset Assurance Tick
+- - Service Bundle tick
+- - Dataset Assurance Tick
 - Superceding Stats-pusher with the notion of per node ticks
--- Bundle Heartbeat Pusher
--- Dataset Heartbeat Pusher
--- Node Heartbeat Pusher
--- Create Network Namespace assurance tick
--- Create Service DHCP tick
+- - Bundle Heartbeat Pusher
+- - Dataset Heartbeat Pusher
+- - Node Heartbeat Pusher
+- - Create Network Namespace assurance tick
+- - Create Service DHCP tick
 - Cerana Platform Networking.
--- The service oriented model and L3 as a service planning (done)
--- Expanding our dhcp provider to allow for dhcp buckets (for allowing different service_bundle networks to have unique addressing across the cluster)
--- Creating a networking provider in CeranaOS for standing up networking namespaces as needed, while abstracting our philosophies
--- A Networking Tick in Cerana Platform on each box for handling needed network namespace standing, dhcp-like leasing using the dhcp-provider, and firewalling based on service allowance
--- A Netfilter provider in layer 2 for generating iptables policy based on service_bundle permission access
+- - The service oriented model and L3 as a service planning (done)
+- - Expanding our dhcp provider to allow for dhcp buckets (for allowing different service_bundle networks to have unique addressing across the cluster)
+- - Creating a networking provider in CeranaOS for standing up networking namespaces as needed, while abstracting our philosophies
+- - A Networking Tick in Cerana Platform on each box for handling needed network namespace standing, dhcp-like leasing using the dhcp-provider, and firewalling based on service allowance
+- - A Netfilter provider in layer 2 for generating iptables policy based on service_bundle permission access
 
 What is next (rest of Q4 goals):
 - Accept compressed archive as dataset imports (today we accept zfs)
@@ -34,6 +34,6 @@ What is next (rest of Q4 goals):
 - Demo software using Cerana Platform
 - Website and clean documentation
 - Shrinking CeranaOS image
--- Simple user access based cloud provider
--- Docker endpoint for cluster
--- Datalake software test
+- - Simple user access based cloud provider
+- - Docker endpoint for cluster
+- - Datalake software test
