@@ -1,11 +1,11 @@
 package dhcp
 
 import (
-	"errors"
 	"net"
 	"strings"
 	"time"
 
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/provider"
 	"github.com/krolaw/dhcp4"
 	"github.com/spf13/pflag"
@@ -30,7 +30,7 @@ func NewConfig(flagSet *pflag.FlagSet, v *viper.Viper) *Config {
 func (c *Config) Validate() error {
 	dur := c.LeaseDuration()
 	if dur < 1*time.Hour || dur > 24*time.Hour {
-		return errors.New("lease must be 1-24 hours")
+		return errors.Newv("lease must be 1-24 hours", map[string]interface{}{"duration": dur})
 	}
 
 	net, err := c.network()
@@ -40,7 +40,7 @@ func (c *Config) Validate() error {
 
 	g := c.Gateway()
 	if g != nil && !net.Contains(g) {
-		return errors.New("gateway is not reachable from subnet")
+		return errors.Newv("gateway is not reachable from subnet", map[string]interface{}{"gateway": g, "subnet": net})
 	}
 
 	return c.Config.Validate()
@@ -115,7 +115,7 @@ func (c *Config) ipInRange(ip net.IP) bool {
 func (c *Config) network() (*net.IPNet, error) {
 	_, network, err := net.ParseCIDR(c.viper.GetString("network"))
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapv(err, map[string]interface{}{"network": c.viper.GetString("network")})
 	}
 
 	return network, nil
