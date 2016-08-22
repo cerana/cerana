@@ -110,7 +110,7 @@ func Newf(format string, args ...interface{}) error {
 // Newv returns a new error with the callstack that formats as the given text
 // and associates the supplied data with the error.
 func Newv(msg string, values map[string]interface{}) error {
-	return Wrapv(New(msg), values)
+	return Wrapv(fromError(errors.New(msg)), values)
 }
 
 // Wrap wraps an error, creating a callstack if necessary and prefixing the
@@ -148,7 +148,7 @@ func Wrapv(err error, values map[string]interface{}, msg ...string) error {
 		return nil
 	}
 
-	eExt := Wrap(err, msg...).(*errorExt)
+	eExt := Wrap(fromError(err), msg...).(*errorExt)
 	for k, v := range values {
 		eExt.data[k] = v
 	}
