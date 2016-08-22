@@ -175,7 +175,7 @@ It's recommended that the demo be started in an empty directory. The [demo docum
 -	[backend-in-a-zfs-stream.zfs](http://omniti-cerana-artifacts.s3.amazonaws.com/CeranaOS/testdata/backend-in-a-zfs-stream.zfs)
 -	[haproxy-in-a-zfs-stream.zfs](http://omniti-cerana-artifacts.s3.amazonaws.com/CeranaOS/testdata/haproxy-in-a-zfs-stream.zfs)
 -	[coordinator-cli](http://omniti-cerana-artifacts.s3.amazonaws.com/CeranaOS/testdata/coordinator-cli) (**NOTE:** This is the Linux version)
--	[setup-application.sh](http://omniti-cerana-artifacts.s3.amazonaws.com/CeranaOS/testdata/setup-application.sh)
+-	[setup-application.sh](https://raw.githubusercontent.com/cerana/cerana/demo_outline/docs/demo/setup-application.sh)
 
 Running the demo requires a bridge with an IP address on the 172.16 subnet and no DHCP server. If you haven't done so first shutdown the existing network configuration.
 
