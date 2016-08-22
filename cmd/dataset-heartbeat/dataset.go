@@ -8,36 +8,42 @@ import (
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/providers/clusterconf"
-	"github.com/cerana/cerana/providers/metrics"
 	"github.com/cerana/cerana/providers/zfs"
+	"github.com/cerana/cerana/tick"
 )
 
-func (s *statsPusher) datasetHeartbeats() error {
-	ip, err := s.getIP()
-	if err != nil {
-		return err
+func datasetHeartbeats(config tick.Configer, tracker *acomm.Tracker) error {
+	conf, ok := config.(*Config)
+	if !ok {
+		return errors.New("not the right type of config")
 	}
-	datasets, err := s.getDatasets(ip)
+
+	ip, err := tick.GetIP(conf, tracker)
 	if err != nil {
 		return err
 	}
 
-	return s.sendDatasetHeartbeats(datasets, ip)
+	datasets, err := getDatasets(conf, tracker, ip)
+	if err != nil {
+		return err
+	}
+
+	return sendDatasetHeartbeats(conf, tracker, datasets, ip)
 }
 
-func (s *statsPusher) getDatasets(ip net.IP) ([]clusterconf.DatasetHeartbeatArgs, error) {
+func getDatasets(config *Config, tracker *acomm.Tracker, ip net.IP) ([]clusterconf.DatasetHeartbeatArgs, error) {
 	requests := map[string]struct {
 		task        string
 		coordinator *url.URL
 		args        interface{}
 		respData    interface{}
 	}{
-		"datasets":  {task: "zfs-list", coordinator: s.config.nodeDataURL(), args: zfs.ListArgs{Name: s.config.datasetDir()}, respData: &zfs.ListResult{}},
-		"bundles":   {task: "list-bundles", coordinator: s.config.clusterDataURL(), respData: &clusterconf.BundleListResult{}},
-		"bundleHBs": {task: "list-bundle-heartbeats", coordinator: s.config.clusterDataURL(), respData: &clusterconf.BundleHeartbeatList{}},
+		"datasets":  {task: "zfs-list", coordinator: config.NodeDataURL(), args: zfs.ListArgs{Name: config.DatasetPrefix()}, respData: &zfs.ListResult{}},
+		"bundles":   {task: "list-bundles", coordinator: config.ClusterDataURL(), respData: &clusterconf.BundleListResult{}},
+		"bundleHBs": {task: "list-bundle-heartbeats", coordinator: config.ClusterDataURL(), respData: &clusterconf.BundleHeartbeatList{}},
 	}
 
-	multiRequest := acomm.NewMultiRequest(s.tracker, s.config.requestTimeout())
+	multiRequest := acomm.NewMultiRequest(tracker, config.RequestTimeout())
 	for name, args := range requests {
 		req, err := acomm.NewRequest(acomm.RequestOptions{
 			Task: args.task,
@@ -86,7 +92,7 @@ func (s *statsPusher) getDatasets(ip net.IP) ([]clusterconf.DatasetHeartbeatArgs
 	// extract just the dataset ids and ignore the base directory
 	datasets := make([]clusterconf.DatasetHeartbeatArgs, 0, len(listResult))
 	for _, dataset := range listResult {
-		if s.config.datasetDir() == dataset.Name {
+		if config.DatasetPrefix() == dataset.Name {
 			continue
 		}
 
@@ -102,52 +108,9 @@ func (s *statsPusher) getDatasets(ip net.IP) ([]clusterconf.DatasetHeartbeatArgs
 	return datasets, nil
 }
 
-func (s *statsPusher) getIP() (net.IP, error) {
-	doneChan := make(chan *acomm.Response, 1)
-	defer close(doneChan)
-
-	rh := func(_ *acomm.Request, resp *acomm.Response) {
-		doneChan <- resp
-	}
-	req, err := acomm.NewRequest(acomm.RequestOptions{
-		Task:           "metrics-network",
-		ResponseHook:   s.tracker.URL(),
-		SuccessHandler: rh,
-		ErrorHandler:   rh,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if err := s.tracker.TrackRequest(req, s.config.requestTimeout()); err != nil {
-		return nil, err
-	}
-	if err := acomm.Send(s.config.nodeDataURL(), req); err != nil {
-		return nil, err
-	}
-
-	resp := <-doneChan
-	if resp.Error != nil {
-		return nil, errors.Wrap(resp.Error)
-	}
-
-	var data metrics.NetworkResult
-	if err := resp.UnmarshalResult(&data); err != nil {
-		return nil, err
-	}
-	for _, iface := range data.Interfaces {
-		for _, ifaceAddr := range iface.Addrs {
-			ip, _, _ := net.ParseCIDR(ifaceAddr.Addr)
-			if ip != nil && !ip.IsLoopback() {
-				return ip, nil
-			}
-		}
-	}
-	return nil, errors.New("no suitable IP found")
-}
-
-func (s *statsPusher) sendDatasetHeartbeats(datasetArgs []clusterconf.DatasetHeartbeatArgs, ip net.IP) error {
+func sendDatasetHeartbeats(config *Config, tracker *acomm.Tracker, datasetArgs []clusterconf.DatasetHeartbeatArgs, ip net.IP) error {
 	var errored bool
-	multiRequest := acomm.NewMultiRequest(s.tracker, s.config.requestTimeout())
+	multiRequest := acomm.NewMultiRequest(tracker, config.RequestTimeout())
 	for _, dataset := range datasetArgs {
 		dataset.IP = ip
 		req, err := acomm.NewRequest(acomm.RequestOptions{
@@ -162,7 +125,7 @@ func (s *statsPusher) sendDatasetHeartbeats(datasetArgs []clusterconf.DatasetHea
 			errored = true
 			continue
 		}
-		if err := acomm.Send(s.config.clusterDataURL(), req); err != nil {
+		if err := acomm.Send(config.ClusterDataURL(), req); err != nil {
 			multiRequest.RemoveRequest(req)
 			errored = true
 			continue

@@ -11,40 +11,41 @@ import (
 	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/providers/clusterconf"
 	"github.com/cerana/cerana/providers/service"
+	"github.com/cerana/cerana/tick"
 	"github.com/shirou/gopsutil/host"
 )
 
-func (s *statsPusher) bundleHeartbeats() error {
-	serial, err := s.getSerial()
+func bundleHeartbeats(config tick.Configer, tracker *acomm.Tracker) error {
+	serial, err := getSerial(config, tracker)
 	if err != nil {
 		return err
 	}
-	ip, err := s.getIP()
+	ip, err := tick.GetIP(config, tracker)
 	if err != nil {
 		return err
 	}
-	bundles, err := s.getBundles()
+	bundles, err := getBundles(config, tracker)
 	if err != nil {
 		return err
 	}
-	healthResults, errs := s.runHealthChecks(bundles)
+	healthResults, errs := runHealthChecks(config, tracker, bundles)
 	if len(errs) != 0 {
 		return errors.Newv("bundle health check errors", map[string]interface{}{"errors": errs})
 	}
-	return s.sendBundleHeartbeats(healthResults, serial, ip)
+	return sendBundleHeartbeats(config, tracker, healthResults, serial, ip)
 }
 
-func (s *statsPusher) getBundles() ([]*clusterconf.Bundle, error) {
+func getBundles(config tick.Configer, tracker *acomm.Tracker) ([]*clusterconf.Bundle, error) {
 	requests := map[string]struct {
 		task     string
 		url      *url.URL
 		respData interface{}
 	}{
-		"local": {task: "service-list", url: s.config.nodeDataURL(), respData: &service.ListResult{}},
-		"known": {task: "list-bundles", url: s.config.clusterDataURL(), respData: &clusterconf.BundleListResult{}},
+		"local": {task: "service-list", url: config.NodeDataURL(), respData: &service.ListResult{}},
+		"known": {task: "list-bundles", url: config.ClusterDataURL(), respData: &clusterconf.BundleListResult{}},
 	}
 
-	multiRequest := acomm.NewMultiRequest(s.tracker, s.config.requestTimeout())
+	multiRequest := acomm.NewMultiRequest(tracker, config.RequestTimeout())
 	for name, args := range requests {
 		req, err := acomm.NewRequest(acomm.RequestOptions{Task: args.task})
 		if err != nil {
@@ -95,24 +96,24 @@ func (s *statsPusher) getBundles() ([]*clusterconf.Bundle, error) {
 	return bundles, nil
 }
 
-func (s *statsPusher) getSerial() (string, error) {
+func getSerial(config tick.Configer, tracker *acomm.Tracker) (string, error) {
 	doneChan := make(chan *acomm.Response, 1)
 	rh := func(_ *acomm.Request, resp *acomm.Response) {
 		doneChan <- resp
 	}
 	req, err := acomm.NewRequest(acomm.RequestOptions{
 		Task:           "metrics-host",
-		ResponseHook:   s.tracker.URL(),
+		ResponseHook:   tracker.URL(),
 		SuccessHandler: rh,
 		ErrorHandler:   rh,
 	})
 	if err != nil {
 		return "", err
 	}
-	if err := s.tracker.TrackRequest(req, s.config.requestTimeout()); err != nil {
+	if err := tracker.TrackRequest(req, config.RequestTimeout()); err != nil {
 		return "", err
 	}
-	if err := acomm.Send(s.config.nodeDataURL(), req); err != nil {
+	if err := acomm.Send(config.NodeDataURL(), req); err != nil {
 		return "", err
 	}
 
@@ -129,10 +130,10 @@ func (s *statsPusher) getSerial() (string, error) {
 	return data.Hostname, nil
 }
 
-func (s *statsPusher) sendBundleHeartbeats(bundles map[uint64]map[string]error, serial string, ip net.IP) error {
+func sendBundleHeartbeats(config tick.Configer, tracker *acomm.Tracker, bundles map[uint64]map[string]error, serial string, ip net.IP) error {
 	errored := make([]uint64, 0, len(bundles))
 
-	multiRequest := acomm.NewMultiRequest(s.tracker, s.config.requestTimeout())
+	multiRequest := acomm.NewMultiRequest(tracker, config.RequestTimeout())
 	for bundle, healthErrors := range bundles {
 		req, err := acomm.NewRequest(acomm.RequestOptions{
 			Task: "bundle-heartbeat",
@@ -151,7 +152,7 @@ func (s *statsPusher) sendBundleHeartbeats(bundles map[uint64]map[string]error, 
 			errored = append(errored, bundle)
 			continue
 		}
-		if err := acomm.Send(s.config.clusterDataURL(), req); err != nil {
+		if err := acomm.Send(config.ClusterDataURL(), req); err != nil {
 			multiRequest.RemoveRequest(req)
 			errored = append(errored, bundle)
 			continue
@@ -173,8 +174,8 @@ func (s *statsPusher) sendBundleHeartbeats(bundles map[uint64]map[string]error, 
 	return nil
 }
 
-func (s *statsPusher) runHealthChecks(bundles []*clusterconf.Bundle) (map[uint64]map[string]error, map[string]error) {
-	multiRequest := acomm.NewMultiRequest(s.tracker, 0)
+func runHealthChecks(config tick.Configer, tracker *acomm.Tracker, bundles []*clusterconf.Bundle) (map[uint64]map[string]error, map[string]error) {
+	multiRequest := acomm.NewMultiRequest(tracker, 0)
 
 	requests := make(map[string]*acomm.Request)
 	errs := make(map[string]error)
@@ -200,7 +201,7 @@ func (s *statsPusher) runHealthChecks(bundles []*clusterconf.Bundle) (map[uint64
 			errs[name] = err
 			continue
 		}
-		if err := acomm.Send(s.config.nodeDataURL(), req); err != nil {
+		if err := acomm.Send(config.NodeDataURL(), req); err != nil {
 			multiRequest.RemoveRequest(req)
 			errs[name] = err
 		}

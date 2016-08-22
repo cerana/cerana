@@ -9,34 +9,30 @@ import (
 	"github.com/cerana/cerana/pkg/test"
 	"github.com/cerana/cerana/provider"
 	"github.com/cerana/cerana/providers/clusterconf"
-	"github.com/cerana/cerana/providers/health"
 	"github.com/cerana/cerana/providers/metrics"
-	"github.com/cerana/cerana/providers/service"
 	"github.com/cerana/cerana/providers/zfs"
+	"github.com/cerana/cerana/tick"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/suite"
 )
 
-type StatsPusher struct {
+type DatasetHeartbeat struct {
 	suite.Suite
-	config      *config
+	config      *Config
 	configData  *ConfigData
 	configFile  *os.File
-	statsPusher *statsPusher
 	tracker     *acomm.Tracker
 	coordinator *test.Coordinator
-	service     *service.Mock
 	zfs         *zfs.MockZFS
 	clusterConf *clusterconf.MockClusterConf
 	metrics     *metrics.MockMetrics
-	health      *health.Mock
 }
 
-func TestStatsPusher(t *testing.T) {
-	suite.Run(t, new(StatsPusher))
+func TestDatasetHeartbeat(t *testing.T) {
+	suite.Run(t, new(DatasetHeartbeat))
 }
 
-func (s *StatsPusher) SetupSuite() {
+func (s *DatasetHeartbeat) SetupSuite() {
 	noError := s.Require().NoError
 
 	logrus.SetLevel(logrus.FatalLevel)
@@ -48,47 +44,40 @@ func (s *StatsPusher) SetupSuite() {
 
 	nodeDataURL := s.coordinator.NewProviderViper().GetString("coordinator_url")
 	s.configData = &ConfigData{
-		NodeDataURL:     nodeDataURL,
-		ClusterDataURL:  nodeDataURL,
-		LogLevel:        "fatal",
-		RequestTimeout:  "5s",
-		DatasetInterval: "4s",
-		BundleInterval:  "3s",
-		NodeInterval:    "2s",
-		DatasetDir:      "foobar",
+		ConfigData: tick.ConfigData{
+			NodeDataURL:       nodeDataURL,
+			ClusterDataURL:    nodeDataURL,
+			LogLevel:          "fatal",
+			RequestTimeout:    "5s",
+			TickInterval:      "4s",
+			TickRetryInterval: "4s",
+		},
+		DatasetPrefix: "foobar",
 	}
 
 	s.config, _, _, s.configFile, err = newTestConfig(false, true, s.configData)
 	noError(err, "failed to create config")
-	noError(s.config.loadConfig(), "failed to load config")
+	noError(s.config.LoadConfig(), "failed to load config")
 
-	s.statsPusher, err = newStatsPusher(s.config)
+	tracker, err := acomm.NewTracker("", nil, nil, s.config.RequestTimeout())
 	noError(err)
-	noError(s.statsPusher.tracker.Start())
+	s.tracker = tracker
+	noError(s.tracker.Start())
 
 	// Setup mock providers
-	noError(err)
-
-	s.setupService()
 	s.setupZFS()
 	s.setupClusterConf()
 	s.setupMetrics()
-	s.setupHealth()
 
 	noError(s.coordinator.Start())
 }
 
-func (s *StatsPusher) setupClusterConf() {
+func (s *DatasetHeartbeat) setupClusterConf() {
 	s.clusterConf = clusterconf.NewMockClusterConf()
 	s.coordinator.RegisterProvider(s.clusterConf)
 }
 
-func (s *StatsPusher) setupHealth() {
-	s.health = health.NewMock()
-	s.coordinator.RegisterProvider(s.health)
-}
-
-func (s *StatsPusher) setupZFS() {
+func (s *DatasetHeartbeat) setupZFS() {
 	v := s.coordinator.NewProviderViper()
 	flagset := pflag.NewFlagSet("zfs", pflag.PanicOnError)
 	config := provider.NewConfig(flagset, v)
@@ -98,19 +87,14 @@ func (s *StatsPusher) setupZFS() {
 	s.coordinator.RegisterProvider(s.zfs)
 }
 
-func (s *StatsPusher) setupService() {
-	s.service = service.NewMock()
-	s.coordinator.RegisterProvider(s.service)
-}
-
-func (s *StatsPusher) setupMetrics() {
-	s.metrics = metrics.NewMockMetrics()
-	s.coordinator.RegisterProvider(s.metrics)
-}
-
-func (s *StatsPusher) TearDownSuite() {
+func (s *DatasetHeartbeat) TearDownSuite() {
 	s.coordinator.Stop()
 	s.Require().NoError(s.coordinator.Cleanup())
 	_ = os.Remove(s.configFile.Name())
-	s.statsPusher.tracker.Stop()
+	s.tracker.Stop()
+}
+
+func (s *DatasetHeartbeat) setupMetrics() {
+	s.metrics = metrics.NewMockMetrics()
+	s.coordinator.RegisterProvider(s.metrics)
 }

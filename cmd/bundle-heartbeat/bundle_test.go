@@ -16,19 +16,19 @@ func (u uint64s) Len() int           { return len(u) }
 func (u uint64s) Swap(i, j int)      { u[i], u[j] = u[j], u[i] }
 func (u uint64s) Less(i, j int) bool { return u[i] < u[j] }
 
-func (s *StatsPusher) TestGetSerial() {
-	serial, err := s.statsPusher.getSerial()
+func (s *BundleHeartbeat) TestGetSerial() {
+	serial, err := getSerial(s.config, s.tracker)
 	if !s.NoError(err) {
 		return
 	}
 	s.Equal(s.metrics.Data.Host.Hostname, serial)
 }
 
-func (s *StatsPusher) extractBundles() {
+func (s *BundleHeartbeat) extractBundles() {
 
 }
 
-func (s *StatsPusher) TestGetBundles() {
+func (s *BundleHeartbeat) TestGetBundles() {
 	tests := []struct {
 		desc   string
 		known  []uint64
@@ -58,7 +58,7 @@ func (s *StatsPusher) TestGetBundles() {
 		for _, id := range test.known {
 			s.clusterConf.Data.Bundles[id] = &clusterconf.Bundle{ID: id}
 		}
-		bundles, err := s.statsPusher.getBundles()
+		bundles, err := getBundles(s.config, s.tracker)
 		if !s.NoError(err, test.desc) {
 			continue
 		}
@@ -72,7 +72,7 @@ func (s *StatsPusher) TestGetBundles() {
 	}
 }
 
-func (s *StatsPusher) TestRunHealthChecks() {
+func (s *BundleHeartbeat) TestRunHealthChecks() {
 	s.health.Data.Uptime = false
 	bundle := &clusterconf.Bundle{
 		ID: 123,
@@ -97,7 +97,7 @@ func (s *StatsPusher) TestRunHealthChecks() {
 	}
 	bundles := []*clusterconf.Bundle{bundle}
 
-	healthErrors, err := s.statsPusher.runHealthChecks(bundles)
+	healthErrors, err := runHealthChecks(s.config, s.tracker, bundles)
 	s.Len(err, 0)
 	b, ok := healthErrors[bundle.ID]
 	if !s.True(ok) {
@@ -109,12 +109,12 @@ func (s *StatsPusher) TestRunHealthChecks() {
 	s.True(ok)
 }
 
-func (s *StatsPusher) TestSendBundleHeartbeats() {
+func (s *BundleHeartbeat) TestSendBundleHeartbeats() {
 	serial := "foobar"
 	ip := net.ParseIP("123.123.123.123")
 	bundles := map[uint64]map[string]error{
 		123: {},
 		456: {},
 	}
-	s.NoError(s.statsPusher.sendBundleHeartbeats(bundles, serial, ip))
+	s.NoError(sendBundleHeartbeats(s.config, s.tracker, bundles, serial, ip))
 }

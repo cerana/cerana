@@ -1,31 +1,32 @@
 package main
 
 import (
+	"net"
 	"time"
 
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/providers/clusterconf"
 	"github.com/cerana/cerana/providers/metrics"
+	"github.com/cerana/cerana/tick"
 	"github.com/shirou/gopsutil/disk"
 )
 
-func (s *statsPusher) nodeHeartbeat() error {
-	node, err := s.getNodeInfo()
+func nodeHeartbeat(config tick.Configer, tracker *acomm.Tracker) error {
+	ip, err := tick.GetIP(config, tracker)
 	if err != nil {
 		return err
 	}
-	return s.sendNodeHeartbeat(node)
+
+	node, err := getNodeInfo(config, tracker, ip)
+	if err != nil {
+		return err
+	}
+	return sendNodeHeartbeat(config, tracker, node)
 }
 
-func (s *statsPusher) getNodeInfo() (*clusterconf.Node, error) {
+func getNodeInfo(config tick.Configer, tracker *acomm.Tracker, ip net.IP) (*clusterconf.Node, error) {
 	var err error
-
-	ip, err := s.getIP()
-	if err != nil {
-		return nil, err
-	}
-
 	tasks := map[string]interface{}{
 		"metrics-cpu":    &metrics.CPUResult{},
 		"metrics-disk":   &metrics.DiskResult{},
@@ -39,12 +40,12 @@ func (s *statsPusher) getNodeInfo() (*clusterconf.Node, error) {
 		}
 	}
 
-	multiRequest := acomm.NewMultiRequest(s.tracker, s.config.requestTimeout())
+	multiRequest := acomm.NewMultiRequest(tracker, config.RequestTimeout())
 	for name, req := range requests {
 		if err := multiRequest.AddRequest(name, req); err != nil {
 			return nil, err
 		}
-		if err := acomm.Send(s.config.nodeDataURL(), req); err != nil {
+		if err := acomm.Send(config.NodeDataURL(), req); err != nil {
 			multiRequest.RemoveRequest(req)
 			return nil, err
 		}
@@ -85,29 +86,14 @@ func (s *statsPusher) getNodeInfo() (*clusterconf.Node, error) {
 	}, nil
 }
 
-func (s *statsPusher) sendNodeHeartbeat(data *clusterconf.Node) error {
-	doneChan := make(chan error, 1)
-	rh := func(_ *acomm.Request, resp *acomm.Response) {
-		doneChan <- resp.Error
+func sendNodeHeartbeat(config tick.Configer, tracker *acomm.Tracker, data *clusterconf.Node) error {
+	opts := acomm.RequestOptions{
+		Task: "node-heartbeat",
+		Args: &clusterconf.NodePayload{Node: data},
 	}
-	req, err := acomm.NewRequest(acomm.RequestOptions{
-		Task:           "node-heartbeat",
-		ResponseHook:   s.tracker.URL(),
-		Args:           &clusterconf.NodePayload{Node: data},
-		SuccessHandler: rh,
-		ErrorHandler:   rh,
-	})
+	resp, err := tracker.SyncRequest(config.ClusterDataURL(), opts, config.RequestTimeout())
 	if err != nil {
 		return err
 	}
-
-	if err := s.tracker.TrackRequest(req, s.config.requestTimeout()); err != nil {
-		return err
-	}
-	if err := acomm.Send(s.config.clusterDataURL(), req); err != nil {
-		_ = s.tracker.RemoveRequest(req)
-		return err
-	}
-
-	return <-doneChan
+	return errors.Wrap(resp.Error)
 }

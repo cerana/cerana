@@ -8,7 +8,7 @@ import (
 	"github.com/cerana/cerana/zfs"
 )
 
-func (s *StatsPusher) TestGetDatasets() {
+func (s *DatasetHeartbeat) TestGetDatasets() {
 	ip := net.ParseIP("192.168.1.1")
 	tests := []struct {
 		desc     string
@@ -42,7 +42,7 @@ func (s *StatsPusher) TestGetDatasets() {
 				}
 			}
 		}
-		datasets, err := s.statsPusher.getDatasets(ip)
+		datasets, err := getDatasets(s.config, s.tracker, ip)
 		if !s.NoError(err, test.desc) {
 			continue
 		}
@@ -51,21 +51,12 @@ func (s *StatsPusher) TestGetDatasets() {
 	}
 }
 
-func (s *StatsPusher) TestGetIP() {
-	ip, err := s.statsPusher.getIP()
-	if !s.NoError(err) {
-		return
-	}
-	expected, _, _ := net.ParseCIDR(s.metrics.Data.Network.Interfaces[0].Addrs[0].Addr)
-	s.EqualValues(expected, ip)
-}
-
-func (s *StatsPusher) TestSendDatasetHeartbeats() {
+func (s *DatasetHeartbeat) TestSendDatasetHeartbeats() {
 	name := "foobar"
 	s.zfs.Data.Datasets = make(map[string]*zfsp.Dataset)
 	s.zfs.Data.Datasets[name] = &zfsp.Dataset{Name: name, Properties: &zfs.DatasetProperties{Type: "volume"}}
 	s.clusterConf.Data.Datasets = make(map[string]*clusterconf.Dataset)
 	s.clusterConf.Data.Datasets[name] = &clusterconf.Dataset{ID: name}
 	ip, _, _ := net.ParseCIDR(s.metrics.Data.Network.Interfaces[0].Addrs[0].Addr)
-	s.NoError(s.statsPusher.sendDatasetHeartbeats([]clusterconf.DatasetHeartbeatArgs{{ID: name}}, ip))
+	s.NoError(sendDatasetHeartbeats(s.config, s.tracker, []clusterconf.DatasetHeartbeatArgs{{ID: name}}, ip))
 }

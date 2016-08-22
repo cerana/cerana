@@ -8,12 +8,12 @@ import (
 	"github.com/pborman/uuid"
 )
 
-func (s *StatsPusher) TestGetNodeInfo() {
-	data, err := s.statsPusher.getNodeInfo()
+func (s *NodeHeartbeat) TestGetNodeInfo() {
+	expectedIP, _, _ := net.ParseCIDR(s.metrics.Data.Network.Interfaces[0].Addrs[0].Addr)
+	data, err := getNodeInfo(s.config, s.tracker, expectedIP)
 	if !s.NoError(err) {
 		return
 	}
-	expectedIP, _, _ := net.ParseCIDR(s.metrics.Data.Network.Interfaces[0].Addrs[0].Addr)
 	s.Equal(expectedIP.String(), data.ID)
 	s.Equal(s.metrics.Data.Memory.Virtual.Total, data.MemoryTotal)
 	s.Equal(s.metrics.Data.Memory.Virtual.Available, data.MemoryFree)
@@ -24,13 +24,13 @@ func (s *StatsPusher) TestGetNodeInfo() {
 	s.WithinDuration(time.Now(), data.Heartbeat, time.Millisecond)
 }
 
-func (s *StatsPusher) TestSendNodeHeartbeat() {
+func (s *NodeHeartbeat) TestSendNodeHeartbeat() {
 	data := &clusterconf.Node{
 		ID:        uuid.New(),
 		Heartbeat: time.Now(),
 	}
 
-	if !s.NoError(s.statsPusher.sendNodeHeartbeat(data)) {
+	if !s.NoError(sendNodeHeartbeat(s.config, s.tracker, data)) {
 		return
 	}
 
