@@ -185,16 +185,10 @@ Running the demo requires a bridge with an IP address on the 172.16 subnet and n
 vm-network --shutdown
 ```
 
-Now the network can reconfigured for the demo. Because of running three nodes in the demo three *tapsets* are required. The bridge IP address also needs to be confgured for the demo.
+Now the network can reconfigured for the demo. Because of running three nodes in the demo three *tapsets* are required. The bridge IP address also needs to be configured for the demo. For this demo CeranaOS provides its own DHCP server don't start the DHCP server.
 
 ```
-vm-network --numsets 3 --bridgeip 172.16.2.2 --maskbits 16
-```
-
-Because the DHCP server by default listens only on the 10.0.3.xx subnet it should not interfere with the Cerana DHCP server but for purity sake shutdown the server.
-
-```
-vm-network --shutdowndhcpd
+vm-network --numsets 3 --bridgeip 172.16.2.2 --maskbits 16 --nodhcpd  --config three-node-demo
 ```
 
 Four separate consoles are needed to run the demo. One for each node and one to interact with the cluster. For this example these are referred to as `node1`, `node2`, `node3` and `shell`.
