@@ -57,7 +57,7 @@ Data Architecture Tree
 * /historical_entries 
     * /{machine-serial} 
         * /{heartbeat} 
-            * The shit under nodes 
+            * The stuff under nodes 
 * /cluster_config 
     * zfs: auto/manual 
 * /heartbeat 
