@@ -49,6 +49,9 @@ func (e *errorExt) MarshalJSON() ([]byte, error) {
 		outputMap[k] = v
 	}
 	for k, v := range e.data {
+		if v == e {
+			continue
+		}
 		outputMap[k] = v
 	}
 
