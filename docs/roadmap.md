@@ -36,4 +36,4 @@ What is next (rest of Q4 goals):
 - Demo software using Cerana Platform
  - Simple user access based cloud provider
  - Docker endpoint for cluster
- - Datalake software test
+ - Data-lake software test
