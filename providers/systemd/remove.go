@@ -1,11 +1,11 @@
 package systemd
 
 import (
-	"errors"
 	"net/url"
 	"os"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 )
 
 // RemoveArgs are arguments for the Remove handler.
@@ -21,7 +21,7 @@ func (s *Systemd) Remove(req *acomm.Request) (interface{}, *url.URL, error) {
 	}
 
 	if args.Name == "" {
-		return nil, nil, errors.New("missing arg: name")
+		return nil, nil, errors.Newv("missing arg: name", map[string]interface{}{"args": args})
 	}
 
 	unitFilePath, err := s.config.UnitFilePath(args.Name)
@@ -30,7 +30,7 @@ func (s *Systemd) Remove(req *acomm.Request) (interface{}, *url.URL, error) {
 	}
 
 	if err := os.Remove(unitFilePath); err != nil && !os.IsNotExist(err) {
-		return nil, nil, err
+		return nil, nil, errors.Wrapv(err, map[string]interface{}{"path": unitFilePath})
 	}
 	return nil, nil, nil
 }

@@ -1,6 +1,10 @@
 package zfs
 
-import "syscall"
+import (
+	"syscall"
+
+	"github.com/cerana/cerana/pkg/errors"
+)
 
 // dmuType corresponds to the  dmu_objset_type enum in libzfs sys/fs/zfs.h
 type dmuType int32
@@ -27,7 +31,7 @@ var dmuTypes = map[string]dmuType{
 func getDMUType(name string) (dmuType, error) {
 	d, ok := dmuTypes[name]
 	if !ok {
-		return dmuNone, syscall.EINVAL
+		return dmuNone, errors.Wrapv(syscall.EINVAL, map[string]interface{}{"type": name})
 	}
 	return d, nil
 }

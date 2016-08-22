@@ -2,13 +2,13 @@ package zfs
 
 import (
 	"bytes"
-	"errors"
 	"io"
 	"io/ioutil"
 	"net/url"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/pkg/logrusx"
 	"github.com/cerana/cerana/provider"
 	"github.com/cerana/cerana/zfs"

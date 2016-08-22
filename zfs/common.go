@@ -3,6 +3,8 @@ package zfs
 import (
 	"os"
 	"sync"
+
+	"github.com/cerana/cerana/pkg/errors"
 )
 
 // zfsFD is the zfs device file descriptor. Do not use this directly. Access by
@@ -13,7 +15,7 @@ var once sync.Once
 func openZFS() {
 	z, err := os.OpenFile("/dev/zfs", os.O_RDWR, 0)
 	if err != nil {
-		panic(err)
+		panic(errors.Wrap(err))
 	}
 	zfsFD = z
 }

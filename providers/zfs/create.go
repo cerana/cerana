@@ -1,10 +1,10 @@
 package zfs
 
 import (
-	"errors"
 	"net/url"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/zfs"
 )
 
@@ -23,7 +23,7 @@ func (z *ZFS) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 	if args.Name == "" {
-		return nil, nil, errors.New("missing arg: name")
+		return nil, nil, errors.Newv("missing arg: name", map[string]interface{}{"args": args})
 	}
 
 	if err := fixPropertyTypesFromJSON(args.Properties); err != nil {
@@ -37,12 +37,12 @@ func (z *ZFS) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 		ds, err = zfs.CreateFilesystem(args.Name, args.Properties)
 	case zfs.DatasetVolume:
 		if args.Volsize <= 0 {
-			err = errors.New("missing or invalid arg: volsize")
+			err = errors.Newv("missing or invalid arg: volsize", map[string]interface{}{"args": args})
 			break
 		}
 		ds, err = zfs.CreateVolume(args.Name, args.Volsize, args.Properties)
 	default:
-		err = errors.New("missing or invalid arg: type")
+		err = errors.Newv("missing or invalid arg: type", map[string]interface{}{"args": args})
 	}
 
 	if err != nil {

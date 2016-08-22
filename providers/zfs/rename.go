@@ -1,10 +1,10 @@
 package zfs
 
 import (
-	"errors"
 	"net/url"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/zfs"
 )
 
@@ -23,10 +23,10 @@ func (z *ZFS) Rename(req *acomm.Request) (interface{}, *url.URL, error) {
 	}
 
 	if args.Name == "" {
-		return nil, nil, errors.New("missing arg: name")
+		return nil, nil, errors.Newv("missing arg: name", map[string]interface{}{"args": args})
 	}
 	if args.Origin == "" {
-		return nil, nil, errors.New("missing arg: origin")
+		return nil, nil, errors.Newv("missing arg: origin", map[string]interface{}{"args": args})
 	}
 
 	origin, err := zfs.GetDataset(args.Origin)

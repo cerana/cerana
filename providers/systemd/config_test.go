@@ -68,7 +68,7 @@ func (s *systemd) TestValidate() {
 		if test.err == "" {
 			s.NoError(err, testS)
 		} else {
-			s.EqualError(err, test.err, testS)
+			s.Contains(err.Error(), test.err, testS)
 		}
 	}
 }

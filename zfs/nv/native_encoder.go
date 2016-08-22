@@ -3,9 +3,10 @@ package nv
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"io"
 	"reflect"
+
+	"github.com/cerana/cerana/pkg/errors"
 )
 
 // NativeEncoder is an Encoder for native encoding.
@@ -45,21 +46,21 @@ func (e NativeEncoder) header(h header) error {
 		return nil
 	}
 	if err := binary.Write(e.w, binary.LittleEndian, h); err != nil {
-		return err
+		return errors.Wrapv(errors.Wrap(err, "failed to write header"), map[string]interface{}{"header": h})
 	}
 	if e.embedded {
 		if _, err := e.w.Write(empty8[:]); err != nil {
-			return err
+			return errors.Wrap(err, "failed to write embedded header padding")
 		}
 		if _, err := e.w.Write(empty8[:]); err != nil {
-			return err
+			return errors.Wrap(err, "failed to write embedded header padding")
 		}
 	}
 	return nil
 }
 
 func (e NativeEncoder) footer() error {
-	return binary.Write(e.w, e.order, uint32(0))
+	return errors.Wrap(binary.Write(e.w, e.order, uint32(0)), "failed to write footer")
 }
 
 func (e NativeEncoder) item(name string, dtype dataType, value interface{}) error {
@@ -173,7 +174,7 @@ func (e NativeEncoder) item(name string, dtype dataType, value interface{}) erro
 		size = int(32 * nelements)
 		for i := uint32(0); i < nelements; i++ {
 			if _, err := vbuf.Write(empty8[:]); err != nil {
-				return err
+				return errors.Wrap(err, "failed to write to nvlist array buffer")
 			}
 		}
 		enc := NewNativeEncoder(vbuf)
@@ -195,11 +196,11 @@ func (e NativeEncoder) item(name string, dtype dataType, value interface{}) erro
 	sizeAligned := uint32(align8(size))
 	if vbuf.Len() == 0 && dtype != _boolean {
 		if err := binary.Write(vbuf, e.order, value); err != nil {
-			return err
+			return errors.Wrap(err, "failed to write value to buffer")
 		}
 		diff := sizeAligned - uint32(size)
 		if _, err := vbuf.Write(empty8[:diff]); err != nil {
-			return err
+			return errors.Wrap(err, "failed to pad value buffer")
 		}
 	}
 
@@ -209,43 +210,43 @@ func (e NativeEncoder) item(name string, dtype dataType, value interface{}) erro
 	dataSize := nameLenAligned + 16 + sizeAligned
 
 	if err := binary.Write(pbuf, e.order, dataSize); err != nil {
-		return err
+		return errors.Wrap(err, "failed to write data size to pbuf")
 	} else if _, err = pbuf.WriteTo(e.w); err != nil {
-		return err
+		return errors.Wrap(err, "failed to write pbuf")
 	}
 
 	if err := binary.Write(pbuf, e.order, nameLen); err != nil {
-		return err
+		return errors.Wrap(err, "failed to write name len to pbuf")
 	} else if _, err = pbuf.WriteTo(e.w); err != nil {
-		return err
+		return errors.Wrap(err, "failed to write pbuf")
 	}
 
 	if err := binary.Write(pbuf, e.order, nelements); err != nil {
-		return err
+		return errors.Wrap(err, "failed to write num elements to pbuf")
 	} else if _, err = pbuf.WriteTo(e.w); err != nil {
-		return err
+		return errors.Wrap(err, "failed to write pbuf")
 	}
 
 	if err := binary.Write(pbuf, e.order, dtype); err != nil {
-		return err
+		return errors.Wrap(err, "failed to write dtype to pbuf")
 	} else if _, err = pbuf.WriteTo(e.w); err != nil {
-		return err
+		return errors.Wrap(err, "failed to write pbuf")
 	}
 
 	if err := binary.Write(pbuf, e.order, []byte(name)); err != nil {
-		return err
+		return errors.Wrap(err, "failed to write name to pbuf")
 	} else if _, err = pbuf.WriteTo(e.w); err != nil {
-		return err
+		return errors.Wrap(err, "failed to write pbuf")
 	}
 
 	if _, err := pbuf.Write(empty8[:nameLenAligned-nameLen+1]); err != nil {
-		return err
+		return errors.Wrap(err, "failed to write padding to pbuf")
 	} else if _, err = pbuf.WriteTo(e.w); err != nil {
-		return err
+		return errors.Wrap(err, "failed to write pbuf")
 	}
 
 	if _, err := vbuf.WriteTo(e.w); err != nil {
-		return err
+		return errors.Wrap(err, "failed to write vbuf")
 	}
 
 	return nil

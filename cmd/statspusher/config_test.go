@@ -146,7 +146,7 @@ func (s *StatsPusher) TestValidate() {
 
 		err = config.validate()
 		if test.expectedErr != "" {
-			s.EqualError(err, test.expectedErr, test.description)
+			s.Contains(err.Error(), test.expectedErr, test.description)
 		} else {
 			s.NoError(err, test.description)
 		}

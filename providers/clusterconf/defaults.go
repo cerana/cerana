@@ -2,10 +2,11 @@ package clusterconf
 
 import (
 	"encoding/json"
-	"errors"
 	"net/url"
+	"strings"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 )
 
 const defaultsPrefix string = "cluster"
@@ -44,7 +45,7 @@ func (c *ClusterConf) UpdateDefaults(req *acomm.Request) (interface{}, *url.URL,
 		return nil, nil, err
 	}
 	if args.Defaults == nil {
-		return nil, nil, errors.New("missing arg: defaults")
+		return nil, nil, errors.Newv("missing arg: defaults", map[string]interface{}{"args": args})
 	}
 
 	args.Defaults.c = c
@@ -69,14 +70,14 @@ func (c *ClusterConf) getDefaults() (*Defaults, error) {
 func (d *Defaults) reload() error {
 	value, err := d.c.kvGet(defaultsPrefix)
 	if err != nil {
-		if err.Error() == "key not found" {
+		if strings.Contains(err.Error(), "key not found") {
 			return nil
 		}
 		return err
 	}
 
 	if err := json.Unmarshal(value.Data, &d.DefaultsConf); err != nil {
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"json": string(value.Data)})
 	}
 	d.ModIndex = value.Index
 	return nil

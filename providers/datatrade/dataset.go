@@ -1,13 +1,13 @@
 package datatrade
 
 import (
-	"errors"
 	"fmt"
 	"math/rand"
 	"net/url"
 	"path/filepath"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/providers/clusterconf"
 	"github.com/cerana/cerana/providers/zfs"
 	"github.com/pborman/uuid"
@@ -35,7 +35,7 @@ func (p *Provider) DatasetImport(req *acomm.Request) (interface{}, *url.URL, err
 		return nil, nil, err
 	}
 	if args.Redundancy == 0 {
-		return nil, nil, errors.New("missing arg: redundancy")
+		return nil, nil, errors.Newv("missing arg: redundancy", map[string]interface{}{"args": args})
 	}
 
 	if req.StreamURL == nil {
@@ -91,7 +91,7 @@ func (p *Provider) datasetImportNode() (*clusterconf.Node, error) {
 func (p *Provider) datasetImport(nodeID, datasetID string, streamURL *url.URL) error {
 	taskURL, err := url.ParseRequestURI(fmt.Sprintf("http://%s:%d", nodeID, p.config.NodeCoordinatorPort()))
 	if err != nil {
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"taskURL": taskURL}, "failed to generate taskURL")
 	}
 	opts := acomm.RequestOptions{
 		Task:      "zfs-receive",
@@ -108,7 +108,7 @@ func (p *Provider) datasetImport(nodeID, datasetID string, streamURL *url.URL) e
 func (p *Provider) datasetSnapshot(nodeID, datasetID string) error {
 	taskURL, err := url.ParseRequestURI(fmt.Sprintf("http://%s:%d", nodeID, p.config.NodeCoordinatorPort()))
 	if err != nil {
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"taskURL": taskURL}, "failed to generate taskURL")
 	}
 	opts := acomm.RequestOptions{
 		Task:    "zfs-snapshot",

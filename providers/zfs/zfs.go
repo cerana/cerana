@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/provider"
 )
 
@@ -61,7 +62,7 @@ func fixPropertyTypesFromJSON(properties map[string]interface{}) error {
 		if origValue, ok := origValue.(float64); ok {
 			newValue := uint64(origValue)
 			if float64(newValue) != origValue {
-				return fmt.Errorf("property %s must be a uint64: %v", key, origValue)
+				return errors.Newv("property must be a uint64", map[string]interface{}{"property": key, "value": origValue})
 			}
 			properties[key] = uint64(origValue)
 		}

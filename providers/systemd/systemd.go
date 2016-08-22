@@ -1,6 +1,7 @@
 package systemd
 
 import (
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/provider"
 	"github.com/coreos/go-systemd/dbus"
 )
@@ -24,7 +25,7 @@ type Systemd struct {
 func New(config *Config) (*Systemd, error) {
 	dconn, err := dbus.New()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
 	return &Systemd{
 		config: config,

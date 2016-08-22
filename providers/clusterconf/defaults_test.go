@@ -53,7 +53,7 @@ func (s *clusterConf) TestUpdateDefaults() {
 		result, streamURL, err := s.clusterConf.UpdateDefaults(req)
 		s.Nil(streamURL, test.desc)
 		if test.err != "" {
-			s.EqualError(err, test.err, test.desc)
+			s.Contains(err.Error(), test.err, test.desc)
 			s.Nil(result, test.desc)
 		} else {
 			s.NoError(err, test.desc)

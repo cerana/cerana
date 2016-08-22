@@ -1,10 +1,10 @@
 package zfs
 
 import (
-	"errors"
 	"net/url"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/zfs"
 )
 
@@ -24,7 +24,7 @@ func (z *ZFS) Destroy(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 	if args.Name == "" {
-		return nil, nil, errors.New("missing arg: name")
+		return nil, nil, errors.Newv("missing arg: name", map[string]interface{}{"args": args})
 	}
 
 	ds, err := zfs.GetDataset(args.Name)

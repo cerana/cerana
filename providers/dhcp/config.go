@@ -102,6 +102,10 @@ func (c *Config) ipRange() (min, max uint32) {
 }
 
 func (c *Config) ipInRange(ip net.IP) bool {
+	if ip == nil {
+		return false
+	}
+
 	min, max := c.ipRange()
 	uIP := ipToU32(ip)
 

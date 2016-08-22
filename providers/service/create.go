@@ -1,13 +1,13 @@
 package service
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 	"path/filepath"
 	"strings"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/providers/systemd"
 	"github.com/coreos/go-systemd/unit"
 )
@@ -28,17 +28,23 @@ func (p *Provider) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 	if err := req.UnmarshalArgs(&args); err != nil {
 		return nil, nil, err
 	}
+	argErrData := map[string]interface{}{"args": args}
+
 	if args.ID == "" {
-		return nil, nil, errors.New("missing arg: id")
+		argErrData["missing"] = "id"
+		return nil, nil, errors.Newv("missing arg: id", argErrData)
 	}
 	if args.BundleID == 0 {
-		return nil, nil, errors.New("missing arg: bundleID")
+		argErrData["missing"] = "bundleID"
+		return nil, nil, errors.Newv("missing arg: bundleID", argErrData)
 	}
 	if len(args.Cmd) == 0 {
-		return nil, nil, errors.New("missing arg: cmd")
+		argErrData["missing"] = "cmd"
+		return nil, nil, errors.Newv("missing arg: cmd", argErrData)
 	}
 	if args.Dataset == "" {
-		return nil, nil, errors.New("missing arg: dataset")
+		argErrData["missing"] = "dataset"
+		return nil, nil, errors.Newv("missing arg: dataset", argErrData)
 	}
 
 	name := serviceName(args.BundleID, args.ID)

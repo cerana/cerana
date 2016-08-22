@@ -1,10 +1,10 @@
 package systemd
 
 import (
-	"errors"
 	"net/url"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 )
 
 // EnableArgs are arguments for the disable handler.
@@ -21,7 +21,7 @@ func (s *Systemd) Enable(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 	if args.Name == "" {
-		return nil, nil, errors.New("missing arg: name")
+		return nil, nil, errors.Newv("missing arg: name", map[string]interface{}{"args": args})
 	}
 
 	unitFilePath, err := s.config.UnitFilePath(args.Name)
@@ -30,5 +30,5 @@ func (s *Systemd) Enable(req *acomm.Request) (interface{}, *url.URL, error) {
 	}
 
 	_, _, err = s.dconn.EnableUnitFiles([]string{unitFilePath}, args.Runtime, args.Force)
-	return nil, nil, err
+	return nil, nil, errors.Wrapv(err, map[string]interface{}{"path": unitFilePath, "runtime": args.Runtime, "force": args.Force})
 }

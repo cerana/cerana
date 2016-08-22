@@ -3,13 +3,12 @@ package acomm
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/pkg/logrusx"
 )
 
@@ -49,10 +48,10 @@ func (r *Response) UnmarshalJSON(data []byte) error {
 		Alias: (*Alias)(r),
 	}
 	if err := json.Unmarshal(data, &aux); err != nil {
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"requestID": r.ID})
 	}
 	if aux.Error != "" {
-		r.Error = errors.New(aux.Error)
+		r.Error = errors.Newv(aux.Error, map[string]interface{}{"requestID": r.ID})
 	}
 	return nil
 }
@@ -60,29 +59,18 @@ func (r *Response) UnmarshalJSON(data []byte) error {
 // NewResponse creates a new Response instance based on a Request.
 func NewResponse(req *Request, result interface{}, streamURL *url.URL, respErr error) (*Response, error) {
 	if req == nil {
-		err := errors.New("cannot create response without request")
-		logrus.WithFields(logrus.Fields{
-			"errors": err,
-		}).Error(err)
-		return nil, err
+		return nil, errors.New("cannot create response without request")
 	}
 
 	if result != nil && respErr != nil {
-		err := errors.New("cannot set both result and err")
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Error(err)
-		return nil, err
+		return nil, errors.Newv("cannot set both result and err", map[string]interface{}{"requestID": req.ID})
 	}
 
 	var resultRaw *json.RawMessage
 	if result != nil {
 		resultJSON, err := json.Marshal(result)
 		if err != nil {
-			logrus.WithFields(logrus.Fields{
-				"error":  err,
-				"result": result,
-			}).Error("failed to marshal response result")
+			return nil, errors.Wrapv(err, map[string]interface{}{"requestID": req.ID, "result": result})
 		}
 		resultRaw = (*json.RawMessage)(&resultJSON)
 	}
@@ -103,11 +91,7 @@ func (r *Response) UnmarshalResult(dest interface{}) error {
 // Send attempts send the payload to the specified URL.
 func Send(addr *url.URL, payload interface{}) error {
 	if addr == nil {
-		err := errors.New("missing addr")
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Error(err)
-		return err
+		return errors.New("missing addr")
 	}
 	switch addr.Scheme {
 	case "unix":
@@ -115,13 +99,7 @@ func Send(addr *url.URL, payload interface{}) error {
 	case "http", "https":
 		return sendHTTP(addr, payload)
 	default:
-		err := errors.New("unknown url type")
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-			"type":  addr.Scheme,
-			"addr":  addr,
-		}).Error("cannot not send to url")
-		return err
+		return errors.Newv("unknown url scheme", map[string]interface{}{"addr": addr})
 	}
 }
 
@@ -129,15 +107,10 @@ func Send(addr *url.URL, payload interface{}) error {
 func sendUnix(addr *url.URL, payload interface{}) error {
 	conn, err := net.Dial("unix", addr.RequestURI())
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error":   err,
-			"addr":    addr,
-			"payload": payload,
-		}).Error("failed to connect to unix socket")
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"addr": addr, "payload": payload})
 	}
 	defer logrusx.LogReturnedErr(conn.Close,
-		logrus.Fields{"addr": addr},
+		map[string]interface{}{"addr": addr},
 		"failed to close unix connection",
 	)
 
@@ -157,32 +130,19 @@ func sendUnix(addr *url.URL, payload interface{}) error {
 func sendHTTP(addr *url.URL, payload interface{}) error {
 	payloadJSON, err := json.Marshal(payload)
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error":   err,
-			"payload": payload,
-		}).Error("failed to marshal payload json")
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"payload": payload})
 	}
 
 	httpResp, err := http.Post(addr.String(), "application/json", bytes.NewReader(payloadJSON))
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error":   err,
-			"addr":    addr,
-			"payload": payload,
-		}).Error("failed to send payload")
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"addr": addr, "payload": payload})
 	}
 	defer logrusx.LogReturnedErr(httpResp.Body.Close, nil, "failed to close http body")
 
 	body, _ := ioutil.ReadAll(httpResp.Body)
 	resp := &Response{}
 	if err := json.Unmarshal(body, resp); err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-			"body":  string(body),
-		}).Error(err)
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"body": string(body)})
 	}
 
 	return resp.Error

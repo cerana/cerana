@@ -220,7 +220,7 @@ func getAllAllocations(tracker *acomm.Tracker, coord *url.URL) (map[string]strin
 	}
 
 	resp := <-ch
-	if resp.Error != nil {
+	if err = resp.Error; err != nil {
 		return nil, err
 	}
 
@@ -373,11 +373,15 @@ func (d *DHCP) ack(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.New("missing arg: ip")
 	}
 
+	if !d.config.ipInRange(net.ParseIP(addrs.IP)) {
+		return nil, nil, errors.New("invalid ip")
+	}
+
 	mac, err := lookupMAC(d.tracker, d.coordinator, addrs.IP)
 	if err != nil {
 		return nil, nil, err
 	}
-	if addrs.MAC != mac {
+	if mac != "" && addrs.MAC != mac {
 		return nil, nil, errors.New("requested ip not assigned to this mac")
 	}
 

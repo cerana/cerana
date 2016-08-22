@@ -5,10 +5,11 @@
 package kv
 
 import (
-	"fmt"
 	"net/url"
 	"sync"
 	"time"
+
+	"github.com/cerana/cerana/pkg/errors"
 )
 
 // Value represents the value stored in a key, including the last modification index of the key
@@ -77,7 +78,7 @@ func New(addr string) (KV, error) {
 		var err error
 		u, err = url.Parse(addr)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapv(err, map[string]interface{}{"addr": addr}, "failed to parse kv addr")
 		}
 	}
 
@@ -95,7 +96,7 @@ func New(addr string) (KV, error) {
 		}
 		return kv, nil
 	} else if u.Scheme != "http" && u.Scheme != "https" {
-		return nil, fmt.Errorf("unknown kv store %s (forgotten import?)", u.Scheme)
+		return nil, errors.Newv("unknown kv store (forgotten import?)", map[string]interface{}{"scheme": u.Scheme})
 	}
 
 	for _, constructor := range register.kvs {
@@ -109,7 +110,7 @@ func New(addr string) (KV, error) {
 			return kv, nil
 		}
 	}
-	return nil, fmt.Errorf("unknown kv store")
+	return nil, errors.Newv("unknown kv store", map[string]interface{}{"addr": addr})
 }
 
 // Lock represents a locked key in the distributed key value store.

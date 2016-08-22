@@ -58,7 +58,7 @@ underlying error message with the given text formatted with the specifier.
 #### func  Wrapv
 
 ```go
-func Wrapv(err error, values map[string]interface{}) error
+func Wrapv(err error, values map[string]interface{}, msg ...string) error
 ```
 Wrapv wraps an error, creating a callstack if necessary and associating the
 supplied data with the error.

@@ -308,3 +308,58 @@ func (s *DHCPS) TestNextGetter() {
 		s.Equal(t.want, got, t.name)
 	}
 }
+
+func (s *DHCPS) TestJustACK() {
+	tests := []struct {
+		name string
+		ip   string
+		mac  string
+		err  string
+	}{
+		{name: "no mac",
+			err: "missing arg: mac"},
+		{name: "no ip",
+			mac: randMAC(s.T()), err: "missing arg: ip"},
+		{name: "invalid ip (junk)",
+			ip: "foo", mac: randMAC(s.T()), err: "invalid ip"},
+		{name: "invalid ip (out of range)",
+			ip: "foo", mac: randMAC(s.T()), err: "invalid ip"},
+		{name: "available ip",
+			ip: "10.0.0.3", mac: randMAC(s.T())},
+	}
+	for _, t := range tests {
+		req, err := acomm.NewRequest(acomm.RequestOptions{
+			Task: "dhcp-ack-lease",
+			Args: Addresses{
+				MAC: t.mac,
+				IP:  t.ip,
+			},
+		})
+		if !s.NoError(err, t.name) {
+			continue
+		}
+		if !s.NotNil(req, t.name) {
+			continue
+		}
+
+		resp, url, err := s.dhcp.ack(req)
+		s.Require().Nil(url, t.name)
+
+		if t.err != "" {
+			s.EqualError(err, t.err, t.name)
+			s.Nil(resp)
+			continue
+		}
+
+		s.NoError(err, t.name)
+		if !s.NotNil(resp) {
+			continue
+		}
+
+		lease, ok := resp.(Lease)
+		if !s.True(ok, t.name) {
+			continue
+		}
+		s.Equal(net.ParseIP(t.ip), lease.Net.IP)
+	}
+}

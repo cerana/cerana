@@ -3,6 +3,7 @@ package kv
 import (
 	"os"
 	"os/exec"
+	"time"
 
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/internal/tests/common"
@@ -40,6 +41,16 @@ func NewMock(config *provider.Config, tracker *acomm.Tracker) (*Mock, error) {
 	s.Require().NoError(config.SetupLogging())
 
 	kv, err := New(conf, tracker)
+	s.Require().NoError(err)
+	err = errorKVDown
+	for range [5]struct{}{} {
+		if !kv.kvDown() {
+			err = nil
+			break
+		}
+		time.Sleep(1 * time.Second)
+
+	}
 	if err != nil {
 		return nil, err
 	}

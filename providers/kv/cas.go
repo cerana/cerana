@@ -1,10 +1,10 @@
 package kv
 
 import (
-	"errors"
 	"net/url"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/pkg/kv"
 )
 
@@ -33,11 +33,11 @@ func (k *KV) remove(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 	if args.Key == "" {
-		return nil, nil, errors.New("missing arg: key")
+		return nil, nil, errors.Newv("missing arg: key", map[string]interface{}{"args": args})
 	}
 
 	if k.kvDown() {
-		return nil, nil, errorKVDown
+		return nil, nil, errors.Wrap(errorKVDown)
 	}
 	return nil, nil, k.kv.Remove(args.Key, args.Index)
 }
@@ -49,10 +49,10 @@ func (k *KV) update(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 	if args.Key == "" {
-		return nil, nil, errors.New("missing arg: key")
+		return nil, nil, errors.Newv("missing arg: key", map[string]interface{}{"args": args})
 	}
 	if args.Value == "" {
-		return nil, nil, errors.New("missing arg: value")
+		return nil, nil, errors.Newv("missing arg: value", map[string]interface{}{"args": args})
 	}
 
 	value := kv.Value{
@@ -61,7 +61,7 @@ func (k *KV) update(req *acomm.Request) (interface{}, *url.URL, error) {
 	}
 
 	if k.kvDown() {
-		return nil, nil, errorKVDown
+		return nil, nil, errors.Wrap(errorKVDown)
 	}
 	index, err := k.kv.Update(args.Key, value)
 	if err != nil {

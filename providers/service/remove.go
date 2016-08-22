@@ -1,10 +1,10 @@
 package service
 
 import (
-	"errors"
 	"net/url"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/providers/systemd"
 )
 
@@ -21,10 +21,10 @@ func (p *Provider) Remove(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 	if args.ID == "" {
-		return nil, nil, errors.New("missing arg: id")
+		return nil, nil, errors.Newv("missing arg: id", map[string]interface{}{"args": args, "missing": "id"})
 	}
 	if args.BundleID == 0 {
-		return nil, nil, errors.New("missing arg: bundleID")
+		return nil, nil, errors.Newv("missing arg: bundleID", map[string]interface{}{"args": args, "missing": "bundleID"})
 	}
 
 	name := serviceName(args.BundleID, args.ID)

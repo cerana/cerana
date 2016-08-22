@@ -1,11 +1,11 @@
 package systemd
 
 import (
-	"errors"
 	"net/url"
 	"strings"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 )
 
 // ActionArgs are arguments for service running action handlers.
@@ -36,7 +36,7 @@ func (s *Systemd) systemdAction(action string, req *acomm.Request) (interface{},
 		return nil, nil, err
 	}
 	if args.Name == "" {
-		return nil, nil, errors.New("missing arg: name")
+		return nil, nil, errors.Newv("missing arg: name", map[string]interface{}{"args": args})
 	}
 
 	var actionFn func(string, string, chan<- string) (int, error)
@@ -53,9 +53,9 @@ func (s *Systemd) systemdAction(action string, req *acomm.Request) (interface{},
 	// job is completed, the jobid is meaningless.
 	if _, err := actionFn(args.Name, args.Mode, nil); err != nil {
 		if strings.Contains(err.Error(), "No such file or directory") {
-			err = errors.New("unit not found")
+			err = errors.Newv("unit not found", map[string]interface{}{"name": args.Name})
 		}
-		return nil, nil, err
+		return nil, nil, errors.Wrapv(err, map[string]interface{}{"name": args.Name, "mode": args.Mode, "action": action})
 	}
 
 	return nil, nil, nil

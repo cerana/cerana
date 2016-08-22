@@ -1,11 +1,11 @@
 package kv
 
 import (
-	"errors"
 	"net/url"
 	"time"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 )
 
 var eKeys = newEKeyMap()
@@ -29,17 +29,17 @@ func (k *KV) eset(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 	if args.Key == "" {
-		return nil, nil, errors.New("missing arg: key")
+		return nil, nil, errors.Newv("missing arg: key", map[string]interface{}{"args": args})
 	}
 	if args.Value == "" {
-		return nil, nil, errors.New("missing arg: value")
+		return nil, nil, errors.Newv("missing arg: value", map[string]interface{}{"args": args})
 	}
 	if args.TTL == 0 {
-		return nil, nil, errors.New("missing arg: ttl")
+		return nil, nil, errors.Newv("missing arg: ttl", map[string]interface{}{"args": args})
 	}
 
 	if k.kvDown() {
-		return nil, nil, errorKVDown
+		return nil, nil, errors.Wrap(errorKVDown)
 	}
 	eKey := eKeys.Get(args.Key)
 	if eKey == nil || eKey.Renew() != nil {
@@ -64,7 +64,7 @@ func (k *KV) edestroy(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 	if args.Key == "" {
-		return nil, nil, errors.New("missing arg: key")
+		return nil, nil, errors.Newv("missing arg: key", map[string]interface{}{"args": args})
 	}
 
 	return nil, nil, eKeys.Destroy(args.Key)

@@ -1,11 +1,10 @@
 package main
 
 import (
-	"errors"
-	"fmt"
 	"time"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/providers/clusterconf"
 	"github.com/cerana/cerana/providers/metrics"
 	"github.com/shirou/gopsutil/disk"
@@ -43,24 +42,19 @@ func (s *statsPusher) getNodeInfo() (*clusterconf.Node, error) {
 	multiRequest := acomm.NewMultiRequest(s.tracker, s.config.requestTimeout())
 	for name, req := range requests {
 		if err := multiRequest.AddRequest(name, req); err != nil {
-			fmt.Println("failed to add")
-			break
+			return nil, err
 		}
 		if err := acomm.Send(s.config.nodeDataURL(), req); err != nil {
-			fmt.Println(name, err)
 			multiRequest.RemoveRequest(req)
-			break
+			return nil, err
 		}
 	}
 
 	responses := multiRequest.Responses()
 	for name := range requests {
-		resp, ok := responses[name]
-		if !ok {
-			return nil, fmt.Errorf("failed to send request: %s", name)
-		}
+		resp := responses[name]
 		if resp.Error != nil {
-			return nil, fmt.Errorf("request failed: %s: %s", name, resp.Error)
+			return nil, errors.Wrapv(resp.Error, map[string]interface{}{"task": name})
 		}
 		if err := resp.UnmarshalResult(tasks[name]); err != nil {
 			return nil, err

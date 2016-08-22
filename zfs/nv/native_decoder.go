@@ -2,11 +2,11 @@ package nv
 
 import (
 	"encoding/binary"
-	"errors"
-	"fmt"
 	"io"
 	"reflect"
 	"time"
+
+	"github.com/cerana/cerana/pkg/errors"
 )
 
 var empty8 = [8]byte{}
@@ -55,18 +55,18 @@ func (d *NativeDecoder) Decode(target interface{}) (err error) {
 	if err != nil {
 		return err
 	} else if dataCodec != nativeCodec {
-		return fmt.Errorf("invalid encoding: %v", dataCodec)
+		return errors.Newv("invalid encoding", map[string]interface{}{"codec": dataCodec})
 	} else if dataEndianness != littleEndian {
-		return fmt.Errorf("invalid endianess: %v", dataEndianness)
+		return errors.Newv("invalid endianess", map[string]interface{}{"endianness": dataEndianness})
 	}
 
 	// Validate target
 	targetV := reflect.ValueOf(target)
 	if targetV.Kind() != reflect.Ptr {
-		return fmt.Errorf("cannot decode into non-pointer: %v", reflect.TypeOf(targetV).String())
+		return errors.Newv("cannot decode into non-pointer", map[string]interface{}{"type": reflect.TypeOf(targetV).String()})
 	}
 	if targetV.IsNil() {
-		return fmt.Errorf("cannot decode into nil pointer")
+		return errors.New("cannot decode into nil pointer")
 	}
 
 	return decodeList(d, reflect.Indirect(targetV))
@@ -75,7 +75,7 @@ func (d *NativeDecoder) Decode(target interface{}) (err error) {
 func (d *NativeDecoder) header() (header, error) {
 	var h header
 	if !d.embedded {
-		return h, binary.Read(d.r, binary.LittleEndian, &h)
+		return h, errors.Wrap(binary.Read(d.r, binary.LittleEndian, &h), "failed to decode header")
 	}
 	return d.savedHeader, nil
 }
@@ -84,10 +84,10 @@ func decodeNativeEmbeddedListHeader(r io.ReadSeeker) (header, error) {
 	var h embeddedHeader
 	err := binary.Read(r, binary.LittleEndian, &h)
 	if err != nil {
-		return header{}, err
+		return header{}, errors.Wrap(err, "failed to decode header")
 	}
 	if h.Priv != 0 || h.Flag != 0 || h.Pad != 0 {
-		return header{}, errors.New("invalid embedded header")
+		return header{}, errors.Newv("invalid embedded header", map[string]interface{}{"header": h})
 	}
 	return h.header, nil
 }
@@ -95,13 +95,13 @@ func decodeNativeEmbeddedListHeader(r io.ReadSeeker) (header, error) {
 func (d *NativeDecoder) meta() (string, dataType, error) {
 	err := binary.Read(d.r, binary.LittleEndian, &d.pair.nativeMeta)
 	if err != nil {
-		return "", 0, err
+		return "", 0, errors.Wrap(err, "failed to decode nvpair metadata")
 	}
 
 	len := uint32(align8(int(d.pair.NameLen)))
 	buf := make([]byte, len)
 	if _, err = d.r.Read(buf); err != nil {
-		return "", 0, err
+		return "", 0, errors.Wrap(err, "failed to read nvpair metadata buffer")
 	}
 	if len == 0 {
 		return "", 0, errors.New("wtf")
@@ -115,26 +115,26 @@ func (d *NativeDecoder) meta() (string, dataType, error) {
 
 func (d *NativeDecoder) skip() error {
 	_, err := d.r.Seek(int64(align8(int(d.size))), 1)
-	return err
+	return errors.Wrap(err, "failed to skip")
 }
 
 func (d *NativeDecoder) isEnd() (bool, error) {
 	var end uint32
 	err := binary.Read(d.r, binary.LittleEndian, &end)
 	if err != nil {
-		return false, err
+		return false, errors.Wrap(err, "failed to check for end")
 	}
 	if end == 0 {
 		return true, nil
 	}
 	_, err = d.r.Seek(-4, 1)
-	return false, err
+	return false, errors.Wrap(err, "failed to seek back")
 }
 
 func (d *NativeDecoder) value(targetType reflect.Type) (reflect.Value, fieldSetFunc, error) {
 	var val reflect.Value
 	var fsf fieldSetFunc
-	err := fmt.Errorf("unknown type: %v", d.pair.Type)
+	err := errors.Newv("unknown type", map[string]interface{}{"type": d.pair.Type})
 
 	var seek int64
 

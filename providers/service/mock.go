@@ -1,12 +1,12 @@
 package service
 
 import (
-	"errors"
 	"math/rand"
 	"net/url"
 	"time"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/provider"
 )
 

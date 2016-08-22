@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/pkg/kv"
 	"github.com/cerana/cerana/provider"
 )
@@ -56,8 +57,8 @@ func (c *ClusterConf) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("update-service", c.UpdateService)
 	server.RegisterTask("delete-service", c.DeleteService)
 
-	server.RegisterTask("get-dhcp", c.GetDHCP)
-	server.RegisterTask("set-dhcp", c.SetDHCP)
+	server.RegisterTask("get-dhcp-config", c.GetDHCP)
+	server.RegisterTask("set-dhcp-config", c.SetDHCP)
 }
 
 func (c *ClusterConf) kvReq(task string, args map[string]interface{}) (*acomm.Response, error) {
@@ -67,10 +68,12 @@ func (c *ClusterConf) kvReq(task string, args map[string]interface{}) (*acomm.Re
 		respChan <- resp
 	}
 
+	errData := map[string]interface{}{"task": task, "args": args}
+
 	if val, ok := args["value"]; ok {
 		valJSON, err := json.Marshal(val)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapv(err, errData, "failed to json marshal value")
 		}
 		args["value"] = string(valJSON)
 	}
@@ -94,7 +97,7 @@ func (c *ClusterConf) kvReq(task string, args map[string]interface{}) (*acomm.Re
 	}
 
 	resp := <-respChan
-	return resp, resp.Error
+	return resp, errors.Wrapv(resp.Error, errData)
 }
 
 func (c *ClusterConf) kvKeys(prefix string) ([]string, error) {
@@ -108,7 +111,7 @@ func (c *ClusterConf) kvKeys(prefix string) ([]string, error) {
 	}
 	var values []string
 	if err := resp.UnmarshalResult(&values); err != nil {
-		return nil, err
+		return nil, errors.Wrapv(err, map[string]interface{}{"args": args})
 	}
 	return values, nil
 }
@@ -124,7 +127,7 @@ func (c *ClusterConf) kvGetAll(key string) (map[string]kv.Value, error) {
 	}
 	values := make(map[string]kv.Value)
 	if err := resp.UnmarshalResult(&values); err != nil {
-		return nil, err
+		return nil, errors.Wrapv(err, map[string]interface{}{"args": args})
 	}
 	return values, nil
 }
@@ -141,7 +144,7 @@ func (c *ClusterConf) kvGet(key string) (kv.Value, error) {
 	}
 
 	if err := resp.UnmarshalResult(&value); err != nil {
-		return value, err
+		return value, errors.Wrapv(err, map[string]interface{}{"args": args})
 	}
 	return value, nil
 }
@@ -152,7 +155,7 @@ func (c *ClusterConf) kvDelete(key string, modIndex uint64) error {
 		"recurse": true,
 	}
 	_, err := c.kvReq("kv-delete", args)
-	return err
+	return errors.Wrapv(err, map[string]interface{}{"args": args})
 }
 
 func (c *ClusterConf) kvUpdate(key string, value interface{}, modIndex uint64) (uint64, error) {
@@ -167,7 +170,7 @@ func (c *ClusterConf) kvUpdate(key string, value interface{}, modIndex uint64) (
 	}
 	result := make(map[string]uint64)
 	if err := resp.UnmarshalResult(&result); err != nil {
-		return 0, err
+		return 0, errors.Wrapv(err, map[string]interface{}{"args": args})
 	}
 	return result["index"], nil
 }
@@ -179,5 +182,5 @@ func (c *ClusterConf) kvEphemeral(key string, value interface{}, ttl time.Durati
 		"ttl":   ttl,
 	}
 	_, err := c.kvReq("kv-ephemeral-set", args)
-	return err
+	return errors.Wrapv(err, map[string]interface{}{"args": args})
 }

@@ -2,9 +2,8 @@ package clusterconf_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/rand"
-	"net"
-	"time"
 
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/providers/clusterconf"
@@ -18,16 +17,13 @@ func (s *clusterConf) setupDHCP(config clusterconf.DHCPConfig) {
 
 func (s *clusterConf) TestGetDHCP() {
 	conf := clusterconf.DHCPConfig{
-		DNS: []net.IP{
-			net.IPv4(10, 10, 1, byte(rand.Intn(255))),
-			net.IPv4(10, 10, 2, byte(rand.Intn(255))),
+		DNS: []string{
+			fmt.Sprintf("10.10.1.%d", rand.Intn(255)),
+			fmt.Sprintf("10.10.2.%d", rand.Intn(255)),
 		},
-		Duration: 5*time.Hour + time.Hour*time.Duration(rand.Intn(11)+1),
-		Gateway:  net.IPv4(10, 10, 10, byte(rand.Intn(255))),
-		Net: net.IPNet{
-			IP:   net.IPv4(10, 10, 10, 0),
-			Mask: net.IPMask{255, 255, 255, 0},
-		},
+		Duration: fmt.Sprintf("%dh", 1+rand.Intn(24)),
+		Gateway:  fmt.Sprintf("10.10.10.%d", rand.Intn(255)),
+		Net:      "10.10.10.0/24",
 	}
 
 	_, _, err := s.clusterConf.GetDHCP(nil)
@@ -43,86 +39,93 @@ func (s *clusterConf) TestGetDHCP() {
 }
 
 func (s *clusterConf) TestSetDHCP() {
-	s.setupDHCP(clusterconf.DHCPConfig{
-		DNS: []net.IP{
-			net.IPv4(10, 10, 1, byte(rand.Intn(255))),
-			net.IPv4(10, 10, 2, byte(rand.Intn(255))),
-		},
-		Duration: 5*time.Hour + time.Hour*time.Duration(rand.Intn(11)+1),
-		Gateway:  net.IPv4(10, 10, 10, byte(rand.Intn(255))),
-		Net: net.IPNet{
-			IP:   net.IPv4(10, 10, 10, 0),
-			Mask: net.IPMask{255, 255, 255, 0},
-		},
-	})
-
 	tests := []struct {
 		desc string
-		ok   bool
+		err  string
 		conf clusterconf.DHCPConfig
 	}{
-		{desc: "duration is invalid"},
-		{desc: "duration is invalid",
+		{desc: "duration too short",
+			err: "duration is invalid",
 			conf: clusterconf.DHCPConfig{
-				Duration: 25 * time.Hour,
+				Duration: "30m",
 			},
 		},
-		{desc: "duration is invalid",
+		{desc: "duration too long",
+			err: "duration is invalid",
 			conf: clusterconf.DHCPConfig{
-				Duration: 30 * time.Minute,
+				Duration: "25h",
 			},
 		},
-		{desc: "net.IP is required",
+		{desc: "missing network",
+			err: "invalid CIDR address: ",
 			conf: clusterconf.DHCPConfig{
-				Duration: 1 * time.Hour,
+				Duration: "1h",
 			},
 		},
-		{desc: "net.IP must be IPv4",
+		{desc: "IPv6",
+			err: "net.ip must be IPv4",
 			conf: clusterconf.DHCPConfig{
-				Duration: 1 * time.Hour,
-				Net: net.IPNet{
-					IP: net.ParseIP("::1"),
+				Duration: "1h",
+				Net:      "::1/128",
+			},
+		},
+		{desc: "IPv4zero",
+			err: "net.ip must not be 0.0.0.0",
+			conf: clusterconf.DHCPConfig{
+				Duration: "1h",
+				Net:      "0.0.0.0/0",
+			},
+		},
+		{desc: "missing netmask",
+			err: "invalid CIDR address: 10.100.10.0",
+			conf: clusterconf.DHCPConfig{
+				Duration: "1h",
+				Net:      "10.100.10.0",
+			},
+		},
+		{desc: "junk network",
+			err: "invalid CIDR address: 256.256.256.256/32",
+			conf: clusterconf.DHCPConfig{
+				Duration: "1h",
+				Net:      "256.256.256.256/32",
+			},
+		},
+		{desc: "junk netmask",
+			err: "invalid CIDR address: 10.100.10.0/33",
+			conf: clusterconf.DHCPConfig{
+				Duration: "1h",
+				Net:      "10.100.10.0/33",
+			},
+		},
+		{desc: "unreachable gateway",
+			err: "gateway is unreachable",
+			conf: clusterconf.DHCPConfig{
+				Duration: "1h",
+				Gateway:  fmt.Sprintf("10.0.10.%d", rand.Intn(255)),
+				Net:      "10.100.10.0/24",
+			},
+		},
+		{desc: "good",
+			conf: clusterconf.DHCPConfig{
+				DNS: []string{
+					fmt.Sprintf("10.100.1.%d", rand.Intn(255)),
+					fmt.Sprintf("10.100.2.%d", rand.Intn(255)),
 				},
+				Duration: "1h",
+				Gateway:  fmt.Sprintf("10.100.10.%d", rand.Intn(255)),
+				Net:      "10.100.10.0/24",
 			},
 		},
-		{desc: "net.IP must not be 0.0.0.0",
+		{desc: "dhcp is set in stone",
+			err: "dhcp configuration can not be altered",
 			conf: clusterconf.DHCPConfig{
-				Duration: 1 * time.Hour,
-				Net: net.IPNet{
-					IP: net.IPv4zero,
+				DNS: []string{
+					fmt.Sprintf("10.100.1.%d", rand.Intn(255)),
+					fmt.Sprintf("10.100.2.%d", rand.Intn(255)),
 				},
-			},
-		},
-		{desc: "net.Mask is required",
-			conf: clusterconf.DHCPConfig{
-				Duration: 1 * time.Hour,
-				Net: net.IPNet{
-					IP: net.ParseIP("127.0.0.1"),
-				},
-			},
-		},
-		{desc: "gateway is unreachable",
-			conf: clusterconf.DHCPConfig{
-				Duration: 1 * time.Hour,
-				Gateway:  net.IPv4(10, 0, 10, byte(rand.Intn(255))),
-				Net: net.IPNet{
-					IP:   net.IPv4(10, 100, 10, 0),
-					Mask: net.IPMask{255, 255, 255, 0},
-				},
-			},
-		},
-		{desc: "", ok: true,
-			conf: clusterconf.DHCPConfig{
-				DNS: []net.IP{
-					net.IPv4(10, 100, 1, byte(rand.Intn(255))),
-					net.IPv4(10, 100, 2, byte(rand.Intn(255))),
-				},
-				Duration: 1 * time.Hour,
-				Gateway:  net.IPv4(10, 100, 10, byte(rand.Intn(255))),
-				Net: net.IPNet{
-					IP:   net.IPv4(10, 100, 10, 0),
-					Mask: net.IPMask{255, 255, 255, 0},
-				},
+				Duration: "2h",
+				Gateway:  fmt.Sprintf("10.100.10.%d", rand.Intn(255)),
+				Net:      "10.100.10.0/24",
 			},
 		},
 	}
@@ -132,24 +135,24 @@ func (s *clusterConf) TestSetDHCP() {
 			Task: "clusterconf-set-dhcp",
 			Args: t.conf,
 		})
-		s.Require().NoError(err)
+		s.Require().NoError(err, t.desc)
 
 		resp, url, err := s.clusterConf.SetDHCP(req)
-		s.Nil(resp)
-		s.Nil(url)
-		if !t.ok {
-			s.EqualError(err, t.desc)
+		s.Nil(resp, t.desc)
+		s.Nil(url, t.desc)
+		if t.err != "" {
+			s.Contains(err.Error(), t.err, t.desc)
 			continue
 		}
-		if !s.NoError(err) {
+		if !s.NoError(err, t.desc) {
 			continue
 		}
 
 		resp, url, err = s.clusterConf.GetDHCP(nil)
-		s.Require().NoError(err)
+		s.Require().NoError(err, t.desc)
 		s.Nil(url)
 
 		got := resp.(clusterconf.DHCPConfig)
-		s.Equal(t.conf, got)
+		s.Equal(t.conf, got, t.desc)
 	}
 }

@@ -2,12 +2,13 @@ package kv
 
 import (
 	"encoding/json"
-	"errors"
 	"io"
 	"net/url"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/pkg/kv"
+	"github.com/cerana/cerana/pkg/logrusx"
 )
 
 var watches = newChanMap()
@@ -28,18 +29,22 @@ func makeEventReader(events chan kv.Event, errs chan error) io.ReadCloser {
 	r, w := io.Pipe()
 
 	go func() {
-		defer func() { _ = r.Close() }()
-		defer func() { _ = w.Close() }()
+		var err error
+		defer logrusx.LogReturnedErr(r.Close, nil, "")
+		defer logrusx.LogReturnedErr(w.Close, nil, "")
+		defer logrusx.LogReturnedErr(func() error { return err }, nil, "event reader failed")
 
 		var event Event
 		for {
+			var ev kv.Event
+			var ok bool
 			select {
-			case ev, ok := <-events:
+			case ev, ok = <-events:
 				if !ok {
 					return
 				}
 				event = Event{Event: ev}
-			case err, ok := <-errs:
+			case err, ok = <-errs:
 				if !ok {
 					return
 				}
@@ -48,13 +53,16 @@ func makeEventReader(events chan kv.Event, errs chan error) io.ReadCloser {
 
 			data, err := json.Marshal(event)
 			if err != nil {
+				err = errors.Wrapv(err, map[string]interface{}{"event": event})
 				return
 			}
 			n, err := w.Write(data)
 			if err != nil {
+				err = errors.Wrapv(err, map[string]interface{}{"data": string(data)})
 				return
 			}
 			if n != len(data) {
+				err = errors.Newv("bytes written not equal to data length", map[string]interface{}{"written": n, "expectedWritten": len(data)})
 				return
 			}
 		}
@@ -70,11 +78,11 @@ func (k *KV) watch(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 	if args.Prefix == "" {
-		return nil, nil, errors.New("missing arg: prefix")
+		return nil, nil, errors.Newv("missing arg: prefix", map[string]interface{}{"args": args})
 	}
 
 	if k.kvDown() {
-		return nil, nil, errorKVDown
+		return nil, nil, errors.Wrap(errorKVDown)
 	}
 	stop := make(chan struct{})
 	events, errs, err := k.kv.Watch(args.Prefix, args.Index, stop)
@@ -104,7 +112,7 @@ func (k *KV) stop(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 	if args.Cookie == 0 {
-		return nil, nil, errors.New("missing arg: cookie")
+		return nil, nil, errors.Newv("missing arg: cookie", map[string]interface{}{"args": args})
 	}
 
 	ch, err := watches.Get(args.Cookie)

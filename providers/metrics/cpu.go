@@ -4,6 +4,7 @@ import (
 	"net/url"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/load"
 )
@@ -19,17 +20,17 @@ type CPUResult struct {
 func (m *Metrics) CPU(req *acomm.Request) (interface{}, *url.URL, error) {
 	info, err := cpu.Info()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.Wrap(err)
 	}
 
 	loadAvg, err := load.Avg()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.Wrap(err)
 	}
 
 	times, err := cpu.Times(true)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.Wrap(err)
 	}
 
 	return &CPUResult{Info: info, Load: *loadAvg, Times: times}, nil, nil

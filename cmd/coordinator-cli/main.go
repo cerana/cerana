@@ -123,6 +123,7 @@ func parseTaskArgs(taskArgs []string) (map[string]interface{}, error) {
 func parseJSONArgs() (map[string]interface{}, error) {
 	var out map[string]interface{}
 	decoder := json.NewDecoder(os.Stdin)
+	decoder.UseNumber()
 	if err := decoder.Decode(&out); err != nil {
 		return nil, err
 	}

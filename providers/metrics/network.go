@@ -4,6 +4,7 @@ import (
 	"net/url"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/shirou/gopsutil/net"
 )
 
@@ -17,12 +18,12 @@ type NetworkResult struct {
 func (m *Metrics) Network(req *acomm.Request) (interface{}, *url.URL, error) {
 	interfaces, err := net.Interfaces()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.Wrap(err)
 	}
 
 	io, err := net.IOCounters(true)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.Wrap(err)
 	}
 
 	return &NetworkResult{IO: io, Interfaces: interfaces}, nil, nil

@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/pkg/logrusx"
 )
 
@@ -46,17 +46,20 @@ func (n *Namespace) SetUser(req *acomm.Request) (interface{}, *url.URL, error) {
 }
 
 func writeIDMapFile(path string, idMaps []IDMap) error {
-	mapFile, err := os.OpenFile(path, os.O_TRUNC|os.O_RDWR, 0644)
+	mode := os.O_TRUNC | os.O_RDWR
+	perms := os.FileMode(0644)
+	mapFile, err := os.OpenFile(path, mode, perms)
 	if err != nil {
-		return err
+		return errors.Wrapv(err, map[string]interface{}{"path": path, "mode": mode, "perms": perms})
 	}
-	defer logrusx.LogReturnedErr(mapFile.Close, logrus.Fields{"path": path}, "failed to close map file")
+	defer logrusx.LogReturnedErr(mapFile.Close, map[string]interface{}{"path": path}, "failed to close map file")
 
 	content := make([]string, len(idMaps))
 	for i, idMap := range idMaps {
 		content[i] = fmt.Sprintf("%d %d %d", idMap.ID, idMap.HostID, idMap.Length)
 	}
 
-	_, err = fmt.Fprintln(mapFile, strings.Join(content, "\n"))
-	return err
+	data := strings.Join(content, "\n")
+	_, err = fmt.Fprintln(mapFile, data)
+	return errors.Wrapv(err, map[string]interface{}{"path": path, "data": data})
 }

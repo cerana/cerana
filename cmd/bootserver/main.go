@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/sha256"
-	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -20,6 +19,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/pkg/logrusx"
 	"github.com/cerana/cerana/provider"
 	"github.com/cerana/cerana/providers/dhcp"
@@ -83,30 +83,29 @@ func comm(tracker *acomm.Tracker, coordinator *url.URL, task string, args interf
 func tftpReadHandler(undi []byte) func(string, io.ReaderFrom) error {
 	fn := func(name string, rf io.ReaderFrom) error {
 		if name != "undionly.kpxe" {
-			logrus.WithError(errors.New("unknown file")).WithField("file", name).Error("")
+			return errors.Newv("unknown file", map[string]interface{}{"file": name})
 		}
 
 		_, err := rf.ReadFrom(bufio.NewReader(bytes.NewBuffer(undi)))
-		if err != nil {
-			logrus.WithError(err).Error("error sending iPXE image")
-		}
-		return err
+		return errors.Wrap(err)
 	}
 
 	return fn
 }
 
 func getFile(name string) ([]byte, string, time.Time) {
+	errData := map[string]interface{}{"path": name}
+
 	f, err := os.Open(name)
-	logrusx.DieOnError(err, "open file")
+	logrusx.DieOnError(errors.Wrapv(err, errData), "open file")
 
 	h := sha256.New()
 	r := io.TeeReader(bufio.NewReader(f), h)
 	buf, err := ioutil.ReadAll(r)
-	logrusx.DieOnError(err, "read file")
+	logrusx.DieOnError(errors.Wrapv(err, errData), "read file")
 
 	stat, err := f.Stat()
-	logrusx.DieOnError(err, "stat file")
+	logrusx.DieOnError(errors.Wrapv(err, errData), "stat file")
 	_ = f.Close()
 
 	return buf, fmt.Sprintf("%x", h.Sum(nil)), stat.ModTime()
@@ -121,17 +120,16 @@ func stringIP(ip net.IP) string {
 
 func getIfaceIP(addrser addrser) net.IP {
 	ips, err := addrser.Addrs()
-	logrusx.DieOnError(err, "get interface addresses")
+	logrusx.DieOnError(errors.Wrap(err), "get interface addresses")
 
 	if len(ips) < 1 {
 		logrusx.DieOnError(errors.New("interface has no ip addresses configured"), "get interface addresses")
 	}
 
 	ip, _, err := net.ParseCIDR(ips[0].String())
-	logrusx.DieOnError(err, "parse ip address")
+	logrusx.DieOnError(errors.Wrapv(err, map[string]interface{}{"net": ips[0].String()}), "parse ip address")
 
 	return ip
-
 }
 
 func fillOptionsOffered(options dhcp4.Options, ip net.IP, offer dhcp.Lease) {
@@ -198,7 +196,7 @@ func (h *dhcpHandler) ServeDHCP(p dhcp4.Packet, msgType dhcp4.MessageType, optio
 			logrus.Error("requested ip is 0.0.0.0")
 			return nack(p, ip)
 		} else if err := comm(h.tracker, h.coordinator, "dhcp-ack-lease", args, &offer); err != nil {
-			logrus.WithError(err).Error("")
+			logrus.WithField("error", err).Error("")
 			return nack(p, ip)
 		}
 
@@ -239,7 +237,7 @@ func main() {
 	logrusx.DieOnError(tracker.Start(), "start tracker")
 
 	iface, err := net.InterfaceByName(conf.iface())
-	logrusx.DieOnError(err, "get interface")
+	logrusx.DieOnError(errors.Wrapv(err, map[string]interface{}{"iface": conf.iface()}), "get interface")
 
 	handler := &dhcpHandler{
 		iface:       iface,
@@ -248,21 +246,22 @@ func main() {
 	}
 
 	dConn, err := net.ListenPacket("udp4", ":67")
-	logrusx.DieOnError(err, "bind dhcp port")
+	logrusx.DieOnError(errors.Wrapv(err, map[string]interface{}{"type": "udp4", "laddr": ":67"}), "bind dhcp port")
 
 	undi, _, _ := getFile(conf.iPXE())
 	tftpServer := tftp.NewServer(tftpReadHandler(undi), nil)
 	tConn, err := net.ListenPacket("udp", ":69")
-	logrusx.DieOnError(err, "bind tfp port")
+	logrusx.DieOnError(errors.Wrapv(err, map[string]interface{}{"type": "udp", "laddr": ":69"}), "bind tfp port")
 
 	initrd, initrdHash, initrdMod := getFile(conf.initrd())
 
 	buffer := &bytes.Buffer{}
-	err = ipxe.Execute(buffer, map[string]string{
+	ipxeValues := map[string]string{
 		"IP":   getIfaceIP(iface).String(),
 		"Hash": initrdHash,
-	})
-	logrusx.DieOnError(err, "generate ipxe boot script")
+	}
+	err = ipxe.Execute(buffer, ipxeValues)
+	logrusx.DieOnError(errors.Wrapv(err, map[string]interface{}{"ip": ipxeValues["IP"], "hash": ipxeValues["Hash"]}), "generate ipxe boot script")
 	bootScript := bytes.NewReader(buffer.Bytes())
 	http.HandleFunc("/boot.ipxe", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
@@ -281,7 +280,7 @@ func main() {
 	})
 
 	hConn, err := net.Listen("tcp", ":80")
-	logrusx.DieOnError(err, "bind http port")
+	logrusx.DieOnError(errors.Wrapv(err, map[string]interface{}{"type": "tcp", "laddr": ":80"}), "bind http port")
 
 	wg := sync.WaitGroup{}
 	wg.Add(3)
@@ -292,14 +291,16 @@ func main() {
 	}()
 	go func() {
 		logrus.Info("serving http")
-		err := http.Serve(hConn, nil)
-		logrus.Info("http err:", err)
+		if err := http.Serve(hConn, nil); err != nil {
+			logrus.WithField("error", errors.Wrap(err)).Error("http error")
+		}
 		wg.Done()
 	}()
 	go func() {
 		logrus.Info("serving dhcp")
-		err := dhcp4.ServeIf(iface.Index, dConn, handler)
-		logrus.Info("dhcp err:", err)
+		if err := dhcp4.ServeIf(iface.Index, dConn, handler); err != nil {
+			logrus.WithField("error", errors.Wrap(err)).Error("dhcp error")
+		}
 		wg.Done()
 	}()
 	wg.Wait()

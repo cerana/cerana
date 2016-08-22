@@ -1,12 +1,12 @@
 package zfs
 
 import (
-	"errors"
 	"net/url"
 	"os"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/pkg/logrusx"
 	"github.com/cerana/cerana/zfs"
 )
@@ -19,7 +19,7 @@ func (z *ZFS) Send(req *acomm.Request) (interface{}, *url.URL, error) {
 	}
 
 	if args.Name == "" {
-		return nil, nil, errors.New("missing arg: name")
+		return nil, nil, errors.Newv("missing arg: name", map[string]interface{}{"args": args})
 	}
 
 	ds, err := zfs.GetDataset(args.Name)
@@ -29,7 +29,7 @@ func (z *ZFS) Send(req *acomm.Request) (interface{}, *url.URL, error) {
 
 	reader, writer, err := os.Pipe()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.Wrap(err)
 	}
 
 	addr, err := z.tracker.NewStreamUnix(z.config.StreamDir("zfs-send"), reader)
