@@ -19,40 +19,6 @@ function exit_code_with_message() {
 
 [[ -z ${CERANA_MGMT_IP} ]] && fail_exit 1 "Couldn't find IP configuration for bootstrapping the cluster config. Failure."
 
-LOCAL_IP=${CERANA_MGMT_IP%/*}
-PREFIX_BITS=${CERANA_MGMT_IP#*/}
-
-# FIXME UGLY HACK
-case ${PREFIX_BITS} in
-    8)
-        MASK="/wAAAA=="
-        NETMASK="255.0.0.0"
-        ;;
-    16)
-        MASK="//8AAA=="
-        NETMASK="255.255.0.0"
-        ;;
-    24)
-        MASK="////AA=="
-        NETMASK="255.255.255.0"
-        ;;
-    *)
-        exit_code_with_message 2 "We only know how to handle /8, /16, /24 netmasks... sorry."
-        ;;
-esac
-
-address_to_number() {
-    local IFS=. ipStr
-    ipStr=($1)
-    echo $(($(($(($(($(($((ipStr[0] * 256)) + ipStr[1])) * 256)) + ipStr[2])) * 256)) + ipStr[3]))
-}
-
-number_to_address() {
-    echo "$(($1 / 16777216)).$(($(($1 % 16777216)) / 65536)).$(($(($1 % 65536)) / 256)).$(($1 % 256))"
-}
-
-NET_ADDRESS=$(number_to_address $(($(address_to_number "${LOCAL_IP}") & $(address_to_number "${NETMASK}"))))
-
 gateway_string() {
     [[ -n ${CERANA_MGMT_GW} ]] \
         && echo "\"gateway\":\"${CERANA_MGMT_GW}\","
@@ -64,21 +30,21 @@ until l2-request -t kv-keys -a key=/ &>/dev/null; do
     sleep 1
 done
 
-l2-request -t set-dhcp -j <<EOF
+until l2-request -t kv-get -a key=/dhcp &>/dev/null; do
+    l2-request -t set-dhcp-config -j <<EOF
 {
-  "duration": 86400000000000,
+  "duration": "12h",
   $(gateway_string)
-  "net": {
-    "IP": "${NET_ADDRESS}",
-    "Mask": "${MASK}"
-  }
+  "net": "${CERANA_MGMT_IP}"
 }
 EOF
+    sleep 1
+done
 
-LEASE_JSON="{\"mac\":\"${CERANA_MGMT_MAC}\", \"ip\":\"${LOCAL_IP}\"}"
+LEASE_JSON="{\"mac\":\"${CERANA_MGMT_MAC}\", \"ip\":\"${CERANA_MGMT_IP%/*}\"}"
 until l2-request -t dhcp-ack-lease -j <<<"${LEASE_JSON}"; do
     sleep 1
 done
 
-unset CERANA_CLUSTER_BOOTSTRAP \
+unset CERANA_CLUSTER_BOOTSTRAP
 declare | grep ^CERANA >/data/config/cerana-bootcfg
