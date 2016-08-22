@@ -25,9 +25,10 @@ statevars=(
     numsets=1
     tapmac=DE:AD:BE:EF
     bridge=ceranabr
-    bridgeip=10.0
+    bridgeip=10.0.3.1
     nameserver=10.0.3.1
     maskbits=24
+    dhcprange=200-240
 )
 
 u=$USER
@@ -82,10 +83,10 @@ Usage: $0 [options]
         The name of each bridge becomes $bridge.<tapnumber>.
         [bridge = $bridge]
     --bridgeip <ip>
-        The first 16 bits of the IP address to assign to the first bridge.
+        The IP address to assign to the first bridge.
         NOTE: Only the first bridge ($bridge.1) is assigned an IP address.
         The DHCP server is configured to listen only on the first bridge
-        (e.g. $bridgeip.1.1).
+        (e.g. $bridgeip).
         [bridgeip = $bridgeip]
     --maskbits <bits>
         The number of bits for the network mask applied to each bridge. In most
@@ -95,12 +96,17 @@ Usage: $0 [options]
     --nameserver <ip>
         The IP of the name server for the dhcpd to serve to VMs.
         [nameserver=$nameserver]
+    --dhcprange <start>-<end>
+        The last octets of the IP address range the dhcp server will assign.
+        [dhcprange=$dhcprange]
     === Shutdown ===
     --shutdown
         Shutdown the interfaces and services created by this script.
     --shutdowndhcpd
-        Shutdown only the dhcpd server. This is useful when a VM will be running
+        Shutdown only the dhcpd daemon. This is useful when a VM will be running
         a dhcp server.
+    --nodhcpd
+        Do not start the dhcpd daemon.
     === Other ===
     --config <config>
         Which network configuration to use. This allows a variety of network
@@ -237,7 +243,7 @@ function set_bridge_1_address () {
     #   1: The base name for each bridge.
     #   2: The base IP address for each bridge.
     b=$1.1
-    bip=$2.1.1
+    bip=$2
     message Checking bridge IP address: $bip.
     ip addr show dev $b | grep $bip
     if [ $? -gt 0 ]; then
@@ -316,12 +322,14 @@ tapmac:,\
 bridge:,\
 bridgeip:,\
 maskbits:,\
+dhcprange:,\
 nameserver:,\
 config:,\
 removeconfig:,\
 showconfigs,\
 shutdown,\
 shutdowndhcpd,\
+nodhcpd,\
 resetdefaults,\
 verbose,\
 dryrun,\
@@ -373,6 +381,10 @@ while [ $# -ge 1 ]; do
             maskbits=$2
             shift
             ;;
+        --dhcprange)
+            dhcprange=$2
+            shift
+            ;;
         --config)
             config=$2
             shift
@@ -389,6 +401,9 @@ while [ $# -ge 1 ]; do
             ;;
         --shutdowndhcpd)
             shutdowndhcpd=y
+            ;;
+        --nodhcpd)
+            nodhcpd=y
             ;;
         --resetdefaults)
             resetdefaults=y
@@ -519,47 +534,54 @@ build_taps $numsets $numtaps
 
 enable_bridges $numtaps $bridge
 
-subnet=$bridgeip.1
+verbose Bridge IP:
+subnet=`echo "$bridgeip" | awk -F'.' '{print $1,$2,$3}' OFS='.'`
 message Configuring dhcp for listening on the first bridge interface $subnet.0.
 
+dhcplow=`echo $dhcprange | cut -d '-' -f 1`
+dhcphigh=`echo $dhcprange | cut -d '-' -f 2`
+
 if [ -n "$dryrun" ]; then
-    message The dhcp server would use subnet $subnet and serve IP range 50 to 100.
+    message The dhcp server would use subnet $subnet and serve IP range $dhcplow to $dhcphigh.
     message The dhcp config file is: $dhcpdconf
     message The leases file is: $leasesfile
     exit 0
 fi
 
-ps -C dhcpd
-if [ $? -gt 0 ]; then
-    message Using subnet $subnet.0
-    run rm -f $dhcpdconf
-    run sudo touch $leasesfile
-    cat << EOF >>$dhcpdconf
-    ###
-    subnet $subnet.0 netmask 255.255.255.0 {
-    range $subnet.200 $subnet.240;
-    option broadcast-address $subnet.255;
-    option routers $subnet.1;
-    option domain-name-servers $nameserver;
-    }
-EOF
-    message DHCP configuration written to $dhcpdconf
-    message Starting DHCP server for subnet $subnet.0
-    run sudo dhcpd -cf $dhcpdconf -lf $leasesfile -pf $dhcpdpidfile
-    if [ $? -gt 0 ]; then
-        die Could not start the dhcp server.
-    else
-        verbose The DHCP server process ID is: `cat $dhcpdpidfile`
-    fi
+if [ -n "$nodhcpd" ]; then
+    warning Not starting the DHCP daemon.
 else
-    message DHCP server is already running.
-    ps -fp `pgrep dhcpd` | grep $dhcpdconf
+    ps -C dhcpd
     if [ $? -gt 0 ]; then
-        warning The DHCP server may not be configured for using a CeranaOS VM.
-        warning It is possible it was started by another user with the correct
-        warning configuration.
+        message Using subnet $subnet.0
+        run rm -f $dhcpdconf
+        run sudo touch $leasesfile
+        cat << EOF >>$dhcpdconf
+        ###
+        subnet $subnet.0 netmask 255.255.255.0 {
+        range $subnet.$dhcplow $subnet.$dhcphigh;
+        option broadcast-address $subnet.255;
+        option routers $subnet.1;
+        option domain-name-servers $nameserver;
+        }
+EOF
+        message DHCP configuration written to $dhcpdconf
+        message Starting DHCP server for subnet $subnet.0
+        run sudo dhcpd -cf $dhcpdconf -lf $leasesfile -pf $dhcpdpidfile
+        if [ $? -gt 0 ]; then
+            die Could not start the dhcp server.
+        else
+            verbose The DHCP server process ID is: `cat $dhcpdpidfile`
+        fi
+    else
+        message DHCP server is already running.
+        ps -fp `pgrep dhcpd` | grep $dhcpdconf
+        if [ $? -gt 0 ]; then
+            warning The DHCP server may not be configured for using a CeranaOS VM.
+            warning It is possible it was started by another user with the correct
+            warning configuration.
+        fi
     fi
 fi
-
 message Network is now configured for running a VM.
 message Using the device $tap on the bridge $bridge.
