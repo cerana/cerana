@@ -283,12 +283,18 @@ while [ $# -ge 1 ]; do
     shift
 done
 
+config=$(get_current_config)
+if [ -z "$config" ]; then
+    usage
+    die The current configuration does not exist and is required -- run vm-network.
+fi
+
 statevars=(
     ceranaimagedir=artifacts
     kernelimage=bzImage
     initrdimage=initrd
     isoimage=cerana.iso
-    diskimagedir=images
+    diskimagedir=images/$config
     diskimage=sas
     numdisks=1
     diskimagesize=1G
@@ -305,12 +311,6 @@ statevars=(
     job=build-cerana
     build=""
 )
-config=$(get_current_config)
-if [ -z "$config" ]; then
-    usage
-    die The current configuration does not exist and is required -- run vm-network.
-fi
-
 for v in "${statevars[@]}"
 do
     if [ ! -z "$resetdefaults" ]; then
