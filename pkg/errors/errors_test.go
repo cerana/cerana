@@ -223,6 +223,7 @@ func (s *Errors) TestMarshalJSON() {
 	err := Wrap(origErr, ctx1)
 	err = Wrap(err, ctx2)
 	err = Wrapv(err, values)
+	err = Wrapv(err, map[string]interface{}{"self": err})
 
 	j, jmErr := json.Marshal(err)
 	if !s.NoError(jmErr, "failed to marshal error") {
@@ -269,6 +270,9 @@ func (s *Errors) TestMarshalJSON() {
 			s.EqualValues(v, valueI, "wrong value:"+k)
 		}
 	}
+
+	// self error should be omitted
+	s.Nil(output["self"])
 }
 
 func (s *Errors) TestCause() {
