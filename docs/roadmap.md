@@ -5,13 +5,13 @@ After a long road, we have brought all the pieces together and have created a ru
 What has been completed:
 - A fully async Cerana Task API, a resilient and recursive task stack that works statelessly
 - CeranaOS as a lightweight, in-memory linux os for easily running containers and kvm processes
-- Cerana Platform, a declarative engine for assuring the state of a cluster of CeranaOS Boxes. As of today it has a resiliant key-value store, a demo "tick" to assure the state of services and images across the cluster, and a Cerana Task API for executing tasks to change the state of the cluster.
+- Cerana Platform, a declarative engine for assuring the state of a cluster of CeranaOS Boxes. As of today it has a resilient key-value store, a demo "tick" to assure the state of services and images across the cluster, and a Cerana Task API for executing tasks to change the state of the cluster.
 
 What comes immediately next (two sprints):
 - Creating initial Cerana Platform ticks that run on a schedule, replacing the demo tick
  - Service Bundle tick
  - Dataset Assurance Tick
-- Superceding Stats-pusher with the notion of per node ticks
+- Superseding Stats-pusher with the notion of per node ticks
  - Bundle Heartbeat Pusher
  - Dataset Heartbeat Pusher
  - Node Heartbeat Pusher
@@ -26,14 +26,14 @@ What comes immediately next (two sprints):
 
 What is next (rest of Q4 goals):
 - Accept compressed archive as dataset imports (today we accept zfs)
-- Advance logic for service bundle placement
+- Advanced logic for service bundle placement
 - Log retrieval
-- Clean up and enable healthchecks
+- Clean up and enable health-checks
 - Create optimal dataset garbage collection
 - Add ZFS feature for mapping arbitrary user operations to root
-- Demo software using Cerana Platform
 - Website and clean documentation
 - Shrinking CeranaOS image
+- Demo software using Cerana Platform
  - Simple user access based cloud provider
  - Docker endpoint for cluster
  - Datalake software test
