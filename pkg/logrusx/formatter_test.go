@@ -50,7 +50,7 @@ func (s *FormatterTestSuite) TestJSONFormatterFormat() {
 	s.NoError(json.Unmarshal(jsonBytes, &loggedEntry))
 
 	errMap := loggedEntry["error"].(map[string]interface{})
-	s.Equal(errMap["Message"], testErr.Error())
+	s.Equal(errMap["cause"], testErr.Error())
 }
 
 func (s *FormatterTestSuite) TestJSONFormatterWithLogrus() {
@@ -64,6 +64,6 @@ func (s *FormatterTestSuite) TestJSONFormatterWithLogrus() {
 		s.Buffer.Truncate(0)
 
 		errMap := entry[fieldName].(map[string]interface{})
-		s.Equal(errMap["Message"], testErr.Error())
+		s.Equal(errMap["cause"], testErr.Error())
 	}
 }

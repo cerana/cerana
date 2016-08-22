@@ -38,19 +38,6 @@ func SetLevel(logLevel string) error
 ```
 SetLevel parses and sets the log level
 
-#### type FieldError
-
-```go
-type FieldError struct {
-	Error   error
-	Message string
-	Stack   []string
-}
-```
-
-FieldError contains both the error struct and error message as explicit
-properties, including both when JSON marshaling.
-
 #### type JSONFormatter
 
 ```go
@@ -67,8 +54,8 @@ handling of error values
 ```go
 func (f *JSONFormatter) Format(entry *logrus.Entry) ([]byte, error)
 ```
-Format replaces any error field values with a FieldError and produces a JSON
-formatted log entry
+Format wraps the logrus.JSONFormatter.Format to pre-marshal wrapped errors
+rather than simply use the error message.
 
 --
 *Generated with [godocdown](https://github.com/robertkrimen/godocdown)*
