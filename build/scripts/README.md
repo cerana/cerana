@@ -157,7 +157,7 @@ vm-network --verbose --numsets 2 --config two-node
 Because this example is also booting the Cerana ISO it is necessary to shutdown the `dhcpd` daemon so that Cerana can take over that function.
 
 ```
-vm-network --verbose --shutdowndchpd
+vm-network --verbose --shutdowndhcpd
 ```
 
 This saves another configuration named `two-node` in the `~/.testcerana` directory. The existing network configuration was torn down and the new one created. The interfaces `ceranatap.1.1` and `ceranatap.2.1` have been created and linked to the `ceranabr.1` bridge.
