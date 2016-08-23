@@ -72,7 +72,7 @@ func main() {
 
 	config := dhcp.NewConfig(f, v)
 	logrusx.DieOnError(f.Parse(os.Args), "parse arguments")
-	logrusx.DieOnError(config.LoadConfig(), "load configuration")
+	logrusx.DieOnError(config.Config.LoadConfig(), "load configuration")
 	logrusx.DieOnError(config.SetupLogging(), "setup logging")
 
 	server, err := provider.NewServer(config.Config)
