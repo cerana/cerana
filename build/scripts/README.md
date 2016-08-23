@@ -17,9 +17,11 @@ This script contains a number of helper functions used by the other scripts.
 vm-network
 ----------
 
-**NOTE:** Because this script reconfigures the network this script uses `sudo` to gain root access.
+**WARNING:** Because this script reconfigures the network this script uses `sudo` to gain root access.
 
-Testing interaction between the various nodes of a Cerana cluster requires a network configuration which allows communication between the nodes but avoids flooding the local network with test messages. This is accomplished using a bridge to connect a number of [TAP](https://en.wikipedia.org/wiki/TUN/TAP) devices. When using this script it helps to keep the following in mind. * A Cerana cluster can be comprised of 1 or more VMs. Each VM can have 1 or more TAP interfaces. The TAP interfaces to be associated with a specific VM is termed a "tapset". The number of *tapsets* is controlled using the option `--numsets`.
+Testing interaction between the various nodes of a Cerana cluster requires a network configuration which allows communication between the nodes but avoids flooding the local network with test messages. This is accomplished using a bridge to connect a number of [TAP](https://en.wikipedia.org/wiki/TUN/TAP) devices. When using this script it helps to keep the following in mind. * A Cerana cluster can be comprised of 1 or more VMs. Each VM can have 1 or more TAP interfaces. The TAP interfaces to be associated with a specific VM is termed a "tapset". The number of *tapsets* is controlled using the option `--numsets`. Therefore a *tapset* number can also be thought of as being a VM number.
+
+### Interface naming
 
 By default TAP interfaces are named using using the pattern `ceranatap.<tapset>.<n>` where `<n>` is TAP number within a *tapset*. For example a configuration having three VMs with two interfaces each produces three *tapsets* each having two interfaces. The resulting TAP interfaces become:
 
@@ -32,17 +34,54 @@ By default TAP interfaces are named using using the pattern `ceranatap.<tapset>.
         ceranatap.3.2
 ```
 
-Each TAP interface is assigned a MAC address beginning with the default pattern "DE:AD:BE:EF". The 5th byte of the MAC address is the number of the corresponding *tapset* and the 6th byte is the TAP number within the *tapset*.
+**NOTE:** The `--numtaps` option can be used to configure the network to support VMs having more than one network (TAP) interface. One bridge is created for each interface in a VM. For example when two *tapsets* are created to support three VMs and each VM has two interfaces (`--numtaps`) the resulting devices and bridge connections become:
 
-These are then all linked to a single bridge having the default name `ceranabr.1`.
+```
+                        +--- ceranatap.1.1
+        ceranabr.1 -----|--- ceranatap.2.1
+                        +--- ceranatap.3.1
 
-**NOTE:** Currently only a single bridge is created. In the future multiple bridges will be used to better support testing VMs having multiple TAP interfaces. For example one bridge can be used for the node management interfaces while a second bridge can be used for a connection to a wider network.
+                        +--- ceranatap.1.2
+        ceranabr.2 -----|--- ceranatap.2.2
+                        +--- ceranatap.3.2
 
-The `vm-network` script also supports maintaining multiple network configurations making it easy to tear down one configuration and then setup another. See the `--config` option.
+```
+
+### MAC and IP address assignment
+
+Each interface is assigned a MAC address beginning with the default pattern "DE:AD:BE:EF" (`--tapmac`). For the TAP interfaces 5th byte of the MAC address is *tapset* (VM) number and the 6th byte is the TAP number within the *tapset*. The bridge MAC addresses are similar except with the fifth byte equal to 0. This avoids conflicts with the MAC addresses assigned to the TAP interfaces while at the same time providing information making it easy to identify corresponding interfaces.
+
+Only the first bridge is assigned an IP address which can be configured using the `--bridgeip` option and defaults to `10.0.5.1`.
+
+In the above example the full configuration becomes:
+
+```
+                          +--- ceranatap.1.1
+                          |    DE:AD:BE:EF:01:01
+        ceranabr.1 -------|--- ceranatap.2.1
+        DE:AD:BE:EF:00:01 |    DE:AD:BE:EF:02:01
+        10.0.3.1          +--- ceranatap.3.1
+                               DE:AD:BE:EF:03:01
+
+                          +--- ceranatap.1.2
+                          |    DE:AD:BE:EF:01:02
+        ceranabr.2 -------|--- ceranatap.2.2
+        DE:AD:BE:EF:00:02 |    DE:AD:BE:EF:02:02
+                          +--- ceranatap.3.2
+                               DE:AD:BE:EF:03:02
+```
+
+### DHCP daemon
 
 To help booting the first node a DHCP server is started which is configured to listen **only** on the test bridge. Once the first node is running this server can then be shut down to allow the first node to take over the DHCP function (`--shutdowndhcp`).
 
+The the `--nodhcpd` option can be used to not start the daemon when the network is configured.
+
 **NOTE:** [NAT](https://en.wikipedia.org/wiki/Network_address_translation) is not currently supported. NAT is needed if the nodes need to communicate outside the virtual test network. This may be supported in a future version.
+
+### Multiple network configurations
+
+The `vm-network` script also supports maintaining multiple network configurations making it easy to tear down one configuration and then setup another. See the `--config` option.
 
 start-vm
 --------
@@ -53,7 +92,7 @@ The `start-vm` script uses [KVM](http://wiki.qemu.org/KVM) to run virtual machin
 
 After using `vm-network` to configure the network for a test scenario the VMs can be started using the `start-vm` script. One VM per *tapset* can be started. Each VM is assigned its own [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier) with the last byte being the same as the *tapset* number used for the VM.
 
-Even though a given *tapset* may contain a large number of TAP interfaces a VM need only use a subset of those interfaces. This is controlled using the `--numvmif` option. Each of the interfaces used by the VM is given a unique MAC address again derived using the *tapset* number as part of the MAC address and using a scheme similar to the TAP interfaces but with the 5th byte having the pattern `8<n>` where `<n>` is the *tapset* number. This avoids conflicts with the MAC addresses assigned to the TAP interfaces while at the same time providing information making it easy to identify corresponding interfaces. **NOTE:** This scheme effectively limits the practical maximum number of VMs to 9 (1 thru 9).
+Even though a given *tapset* may contain a large number of TAP interfaces a VM need only use a subset of those interfaces. This is controlled using the `--numvmif` option.
 
 Each VM can be started using images from a local build or downloaded from a build server which defaults to [S3](http://omniti-cerana-artifacts.s3.amazonaws.com/index.html?prefix=CeranaOS/jobs/build-cerana/).
 
@@ -84,7 +123,7 @@ vm-network --verbose
 
 **NOTE:** If you've already been running `vm-network` you may want to use the `--resetdefaults` option to return to a known default state.
 
-The interfaces `ceranatap.1.1` and `ceranabr.1` were created and `ceranatap.1.1` added to the `ceranabr.1` bridge. The `ceranabr.1` bridge was assigned the IP address `10.0.2.2`. The `dhcpd` daemon was started and configured to listen only on the `10.0.2.0` subnet.
+The interfaces `ceranatap.1.1` and `ceranabr.1` were created and `ceranatap.1.1` added to the `ceranabr.1` bridge. The `ceranabr.1` bridge was assigned the IP address `10.0.3.1`. The `dhcpd` daemon was started and configured to listen only on the `10.0.3.0` subnet.
 
 A configuration named `single` was created and saved in the `~/.testcerana` directory.
 

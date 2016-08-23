@@ -25,8 +25,8 @@ statevars=(
     numsets=1
     tapmac=DE:AD:BE:EF
     bridge=ceranabr
-    bridgeip=10.0.3.1
-    nameserver=10.0.3.1
+    bridgeip=10.0.5.1
+    nameserver=10.0.5.1
     maskbits=24
     dhcprange=200-240
 )
@@ -118,7 +118,7 @@ Usage: $0 [options]
         configuration then the current configuration will be reset the next
         time this script is run.
     --showconfigs
-        List current configurations.
+        List current configurations and their settings.
     --resetdefaults
         Reset options back to their default values.
     --verbose
@@ -224,6 +224,9 @@ function build_bridges () {
         if [ $? -gt 0 ]; then
             if [ -z "$dryrun" ]; then
                 sudo ip link add name $b type bridge
+                m=$tapmac:`printf "00:%02X" $n`
+                verbose Using mac address $m for bridge $b.
+                run sudo ip link set $b address $m
             else
                 verbose Create $b.
             fi
@@ -452,7 +455,7 @@ fi
 
 if [ -n "$showusage" ]; then
     usage
-    if [ ! -z "$errorexit" ]; then
+    if [ -n "$errorexit" ]; then
         exit 1
     fi
     exit 0
