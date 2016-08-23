@@ -17,7 +17,7 @@ This script contains a number of helper functions used by the other scripts.
 vm-network
 ----------
 
-**WARNING:** Because this script reconfigures the network this script uses `sudo` to gain root access.
+**WARNING:** Because this script reconfigures the network, `sudo` is used to gain root access.
 
 Testing interaction between the various nodes of a Cerana cluster requires a network configuration which allows communication between the nodes but avoids flooding the local network with test messages. This is accomplished using a bridge to connect a number of [TAP](https://en.wikipedia.org/wiki/TUN/TAP) devices. When using this script it helps to keep the following in mind. * A Cerana cluster can be comprised of 1 or more VMs. Each VM can have 1 or more TAP interfaces. The TAP interfaces to be associated with a specific VM is termed a "tapset". The number of *tapsets* is controlled using the option `--numsets`. Therefore a *tapset* number can also be thought of as being a VM number.
 
@@ -60,7 +60,7 @@ In the above example the full configuration becomes:
                           |    DE:AD:BE:EF:01:01
         ceranabr.1 -------|--- ceranatap.2.1
         DE:AD:BE:EF:00:01 |    DE:AD:BE:EF:02:01
-        10.0.3.1          +--- ceranatap.3.1
+        10.0.5.1          +--- ceranatap.3.1
                                DE:AD:BE:EF:03:01
 
                           +--- ceranatap.1.2
@@ -123,7 +123,7 @@ vm-network --verbose
 
 **NOTE:** If you've already been running `vm-network` you may want to use the `--resetdefaults` option to return to a known default state.
 
-The interfaces `ceranatap.1.1` and `ceranabr.1` were created and `ceranatap.1.1` added to the `ceranabr.1` bridge. The `ceranabr.1` bridge was assigned the IP address `10.0.3.1`. The `dhcpd` daemon was started and configured to listen only on the `10.0.3.0` subnet.
+The interfaces `ceranatap.1.1` and `ceranabr.1` were created and `ceranatap.1.1` added to the `ceranabr.1` bridge. The `ceranabr.1` bridge was assigned the IP address `10.0.5.1`. The `dhcpd` daemon was started and configured to listen only on the `10.0.5.0` subnet.
 
 A configuration named `single` was created and saved in the `~/.testcerana` directory.
 
@@ -209,7 +209,7 @@ This example creates a three node cluster for demonstrating communication of Cer
 
 This example is for running the demo using KVM in a Linux environment so the Linux version of the [coordinator-cli](http://omniti-cerana-artifacts.s3.amazonaws.com/CeranaOS/testdata/coordinator-cli) is needed.
 
-It's recommended that the demo be started in an empty directory. The [demo documentation](https://github.com/cerana/cerana/blob/demo/docs/demo/README.md) lists some files which are required files run the demo. You can download the files using the links provided here. You should have these files:
+It's recommended that the demo be started in an empty directory. The [demo documentation](https://github.com/cerana/cerana/blob/demo/docs/demo/README.md) lists some files which are required in order to run the demo. You can download the files using the links provided here. You should have these files:
 
 -	[backend-in-a-zfs-stream.zfs](http://omniti-cerana-artifacts.s3.amazonaws.com/CeranaOS/testdata/backend-in-a-zfs-stream.zfs)
 -	[haproxy-in-a-zfs-stream.zfs](http://omniti-cerana-artifacts.s3.amazonaws.com/CeranaOS/testdata/haproxy-in-a-zfs-stream.zfs)
@@ -222,13 +222,15 @@ Running the demo requires a bridge with an IP address on the 172.16 subnet and n
 vm-network --shutdown
 ```
 
-Now the network can reconfigured for the demo. Because of running three nodes in the demo three *tapsets* are required. The bridge IP address also needs to be configured for the demo. For this demo CeranaOS provides its own DHCP server don't start the DHCP server.
+Now the network can reconfigured for the demo. Because of running three nodes in the demo three *tapsets* are required. Each node is run in a separate VM. The bridge IP address also needs to be configured for the demo. For this demo CeranaOS provides its own DHCP server don't start the DHCP server.
 
 ```
 vm-network --numsets 3 --bridgeip 172.16.2.2 --maskbits 16 --nodhcpd  --config three-node-demo
 ```
 
 Four separate consoles are needed to run the demo. One for each node and one to interact with the cluster. For this example these are referred to as `node1`, `node2`, `node3` and `shell`.
+
+**NOTE:** The the UUIDs and the `node2` and `node3` IP addresses are dynamically assigned and will likely vary from what is shown in the following examples.
 
 ### node1
 
