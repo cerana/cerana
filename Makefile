@@ -1,5 +1,10 @@
 SHELL := /bin/bash
 
+# Bash scripts known to be lint-clean
+BASH_CLEAN=boot/*/*
+# Bash scripts not yet lint-clean
+BASH_DIRTY=build/*.sh build/scripts/cerana-functions.sh build/scripts/start-vm build/scripts/vm-network
+
 # Recursive wildcard function
 rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) $(filter $(subst *,%,$2),$d))
 
@@ -38,6 +43,16 @@ lint-required:
 lint-optional:
 	gometalinter @gometalinter.optional.flags
 
+.PHONY: bash-lint-required
+bash-lint-required:
+	shfmt -i 4 -l $(BASH_CLEAN) | diff /dev/null -
+	shellcheck $(BASH_CLEAN)
+
+.PHONY: bash-lint-optional
+bash-lint-optional:
+	shfmt -i 4 -l $(BASH_DIRTY) | diff /dev/null -
+	shellcheck $(BASH_DIRTY)
+
 # Suppress Make output. The relevant test output will be collected and sent to
 # stdout
 .SILENT:
@@ -67,3 +82,7 @@ FORCE:
 
 clean:
 	go clean ./...
+
+.PHONY: shfmt
+shfmt:
+	shfmt -i 4 -w $(BASH_CLEAN) $(BASH_DIRTY)

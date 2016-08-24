@@ -14,6 +14,14 @@ env:
     - VZFS=0.6.5.5
     - ZFS_CACHE=/tmp/zfs
 
+# https://github.com/koalaman/shellcheck/wiki/TravisCI
+addons:
+  apt:
+    sources:
+    - backports
+    packages:
+    - shellcheck
+
 cache:
   directories:
     - $ZFS_CACHE
@@ -35,12 +43,14 @@ install:
 
 before_script:
   - make lint-required
+  - make bash-lint-required
 
 script:
   - make test
 
 after_success:
   - make lint-optional
+  - make bash-lint-optional
 
 notifications:
   email: false

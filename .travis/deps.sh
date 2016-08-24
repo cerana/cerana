@@ -35,6 +35,7 @@ function fetch() {
         | bsdtar -xf- -C$HOME/bin --strip-components=1 linux-amd64/glide
 
     go get github.com/alecthomas/gometalinter
+    go get github.com/mvdan/sh/cmd/shfmt
     gometalinter --install --update
 }
 
