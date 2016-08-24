@@ -5,6 +5,7 @@ cmd/clusterconfig-provider/clusterconfig-provider
 cmd/coordinator-cli/coordinator-cli
 cmd/coordinator/coordinator
 cmd/dataset-heartbeat/dataset-heartbeat
+cmd/dataset-tick/dataset-tick
 cmd/datatrade-provider/datatrade-provider
 cmd/dhcp-provider/dhcp-provider
 cmd/health-provider/health-provider
