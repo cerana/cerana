@@ -49,8 +49,8 @@ var args = []string{
 }
 
 var ipxe = template.Must(template.New("ipxe").Parse(`#!ipxe
-kernel http://{{.ip}}/kernel ` + strings.Join(args, " ") + `
-initrd http://{{.ip}}/initrd
+kernel http://{{.ip}}:{{.port}}/kernel ` + strings.Join(args, " ") + `
+initrd http://{{.ip}}:{{.port}}/initrd
 boot
 `))
 
@@ -245,13 +245,15 @@ func main() {
 		tracker:     tracker,
 	}
 
-	dConn, err := net.ListenPacket("udp4", ":67")
-	logrusx.DieOnError(errors.Wrapv(err, map[string]interface{}{"type": "udp4", "laddr": ":67"}), "bind dhcp port")
+	laddr := ":" + conf.dhcp()
+	dConn, err := net.ListenPacket("udp4", laddr)
+	logrusx.DieOnError(errors.Wrapv(err, map[string]interface{}{"type": "udp4", "laddr": laddr}), "bind dhcp port")
 
 	undi, _, _ := getFile(conf.iPXE())
 	tftpServer := tftp.NewServer(tftpReadHandler(undi), nil)
-	tConn, err := net.ListenPacket("udp", ":69")
-	logrusx.DieOnError(errors.Wrapv(err, map[string]interface{}{"type": "udp", "laddr": ":69"}), "bind tfp port")
+	laddr = ":" + conf.tftp()
+	tConn, err := net.ListenPacket("udp", laddr)
+	logrusx.DieOnError(errors.Wrapv(err, map[string]interface{}{"type": "udp", "laddr": laddr}), "bind tfp port")
 
 	initrd, initrdHash, initrdMod := getFile(conf.initrd())
 
@@ -259,6 +261,7 @@ func main() {
 	ipxeValues := map[string]interface{}{
 		"hash": initrdHash,
 		"ip":   getIfaceIP(iface).String(),
+		"port": conf.http(),
 	}
 	err = ipxe.Execute(buffer, ipxeValues)
 	logrusx.DieOnError(errors.Wrapv(err, ipxeValues), "generate ipxe boot script")
@@ -279,8 +282,9 @@ func main() {
 		http.ServeContent(w, r, "", initrdMod, bytes.NewReader(initrd))
 	})
 
-	hConn, err := net.Listen("tcp", ":80")
-	logrusx.DieOnError(errors.Wrapv(err, map[string]interface{}{"type": "tcp", "laddr": ":80"}), "bind http port")
+	laddr = ":" + conf.http()
+	hConn, err := net.Listen("tcp", laddr)
+	logrusx.DieOnError(errors.Wrapv(err, map[string]interface{}{"type": "tcp", "laddr": laddr}), "bind http port")
 
 	wg := sync.WaitGroup{}
 	wg.Add(3)
