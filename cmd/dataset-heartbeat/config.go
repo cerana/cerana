@@ -35,7 +35,7 @@ func NewConfig(flagSet *pflag.FlagSet, v *viper.Viper) *Config {
 		flagSet: flagSet,
 		viper:   v,
 	}
-	config.flagSet.StringP("datasetPrefix", "a", "", "dataset directory")
+	config.flagSet.StringP("datasetPrefix", "d", "", "dataset directory")
 
 	return config
 }

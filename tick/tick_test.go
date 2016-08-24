@@ -41,6 +41,7 @@ func (s *Tick) SetupSuite() {
 	s.configData = &tick.ConfigData{
 		NodeDataURL:       nodeDataURL,
 		ClusterDataURL:    nodeDataURL,
+		HTTPResponseAddr:  ":54321",
 		LogLevel:          "fatal",
 		RequestTimeout:    "5s",
 		TickInterval:      "1s",
@@ -91,8 +92,6 @@ func (s *Tick) TestRunTick() {
 
 	stopChan, err = tick.RunTick(s.config, tickFn)
 	if !s.NoError(err) {
-		stopChan <- struct{}{}
-		<-stopChan
 		return
 	}
 

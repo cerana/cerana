@@ -2,6 +2,8 @@ package tick
 
 import (
 	"net"
+	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
@@ -11,6 +13,7 @@ import (
 	"github.com/cerana/cerana/acomm"
 	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/providers/metrics"
+	"github.com/tylerb/graceful"
 )
 
 // ActionFn is a function that can be run on a tick interval.
@@ -41,9 +44,16 @@ func RunTick(config Configer, tick ActionFn) (chan struct{}, error) {
 		return nil, err
 	}
 
+	httpServer, err := setupHTTPResponseServer(config.HTTPResponseURL(), tracker)
+	if err != nil {
+		tracker.Stop()
+		return nil, err
+	}
+
 	go func() {
 		defer func() { stopChan <- struct{}{} }()
 		defer tracker.Stop()
+		defer stopHTTP(httpServer, config.RequestTimeout())
 
 		lastStart := time.Time{}
 		for {
@@ -102,4 +112,45 @@ func GetIP(config Configer, tracker *acomm.Tracker) (net.IP, error) {
 		}
 	}
 	return nil, errors.New("no suitable IP found")
+}
+
+func setupHTTPResponseServer(responseURL *url.URL, tracker *acomm.Tracker) (*graceful.Server, error) {
+	if responseURL == nil {
+		return nil, nil
+	}
+
+	// setup external response handler
+	mux := http.NewServeMux()
+	mux.HandleFunc(responseURL.Path, tracker.ProxyExternalHandler)
+	httpServer := &graceful.Server{
+		Server: &http.Server{
+			Addr:    responseURL.Host,
+			Handler: mux,
+		},
+		NoSignalHandling: true,
+	}
+
+	// run the http server and wait briefly to make sure it started without error
+	errChan := make(chan error, 1)
+	go func() {
+		errChan <- errors.Wrapv(httpServer.ListenAndServe(), map[string]interface{}{"addr": responseURL.Host, "path": responseURL.Path})
+	}()
+	select {
+	case err := <-errChan:
+		return nil, err
+	case <-time.After(time.Second):
+		// started cleanly
+	}
+
+	return httpServer, nil
+}
+
+func stopHTTP(httpServer *graceful.Server, timeout time.Duration) {
+	if httpServer == nil {
+		return
+	}
+
+	httpStop := httpServer.StopChan()
+	httpServer.Stop(timeout)
+	<-httpStop
 }
