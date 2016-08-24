@@ -36,11 +36,8 @@ func (e *errorExt) MarshalJSON() ([]byte, error) {
 	// determine cause error's json exported fields and values
 	causeMap := make(map[string]interface{})
 	causeJSON, err := json.Marshal(e.cause)
-	if err != nil {
-		return nil, Wrap(err, "marshal error cause")
-	}
-	if err = json.Unmarshal(causeJSON, &causeMap); err != nil {
-		return nil, Wrap(err, "unmarshal error cause")
+	if err == nil {
+		_ = json.Unmarshal(causeJSON, &causeMap)
 	}
 
 	// flatten caller data and cause error fields in output structure
