@@ -177,9 +177,6 @@ if [[ -n $CERANA_CLUSTER_BOOTSTRAP ]]; then
     drop_consul_config bootstrap \
         || fail_exit $? "Cluster configuration failed"
 
-    # remove the bootstrap flag for future boots
-    unset CERANA_CLUSTER_BOOTSTRAP
-
     export_config
 
 elif [[ -n $CERANA_CLUSTER_IPS ]]; then
