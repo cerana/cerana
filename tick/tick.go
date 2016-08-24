@@ -71,14 +71,21 @@ func RunTick(config Configer, tick ActionFn) (chan struct{}, error) {
 				interval = time.Duration(0)
 			}
 
+			logrus.WithField("interval", interval).Debug("waiting to run tick")
+
 			select {
 			case <-stopChan:
+				logrus.Debug("stopping tick")
 				return
-			case <-sigChan:
+			case sig := <-sigChan:
+				logrus.WithField("signal", sig).Debug("signal received, stopping tick")
 				return
 			case lastStart = <-time.After(interval):
+				logrus.Debug("running tick")
 				if err = tick(config, tracker); err != nil {
 					logrus.WithField("error", err).Error("tick error")
+				} else {
+					logrus.Debug("successful tick")
 				}
 			}
 		}
