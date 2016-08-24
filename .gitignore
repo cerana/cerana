@@ -1,6 +1,7 @@
 # Compiled cmds
 cmd/bootserver/bootserver
 cmd/bundle-heartbeat/bundle-heartbeat
+cmd/bundle-tick/bundle-tick
 cmd/clusterconfig-provider/clusterconfig-provider
 cmd/coordinator-cli/coordinator-cli
 cmd/coordinator/coordinator
