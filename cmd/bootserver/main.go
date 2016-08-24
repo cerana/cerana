@@ -45,12 +45,12 @@ var args = []string{
 	"cerana.cluster_ips={{.IP}}",
 	"cerana.mgmt_mac=${net0/mac}",
 	"cerana.zfs_config=auto",
-	"cerana.initrd_hash=sha256-{{.Hash}}",
+	"cerana.initrd_hash=sha256-{{.hash}}",
 }
 
 var ipxe = template.Must(template.New("ipxe").Parse(`#!ipxe
-kernel http://{{.IP}}/kernel ` + strings.Join(args, " ") + `
-initrd http://{{.IP}}/initrd
+kernel http://{{.ip}}/kernel ` + strings.Join(args, " ") + `
+initrd http://{{.ip}}/initrd
 boot
 `))
 
@@ -256,12 +256,12 @@ func main() {
 	initrd, initrdHash, initrdMod := getFile(conf.initrd())
 
 	buffer := &bytes.Buffer{}
-	ipxeValues := map[string]string{
-		"IP":   getIfaceIP(iface).String(),
-		"Hash": initrdHash,
+	ipxeValues := map[string]interface{}{
+		"hash": initrdHash,
+		"ip":   getIfaceIP(iface).String(),
 	}
 	err = ipxe.Execute(buffer, ipxeValues)
-	logrusx.DieOnError(errors.Wrapv(err, map[string]interface{}{"ip": ipxeValues["IP"], "hash": ipxeValues["Hash"]}), "generate ipxe boot script")
+	logrusx.DieOnError(errors.Wrapv(err, ipxeValues), "generate ipxe boot script")
 	bootScript := bytes.NewReader(buffer.Bytes())
 	http.HandleFunc("/boot.ipxe", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
