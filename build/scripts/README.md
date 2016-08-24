@@ -17,32 +17,71 @@ This script contains a number of helper functions used by the other scripts.
 vm-network
 ----------
 
-**NOTE:** Because this script reconfigures the network this script uses `sudo` to gain root access.
+**WARNING:** Because this script reconfigures the network, `sudo` is used to gain root access.
 
-Testing interaction between the various nodes of a Cerana cluster requires a network configuration which allows communication between the nodes but avoids flooding the local network with test messages. This is accomplished using a bridge to connect a number of [TAP](https://en.wikipedia.org/wiki/TUN/TAP) devices. When using this script it helps to keep the following in mind. * A Cerana cluster can be comprised of 1 or more VMs. Each VM can have 1 or more TAP interfaces. The TAP interfaces to be associated with a specific VM is termed a "tapset". The number of *tapsets* is controlled using the option `--numsets`.
+Testing interaction between the various nodes of a Cerana cluster requires a network configuration which allows communication between the nodes but avoids flooding the local network with test messages. This is accomplished using a bridge to connect a number of [TAP](https://en.wikipedia.org/wiki/TUN/TAP) devices. When using this script it helps to keep the following in mind. * A Cerana cluster can be comprised of 1 or more VMs. Each VM can have 1 or more TAP interfaces. The TAP interfaces to be associated with a specific VM is termed a "tapset". The number of *tapsets* is controlled using the option `--numsets`. Therefore a *tapset* number can also be thought of as being a VM number.
 
-By default TAP interfaces are named using using the pattern `tap.<tapset>.<n>` where `<n>` is TAP number within a *tapset*. For example a configuration having three VMs with two interfaces each produces three *tapsets* each having two interfaces. The resulting TAP interfaces become:
+### Interface naming
+
+By default TAP interfaces are named using using the pattern `ceranatap.<tapset>.<n>` where `<n>` is TAP number within a *tapset*. For example a configuration having three VMs with two interfaces each produces three *tapsets* each having two interfaces. The resulting TAP interfaces become:
 
 ```
-        tap.1.1
-        tap.1.2
-        tap.2.1
-        tap.2.2
-        tap.3.1
-        tap.3.2
+        ceranatap.1.1
+        ceranatap.1.2
+        ceranatap.2.1
+        ceranatap.2.2
+        ceranatap.3.1
+        ceranatap.3.2
 ```
 
-Each TAP interface is assigned a MAC address beginning with the default pattern "DE:AD:BE:EF". The 5th byte of the MAC address is the number of the corresponding *tapset* and the 6th byte is the TAP number within the *tapset*.
+**NOTE:** The `--numtaps` option can be used to configure the network to support VMs having more than one network (TAP) interface. One bridge is created for each interface in a VM. For example when two *tapsets* are created to support three VMs and each VM has two interfaces (`--numtaps`) the resulting devices and bridge connections become:
 
-These are then all linked to a single bridge having the default name `ceranabr0`.
+```
+                        +--- ceranatap.1.1
+        ceranabr.1 -----|--- ceranatap.2.1
+                        +--- ceranatap.3.1
 
-**NOTE:** Currently only a single bridge is created. In the future multiple bridges will be used to better support testing VMs having multiple TAP interfaces. For example one bridge can be used for the node management interfaces while a second bridge can be used for a connection to a wider network.
+                        +--- ceranatap.1.2
+        ceranabr.2 -----|--- ceranatap.2.2
+                        +--- ceranatap.3.2
 
-The `vm-network` script also supports maintaining multiple network configurations making it easy to tear down one configuration and then setup another. See the `--config` option.
+```
+
+### MAC and IP address assignment
+
+Each interface is assigned a MAC address beginning with the default pattern "DE:AD:BE:EF" (`--tapmac`). For the TAP interfaces 5th byte of the MAC address is *tapset* (VM) number and the 6th byte is the TAP number within the *tapset*. The bridge MAC addresses are similar except with the fifth byte equal to 0. This avoids conflicts with the MAC addresses assigned to the TAP interfaces while at the same time providing information making it easy to identify corresponding interfaces.
+
+Only the first bridge is assigned an IP address which can be configured using the `--bridgeip` option and defaults to `10.0.5.1`.
+
+In the above example the full configuration becomes:
+
+```
+                          +--- ceranatap.1.1
+                          |    DE:AD:BE:EF:01:01
+        ceranabr.1 -------|--- ceranatap.2.1
+        DE:AD:BE:EF:00:01 |    DE:AD:BE:EF:02:01
+        10.0.5.1          +--- ceranatap.3.1
+                               DE:AD:BE:EF:03:01
+
+                          +--- ceranatap.1.2
+                          |    DE:AD:BE:EF:01:02
+        ceranabr.2 -------|--- ceranatap.2.2
+        DE:AD:BE:EF:00:02 |    DE:AD:BE:EF:02:02
+                          +--- ceranatap.3.2
+                               DE:AD:BE:EF:03:02
+```
+
+### DHCP daemon
 
 To help booting the first node a DHCP server is started which is configured to listen **only** on the test bridge. Once the first node is running this server can then be shut down to allow the first node to take over the DHCP function (`--shutdowndhcp`).
 
+The the `--nodhcpd` option can be used to not start the daemon when the network is configured.
+
 **NOTE:** [NAT](https://en.wikipedia.org/wiki/Network_address_translation) is not currently supported. NAT is needed if the nodes need to communicate outside the virtual test network. This may be supported in a future version.
+
+### Multiple network configurations
+
+The `vm-network` script also supports maintaining multiple network configurations making it easy to tear down one configuration and then setup another. See the `--config` option.
 
 start-vm
 --------
@@ -53,7 +92,7 @@ The `start-vm` script uses [KVM](http://wiki.qemu.org/KVM) to run virtual machin
 
 After using `vm-network` to configure the network for a test scenario the VMs can be started using the `start-vm` script. One VM per *tapset* can be started. Each VM is assigned its own [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier) with the last byte being the same as the *tapset* number used for the VM.
 
-Even though a given *tapset* may contain a large number of TAP interfaces a VM need only use a subset of those interfaces. This is controlled using the `--numvmif` option. Each of the interfaces used by the VM is given a unique MAC address again derived using the *tapset* number as part of the MAC address and using a scheme similar to the TAP interfaces but with the 5th byte having the pattern `8<n>` where `<n>` is the *tapset* number. This avoids conflicts with the MAC addresses assigned to the TAP interfaces while at the same time providing information making it easy to identify corresponding interfaces. **NOTE:** This scheme effectively limits the practical maximum number of VMs to 9 (1 thru 9).
+Even though a given *tapset* may contain a large number of TAP interfaces a VM need only use a subset of those interfaces. This is controlled using the `--numvmif` option.
 
 Each VM can be started using images from a local build or downloaded from a build server which defaults to [S3](http://omniti-cerana-artifacts.s3.amazonaws.com/index.html?prefix=CeranaOS/jobs/build-cerana/).
 
@@ -84,7 +123,7 @@ vm-network --verbose
 
 **NOTE:** If you've already been running `vm-network` you may want to use the `--resetdefaults` option to return to a known default state.
 
-The interfaces `tap.1.1` and `ceranabr0` were created and `tap.1.1` added to the `ceranabr0` bridge. The `ceranabr0` bridge was assigned the IP address `10.0.2.2`. The `dhcpd` daemon was started and configured to listen only on the `10.0.2.0` subnet.
+The interfaces `ceranatap.1.1` and `ceranabr.1` were created and `ceranatap.1.1` added to the `ceranabr.1` bridge. The `ceranabr.1` bridge was assigned the IP address `10.0.5.1`. The `dhcpd` daemon was started and configured to listen only on the `10.0.5.0` subnet.
 
 A configuration named `single` was created and saved in the `~/.testcerana` directory.
 
@@ -96,7 +135,7 @@ start-vm --verbose
 
 **NOTE:** If you've already been running `start-vm` you may want to use the `--resetdefaults` option to return to a known default state.
 
-The interface `tap.1.1` is used as the management interface and by virtue of the `dhcpd` daemon is assigned the IP address `10.0.2.200`.
+The interface `ceranatap.1.1` is used as the management interface and by virtue of the `dhcpd` daemon is assigned the IP address `10.0.2.200`.
 
 A disk image named `sas-1-1.img` was created and uses as a virtual disk for the VM.
 
@@ -118,10 +157,10 @@ vm-network --verbose --numsets 2 --config two-node
 Because this example is also booting the Cerana ISO it is necessary to shutdown the `dhcpd` daemon so that Cerana can take over that function.
 
 ```
-vm-network --verbose --shutdowndchpd
+vm-network --verbose --shutdowndhcpd
 ```
 
-This saves another configuration named `two-node` in the `~/.testcerana` directory. The existing network configuration was torn down and the new one created. The interfaces `tap.1.1` and `tap.2.1` have been created and linked to the `ceranabr0` bridge.
+This saves another configuration named `two-node` in the `~/.testcerana` directory. The existing network configuration was torn down and the new one created. The interfaces `ceranatap.1.1` and `ceranatap.2.1` have been created and linked to the `ceranabr.1` bridge.
 
 ```
 start-vm --verbose --boot iso
@@ -148,7 +187,7 @@ There are times when an additional interface is needed either to support an addi
 vm-network --verbose --numsets 2 --config single
 ```
 
-This creates another TAP interface, `tap.2.1`, for the `single` configuration and adds it to the `ceranabr0` bridge. It was not necessary to shutdown the test network in this case. This also illustrates that `vm-network` is able to repair a network configuration (within limits) if an interface was deleted for any reason.
+This creates another TAP interface, `ceranatap.2.1`, for the `single` configuration and adds it to the `ceranabr.1` bridge. It was not necessary to shutdown the test network in this case. This also illustrates that `vm-network` is able to repair a network configuration (within limits) if an interface was deleted for any reason.
 
 **NOTE:** At this time removing interfaces is possible but the script will not automatically delete TAP interfaces if the new number is smaller than before (e.g. the new `--numsets` is 1 but was 2). This a feature for the future. However, this does not cause a problem because the script will tear down all interfaces linked to a bridge when switching configurations or when the `--shutdown` option is used.
 
@@ -162,6 +201,163 @@ The `start-vm` script also supports downloading and using specific builds from a
 ```
 start-vm --verbose --download --build 121
 ```
+
+A Three Node Demo
+-----------------
+
+This example creates a three node cluster for demonstrating communication of Cerana components between the nodes. Running the demo is described in the [demo documentation](https://github.com/cerana/cerana/blob/demo/docs/demo/README.md). Refer to that document but use these steps to [bootstrap the cluster](https://github.com/cerana/cerana/blob/demo/docs/demo/README.md#bootstrap-the-cluster).
+
+This example is for running the demo using KVM in a Linux environment so the Linux version of the [coordinator-cli](http://omniti-cerana-artifacts.s3.amazonaws.com/CeranaOS/testdata/coordinator-cli) is needed.
+
+It's recommended that the demo be started in an empty directory. The [demo documentation](https://github.com/cerana/cerana/blob/demo/docs/demo/README.md) lists some files which are required in order to run the demo. You can download the files using the links provided here. You should have these files:
+
+-	[backend-in-a-zfs-stream.zfs](http://omniti-cerana-artifacts.s3.amazonaws.com/CeranaOS/testdata/backend-in-a-zfs-stream.zfs)
+-	[haproxy-in-a-zfs-stream.zfs](http://omniti-cerana-artifacts.s3.amazonaws.com/CeranaOS/testdata/haproxy-in-a-zfs-stream.zfs)
+-	[coordinator-cli](http://omniti-cerana-artifacts.s3.amazonaws.com/CeranaOS/testdata/coordinator-cli) (**NOTE:** This is the Linux version)
+-	[setup-application.sh](https://raw.githubusercontent.com/cerana/cerana/demo_outline/docs/demo/setup-application.sh)
+
+Running the demo requires a bridge with an IP address on the 172.16 subnet and no DHCP server. If you haven't done so first shutdown the existing network configuration.
+
+```
+vm-network --shutdown
+```
+
+Now the network can reconfigured for the demo. Because of running three nodes in the demo three *tapsets* are required. Each node is run in a separate VM. The bridge IP address also needs to be configured for the demo. For this demo CeranaOS provides its own DHCP server don't start the DHCP server.
+
+```
+vm-network --numsets 3 --bridgeip 172.16.2.2 --maskbits 16 --nodhcpd  --config three-node-demo
+```
+
+Four separate consoles are needed to run the demo. One for each node and one to interact with the cluster. For this example these are referred to as `node1`, `node2`, `node3` and `shell`.
+
+**NOTE:** The the UUIDs and the `node2` and `node3` IP addresses are dynamically assigned and will likely vary from what is shown in the following examples.
+
+### node1
+
+The first node is booted using the `cerana.iso` image which can be downloaded from [S3](http://omniti-cerana-artifacts.s3.amazonaws.com/index.html?prefix=CeranaOS/jobs/build-cerana/). It's recommended the latest build be used for this example.
+
+```
+start-vm --download --build 132 --boot iso --tapset 1
+```
+
+When the GRUB menu appears select the "CeranaOS Cluster Bootstrap" option. This will boot using the kernel and initrd images from `cerana.iso`.
+
+You can verify the network configuration using the node console. Login as root (no password) and:
+
+```
+[root@144cae4e-ff5c-dd43-ad51-076385611e01:~]# ip address
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host
+       valid_lft forever preferred_lft forever
+2: mgmt0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether de:ad:be:ef:81:01 brd ff:ff:ff:ff:ff:ff
+    inet 172.16.10.2/16 brd 172.16.255.255 scope global mgmt0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::dcad:beff:feef:8101/64 scope link
+       valid_lft forever preferred_lft forever
+```
+
+### node2
+
+The second node uses the `dhcp-provider` and `bootserver` from `node1` to boot and requires using the second *tapset*. This boots using images served from `node1`.
+
+```
+start-vm --boot net --tapset 2
+```
+
+When the login prompt appears login as root and:
+
+```
+144cae4e-ff5c-dd43-ad51-076385611e02 login: root
+
+[root@144cae4e-ff5c-dd43-ad51-076385611e02:~]# ip address
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host
+       valid_lft forever preferred_lft forever
+2: mgmt0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether de:ad:be:ef:82:01 brd ff:ff:ff:ff:ff:ff
+    inet 172.16.219.100/16 brd 172.16.255.255 scope global dynamic mgmt0
+       valid_lft 86345sec preferred_lft 86345sec
+    inet6 fe80::dcad:beff:feef:8201/64 scope link
+       valid_lft forever preferred_lft forever
+```
+
+Note the MAC and IP addresses for this node. The `82` in the MAC address indicates this is the second node and the IP address was provided by the `dhcp-provider` running on `node1`. Also, the last two characters in the hostname (UUID in the prompt) are `02` also indicating this is the second node.\`
+
+### node3
+
+Starting the third node is similar to the second but uses the third *tapset*.
+
+```
+start-vm --boot net --tapset 3
+```
+
+Again:
+
+```
+144cae4e-ff5c-dd43-ad51-076385611e03 login: root
+
+[root@144cae4e-ff5c-dd43-ad51-076385611e03:~]# ip address
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host
+       valid_lft forever preferred_lft forever
+2: mgmt0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether de:ad:be:ef:83:01 brd ff:ff:ff:ff:ff:ff
+    inet 172.16.63.98/16 brd 172.16.255.255 scope global dynamic mgmt0
+       valid_lft 86386sec preferred_lft 86386sec
+    inet6 fe80::dcad:beff:feef:8301/64 scope link
+       valid_lft forever preferred_lft forever
+
+```
+
+Note the MAC and IP addresses for this node. The `83` in the MAC address indicates this is the third node and the IP address was provided by the `dhcp-provider` running on `node1`. Also, the last two characters in the hostname (UUID in the prompt) are `03` also indicating this is the third node.
+
+### shell
+
+In the `shell` console verify the nodes are properly connected to the bridge.
+
+Ping the first node using the address disovered for `node`. For this example `node1` has the address `172.16.10.2`. This, by the way, was statically assigned by the GRUB menu.
+
+```
+$ ping 172.16.10.2
+PING 172.16.10.2 (172.16.10.2) 56(84) bytes of data.
+64 bytes from 172.16.10.2: icmp_seq=1 ttl=64 time=1.31 ms
+64 bytes from 172.16.10.2: icmp_seq=2 ttl=64 time=2.02 ms
+64 bytes from 172.16.10.2: icmp_seq=3 ttl=64 time=0.442 ms
+```
+
+Now do the same for the second node. In this example the address was assigned by the `dhcp-provider` running on `node1` and is `172.16.219.100` (from `node2` above).
+
+```
+$ ping 172.16.219.100
+PING 172.16.219.100 (172.16.219.100) 56(84) bytes of data.
+64 bytes from 172.16.219.100: icmp_seq=1 ttl=64 time=1.10 ms
+64 bytes from 172.16.219.100: icmp_seq=2 ttl=64 time=0.379 ms
+64 bytes from 172.16.219.100: icmp_seq=3 ttl=64 time=0.414 ms
+```
+
+And finally, the third node.
+
+```
+$ ping 172.16.63.98
+PING 172.16.63.98 (172.16.63.98) 56(84) bytes of data.
+64 bytes from 172.16.63.98: icmp_seq=1 ttl=64 time=0.572 ms
+64 bytes from 172.16.63.98: icmp_seq=2 ttl=64 time=0.384 ms
+64 bytes from 172.16.63.98: icmp_seq=3 ttl=64 time=0.348 ms
+```
+
+### Run The demo
+
+All three nodes are now ready to run the demo described in the [demo documentation](https://github.com/cerana/cerana/blob/demo/docs/demo/README.md).
 
 More
 ----

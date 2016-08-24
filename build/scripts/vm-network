@@ -20,14 +20,15 @@ dhcpdpidfile=$testceranastatedir/$id-dhcpd-pid
 leasesfile=$testceranastatedir/$id-dhcpd-leases
 
 statevars=(
-    tap=tap
+    tap=ceranatap
     numtaps=1
     numsets=1
     tapmac=DE:AD:BE:EF
-    bridge=ceranabr0
-    bridgeip=10.0.2.2
-    nameserver=10.0.3.1
+    bridge=ceranabr
+    bridgeip=10.0.5.1
+    nameserver=10.0.5.1
     maskbits=24
+    dhcprange=200-240
 )
 
 u=$USER
@@ -62,42 +63,62 @@ Usage: $0 [options]
     --tap <tap>
         The root name of the tap interface to use.
         [tap = $tap]
-    --numtaps <n>
-        The number of tap interfaces to create for this set.
-        Each interface becomes $tap.1, $tap.2 etc.
-        [numtaps = $numtaps]
     --numsets <n>
         Number of tap sets to create. Each VM should use a different set.
         Each interface becomes $tap.<setnumber>.<tapnumber>
         [numsets = $numsets]
+    --numtaps <n>
+        The number of tap interfaces to create for each tap set. This also
+        determines the number of bridges created.
+        Each interface becomes $tap.<setnumber>.1, $tap.<setnumber>.2 etc.
+        [numtaps = $numtaps]
     --tapmac <macbase>
         The first 4 bytes of the mac address to assign to each TAP interface.
         The 5th byte is the TAP set number (e.g. 01 thru $numsets)
         The last or 6th byte is the TAP number (e.g. 01 thru $numtaps).
         [tapmac = $tapmac]
     --bridge <bridge>
-        The name of the bridge to create.
+        The name of the bridge to create. One bridge is created for each tap
+        in a tap set.
+        The name of each bridge becomes $bridge.<tapnumber>.
         [bridge = $bridge]
     --bridgeip <ip>
-        The IP address to assign to the bridge.
+        The IP address to assign to the first bridge.
+        NOTE: Only the first bridge ($bridge.1) is assigned an IP address.
+        The DHCP server is configured to listen only on the first bridge
+        (e.g. $bridgeip).
         [bridgeip = $bridgeip]
     --maskbits <bits>
-        The number of bits for the network mask.
+        The number of bits for the network mask applied to each bridge. In most
+        cases this should be 16 when using multiple bridges. When only a
+        single bridge is used (numtaps = 1) 24 is appropriate.
         [maskbits = $maskbits]
     --nameserver <ip>
         The IP of the name server for the dhcpd to serve to VMs.
         [nameserver=$nameserver]
+    --dhcprange <start>-<end>
+        The last octets of the IP address range the dhcp server will assign.
+        [dhcprange=$dhcprange]
     === Shutdown ===
     --shutdown
         Shutdown the interfaces and services created by this script.
     --shutdowndhcpd
-        Shutdown only the dhcpd server. This is useful when a VM will be running
+        Shutdown only the dhcpd daemon. This is useful when a VM will be running
         a dhcp server.
+    --nodhcpd
+        Do not start the dhcpd daemon.
     === Other ===
     --config <config>
         Which network configuration to use. This allows a variety of network
         configurations to be used. If a different configuration is specified
         the first configuration is shutdown before setting up the new configuration.
+        [config = $config]
+    --removeconfig <config>
+        Remove the named configuration. NOTE: If this is the same as the current
+        configuration then the current configuration will be reset the next
+        time this script is run.
+    --showconfigs
+        List current configurations and their settings.
     --resetdefaults
         Reset options back to their default values.
     --verbose
@@ -155,30 +176,32 @@ function shutdowndhcpd() {
 
 function shutdown() {
     # Parameters:
-    #   1: The name of the bridge.
+    #   1: The base name of the bridges.
     #   2: The root name of the tap interface
-    #   3: The number of tap sets
-    #   4: The number of tap interfaces per set
+    #   3: The number of bridges (taps per tap set)
     shutdowndhcpd
-    verbose Checking bridge $1
-    check_interface_exists $1
-    if [ $? -eq 0 ]; then
-        sudo ip link set $1 down
-        for i in `brctl showstp ceranabr0 | grep $2 | cut -d ' ' -f 1`
-        do
-            check_interface_exists $i
-            if [ $? -eq 0 ]; then
-                verbose Shutting down $i
-                sudo ip link set dev $i nomaster
-                sudo tunctl -d $i
-            else
-                warn Interface $i does not exist.
-            fi
-        done
-        sudo ip link delete $1
-    else
-        error Bridge $1 does not exist.
-    fi
+    for n in $(seq 1 $3); do
+        b=$1.$n
+        verbose Checking bridge $b
+        check_interface_exists $b
+        if [ $? -eq 0 ]; then
+            sudo ip link set $b down
+            for i in `brctl showstp $b | grep $2 | cut -d ' ' -f 1`
+            do
+                check_interface_exists $i
+                if [ $? -eq 0 ]; then
+                    verbose Shutting down $i
+                    sudo ip link set dev $i nomaster
+                    sudo tunctl -d $i
+                else
+                    warn Interface $i does not exist.
+                fi
+            done
+            sudo ip link delete $b
+        else
+            error Bridge $b does not exist.
+        fi
+    done
 }
 
 function init_variables () {
@@ -187,6 +210,107 @@ function init_variables () {
     for v in "${statevars[@]}"
     do
         init_test_variable $1/$v
+    done
+}
+
+function build_bridges () {
+    # Parameters:
+    #   1: The number of bridges to build.
+    #   2: The base name for each bridge.
+    for n in $(seq 1 $1); do
+        b=$2.$n
+        message Checking if bridge $b exists.
+        check_interface_exists $b
+        if [ $? -gt 0 ]; then
+            if [ -z "$dryrun" ]; then
+                sudo ip link add name $b type bridge
+                m=$tapmac:`printf "00:%02X" $n`
+                verbose Using mac address $m for bridge $b.
+                run sudo ip link set $b address $m
+            else
+                verbose Create $b.
+            fi
+            if [ $? -gt 0 ]; then
+                die Could not create bridge $b.
+            else
+                message Created bridge: $b.
+            fi
+        else
+            message The bridge $b already exists.
+        fi
+    done
+}
+
+function set_bridge_1_address () {
+    # Parameters:
+    #   1: The base name for each bridge.
+    #   2: The base IP address for each bridge.
+    b=$1.1
+    bip=$2
+    message Checking bridge IP address: $bip.
+    ip addr show dev $b | grep $bip
+    if [ $? -gt 0 ]; then
+        message Setting bridge $b IP address to $bip.
+        if [ -z "$dryrun" ]; then
+            sudo ip addr change $bip/$maskbits dev $b
+        else
+            verbose Set bridge IP to $bip.
+        fi
+    else
+        message The bridge IP address was already set to $bip.
+    fi
+}
+
+function enable_bridges () {
+    # Parameters:
+    #   1: The number of bridges to enable.
+    #   2: The base name for each bridge.
+    for n in $(seq 1 $1); do
+        b=$2.$n
+        message Enabling bridge $b.
+        ip link show $b | grep ",UP"
+        if [ $? -gt 0 ]; then
+            message Enabling the bridge device $b.
+            run sudo ip link set dev $b up
+            if [ $? -gt 0 ]; then
+                die "Could not enable bridge $b."
+            fi
+        else
+            message The bridge state is already UP.
+        fi
+    done
+}
+
+function build_taps () {
+    # Parameters:
+    #   1: The number of tap sets to build.
+    #   2: The number of taps per taps set to build.
+    for s in $(seq 1 $1); do
+        for n in $(seq 1 $2); do
+            i=$tap.$s.$n
+            message Checking if interface $i exists.
+            check_interface_exists $i
+            if [ $? -gt 0 ]; then
+                message Creating device $i.
+                m=$tapmac:`printf "%02X:%02X" $s $n`
+                verbose Using mac address $m for interface $i.
+                run sudo tunctl -u $u -t $i
+                run sudo ip link set $i address $m
+            else
+                message The tunnel device $i already exists.
+            fi
+
+            b=$bridge.$n
+            message Checking if interface $i is part of bridge $b.
+            check_interface_in_bridge $i $b
+            if [ $? -gt 0 ]; then
+                message Adding device $i to bridge $b.
+                run sudo ip link set dev $i master $b
+                run sudo ip link set $i up
+            else
+                message The device $i is already part of bridge $b.
+            fi
+        done
     done
 }
 
@@ -201,10 +325,14 @@ tapmac:,\
 bridge:,\
 bridgeip:,\
 maskbits:,\
+dhcprange:,\
 nameserver:,\
 config:,\
+removeconfig:,\
+showconfigs,\
 shutdown,\
 shutdowndhcpd,\
+nodhcpd,\
 resetdefaults,\
 verbose,\
 dryrun,\
@@ -256,15 +384,29 @@ while [ $# -ge 1 ]; do
             maskbits=$2
             shift
             ;;
+        --dhcprange)
+            dhcprange=$2
+            shift
+            ;;
         --config)
             config=$2
             shift
+            ;;
+        --removeconfig)
+            removeconfig=$2
+            shift
+            ;;
+        --showconfigs)
+            showconfigs=y
             ;;
         --shutdown)
             shutdown=y
             ;;
         --shutdowndhcpd)
             shutdowndhcpd=y
+            ;;
+        --nodhcpd)
+            nodhcpd=y
             ;;
         --resetdefaults)
             resetdefaults=y
@@ -295,19 +437,47 @@ message Current configuration is: $current
 message New configuration is: $config
 
 init_variables $config
-if [ ! -z "$showusage" ]; then
+
+if [ -n "$showconfigs" ]; then
+    message Available configurations in $testceranastatedir:
+    for d in `find $testceranastatedir/* -type d`; do
+        message ++++++++++++++++++
+        tip Config: `basename $d`
+        for f in `ls $d`; do
+            message $f = `cat $d/$f`
+        done
+        message ------------------
+    done
+    if [ -z "$showusage" ]; then
+        exit 0
+    fi
+fi
+
+if [ -n "$showusage" ]; then
     usage
-    if [ ! -z "$errorexit" ]; then
+    if [ -n "$errorexit" ]; then
         exit 1
     fi
     exit 0
+fi
+
+if [ -n "$removeconfig" ]; then
+    message Removing configuration: $removeconfig
+    if [ -d $testceranastatedir/$removeconfig ]; then
+        warning Removing configuration: $removeconfig
+        rm -rf $testceranastatedir/$removeconfig
+        exit 0
+    else
+        die Configuration $removeconfig does not exist.
+    fi
 fi
 
 if [ "$config" != "$current" ]; then
     verbose Switching from $current to $config
     b=$(get_test_default $current/bridge "" )
     t=$(get_test_default $current/tap "" )
-    shutdown $b $t
+    n=$(get_test_default $current/numtaps "" )
+    shutdown $b $t $n
 fi
 
 set_test_default current $config
@@ -334,7 +504,7 @@ fi
 
 if [ "$shutdown" == "y" ]; then
     message Shutting down VM related interfaces and services.
-    shutdown $bridge $tap
+    shutdown $bridge $tap $numtaps
     message VM related interfaces and services have been shutdown.
     exit
 fi
@@ -345,42 +515,10 @@ if [ "$shutdowndhcpd" == "y" ]; then
     exit
 fi
 
-# TODO: Actually the numtaps variable should be used to create a number of
-# bridges with each VM TAP connected to a different bridge.
-message Checking if $bridge exists.
-check_interface_exists $bridge
-if [ $? -gt 0 ]; then
-    if [ -z "$dryrun" ]; then
-        sudo ip link add name $bridge type bridge
-    else
-        verbose Create $bridge.
-    fi
-    if [ $? -gt 0 ]; then
-        die Could not create bridge $bridge.
-    else
-        message Created bridge: $bridge.
-    fi
-else
-    message The bridge $bridge exists.
-fi
-
-message Checking bridge IP address.
-ip addr show dev $bridge | grep $bridgeip
-if [ $? -gt 0 ]; then
-    message Setting bridge $bridge IP address to $bridgeip.
-    if [ -z "$dryrun" ]; then
-        sudo ip addr change $bridgeip/$maskbits dev $bridge
-    else
-        verbose Set bridge IP to $bridgeip.
-    fi
-else
-    message The bridge IP address was already set to $bridgeip.
-fi
-
 message Checking $numtaps TAP interfaces.
 # Create the TAP interfaces.
 if [ $numsets -lt 1 ]; then
-    die numsets: Must hava at least 1 set.
+    die numsets: Must have at least 1 set.
 fi
 if [ $numsets -gt 9 ]; then
     die numsets: Too many interface sets \($numsets\) requested.
@@ -392,85 +530,61 @@ if [ $numtaps -gt 4 ]; then
     die numtaps: Too many interfaces \($numtaps\) requested.
 fi
 
-for s in $(seq 1 $numsets); do
-    for n in $(seq 1 $numtaps); do
-        i=$tap.$s.$n
-        message Checking if interface $i exists.
-        check_interface_exists $i
-        if [ $? -gt 0 ]; then
-            message Creating device $i.
-            m=$tapmac:`printf "%02X:%02X" $s $n`
-            verbose Using mac address $m for interface $i.
-            run sudo tunctl -u $u -t $i
-            run sudo ip link set $i address $m
-        else
-            message The tunnel device $i already exists.
-        fi
+build_bridges $numtaps $bridge
+set_bridge_1_address $bridge $bridgeip
 
-        message Checking if interface $i is part of bridge $bridge.
-        check_interface_in_bridge $i $bridge
-        if [ $? -gt 0 ]; then
-            message Adding device $i to bridge $bridge.
-            run sudo ip link set dev $i master $bridge
-            run sudo ip link set $i up
-        else
-            message The device $i is already part of bridge $bridge.
-        fi
-    done
-done
-message Enabling bridge $bridge.
-ip link show $bridge | grep ",UP"
-if [ $? -gt 0 ]; then
-    message Enabling the bridge device $bridge.
-    run sudo ip link set dev $bridge up
-    if [ $? -gt 0 ]; then
-        die "Could not enable bridge $bridge."
-    fi
-else
-    message The bridge state is already UP.
-fi
+build_taps $numsets $numtaps
 
-message Configuring dhcp for listening on the bridge interface.
-subnet=`echo $bridgeip | tr '.' ' ' | awk '{printf $1"."$2"."$3}'`
+enable_bridges $numtaps $bridge
+
+verbose Bridge IP:
+subnet=`echo "$bridgeip" | awk -F'.' '{print $1,$2,$3}' OFS='.'`
+message Configuring dhcp for listening on the first bridge interface $subnet.0.
+
+dhcplow=`echo $dhcprange | cut -d '-' -f 1`
+dhcphigh=`echo $dhcprange | cut -d '-' -f 2`
 
 if [ -n "$dryrun" ]; then
-    message The dhcp server would use subnet $subnet and serve IP range 50 to 100.
+    message The dhcp server would use subnet $subnet and serve IP range $dhcplow to $dhcphigh.
     message The dhcp config file is: $dhcpdconf
     message The leases file is: $leasesfile
     exit 0
 fi
 
-ps -C dhcpd
-if [ $? -gt 0 ]; then
-    message Using subnet $subnet.0
-    rm -f $dhcpdconf
-    touch $leasesfile
-    cat << EOF >>$dhcpdconf
-    ###
-    subnet $subnet.0 netmask 255.255.255.0 {
-    range $subnet.200 $subnet.240;
-    option broadcast-address $subnet.255;
-    option routers $subnet.2;
-    option domain-name-servers $nameserver;
-    }
-EOF
-    message DHCP configuration written to $dhcpdconf
-    message Starting DHCP server for subnet $subnet.0
-    run sudo dhcpd -cf $dhcpdconf -lf $leasesfile -pf $dhcpdpidfile
-    if [ $? -gt 0 ]; then
-        die Could not start the dhcp server.
-    else
-        verbose The DHCP server process ID is: `cat $dhcpdpidfile`
-    fi
+if [ -n "$nodhcpd" ]; then
+    warning Not starting the DHCP daemon.
 else
-    message DHCP server is already running.
-    ps -fp `pgrep dhcpd` | grep $dhcpdconf
+    ps -C dhcpd
     if [ $? -gt 0 ]; then
-        warning The DHCP server may not be configured for using a CeranaOS VM.
-        warning It is possible it was started by another user with the correct
-        warning configuration.
+        message Using subnet $subnet.0
+        run rm -f $dhcpdconf
+        run sudo touch $leasesfile
+        cat << EOF >>$dhcpdconf
+        ###
+        subnet $subnet.0 netmask 255.255.255.0 {
+        range $subnet.$dhcplow $subnet.$dhcphigh;
+        option broadcast-address $subnet.255;
+        option routers $subnet.1;
+        option domain-name-servers $nameserver;
+        }
+EOF
+        message DHCP configuration written to $dhcpdconf
+        message Starting DHCP server for subnet $subnet.0
+        run sudo dhcpd -cf $dhcpdconf -lf $leasesfile -pf $dhcpdpidfile
+        if [ $? -gt 0 ]; then
+            die Could not start the dhcp server.
+        else
+            verbose The DHCP server process ID is: `cat $dhcpdpidfile`
+        fi
+    else
+        message DHCP server is already running.
+        ps -fp `pgrep dhcpd` | grep $dhcpdconf
+        if [ $? -gt 0 ]; then
+            warning The DHCP server may not be configured for using a CeranaOS VM.
+            warning It is possible it was started by another user with the correct
+            warning configuration.
+        fi
     fi
 fi
-
 message Network is now configured for running a VM.
 message Using the device $tap on the bridge $bridge.

@@ -81,7 +81,7 @@ function init_test_variable() {
     #   1: variable name and default value pair delimited by the delimeter (2)
     #   2: an optional delimeter character (defaults to '=')
     if [ ! -z "$resetdefaults" ]; then
-        clear_test_variable $v
+        clear_test_variable $1
     fi
     if [ -z "$2" ]; then
         d='='
