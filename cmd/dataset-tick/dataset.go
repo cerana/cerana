@@ -115,64 +115,9 @@ func replicateDatasets(config *Config, tracker *acomm.Tracker, nodes []clusterco
 			"destinations": destinationIPs,
 		}).Debug("required replications")
 
-		datasetName := filepath.Join(config.DatasetPrefix(), datasetID)
-
 		// send from the sourceIP and receive on each destination IP
 		for _, destinationIP := range destinationIPs {
-			wg.Add(1)
-
-			trackError := genTrackReplicationError(errorChan, &wg, datasetID, sourceIP, destinationIP)
-			logSuccess := genLogSuccess(datasetID, sourceIP, destinationIP)
-
-			dsName := datasetName
-
-			opts := acomm.RequestOptions{
-				Task:         "zfs-send",
-				ResponseHook: config.HTTPResponseURL(),
-				Args: zfs.CommonArgs{
-					Name: fmt.Sprintf("%s@%s", datasetName, datasetID),
-				},
-				ErrorHandler: func(req *acomm.Request, resp *acomm.Response) {
-					trackError(req.Task, resp.Error)
-				},
-				SuccessHandler: func(req *acomm.Request, resp *acomm.Response) {
-					opts := acomm.RequestOptions{
-						Task:         "zfs-receive",
-						ResponseHook: config.HTTPResponseURL(),
-						Args: zfs.CommonArgs{
-							Name: dsName,
-						},
-						StreamURL: resp.StreamURL,
-						ErrorHandler: func(req *acomm.Request, resp *acomm.Response) {
-							trackError(req.Task, resp.Error)
-						},
-						SuccessHandler: func(req *acomm.Request, resp *acomm.Response) {
-							logSuccess()
-							wg.Done()
-						},
-					}
-
-					ip := destinationIP
-					logrus.WithFields(logrus.Fields{
-						"ip":   ip,
-						"opts": opts,
-					}).Debug("issuing zfs_receive request")
-
-					if err := tick.SendNodeRequest(config, tracker, opts, ip); err != nil {
-						trackError(opts.Task, err)
-					}
-				},
-			}
-
-			ip := sourceIP
-			logrus.WithFields(logrus.Fields{
-				"ip":   ip,
-				"opts": opts,
-			}).Debug("issuing zfs_send request")
-
-			if err := tick.SendNodeRequest(config, tracker, opts, ip); err != nil {
-				trackError(opts.Task, err)
-			}
+			replicateDataset(config, tracker, &wg, errorChan, datasetID, sourceIP, destinationIP)
 		}
 	}
 
@@ -192,6 +137,50 @@ func replicateDatasets(config *Config, tracker *acomm.Tracker, nodes []clusterco
 	return err
 }
 
+func replicateDataset(config *Config, tracker *acomm.Tracker, wg *sync.WaitGroup, errorChan chan error, datasetID, sourceIP, destinationIP string) {
+	wg.Add(1)
+
+	trackError := genTrackReplicationError(errorChan, wg, datasetID, sourceIP, destinationIP)
+	datasetName := filepath.Join(config.DatasetPrefix(), datasetID)
+	snapshotName := fmt.Sprintf("%s@%s", datasetName, datasetID)
+
+	opts := acomm.RequestOptions{
+		Task:         "zfs-send",
+		ResponseHook: config.HTTPResponseURL(),
+		Args:         zfs.CommonArgs{Name: snapshotName},
+		ErrorHandler: func(req *acomm.Request, resp *acomm.Response) {
+			trackError(req.Task, resp.Error)
+		},
+		SuccessHandler: func(req *acomm.Request, resp *acomm.Response) {
+			opts := acomm.RequestOptions{
+				Task:         "zfs-receive",
+				ResponseHook: config.HTTPResponseURL(),
+				Args:         zfs.CommonArgs{Name: datasetName},
+				StreamURL:    resp.StreamURL,
+				ErrorHandler: func(req *acomm.Request, resp *acomm.Response) {
+					trackError(req.Task, resp.Error)
+				},
+				SuccessHandler: func(req *acomm.Request, resp *acomm.Response) {
+					logrus.WithFields(logrus.Fields{
+						"dataset":     datasetID,
+						"source":      sourceIP,
+						"destination": destinationIP,
+					}).Debug("dataset replication successful")
+					wg.Done()
+				},
+			}
+
+			if err := tick.SendNodeRequest(config, tracker, opts, destinationIP); err != nil {
+				trackError(opts.Task, err)
+			}
+		},
+	}
+
+	if err := tick.SendNodeRequest(config, tracker, opts, sourceIP); err != nil {
+		trackError(opts.Task, err)
+	}
+}
+
 func genTrackReplicationError(errorChan chan error, wg *sync.WaitGroup, id, source, destination string) func(string, error) {
 	return func(task string, err error) {
 		errorChan <- errors.Wrapv(err, map[string]interface{}{
@@ -202,15 +191,5 @@ func genTrackReplicationError(errorChan chan error, wg *sync.WaitGroup, id, sour
 		})
 
 		wg.Done()
-	}
-}
-
-func genLogSuccess(id, source, destination string) func() {
-	return func() {
-		logrus.WithFields(logrus.Fields{
-			"dataset":     id,
-			"source":      source,
-			"destination": destination,
-		}).Debug("dataset replication successful")
 	}
 }
