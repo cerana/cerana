@@ -1,11 +1,11 @@
 package health
 
 import (
-	"errors"
 	"net/url"
 	"os"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 )
 
 // FileArgs are arguments for the File health check.
@@ -25,7 +25,7 @@ func (h *Health) File(req *acomm.Request) (interface{}, *url.URL, error) {
 	}
 
 	if args.Path == "" {
-		return nil, nil, errors.New("missing arg: path")
+		return nil, nil, errors.Newv("missing arg: path", map[string]interface{}{"args": args, "missing": "path"})
 	}
 
 	fileInfo, err := os.Stat(args.Path)
@@ -33,19 +33,19 @@ func (h *Health) File(req *acomm.Request) (interface{}, *url.URL, error) {
 		if args.NotExist && os.IsNotExist(err) {
 			return nil, nil, nil
 		}
-		return nil, nil, err
+		return nil, nil, errors.Wrapv(err, map[string]interface{}{"path": args.Path})
 	} else if args.NotExist {
-		return nil, nil, errors.New("file exists")
+		return nil, nil, errors.Newv("file exists", map[string]interface{}{"path": args.Path})
 	}
 
 	if args.Mode != 0 && (args.Mode&fileInfo.Mode() != args.Mode) {
-		return nil, nil, errors.New("unexpected mode")
+		return nil, nil, errors.Newv("unexpected mode", map[string]interface{}{"expectedMode": args.Mode, "mode": fileInfo.Mode()})
 	}
 	if fileInfo.Size() < args.MinSize {
-		return nil, nil, errors.New("size below min")
+		return nil, nil, errors.Newv("size below min", map[string]interface{}{"minSize": args.MinSize, "size": fileInfo.Size()})
 	}
 	if args.MaxSize > 0 && fileInfo.Size() > args.MaxSize {
-		return nil, nil, errors.New("size above max")
+		return nil, nil, errors.Newv("size above max", map[string]interface{}{"maxSize": args.MinSize, "size": fileInfo.Size()})
 	}
 
 	return nil, nil, nil
