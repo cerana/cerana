@@ -14,14 +14,6 @@ env:
     - VZFS=0.6.5.5
     - ZFS_CACHE=/tmp/zfs
 
-# https://github.com/koalaman/shellcheck/wiki/TravisCI
-addons:
-  apt:
-    sources:
-    - backports
-    packages:
-    - shellcheck
-
 cache:
   directories:
     - $ZFS_CACHE

@@ -35,8 +35,10 @@ function fetch() {
         | bsdtar -xf- -C$HOME/bin --strip-components=1 linux-amd64/glide
 
     go get github.com/alecthomas/gometalinter
-    go get github.com/mvdan/sh/cmd/shfmt
     gometalinter --install --update
+    go get github.com/mvdan/sh/cmd/shfmt
+    curl -LO https://us-east.manta.joyent.com/nahamu/public/cerana/shellcheck_0.4.4_amd64.deb \
+        && sudo dpkg -i shellcheck_0.4.4_amd64.deb
 }
 
 function install() {
