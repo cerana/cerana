@@ -65,7 +65,7 @@ func getBundles(config tick.Configer, tracker *acomm.Tracker) ([]*clusterconf.Bu
 	for name, args := range requests {
 		resp := responses[name]
 		if resp.Error != nil {
-			return nil, errors.Wrap(resp.Error)
+			return nil, errors.ResetStack(resp.Error)
 		}
 		if err := resp.UnmarshalResult(args.respData); err != nil {
 			return nil, err
@@ -119,7 +119,7 @@ func getSerial(config tick.Configer, tracker *acomm.Tracker) (string, error) {
 
 	resp := <-doneChan
 	if resp.Error != nil {
-		return "", errors.Wrap(resp.Error)
+		return "", errors.ResetStack(resp.Error)
 	}
 
 	var data host.InfoStat
@@ -217,7 +217,7 @@ func runHealthChecks(config tick.Configer, tracker *acomm.Tracker, bundles []*cl
 			healthResults[bundleID] = make(map[string]error)
 		}
 		if resp.Error != nil {
-			healthResults[bundleID][healthCheck] = errors.Wrap(resp.Error)
+			healthResults[bundleID][healthCheck] = errors.ResetStack(resp.Error)
 		}
 	}
 

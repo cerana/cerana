@@ -452,10 +452,10 @@ ConfigData defines the structure of the config data (e.g. in the config file)
 
 ```go
 type DHCPConfig struct {
-	DNS      []net.IP      `json:"dns"`
-	Duration time.Duration `json:"duration"`
-	Gateway  net.IP        `json:"gateway"`
-	Net      net.IPNet     `json:"net"`
+	DNS      []string `json:"dns"`
+	Duration string   `json:"duration"`
+	Gateway  string   `json:"gateway"`
+	Net      string   `json:"net"`
 }
 ```
 

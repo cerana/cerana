@@ -97,7 +97,7 @@ func (c *ClusterConf) kvReq(task string, args map[string]interface{}) (*acomm.Re
 	}
 
 	resp := <-respChan
-	return resp, errors.Wrapv(resp.Error, errData)
+	return resp, errors.Wrapv(errors.ResetStack(resp.Error), errData)
 }
 
 func (c *ClusterConf) kvKeys(prefix string) ([]string, error) {

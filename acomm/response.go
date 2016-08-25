@@ -123,7 +123,7 @@ func sendUnix(addr *url.URL, payload interface{}) error {
 		return err
 	}
 
-	return resp.Error
+	return errors.ResetStack(resp.Error)
 }
 
 // sendHTTP sends the Response via HTTP/HTTPS
@@ -145,5 +145,5 @@ func sendHTTP(addr *url.URL, payload interface{}) error {
 		return errors.Wrapv(err, map[string]interface{}{"body": string(body)})
 	}
 
-	return resp.Error
+	return errors.ResetStack(resp.Error)
 }

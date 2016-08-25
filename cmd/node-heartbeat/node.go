@@ -55,7 +55,7 @@ func getNodeInfo(config tick.Configer, tracker *acomm.Tracker, ip net.IP) (*clus
 	for name := range requests {
 		resp := responses[name]
 		if resp.Error != nil {
-			return nil, errors.Wrapv(resp.Error, map[string]interface{}{"task": name})
+			return nil, errors.Wrapv(errors.ResetStack(resp.Error), map[string]interface{}{"task": name})
 		}
 		if err := resp.UnmarshalResult(tasks[name]); err != nil {
 			return nil, err
@@ -95,5 +95,5 @@ func sendNodeHeartbeat(config tick.Configer, tracker *acomm.Tracker, data *clust
 	if err != nil {
 		return err
 	}
-	return errors.Wrap(resp.Error)
+	return errors.ResetStack(resp.Error)
 }
