@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"syscall"
 	"unsafe"
@@ -229,6 +230,7 @@ var CapabilitiesDefault = []string{
 	"CAP_SYS_PTRACE",
 	"CAP_SYS_NICE",
 	"CAP_SYS_PACCT",
+	"CAP_SYS_TTY_CONFIG",
 	"CAP_KILL",
 	"CAP_SYSLOG",
 	"CAP_AUDIT_WRITE",
@@ -290,4 +292,34 @@ func (w *whitelist) drop() error {
 	w.pid.Clear(allCapabilityTypes)
 	w.pid.Set(allCapabilityTypes, w.keep...)
 	return w.pid.Apply(allCapabilityTypes)
+}
+
+// from libcontainer/system/setns_linux.go
+// Via http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=7b21fddd087678a70ad64afc0f632e0f1071b092
+//
+// We need different setns values for the different platforms and arch
+// We are declaring the macro here because the SETNS syscall does not exist in th stdlib
+var setNsMap = map[string]uintptr{
+	"linux/386":     346,
+	"linux/arm64":   268,
+	"linux/amd64":   308,
+	"linux/arm":     375,
+	"linux/ppc":     350,
+	"linux/ppc64":   350,
+	"linux/ppc64le": 350,
+	"linux/s390x":   339,
+}
+
+func Setns(fd uintptr, flags uintptr) error {
+	ns, exists := setNsMap[fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)]
+	if !exists {
+		return fmt.Errorf("unsupported platform %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+
+	_, _, err := syscall.RawSyscall(ns, fd, flags, 0)
+	if err != 0 {
+		return err
+	}
+
+	return nil
 }

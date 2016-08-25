@@ -27,7 +27,7 @@ var namespaceInfo = map[string]int{
 	"ipc":   syscall.CLONE_NEWIPC,
 	"uts":   syscall.CLONE_NEWUTS,
 	"pid":   syscall.CLONE_NEWPID,
-	//NEWDATASET:  syscall.CLONE_NEWDATASET,
+	//"cgroup":  syscall.CLONE_NEWCGROUP,
 }
 
 // CloneFlags parses the container's Namespaces options to set the correct
@@ -74,13 +74,17 @@ type Cfg struct {
 func (c *Container) Start() error {
 	var uidmap []syscall.SysProcIDMap
 	var gidmap []syscall.SysProcIDMap
+	var environment []string
+	var inheritFds []*os.File
+
+	environment = []string{
+			fmt.Sprintf("TERM=%s", os.Getenv("TERM")),
+			fmt.Sprintf("_CERANA_DAISY_UID=%d", c.Uid),
+			fmt.Sprintf("_CERANA_DAISY_GID=%d", c.Gid),
+	}
 
 	flags := c.Namespaces.CloneFlags()
 	if flags&syscall.CLONE_NEWUSER != 0 {
-		//if c.Uid == 0 && c.Gid == 0 {
-		//	c.Uid, c.Gid = pickIds()
-		//}
-
 		uidmap = []syscall.SysProcIDMap{
 			{
 				ContainerID: 0,
@@ -97,18 +101,30 @@ func (c *Container) Start() error {
 		}
 	}
 
+	for _, v := range c.Namespaces {
+		if v.Path == "" {
+			continue
+		}
+		_, ok := namespaceInfo[v.Type]; if !ok {
+			continue
+		}
+		f, err := os.Open(v.Path)
+		if err != nil {
+			return fmt.Errorf("Open %s namespace at '%s' failed: %v", v.Type, v.Path, err)
+		}
+		environment = append(environment, fmt.Sprintf("_CERANA_DAISY_NAMESPACE_%s=%d", v.Type, f.Fd()))
+		inheritFds = append(inheritFds, f)
+	}
+
 	cmd := &exec.Cmd{
 		Path: "/proc/self/exe",
 		Args: append([]string{"child"}, os.Args[1:]...),
-		Env: []string{
-			fmt.Sprintf("TERM=%s", os.Getenv("TERM")),
-			fmt.Sprintf("_CERANA_DAISY_UID=%d", c.Uid),
-			fmt.Sprintf("_CERANA_DAISY_GID=%d", c.Gid),
-		},
+		Env: environment,
 	}
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.ExtraFiles = inheritFds
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Cloneflags:  flags,
 		UidMappings: uidmap,
@@ -127,19 +143,20 @@ func (c *Container) Start() error {
 
 var defaultMountFlags = syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV
 
-//func pickIds() (uid int, gid int) {
-//	uid = (os.Getpid() << 16) | rand.Int()
-//	gid = uid
-//	return uid, gid
-//}
-
-func pivotRoot(rootfs string, pivotBaseDir string) (err error) {
-	if pivotBaseDir == "" {
-		pivotBaseDir = "/"
+func setupRootDir(rootfs string) (err error) {
+	if err := syscall.Mount("", "/", "", syscall.MS_PRIVATE|syscall.MS_REC, ""); err != nil {
+		return fmt.Errorf("Mount old root as private error: %v", err);
 	}
 	// "new_root and put_old must not be on the same filesystem as the current root"
 	if err := syscall.Mount(rootfs, rootfs, "bind", syscall.MS_BIND|syscall.MS_REC, ""); err != nil {
 		return fmt.Errorf("Mount rootfs to itself error: %v", err)
+	}
+	return nil
+}
+
+func pivotRoot(rootfs string, pivotBaseDir string) (err error) {
+	if pivotBaseDir == "" {
+		pivotBaseDir = "/"
 	}
 	tmpDir := filepath.Join(rootfs, pivotBaseDir)
 	if err := os.MkdirAll(tmpDir, 0755); err != nil {
@@ -177,7 +194,7 @@ func pivotRoot(rootfs string, pivotBaseDir string) (err error) {
 	return nil
 }
 
-func mount(cfg Cfg) error {
+func mountFilesystems(cfg Cfg) error {
 	for _, m := range cfg.Mounts {
 		target := filepath.Join(cfg.Rootfs, m.Target)
 		log.Debugf("Mount %s to %s", m.Source, target)
@@ -188,6 +205,7 @@ func mount(cfg Cfg) error {
 			return fmt.Errorf("failed to mount %s to %s: %v", m.Source, target, err)
 		}
 		if (m.Flags & syscall.MS_BIND != 0 && m.Flags & syscall.MS_RDONLY != 0) {
+			// Some flags only valid for remount
 			syscall.Mount(target, target, m.Fs, uintptr(m.Flags | syscall.MS_REMOUNT), m.Data)
 		}
 	}
@@ -203,6 +221,10 @@ func createDevices(cfg Cfg) error {
 		// containers running in a user namespace are not allowed to mknod
 		// devices so we can just bind mount it from the host.
 		dest := filepath.Join(cfg.Rootfs, node)
+		if node == "/dev/ptmx" {
+			// ptmx must be from same fs as our devpts
+			node = filepath.Join(cfg.Rootfs, "/dev/pts/ptmx")
+		}
 		log.Debugf("Mount %s to %s", node, dest)
 		if err := bindMountDeviceNode(dest, node); err != nil {
 			syscall.Umask(oldMask)
@@ -259,14 +281,30 @@ func setup(cfg Cfg) error {
 	//	j, _ := json.Marshal(result)
 	//	fmt.Println(string(j))
 	//}
-
+	for k, v := range namespaceInfo {
+		env := os.Getenv(fmt.Sprintf("_CERANA_DAISY_NAMESPACE_%s", k))
+		if env == "" {
+			continue
+		}
+		fd, err := strconv.Atoi(env)
+		if err != nil {
+			log.Fatalf("Invalid child environment")
+		}
+		err = Setns(uintptr(fd), uintptr(v))
+		if err != nil {
+			log.Fatalf("Setns: %v", err)
+		}
+	}
 	if err := syscall.Sethostname([]byte(cfg.Hostname)); err != nil {
 		return fmt.Errorf("Sethostname: %v", err)
 	}
 	if err := syscall.Chdir(cfg.Rootfs); err != nil {
 		return fmt.Errorf("Cannot enter directory '%s': %v", cfg.Rootfs, err)
 	}
-	if err := mount(cfg); err != nil {
+	if err := setupRootDir(cfg.Rootfs); err != nil {
+		return fmt.Errorf("Cannot set up root filesystem: %v", err)
+	}
+	if err := mountFilesystems(cfg); err != nil {
 		return fmt.Errorf("Cannot mount child filesystems: %v", err)
 	}
 	if err := createDevices(cfg); err != nil {
@@ -296,11 +334,6 @@ func fillCfg(cfg Cfg) error {
 	cfg.Uid = uid
 	cfg.Gid = gid
 
-	//wd, err := os.Getwd()
-	//if err != nil {
-	//	return fmt.Errorf("Error get working dir: %v", err)
-	//}
-	//cfg.Rootfs = wd
 	return nil
 }
 
@@ -318,9 +351,9 @@ func Child(cfg Cfg) error {
 	if err := SetSubreaper(1); err != nil {
 		return fmt.Errorf("SetSubreaper: %v", err)
 	}
-	//if err := seccomp.InitSeccomp(seccomp.Whitelist, DefScmp); err != nil {
-	//	return err
-	//}
+	if err := seccomp.InitSeccomp(seccomp.Whitelist, DefScmp); err != nil {
+		return err
+	}
 
 	capInit()
 

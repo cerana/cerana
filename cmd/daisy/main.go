@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	//"runtime"
+	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
@@ -57,45 +57,107 @@ var defaultCfg = Cfg{
 	Devices: []string{},
 }
 
+type stringValue []string
+
+func (s *stringValue) String() string {
+	return fmt.Sprint(*s)
+}
+
+func (s *stringValue) Set(value string) error {
+	*s = append(*s, value)
+	return nil
+}
+
+func (s *stringValue) Type() string {
+	return "stringValue"
+}
+
+type kvPair struct{
+	key string
+	value string
+}
+
+type kvPairValue []kvPair
+
+func (k *kvPairValue) String() string {
+	return fmt.Sprint(*k)
+}
+
+func (k *kvPairValue) Set(value string) error {
+	for _, kv := range strings.Split(value, ",") {
+		parts := strings.Split(kv, ArgSep)
+		if len(parts) != 2 {
+			return fmt.Errorf("invalid key%svalue pair '%s'", ArgSep, kv)
+		}
+		*k = append(*k, kvPair{parts[0], parts[1]})
+	}
+	return nil
+}
+
+func (k *kvPairValue) Type() string {
+	return "kvPairValue"
+}
+
 func init() {
 	// pin main goroutine to thread
-	//runtime.LockOSThread()
-	log.SetLevel(log.DebugLevel)
+	runtime.LockOSThread()
 	rand.Seed(time.Now().UnixNano())
+
+	for k, v := range namespaceInfo {
+		env := os.Getenv(fmt.Sprintf("_CERANA_DAISY_NAMESPACE_%s", k))
+		if env == "" {
+			continue
+		}
+		fd, err := strconv.Atoi(env)
+		if err != nil {
+			log.Fatalf("Invalid child environment")
+		}
+		err = Setns(uintptr(fd), uintptr(v))
+		if err != nil {
+			log.Fatalf("Setns: %v", err)
+		}
+	}
 }
 
 func main() {
 
-	var coordinator, namespaces, extNamespaces, rootFs, hostname, devices, env string
+	var coordinator, namespaces, rootFs, hostname, devices string
 	var uid, gid, uidrange, gidrange int
-	var kvm bool
+	var verbose, kvm bool
 	var execArgs []string
 	var nsList Namespaces
-	var envList []string
+	var env stringValue
+	var extNamespaces kvPairValue
 
+	flags.BoolVarP(&verbose, "verbose", "v", false, "verbose output")
 	flags.StringVarP(&rootFs, "root directory", "r", "", "location of the container root")
 	flags.IntVarP(&uid, "uid", "u", os.Getuid(), "user id to use as base")
 	flags.IntVarP(&gid, "gid", "g", os.Getgid(), "group id to use as base")
 	flags.IntVarP(&uidrange, "uid range", "U", 1000, "length of mapped user id range")
 	flags.IntVarP(&gidrange, "gid range", "G", 1000, "length of mapped group id range")
 	flags.BoolVarP(&kvm, "kvm mode", "k", false, "whether we are running just qemu")
-	flags.StringVarP(&env, "environment", "e", "", "list of environment variables to set")
+	flags.VarP(&env, "environment", "e", "environment variable to set in the form 'name=value'")
 	flags.StringVarP(&hostname, "hostname", "h", "daisy", "hostname of new uts namespace")
 	flags.StringVarP(&devices, "devices", "d", "null,zero,full,random,urandom,tty,ptmx,zfs", "list of device nodes to allow")
 	flags.StringVarP(&namespaces, "namespace list", "n", "user,mount,uts,pid,ipc", "list of namespaces to unshare")
-	flags.StringVarP(&extNamespaces, "external namespace", "x", "", fmt.Sprintf("list of external namespaces of the form'type%spath'", ArgSep))
+	flags.VarP(&extNamespaces, "external namespace", "x", fmt.Sprintf("list of external namespaces in the form 'type%spath'", ArgSep))
 	flags.StringVarP(&coordinator, "coordinator_url", "c", "", "url of the coordinator")
 	flags.Parse()
 
+	if verbose {
+		log.SetLevel(log.DebugLevel)
+	}
 	// extract argv for executable
 	execArgs = flags.Args()
 	if len(execArgs) == 0 {
 		log.Fatalf("Missing path to executable")
 		os.Exit(1)
 	}
-	envList = strings.Split(env, ",")
 	for _, ns := range strings.Split(namespaces, ",") {
 		nsList = append(nsList, Namespace{Type: ns, Path: ""})
+	}
+	for _, pair := range extNamespaces {
+		nsList = append(nsList, Namespace{Type: pair.key, Path: pair.value})
 	}
 
 	if os.Args[0] == "child" {
@@ -110,7 +172,7 @@ func main() {
 
 		cfg := defaultCfg
 		cfg.Args = execArgs
-		cfg.Env = envList
+		cfg.Env = env
 		cfg.Rootfs = rootFs
 		cfg.Hostname = hostname
 		cfg.Seccomp = scmp
@@ -151,60 +213,3 @@ func dieOnError(err error) {
 	}
 }
 
-// argmap is an arbitrarilly nested map
-// copied from coordinater-cli
-type argmap map[string]interface{}
-
-func (am argmap) set(keys []string, value interface{}) error {
-	if len(keys) == 0 {
-		return nil
-	}
-
-	key := keys[0]
-
-	if len(keys) == 1 {
-		am[key] = value
-		return nil
-	}
-
-	var m argmap
-	mi, ok := am[key]
-	if !ok {
-		m = make(argmap)
-		am[key] = m
-	} else {
-		m, ok = mi.(argmap)
-		if !ok {
-			return fmt.Errorf("intermediate nested key %s defined and not a map", key)
-		}
-	}
-
-	return m.set(keys[1:], value)
-}
-
-func parseArgs(args []string, argSep string) (map[string]interface{}, error) {
-	out := make(argmap)
-	for _, in := range args {
-		parts := strings.Split(in, argSep)
-		if len(parts) < 2 {
-			return nil, fmt.Errorf("invalid request arg: '%s'", in)
-		}
-
-		valueS := strings.Join(parts[1:], argSep)
-		var value interface{}
-		if arg, err := strconv.ParseInt(valueS, 10, 64); err == nil {
-			value = arg
-		} else if arg, err := strconv.ParseBool(valueS); err == nil {
-			value = arg
-		} else {
-			value = valueS
-		}
-
-		keys := strings.Split(parts[0], ".")
-		if err := out.set(keys, value); err != nil {
-			return nil, err
-		}
-
-	}
-	return out, nil
-}
