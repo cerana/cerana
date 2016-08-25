@@ -159,6 +159,23 @@ func Wrapv(err error, values map[string]interface{}, msg ...string) error {
 	return eExt
 }
 
+// ResetStack generates a new stack trace for the error at the current location
+// if one was present.
+func ResetStack(err error) error {
+	eExt, ok := err.(*errorExt)
+	if !ok {
+		return err
+	}
+
+	// Skip 3 for getPCs:
+	// 0 : runtime.Callers
+	// 1 : errors.getPCs
+	// 2 : errors.ResetStack
+	// 3 : {API caller}
+	eExt.pcs = getPCs(3)
+	return eExt
+}
+
 func getPCs(skip int) []uintptr {
 	pcs := make([]uintptr, stackDepth)
 	n := runtime.Callers(skip, pcs)
