@@ -130,33 +130,7 @@ func runBundles(config *Config, tracker *acomm.Tracker, nodes []clusterconf.Node
 		// create the bundle's services on each of the nodes
 		for _, nodeIP := range nodeIPs {
 			for _, serviceConf := range bundle.Services {
-				wg.Add(1)
-
-				trackError := genTrackServiceError(errorChan, &wg, bundle.ID, serviceConf.ID, nodeIP)
-				logSuccess := genLogSuccess(bundle.ID, serviceConf.ID, nodeIP)
-
-				opts := acomm.RequestOptions{
-					Task:         "service-create",
-					ResponseHook: config.HTTPResponseURL(),
-					Args: service.CreateArgs{
-						ID:       serviceConf.ID,
-						BundleID: bundle.ID,
-						Dataset:  filepath.Join(config.DatasetPrefix(), serviceConf.Dataset),
-						Cmd:      serviceConf.Cmd,
-						Env:      serviceConf.Env,
-					},
-					ErrorHandler: func(req *acomm.Request, resp *acomm.Response) {
-						trackError(req.Task, errors.Wrap(resp.Error))
-					},
-					SuccessHandler: func(_ *acomm.Request, _ *acomm.Response) {
-						logSuccess()
-						wg.Done()
-					},
-				}
-
-				if err := tick.SendNodeRequest(config, tracker, opts, nodeIP); err != nil {
-					trackError(opts.Task, err)
-				}
+				runService(config, tracker, &wg, errorChan, bundle.ID, serviceConf, nodeIP)
 			}
 		}
 	}
@@ -177,6 +151,40 @@ func runBundles(config *Config, tracker *acomm.Tracker, nodes []clusterconf.Node
 	return err
 }
 
+func runService(config *Config, tracker *acomm.Tracker, wg *sync.WaitGroup, errorChan chan error, bundleID uint64, serviceConf clusterconf.BundleService, nodeIP string) {
+	wg.Add(1)
+
+	trackError := genTrackServiceError(errorChan, wg, bundleID, serviceConf.ID, nodeIP)
+	datasetName := filepath.Join(config.DatasetPrefix(), serviceConf.Dataset)
+
+	opts := acomm.RequestOptions{
+		Task:         "service-create",
+		ResponseHook: config.HTTPResponseURL(),
+		Args: service.CreateArgs{
+			ID:       serviceConf.ID,
+			BundleID: bundleID,
+			Dataset:  datasetName,
+			Cmd:      serviceConf.Cmd,
+			Env:      serviceConf.Env,
+		},
+		ErrorHandler: func(req *acomm.Request, resp *acomm.Response) {
+			trackError(req.Task, errors.Wrap(resp.Error))
+		},
+		SuccessHandler: func(_ *acomm.Request, _ *acomm.Response) {
+			logrus.WithFields(logrus.Fields{
+				"bundle":  bundleID,
+				"service": serviceConf.ID,
+				"node":    nodeIP,
+			}).Debug("bundle running")
+			wg.Done()
+		},
+	}
+
+	if err := tick.SendNodeRequest(config, tracker, opts, nodeIP); err != nil {
+		trackError(opts.Task, err)
+	}
+}
+
 func genTrackServiceError(errorChan chan error, wg *sync.WaitGroup, id uint64, service, node string) func(string, error) {
 	return func(task string, err error) {
 		errorChan <- errors.Wrapv(err, map[string]interface{}{
@@ -187,15 +195,5 @@ func genTrackServiceError(errorChan chan error, wg *sync.WaitGroup, id uint64, s
 		})
 
 		wg.Done()
-	}
-}
-
-func genLogSuccess(id uint64, service, destination string) func() {
-	return func() {
-		logrus.WithFields(logrus.Fields{
-			"bundle":  id,
-			"service": service,
-			"node":    destination,
-		}).Debug("bundle running")
 	}
 }
