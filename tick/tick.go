@@ -121,6 +121,29 @@ func GetIP(config Configer, tracker *acomm.Tracker) (net.IP, error) {
 	return nil, errors.New("no suitable IP found")
 }
 
+// SendNodeRequest sends a request to the NodeDataURL, substituting in the specificied IP for localhost.
+func SendNodeRequest(config Configer, tracker *acomm.Tracker, opts acomm.RequestOptions, ip string) error {
+	nodeURL := config.NodeDataURL()
+	if err := acomm.ReplaceLocalhost(nodeURL, ip); err != nil {
+		return err
+	}
+
+	req, err := acomm.NewRequest(opts)
+	if err != nil {
+		return err
+	}
+	if err = tracker.TrackRequest(req, config.RequestTimeout()); err != nil {
+		return err
+	}
+
+	if err = acomm.Send(nodeURL, req); err != nil {
+		tracker.RemoveRequest(req)
+		return err
+	}
+
+	return nil
+}
+
 func setupHTTPResponseServer(responseURL *url.URL, tracker *acomm.Tracker) (*graceful.Server, error) {
 	if responseURL == nil {
 		return nil, nil
