@@ -72,8 +72,8 @@ func (s *stringValue) Type() string {
 	return "stringValue"
 }
 
-type kvPair struct{
-	key string
+type kvPair struct {
+	key   string
 	value string
 }
 
@@ -212,4 +212,3 @@ func dieOnError(err error) {
 		os.Exit(1)
 	}
 }
-

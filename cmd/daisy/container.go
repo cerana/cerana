@@ -59,16 +59,16 @@ type Mount struct {
 }
 
 type Cfg struct {
-	Args     []string
-	Env      []string
-	Uid        int
-	Gid        int
-	Hostname string
-	Mounts   []Mount
-	Rootfs   string
-	Devices  []string
+	Args         []string
+	Env          []string
+	Uid          int
+	Gid          int
+	Hostname     string
+	Mounts       []Mount
+	Rootfs       string
+	Devices      []string
 	Capabilities []string
-	Seccomp  []seccomp.SyscallRule
+	Seccomp      []seccomp.SyscallRule
 }
 
 func (c *Container) Start() error {
@@ -78,9 +78,9 @@ func (c *Container) Start() error {
 	var inheritFds []*os.File
 
 	environment = []string{
-			fmt.Sprintf("TERM=%s", os.Getenv("TERM")),
-			fmt.Sprintf("_CERANA_DAISY_UID=%d", c.Uid),
-			fmt.Sprintf("_CERANA_DAISY_GID=%d", c.Gid),
+		fmt.Sprintf("TERM=%s", os.Getenv("TERM")),
+		fmt.Sprintf("_CERANA_DAISY_UID=%d", c.Uid),
+		fmt.Sprintf("_CERANA_DAISY_GID=%d", c.Gid),
 	}
 
 	flags := c.Namespaces.CloneFlags()
@@ -105,7 +105,8 @@ func (c *Container) Start() error {
 		if v.Path == "" {
 			continue
 		}
-		_, ok := namespaceInfo[v.Type]; if !ok {
+		_, ok := namespaceInfo[v.Type]
+		if !ok {
 			continue
 		}
 		f, err := os.Open(v.Path)
@@ -119,7 +120,7 @@ func (c *Container) Start() error {
 	cmd := &exec.Cmd{
 		Path: "/proc/self/exe",
 		Args: append([]string{"child"}, os.Args[1:]...),
-		Env: environment,
+		Env:  environment,
 	}
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -129,7 +130,7 @@ func (c *Container) Start() error {
 		Cloneflags:  flags,
 		UidMappings: uidmap,
 		GidMappings: gidmap,
-		Credential:  &syscall.Credential{
+		Credential: &syscall.Credential{
 			Uid: c.Uid,
 			Gid: c.Gid,
 		},
@@ -145,7 +146,7 @@ var defaultMountFlags = syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV
 
 func setupRootDir(rootfs string) (err error) {
 	if err := syscall.Mount("", "/", "", syscall.MS_PRIVATE|syscall.MS_REC, ""); err != nil {
-		return fmt.Errorf("Mount old root as private error: %v", err);
+		return fmt.Errorf("Mount old root as private error: %v", err)
 	}
 	// "new_root and put_old must not be on the same filesystem as the current root"
 	if err := syscall.Mount(rootfs, rootfs, "bind", syscall.MS_BIND|syscall.MS_REC, ""); err != nil {
@@ -204,9 +205,9 @@ func mountFilesystems(cfg Cfg) error {
 		if err := syscall.Mount(m.Source, target, m.Fs, uintptr(m.Flags), m.Data); err != nil {
 			return fmt.Errorf("failed to mount %s to %s: %v", m.Source, target, err)
 		}
-		if (m.Flags & syscall.MS_BIND != 0 && m.Flags & syscall.MS_RDONLY != 0) {
+		if m.Flags&syscall.MS_BIND != 0 && m.Flags&syscall.MS_RDONLY != 0 {
 			// Some flags only valid for remount
-			syscall.Mount(target, target, m.Fs, uintptr(m.Flags | syscall.MS_REMOUNT), m.Data)
+			syscall.Mount(target, target, m.Fs, uintptr(m.Flags|syscall.MS_REMOUNT), m.Data)
 		}
 	}
 	return nil
