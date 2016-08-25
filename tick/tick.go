@@ -123,6 +123,11 @@ func GetIP(config Configer, tracker *acomm.Tracker) (net.IP, error) {
 
 // SendNodeRequest sends a request to the NodeDataURL, substituting in the specificied IP for localhost.
 func SendNodeRequest(config Configer, tracker *acomm.Tracker, opts acomm.RequestOptions, ip string) error {
+	logrus.WithFields(logrus.Fields{
+		"ip":   ip,
+		"opts": opts,
+	}).Debug("sending node request")
+
 	nodeURL := config.NodeDataURL()
 	if err := acomm.ReplaceLocalhost(nodeURL, ip); err != nil {
 		return err
