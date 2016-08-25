@@ -3,7 +3,7 @@ SHELL := /bin/bash
 # Bash scripts known to be lint-clean
 BASH_CLEAN=boot/*/*
 # Bash scripts not yet lint-clean
-BASH_DIRTY=build/*.sh build/scripts/cerana-functions.sh build/scripts/start-vm build/scripts/vm-network
+BASH_DIRTY=.travis/deps.sh build/*.sh build/scripts/cerana-functions.sh build/scripts/start-vm build/scripts/vm-network
 
 # Recursive wildcard function
 rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) $(filter $(subst *,%,$2),$d))
