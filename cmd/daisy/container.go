@@ -226,6 +226,10 @@ func createDevices(cfg Cfg) error {
 			// ptmx must be from same fs as our devpts
 			node = filepath.Join(cfg.Rootfs, "/dev/pts/ptmx")
 		}
+		if node == "/dev/random" {
+			// prevent entropy exhaustion
+			node = "/dev/urandom"
+		}
 		log.Debugf("Mount %s to %s", node, dest)
 		if err := bindMountDeviceNode(dest, node); err != nil {
 			syscall.Umask(oldMask)
