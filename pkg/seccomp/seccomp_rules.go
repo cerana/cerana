@@ -323,8 +323,10 @@ var (
 		{"set_robust_list", nil, "SCMP_ACT_ALLOW"},
 		{"set_thread_area", nil, "SCMP_ACT_ALLOW"},
 		{"set_tid_address", nil, "SCMP_ACT_ALLOW"},
+		{"setns", nil, "SCMP_ACT_ALLOW"},
 		{"tgkill", nil, "SCMP_ACT_ALLOW"},
 		{"tkill", nil, "SCMP_ACT_ALLOW"},
+		{"unshare", nil, "SCMP_ACT_ALLOW"},
 	}
 
 	WhitelistKVM = []SyscallRule{
