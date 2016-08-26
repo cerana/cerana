@@ -48,6 +48,8 @@ type Container struct {
 	Namespaces Namespaces
 	Uid        uint32
 	Gid        uint32
+	UidRange   uint32
+	GidRange   uint32
 }
 
 type Mount struct {
@@ -91,12 +93,22 @@ func (c *Container) Start() error {
 				HostID:      int(c.Uid),
 				Size:        1,
 			},
+			{
+				ContainerID: 1,
+				HostID:      int(c.Uid) + 1,
+				Size:        int(c.UidRange),
+			},
 		}
 		gidmap = []syscall.SysProcIDMap{
 			{
 				ContainerID: 0,
 				HostID:      int(c.Gid),
 				Size:        1,
+			},
+			{
+				ContainerID: 1,
+				HostID:      int(c.Gid) + 1,
+				Size:        int(c.GidRange),
 			},
 		}
 	}

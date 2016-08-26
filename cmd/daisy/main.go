@@ -199,6 +199,8 @@ func main() {
 		Args:       execArgs,
 		Uid:        uint32(uid),
 		Gid:        uint32(gid),
+		UidRange:   uint32(uidrange),
+		GidRange:   uint32(gidrange),
 		Namespaces: nsList,
 	}
 	if err := c.Start(); err != nil {
