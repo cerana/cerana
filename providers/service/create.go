@@ -12,7 +12,7 @@ import (
 	"github.com/coreos/go-systemd/unit"
 )
 
-// CreateArgs contains args for creating a new Service.
+// CreateArgs contains args for creating or replacing a Service.
 type CreateArgs struct {
 	ID          string            `json:"id"`
 	BundleID    uint64            `json:"bundleID"`
@@ -20,9 +20,10 @@ type CreateArgs struct {
 	Description string            `json:"description"`
 	Cmd         []string          `json:"cmd"`
 	Env         map[string]string `json:"env"`
+	Overwrite   bool              `json:"overwrite"`
 }
 
-// Create creates and starts a new service.
+// Create creates (or replaces) and starts (or restarts) a service.
 func (p *Provider) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args CreateArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -77,7 +78,7 @@ func (p *Provider) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 		})
 	}
 
-	requests, err := p.prepareCreateRequests(name, unitOptions)
+	requests, err := p.prepareCreateRequests(name, unitOptions, args.Overwrite)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -93,7 +94,7 @@ func (p *Provider) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 	return GetResult{*service}, nil, nil
 }
 
-func (p *Provider) prepareCreateRequests(name string, unitOptions []*unit.UnitOption) ([]*acomm.Request, error) {
+func (p *Provider) prepareCreateRequests(name string, unitOptions []*unit.UnitOption, overwrite bool) ([]*acomm.Request, error) {
 	requests := make([]*acomm.Request, 0, 3)
 	req, err := acomm.NewRequest(acomm.RequestOptions{
 		Task:         "systemd-create",
@@ -101,6 +102,7 @@ func (p *Provider) prepareCreateRequests(name string, unitOptions []*unit.UnitOp
 		Args: systemd.CreateArgs{
 			Name:        name,
 			UnitOptions: unitOptions,
+			Overwrite:   overwrite,
 		},
 	})
 	if err != nil {
@@ -121,7 +123,7 @@ func (p *Provider) prepareCreateRequests(name string, unitOptions []*unit.UnitOp
 	requests = append(requests, req)
 
 	req, err = acomm.NewRequest(acomm.RequestOptions{
-		Task:         "systemd-start",
+		Task:         "systemd-restart",
 		ResponseHook: p.tracker.URL(),
 		Args: systemd.ActionArgs{
 			Name: name,
