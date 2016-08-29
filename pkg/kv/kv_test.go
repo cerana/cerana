@@ -132,6 +132,12 @@ func (s *KVSuite) TestPing() {
 	s.Require().NoError(s.KV.Ping())
 }
 
+func (s *KVSuite) TestIsLeader() {
+	leader, err := s.KV.IsLeader()
+	s.NoError(err)
+	s.True(leader)
+}
+
 func (s *KVSuite) TestIsKeyNotFound() {
 	s.Require().Panics(func() { get(s.KVURLs[0], "lochness/non-existent-key") })
 	_, err := s.KV.Get("lochness/non-existent-key")
