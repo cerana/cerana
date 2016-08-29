@@ -78,12 +78,12 @@ func (p *Provider) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 		})
 	}
 
-	requests, err := p.prepareCreateRequests(name, unitOptions, args.Overwrite)
+	requests, continueChecks, err := p.prepareCreateRequests(name, unitOptions, args.Overwrite)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	if err = p.executeRequests(requests); err != nil {
+	if err = p.executeRequests(requests, continueChecks); err != nil {
 		return nil, nil, err
 	}
 
@@ -94,8 +94,10 @@ func (p *Provider) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 	return GetResult{*service}, nil, nil
 }
 
-func (p *Provider) prepareCreateRequests(name string, unitOptions []*unit.UnitOption, overwrite bool) ([]*acomm.Request, error) {
+func (p *Provider) prepareCreateRequests(name string, unitOptions []*unit.UnitOption, overwrite bool) ([]*acomm.Request, []continueCheck, error) {
 	requests := make([]*acomm.Request, 0, 3)
+	continueChecks := make([]continueCheck, 0, 3)
+
 	req, err := acomm.NewRequest(acomm.RequestOptions{
 		Task:         "systemd-create",
 		ResponseHook: p.tracker.URL(),
@@ -106,9 +108,17 @@ func (p *Provider) prepareCreateRequests(name string, unitOptions []*unit.UnitOp
 		},
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	requests = append(requests, req)
+	// there's only more work to do if the unit was modified
+	continueChecks = append(continueChecks, func(resp *acomm.Response) (bool, error) {
+		var result systemd.CreateResult
+		if err := resp.UnmarshalResult(&result); err != nil {
+			return false, err
+		}
+		return result.UnitModified, nil
+	})
 
 	req, err = acomm.NewRequest(acomm.RequestOptions{
 		Task:         "systemd-enable",
@@ -118,9 +128,10 @@ func (p *Provider) prepareCreateRequests(name string, unitOptions []*unit.UnitOp
 		},
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	requests = append(requests, req)
+	continueChecks = append(continueChecks, nil)
 
 	req, err = acomm.NewRequest(acomm.RequestOptions{
 		Task:         "systemd-restart",
@@ -131,8 +142,10 @@ func (p *Provider) prepareCreateRequests(name string, unitOptions []*unit.UnitOp
 		},
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	requests = append(requests, req)
-	return requests, nil
+	continueChecks = append(continueChecks, nil)
+
+	return requests, continueChecks, nil
 }

@@ -5,6 +5,8 @@ import (
 	"github.com/cerana/cerana/provider"
 )
 
+type continueCheck func(*acomm.Response) (bool, error)
+
 // Provider is a provider of service management functionality.
 type Provider struct {
 	config  *Config
@@ -28,8 +30,11 @@ func (p *Provider) RegisterTasks(server *provider.Server) {
 	server.RegisterTask("service-remove", p.Remove)
 }
 
-func (p *Provider) executeRequests(requests []*acomm.Request) error {
-	for _, req := range requests {
+func (p *Provider) executeRequests(requests []*acomm.Request, continueChecks []continueCheck) error {
+	if continueChecks == nil {
+		continueChecks = make([]continueCheck, len(requests))
+	}
+	for i, req := range requests {
 		doneChan := make(chan *acomm.Response, 1)
 		defer close(doneChan)
 		rh := func(req *acomm.Request, resp *acomm.Response) {
@@ -48,6 +53,16 @@ func (p *Provider) executeRequests(requests []*acomm.Request) error {
 		resp := <-doneChan
 		if resp.Error != nil {
 			return resp.Error
+		}
+
+		if check := continueChecks[i]; check != nil {
+			next, err := check(resp)
+			if err != nil {
+				return err
+			}
+			if !next {
+				return nil
+			}
 		}
 	}
 	return nil

@@ -12,16 +12,18 @@ import (
 
 func (s *systemd) TestCreate() {
 	tests := []struct {
-		name      string
-		options   []*unit.UnitOption
-		overwrite bool
-		err       string
+		name         string
+		options      []*unit.UnitOption
+		overwrite    bool
+		unitModified bool
+		err          string
 	}{
-		{"", nil, false, "missing arg: name"},
-		{"empty.service", nil, false, ""},
-		{"nonempty.service", []*unit.UnitOption{{"foo", "bar", "baz"}}, false, ""},
-		{"nonempty.service", []*unit.UnitOption{{"foo2", "bar2", "baz2"}}, false, "unit file already exists"}, // duplicate
-		{"nonempty.service", []*unit.UnitOption{{"foo2", "bar2", "baz2"}}, true, ""},
+		{"", nil, false, false, "missing arg: name"},
+		{"empty.service", nil, false, true, ""},
+		{"nonempty.service", []*unit.UnitOption{{"foo", "bar", "baz"}}, false, true, ""},
+		{"nonempty.service", []*unit.UnitOption{{"foo2", "bar2", "baz2"}}, false, false, "unit file already exists"}, // duplicate
+		{"nonempty.service", []*unit.UnitOption{{"foo", "bar", "baz"}}, true, false, ""},
+		{"nonempty.service", []*unit.UnitOption{{"foo2", "bar2", "baz2"}}, true, true, ""},
 	}
 
 	for _, test := range tests {
@@ -37,7 +39,6 @@ func (s *systemd) TestCreate() {
 
 		res, streamURL, err := s.systemd.Create(req)
 		s.Nil(streamURL, argsS)
-		s.Nil(res, argsS)
 		if test.err == "" {
 			if !s.NoError(err, argsS) {
 				continue
@@ -52,7 +53,13 @@ func (s *systemd) TestCreate() {
 				continue
 			}
 			s.Equal(expected, contents, argsS)
+			if !s.NotNil(res, argsS) {
+				continue
+			}
+			result := res.(systemdp.CreateResult)
+			s.Equal(test.unitModified, result.UnitModified, argsS)
 		} else {
+			s.Nil(res, argsS)
 			s.EqualError(err, test.err, argsS)
 		}
 	}

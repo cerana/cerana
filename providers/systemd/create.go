@@ -17,7 +17,12 @@ type CreateArgs struct {
 	Overwrite   bool               `json:"overwrite"`
 }
 
-// Create creates a new unit file.
+// CreateResult is the result of a create action.
+type CreateResult struct {
+	UnitModified bool `json:"modified"`
+}
+
+// Create creates or overwrites a unit file.
 func (s *Systemd) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args CreateArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -28,21 +33,32 @@ func (s *Systemd) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.Newv("missing arg: name", map[string]interface{}{"args": args})
 	}
 
+	unitFileContents, err := ioutil.ReadAll(unit.Serialize(args.UnitOptions))
+	if err != nil {
+		return nil, nil, errors.Wrapv(err, map[string]interface{}{"unitOptions": args.UnitOptions})
+	}
+
 	unitFilePath, err := s.config.UnitFilePath(args.Name)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	if !args.Overwrite {
-		if _, err = os.Stat(unitFilePath); err == nil {
+	if _, err = os.Stat(unitFilePath); err == nil {
+		if !args.Overwrite {
 			return nil, nil, errors.Newv("unit file already exists", map[string]interface{}{"path": unitFilePath})
+		}
+
+		// check if modifications exist to avoid unnecessary work
+		origUnitFileContents, err := ioutil.ReadFile(unitFilePath)
+		if err != nil {
+			return nil, nil, errors.Wrapv(err, map[string]interface{}{"path": unitFilePath})
+		}
+
+		if string(unitFileContents) == string(origUnitFileContents) {
+			return CreateResult{}, nil, nil
 		}
 	}
 
-	unitFileContents, err := ioutil.ReadAll(unit.Serialize(args.UnitOptions))
-	if err != nil {
-		return nil, nil, errors.Wrapv(err, map[string]interface{}{"unitOptions": args.UnitOptions})
-	}
 	// TODO: Sort out file permissions
 	if err := ioutil.WriteFile(unitFilePath, unitFileContents, os.ModePerm); err != nil {
 		return nil, nil, errors.Wrapv(err, map[string]interface{}{
@@ -52,5 +68,8 @@ func (s *Systemd) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 		})
 	}
 
-	return nil, nil, errors.Wrap(s.dconn.Reload())
+	if err := errors.Wrap(s.dconn.Reload()); err != nil {
+		return nil, nil, err
+	}
+	return CreateResult{true}, nil, nil
 }

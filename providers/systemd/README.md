@@ -89,6 +89,16 @@ type CreateArgs struct {
 
 CreateArgs are arguments for the Create handler.
 
+#### type CreateResult
+
+```go
+type CreateResult struct {
+	UnitModified bool `json:"modified"`
+}
+```
+
+CreateResult is the result of a create action.
+
 #### type DisableArgs
 
 ```go
@@ -299,7 +309,7 @@ New creates a new instance of Systemd.
 ```go
 func (s *Systemd) Create(req *acomm.Request) (interface{}, *url.URL, error)
 ```
-Create creates a new unit file.
+Create creates or overwrites a unit file.
 
 #### func (*Systemd) Disable
 

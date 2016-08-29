@@ -33,7 +33,7 @@ func (p *Provider) Remove(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 
-	return nil, nil, p.executeRequests(requests)
+	return nil, nil, p.executeRequests(requests, nil)
 }
 
 func (p *Provider) prepareRemoveRequests(name string) ([]*acomm.Request, error) {
