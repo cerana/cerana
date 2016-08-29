@@ -114,7 +114,7 @@ func (p *Provider) prepareCreateRequests(name string, unitOptions []*unit.UnitOp
 	// there's only more work to do if the unit was modified
 	continueChecks = append(continueChecks, func(resp *acomm.Response) (bool, error) {
 		var result systemd.CreateResult
-		if err := resp.UnmarshalResult(&result); err != nil {
+		if err = resp.UnmarshalResult(&result); err != nil {
 			return false, err
 		}
 		return result.UnitModified, nil
