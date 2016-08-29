@@ -83,6 +83,7 @@ ConfigData defines the structure of the config data (e.g. in the config file)
 type CreateArgs struct {
 	Name        string             `json:"name"`
 	UnitOptions []*unit.UnitOption `json:"unit-options"`
+	Overwrite   bool               `json:"overwrite"`
 }
 ```
 

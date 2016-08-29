@@ -12,18 +12,20 @@ import (
 
 func (s *systemd) TestCreate() {
 	tests := []struct {
-		name    string
-		options []*unit.UnitOption
-		err     string
+		name      string
+		options   []*unit.UnitOption
+		overwrite bool
+		err       string
 	}{
-		{"", nil, "missing arg: name"},
-		{"empty.service", nil, ""},
-		{"nonempty.service", []*unit.UnitOption{{"foo", "bar", "baz"}}, ""},
-		{"nonempty.service", []*unit.UnitOption{{"foo2", "bar2", "baz2"}}, "unit file already exists"}, // duplicate
+		{"", nil, false, "missing arg: name"},
+		{"empty.service", nil, false, ""},
+		{"nonempty.service", []*unit.UnitOption{{"foo", "bar", "baz"}}, false, ""},
+		{"nonempty.service", []*unit.UnitOption{{"foo2", "bar2", "baz2"}}, false, "unit file already exists"}, // duplicate
+		{"nonempty.service", []*unit.UnitOption{{"foo2", "bar2", "baz2"}}, true, ""},
 	}
 
 	for _, test := range tests {
-		args := &systemdp.CreateArgs{Name: test.name, UnitOptions: test.options}
+		args := &systemdp.CreateArgs{Name: test.name, UnitOptions: test.options, Overwrite: test.overwrite}
 		argsS := fmt.Sprintf("%+v", args)
 
 		req, err := acomm.NewRequest(acomm.RequestOptions{

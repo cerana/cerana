@@ -14,6 +14,7 @@ import (
 type CreateArgs struct {
 	Name        string             `json:"name"`
 	UnitOptions []*unit.UnitOption `json:"unit-options"`
+	Overwrite   bool               `json:"overwrite"`
 }
 
 // Create creates a new unit file.
@@ -32,8 +33,10 @@ func (s *Systemd) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 
-	if _, err = os.Stat(unitFilePath); err == nil {
-		return nil, nil, errors.Newv("unit file already exists", map[string]interface{}{"path": unitFilePath})
+	if !args.Overwrite {
+		if _, err = os.Stat(unitFilePath); err == nil {
+			return nil, nil, errors.Newv("unit file already exists", map[string]interface{}{"path": unitFilePath})
+		}
 	}
 
 	unitFileContents, err := ioutil.ReadAll(unit.Serialize(args.UnitOptions))
@@ -41,9 +44,13 @@ func (s *Systemd) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, errors.Wrapv(err, map[string]interface{}{"unitOptions": args.UnitOptions})
 	}
 	// TODO: Sort out file permissions
-	return nil, nil, errors.Wrapv(ioutil.WriteFile(unitFilePath, unitFileContents, os.ModePerm), map[string]interface{}{
-		"path":     unitFilePath,
-		"contents": string(unitFileContents),
-		"perms":    os.ModePerm,
-	})
+	if err := ioutil.WriteFile(unitFilePath, unitFileContents, os.ModePerm); err != nil {
+		return nil, nil, errors.Wrapv(err, map[string]interface{}{
+			"path":     unitFilePath,
+			"contents": string(unitFileContents),
+			"perms":    os.ModePerm,
+		})
+	}
+
+	return nil, nil, errors.Wrap(s.dconn.Reload())
 }
