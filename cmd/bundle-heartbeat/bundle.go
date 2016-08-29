@@ -209,13 +209,14 @@ func runHealthChecks(config tick.Configer, tracker *acomm.Tracker, bundles []*cl
 
 	responses := multiRequest.Responses()
 	healthResults := make(map[uint64]map[string]error)
+	for _, bundle := range bundles {
+		healthResults[bundle.ID] = make(map[string]error)
+	}
+
 	for name, resp := range responses {
 		nameParts := strings.Split(name, ":")
 		bundleID, _ := strconv.ParseUint(nameParts[0], 10, 64)
 		healthCheck := nameParts[1] + ":" + nameParts[2]
-		if _, ok := healthResults[bundleID]; !ok {
-			healthResults[bundleID] = make(map[string]error)
-		}
 		if resp.Error != nil {
 			healthResults[bundleID][healthCheck] = errors.Wrap(resp.Error)
 		}
