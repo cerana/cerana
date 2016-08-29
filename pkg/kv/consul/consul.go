@@ -308,6 +308,40 @@ func (c *ckv) Ping() error {
 	return errors.Wrap(err)
 }
 
+func (c *ckv) IsLeader() (bool, error) {
+	self, err := c.client.Agent().Self()
+	if err != nil {
+		return false, errors.Wrap(err)
+	}
+
+	ctx := map[string]interface{}{"self": self}
+	stats, ok := self["Stats"]
+	if !ok {
+		return false, errors.Newv(`missing "Stats" key in description of self`, ctx)
+	}
+
+	consulI, ok := stats["consul"]
+	if !ok {
+		return false, errors.Newv(`missing "consul" key from self.Stats`, ctx)
+	}
+
+	consul, ok := consulI.(map[string]interface{})
+	if !ok {
+		return false, errors.Newv(`"self.Stats.consul" value is an unexpected type`, ctx)
+	}
+
+	leaderI, ok := consul["leader"]
+	if !ok {
+		return false, errors.Newv(`missing "leader" key from self.Stats.consul`, ctx)
+	}
+	leader, ok := leaderI.(string)
+	if !ok {
+		return false, errors.Newv(`"self.Stats.consul.leader" value is an unexpected type`, ctx)
+	}
+
+	return leader == "true", nil
+}
+
 type ekey struct {
 	kv *ckv
 	lock
