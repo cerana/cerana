@@ -1,6 +1,8 @@
 package etcd
 
 import (
+	"encoding/json"
+	"net/http"
 	"net/url"
 	"time"
 
@@ -272,6 +274,58 @@ func (e *ekv) Ping() error {
 		return errors.New("can not reach cluster")
 	}
 	return nil
+}
+
+func (e *ekv) IsLeader() (bool, error) {
+	req := etcd.NewRawRequest(http.MethodGet, "stats/self", nil, nil)
+	resp, err := e.e.SendRequest(req)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to send request")
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return false, errors.Newv("http error:"+http.StatusText(resp.StatusCode), map[string]interface{}{
+			"code": resp.StatusCode,
+		})
+	}
+
+	self := map[string]interface{}{}
+	err = json.Unmarshal(resp.Body, &self)
+	if err != nil {
+		return false, errors.Wrap(err)
+	}
+
+	ctx := map[string]interface{}{
+		"info": self,
+	}
+
+	idI, ok := self["id"]
+	if !ok {
+		return false, errors.Newv(`missing "id" key from self`, ctx)
+	}
+	id, ok := idI.(string)
+	if !ok {
+		return false, errors.Newv("id value is an unexpected type", ctx)
+	}
+
+	leaderInfoI, ok := self["leaderInfo"]
+	if !ok {
+		return false, errors.Newv(`missing "leaderInfo" key from self`, ctx)
+	}
+	leaderInfo, ok := leaderInfoI.(map[string]interface{})
+	if !ok {
+		return false, errors.Newv("self.leaderInfo value is an unexpected type", ctx)
+	}
+
+	leaderI, ok := leaderInfo["leader"]
+	if !ok {
+		return false, errors.Newv(`missing "leader" key from self.leaderInfo`, ctx)
+	}
+	leader, ok := leaderI.(string)
+	if !ok {
+		return false, errors.Newv("self.leaderInfo.leader value is an unexpected type", ctx)
+	}
+	return id == leader, nil
 }
 
 type eKey struct {
