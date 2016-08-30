@@ -86,7 +86,7 @@ func GetIP(config Configer, tracker *acomm.Tracker) (net.IP, error) {
 		return nil, err
 	}
 	if resp.Error != nil {
-		return nil, errors.Wrap(resp.Error)
+		return nil, errors.ResetStack(resp.Error)
 	}
 
 	var data metrics.NetworkResult

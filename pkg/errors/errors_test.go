@@ -286,3 +286,21 @@ func (s *Errors) TestCause() {
 	s.Equal(err, Cause(wrapped))
 	s.NotEqual(wrapped, Cause(wrapped))
 }
+
+func resetFirst() *errorExt {
+	return New("first").(*errorExt)
+}
+
+func resetSecond(err error) *errorExt {
+	return ResetStack(err).(*errorExt)
+}
+
+func (s *Errors) TestResetStack() {
+	err := resetFirst()
+	stack := callstack(err.pcs)
+	s.Contains(stack[0], "resetFirst")
+
+	err = resetSecond(err)
+	stack = callstack(err.pcs)
+	s.Contains(stack[0], "resetSecond")
+}

@@ -65,7 +65,7 @@ func getDatasets(config *Config, tracker *acomm.Tracker, ip net.IP) ([]clusterco
 	for name, args := range requests {
 		resp := responses[name]
 		if resp.Error != nil {
-			return nil, errors.Wrap(resp.Error)
+			return nil, errors.ResetStack(resp.Error)
 		}
 		if err := resp.UnmarshalResult(args.respData); err != nil {
 			return nil, err

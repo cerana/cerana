@@ -471,7 +471,7 @@ func (t *Tracker) SyncRequest(dest *url.URL, opts RequestOptions, timeout time.D
 	}
 
 	resp := <-ch
-	return resp, resp.Error
+	return resp, errors.ResetStack(resp.Error)
 }
 
 // ReplaceLocalhost replaces localhost, 127.0.0.1, or ::1 with the specified host.

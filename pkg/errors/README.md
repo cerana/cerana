@@ -39,6 +39,14 @@ func Newv(msg string, values map[string]interface{}) error
 Newv returns a new error with the callstack that formats as the given text and
 associates the supplied data with the error.
 
+#### func  ResetStack
+
+```go
+func ResetStack(err error) error
+```
+ResetStack generates a new stack trace for the error at the current location if
+one was present.
+
 #### func  Wrap
 
 ```go

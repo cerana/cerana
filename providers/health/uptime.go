@@ -1,11 +1,11 @@
 package health
 
 import (
-	"errors"
 	"net/url"
 	"time"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/providers/systemd"
 )
 
@@ -22,7 +22,7 @@ func (h *Health) Uptime(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 	if args.Name == "" {
-		return nil, nil, errors.New("missing arg: name")
+		return nil, nil, errors.Newv("missing arg: name", map[string]interface{}{"args": args, "missing": "name"})
 	}
 
 	unitStatus, err := h.getUnitStatus(args.Name)
@@ -31,7 +31,7 @@ func (h *Health) Uptime(req *acomm.Request) (interface{}, *url.URL, error) {
 	}
 
 	if unitStatus.Uptime < args.MinUptime {
-		return nil, nil, errors.New("uptime less than expected")
+		return nil, nil, errors.Newv("uptime less than expected", map[string]interface{}{"minUptime": args.MinUptime, "uptime": unitStatus.Uptime})
 	}
 
 	return nil, nil, nil
@@ -62,7 +62,7 @@ func (h *Health) getUnitStatus(name string) (*systemd.UnitStatus, error) {
 
 	resp := <-doneChan
 	if resp.Error != nil {
-		return nil, resp.Error
+		return nil, errors.ResetStack(resp.Error)
 	}
 
 	var result systemd.GetResult

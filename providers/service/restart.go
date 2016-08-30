@@ -53,5 +53,5 @@ func (p *Provider) Restart(req *acomm.Request) (interface{}, *url.URL, error) {
 	}
 
 	resp := <-ch
-	return nil, nil, errors.Wrap(resp.Error)
+	return nil, nil, errors.ResetStack(resp.Error)
 }

@@ -1,7 +1,6 @@
 package dhcp
 
 import (
-	"errors"
 	"math/rand"
 	"net"
 	"net/url"
@@ -9,6 +8,7 @@ import (
 	"time"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/provider"
 	"github.com/cerana/cerana/providers/kv"
 	"github.com/krolaw/dhcp4"
@@ -151,7 +151,7 @@ func refreshLeaseAck(tracker *acomm.Tracker, coord *url.URL, mac, ip string, ttl
 	}
 
 	resp := <-ch
-	return resp.Error
+	return errors.ResetStack(resp.Error)
 }
 
 func nextGetter(closer <-chan struct{}, taken []uint32, min, max uint32) <-chan uint32 {

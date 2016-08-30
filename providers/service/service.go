@@ -2,6 +2,7 @@ package service
 
 import (
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/provider"
 )
 
@@ -47,7 +48,7 @@ func (p *Provider) executeRequests(requests []*acomm.Request) error {
 
 		resp := <-doneChan
 		if resp.Error != nil {
-			return resp.Error
+			return errors.ResetStack(resp.Error)
 		}
 	}
 	return nil

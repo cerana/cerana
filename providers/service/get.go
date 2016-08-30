@@ -88,7 +88,7 @@ func (p *Provider) getService(bundleID uint64, id string) (*Service, error) {
 
 	resp := <-ch
 	if resp.Error != nil {
-		return nil, errors.Wrap(resp.Error)
+		return nil, errors.ResetStack(resp.Error)
 	}
 
 	var getResult systemd.GetResult
