@@ -67,7 +67,7 @@ func getCurrentState(config *Config, tracker *acomm.Tracker) ([]clusterconf.Node
 	responses := multirequest.Responses()
 	for name, resp := range responses {
 		if resp.Error != nil {
-			return nil, nil, nil, errors.Wrapv(resp.Error, map[string]interface{}{"task": name})
+			return nil, nil, nil, errors.Wrapv(errors.ResetStack(resp.Error), map[string]interface{}{"task": name})
 		}
 		if err := resp.UnmarshalResult(tasks[name].result); err != nil {
 			return nil, nil, nil, errors.Wrapv(err, map[string]interface{}{"task": name})
@@ -168,7 +168,7 @@ func runService(config *Config, tracker *acomm.Tracker, wg *sync.WaitGroup, erro
 			Env:      serviceConf.Env,
 		},
 		ErrorHandler: func(req *acomm.Request, resp *acomm.Response) {
-			trackError(req.Task, errors.Wrap(resp.Error))
+			trackError(req.Task, errors.ResetStack(resp.Error))
 		},
 		SuccessHandler: func(_ *acomm.Request, _ *acomm.Response) {
 			logrus.WithFields(logrus.Fields{

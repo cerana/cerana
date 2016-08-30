@@ -57,7 +57,7 @@ func getCurrentState(config *Config, tracker *acomm.Tracker) ([]clusterconf.Node
 	responses := multirequest.Responses()
 	for name, resp := range responses {
 		if resp.Error != nil {
-			return nil, nil, errors.Wrapv(resp.Error, map[string]interface{}{"task": name})
+			return nil, nil, errors.Wrapv(errors.ResetStack(resp.Error), map[string]interface{}{"task": name})
 		}
 		if err := resp.UnmarshalResult(tasks[name]); err != nil {
 			return nil, nil, errors.Wrapv(err, map[string]interface{}{"task": name})
@@ -149,7 +149,7 @@ func replicateDataset(config *Config, tracker *acomm.Tracker, wg *sync.WaitGroup
 		ResponseHook: config.HTTPResponseURL(),
 		Args:         zfs.CommonArgs{Name: snapshotName},
 		ErrorHandler: func(req *acomm.Request, resp *acomm.Response) {
-			trackError(req.Task, resp.Error)
+			trackError(req.Task, errors.ResetStack(resp.Error))
 		},
 		SuccessHandler: func(req *acomm.Request, resp *acomm.Response) {
 			opts := acomm.RequestOptions{
@@ -158,7 +158,7 @@ func replicateDataset(config *Config, tracker *acomm.Tracker, wg *sync.WaitGroup
 				Args:         zfs.CommonArgs{Name: datasetName},
 				StreamURL:    resp.StreamURL,
 				ErrorHandler: func(req *acomm.Request, resp *acomm.Response) {
-					trackError(req.Task, resp.Error)
+					trackError(req.Task, errors.ResetStack(resp.Error))
 				},
 				SuccessHandler: func(req *acomm.Request, resp *acomm.Response) {
 					logrus.WithFields(logrus.Fields{
