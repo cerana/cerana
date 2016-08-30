@@ -161,11 +161,12 @@ func runService(config *Config, tracker *acomm.Tracker, wg *sync.WaitGroup, erro
 		Task:         "service-create",
 		ResponseHook: config.HTTPResponseURL(),
 		Args: service.CreateArgs{
-			ID:       serviceConf.ID,
-			BundleID: bundleID,
-			Dataset:  datasetName,
-			Cmd:      serviceConf.Cmd,
-			Env:      serviceConf.Env,
+			ID:        serviceConf.ID,
+			BundleID:  bundleID,
+			Dataset:   datasetName,
+			Cmd:       serviceConf.Cmd,
+			Env:       serviceConf.Env,
+			Overwrite: true,
 		},
 		ErrorHandler: func(req *acomm.Request, resp *acomm.Response) {
 			trackError(req.Task, errors.ResetStack(resp.Error))
