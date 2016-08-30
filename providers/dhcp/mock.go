@@ -1,7 +1,6 @@
 package dhcp
 
 import (
-	"errors"
 	"math/rand"
 	"net"
 	"net/url"
@@ -9,6 +8,7 @@ import (
 	"time"
 
 	"github.com/cerana/cerana/acomm"
+	"github.com/cerana/cerana/pkg/errors"
 	"github.com/cerana/cerana/provider"
 	"github.com/krolaw/dhcp4"
 	"github.com/spf13/viper"

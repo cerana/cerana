@@ -221,7 +221,7 @@ func getAllAllocations(tracker *acomm.Tracker, coord *url.URL) (map[string]strin
 
 	resp := <-ch
 	if err = resp.Error; err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
 
 	kvs := map[string]kv.Value{}
@@ -243,7 +243,7 @@ func (d *DHCP) get(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 	if addrs.MAC == "" {
-		return nil, nil, errors.New("missing arg: mac")
+		return nil, nil, errors.Newv("missing arg: mac", map[string]interface{}{"args": addrs, "missing": "mac"})
 	}
 
 	lease := Lease{
@@ -367,14 +367,14 @@ func (d *DHCP) ack(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 	if addrs.MAC == "" {
-		return nil, nil, errors.New("missing arg: mac")
+		return nil, nil, errors.Newv("missing arg: mac", map[string]interface{}{"args": addrs, "missing": "mac"})
 	}
 	if addrs.IP == "" {
-		return nil, nil, errors.New("missing arg: ip")
+		return nil, nil, errors.Newv("missing arg: ip", map[string]interface{}{"args": addrs, "missing": "ip"})
 	}
 
 	if !d.config.ipInRange(net.ParseIP(addrs.IP)) {
-		return nil, nil, errors.New("invalid ip")
+		return nil, nil, errors.Newv("invalid ip", map[string]interface{}{"ip": addrs.IP})
 	}
 
 	mac, err := lookupMAC(d.tracker, d.coordinator, addrs.IP)
@@ -382,7 +382,7 @@ func (d *DHCP) ack(req *acomm.Request) (interface{}, *url.URL, error) {
 		return nil, nil, err
 	}
 	if mac != "" && addrs.MAC != mac {
-		return nil, nil, errors.New("requested ip not assigned to this mac")
+		return nil, nil, errors.Newv("requested ip not assigned to this mac", map[string]interface{}{"ip": addrs.IP, "assignedMAC": mac, "mac": addrs.MAC})
 	}
 
 	err = refreshLeaseAck(d.tracker, d.coordinator, addrs.MAC, addrs.IP, d.config.LeaseDuration())
