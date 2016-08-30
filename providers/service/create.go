@@ -12,7 +12,7 @@ import (
 	"github.com/coreos/go-systemd/unit"
 )
 
-// CreateArgs contains args for creating a new Service.
+// CreateArgs contains args for creating or replacing a Service.
 type CreateArgs struct {
 	ID          string            `json:"id"`
 	BundleID    uint64            `json:"bundleID"`
@@ -20,9 +20,10 @@ type CreateArgs struct {
 	Description string            `json:"description"`
 	Cmd         []string          `json:"cmd"`
 	Env         map[string]string `json:"env"`
+	Overwrite   bool              `json:"overwrite"`
 }
 
-// Create creates and starts a new service.
+// Create creates (or replaces) and starts (or restarts) a service.
 func (p *Provider) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 	var args CreateArgs
 	if err := req.UnmarshalArgs(&args); err != nil {
@@ -77,12 +78,12 @@ func (p *Provider) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 		})
 	}
 
-	requests, err := p.prepareCreateRequests(name, unitOptions)
+	requests, continueChecks, err := p.prepareCreateRequests(name, unitOptions, args.Overwrite)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	if err = p.executeRequests(requests); err != nil {
+	if err = p.executeRequests(requests, continueChecks); err != nil {
 		return nil, nil, err
 	}
 
@@ -93,20 +94,31 @@ func (p *Provider) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 	return GetResult{*service}, nil, nil
 }
 
-func (p *Provider) prepareCreateRequests(name string, unitOptions []*unit.UnitOption) ([]*acomm.Request, error) {
+func (p *Provider) prepareCreateRequests(name string, unitOptions []*unit.UnitOption, overwrite bool) ([]*acomm.Request, []continueCheck, error) {
 	requests := make([]*acomm.Request, 0, 3)
+	continueChecks := make([]continueCheck, 0, 3)
+
 	req, err := acomm.NewRequest(acomm.RequestOptions{
 		Task:         "systemd-create",
 		ResponseHook: p.tracker.URL(),
 		Args: systemd.CreateArgs{
 			Name:        name,
 			UnitOptions: unitOptions,
+			Overwrite:   overwrite,
 		},
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	requests = append(requests, req)
+	// there's only more work to do if the unit was modified
+	continueChecks = append(continueChecks, func(resp *acomm.Response) (bool, error) {
+		var result systemd.CreateResult
+		if err = resp.UnmarshalResult(&result); err != nil {
+			return false, err
+		}
+		return result.UnitModified, nil
+	})
 
 	req, err = acomm.NewRequest(acomm.RequestOptions{
 		Task:         "systemd-enable",
@@ -116,12 +128,13 @@ func (p *Provider) prepareCreateRequests(name string, unitOptions []*unit.UnitOp
 		},
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	requests = append(requests, req)
+	continueChecks = append(continueChecks, nil)
 
 	req, err = acomm.NewRequest(acomm.RequestOptions{
-		Task:         "systemd-start",
+		Task:         "systemd-restart",
 		ResponseHook: p.tracker.URL(),
 		Args: systemd.ActionArgs{
 			Name: name,
@@ -129,8 +142,10 @@ func (p *Provider) prepareCreateRequests(name string, unitOptions []*unit.UnitOp
 		},
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	requests = append(requests, req)
-	return requests, nil
+	continueChecks = append(continueChecks, nil)
+
+	return requests, continueChecks, nil
 }

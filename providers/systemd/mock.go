@@ -1,6 +1,7 @@
 package systemd
 
 import (
+	"io/ioutil"
 	"net/url"
 	"strings"
 	"time"
@@ -57,11 +58,24 @@ func (s *MockSystemd) Create(req *acomm.Request) (interface{}, *url.URL, error) 
 		return nil, nil, errors.New("missing arg: name")
 	}
 
-	if _, ok := s.Data.UnitFiles[args.Name]; ok {
-		return nil, nil, errors.New("unit file already exists")
+	if u, ok := s.Data.UnitFiles[args.Name]; ok {
+		if !args.Overwrite {
+			return nil, nil, errors.New("unit file already exists")
+		}
+		unitFileContents, err := ioutil.ReadAll(unit.Serialize(args.UnitOptions))
+		if err != nil {
+			return nil, nil, errors.Wrap(err)
+		}
+		origFileContents, err := ioutil.ReadAll(unit.Serialize(u))
+		if err != nil {
+			return nil, nil, errors.Wrap(err)
+		}
+		if string(unitFileContents) == string(origFileContents) {
+			return CreateResult{false}, nil, nil
+		}
 	}
 	s.Data.UnitFiles[args.Name] = args.UnitOptions
-	return nil, nil, nil
+	return CreateResult{true}, nil, nil
 }
 
 // Disable disables a mock service.

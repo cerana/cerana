@@ -83,10 +83,21 @@ ConfigData defines the structure of the config data (e.g. in the config file)
 type CreateArgs struct {
 	Name        string             `json:"name"`
 	UnitOptions []*unit.UnitOption `json:"unit-options"`
+	Overwrite   bool               `json:"overwrite"`
 }
 ```
 
 CreateArgs are arguments for the Create handler.
+
+#### type CreateResult
+
+```go
+type CreateResult struct {
+	UnitModified bool `json:"modified"`
+}
+```
+
+CreateResult is the result of a create action.
 
 #### type DisableArgs
 
@@ -298,7 +309,7 @@ New creates a new instance of Systemd.
 ```go
 func (s *Systemd) Create(req *acomm.Request) (interface{}, *url.URL, error)
 ```
-Create creates a new unit file.
+Create creates or overwrites a unit file.
 
 #### func (*Systemd) Disable
 

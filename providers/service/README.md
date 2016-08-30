@@ -74,10 +74,11 @@ type CreateArgs struct {
 	Description string            `json:"description"`
 	Cmd         []string          `json:"cmd"`
 	Env         map[string]string `json:"env"`
+	Overwrite   bool              `json:"overwrite"`
 }
 ```
 
-CreateArgs contains args for creating a new Service.
+CreateArgs contains args for creating or replacing a Service.
 
 #### type GetArgs
 
@@ -214,7 +215,7 @@ New creates a new instance of Provider.
 ```go
 func (p *Provider) Create(req *acomm.Request) (interface{}, *url.URL, error)
 ```
-Create creates and starts a new service.
+Create creates (or replaces) and starts (or restarts) a service.
 
 #### func (*Provider) Get
 
