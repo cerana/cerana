@@ -89,7 +89,7 @@ func generateTempSocketPath(dir, prefix string) (string, error) {
 	}
 	logrusx.LogReturnedErr(f.Close, map[string]interface{}{"name": f.Name()}, "failed to close temp file")
 	if err = os.Remove(f.Name()); err != nil {
-		logrus.WithField("error", errors.Wrapv(err, map[string]interface{}{"name": f.Name()})).Error("failed to remove temp file")
+		logrus.WithField("error", errors.Wrapv(err, map[string]interface{}{"name": f.Name()})).Debug("failed to remove temp file")
 	}
 
 	return fmt.Sprintf("%s.sock", f.Name()), nil
@@ -155,12 +155,12 @@ func (t *Tracker) handleConn(conn net.Conn) {
 
 	resp := &Response{}
 	if err := UnmarshalConnData(conn, resp); err != nil {
-		logrus.WithField("error", errors.Wrap(err)).Error("fail to unmarshal response")
+		logrus.WithField("error", errors.Wrap(err)).Debug("fail to unmarshal response")
 		return
 	}
 
 	if err := SendConnData(conn, &Response{}); err != nil {
-		logrus.WithField("error", map[string]interface{}{"requestID": resp.ID}).Error("failed to ack response")
+		logrus.WithField("error", map[string]interface{}{"requestID": resp.ID}).Debug("failed to ack response")
 	}
 
 	go t.HandleResponse(resp)
@@ -172,7 +172,7 @@ func (t *Tracker) HandleResponse(resp *Response) {
 	req := t.retrieveRequest(resp.ID)
 	if req == nil {
 		err := errors.Newv("no tracked request", map[string]interface{}{"requestID": resp.ID})
-		logrus.WithField("error", err).Error("failed to lookup request")
+		logrus.WithField("error", err).Debug("failed to lookup request")
 		return
 	}
 	defer t.waitgroup.Done()
@@ -197,7 +197,7 @@ func (t *Tracker) HandleResponse(resp *Response) {
 		streamURL, err := t.ProxyStreamHTTPURL(resp.StreamURL) // Replace the StreamURL with a proxy stream url
 		if err != nil {
 			err = errors.Wrapv(err, map[string]interface{}{"requestID": req.ID})
-			logrus.WithField("error", err).Error("failed to generate proxy stream url")
+			logrus.WithField("error", err).Debug("failed to generate proxy stream url")
 			streamURL = nil
 		}
 		resp.StreamURL = streamURL
@@ -206,7 +206,7 @@ func (t *Tracker) HandleResponse(resp *Response) {
 	// Forward the response along
 	if err := req.Respond(resp); err != nil {
 		err = errors.Wrapv(err, map[string]interface{}{"requestID": req.ID})
-		logrus.WithField("error", err).Error("failed to respond to request")
+		logrus.WithField("error", err).Debug("failed to respond to request")
 	}
 	return
 }
@@ -261,7 +261,7 @@ func (t *Tracker) TrackRequest(req *Request, timeout time.Duration) error {
 		t.requests[req.ID] = req
 
 		if err := t.setRequestTimeout(req, timeout); err != nil {
-			logrus.WithField("error", err).Error("failed to set request timeout")
+			logrus.WithField("error", err).Debug("failed to set request timeout")
 		}
 		return nil
 	}
@@ -344,7 +344,7 @@ func (t *Tracker) ProxyUnix(req *Request, timeout time.Duration) (*Request, erro
 			defer logrusx.LogReturnedErr(w.Close, nil, "failed to close proxy stream writer")
 			if err := Stream(w, src); err != nil {
 				err = errors.Wrapv(err, errData)
-				logrus.WithField("errors", err).Error("failed to proxy stream")
+				logrus.WithField("errors", err).Debug("failed to proxy stream")
 			}
 		}(req.StreamURL)
 
@@ -420,12 +420,12 @@ func (t *Tracker) ProxyExternalHandler(w http.ResponseWriter, r *http.Request) {
 	ackJSON, err := json.Marshal(ack)
 	if err != nil {
 		err = errors.Wrapv(err, map[string]interface{}{"ack": ack})
-		logrus.WithField("error", err).Error("failed to marshal ack")
+		logrus.WithField("error", err).Debug("failed to marshal ack")
 		return
 	}
 	if _, err := w.Write(ackJSON); err != nil {
 		err = errors.Wrapv(err, map[string]interface{}{"ack": ack, "requestID": resp.ID})
-		logrus.WithField("error", err).Error("failed to ack response")
+		logrus.WithField("error", err).Debug("failed to ack response")
 		return
 	}
 
@@ -435,7 +435,7 @@ func (t *Tracker) ProxyExternalHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err := ReplaceLocalhost(resp.StreamURL, r.RemoteAddr); err != nil {
 		err = errors.Wrapv(err, map[string]interface{}{"requestID": resp.ID})
-		logrus.WithField("error", err).Error("failed to replace localhost in response streamURL")
+		logrus.WithField("error", err).Debug("failed to replace localhost in response streamURL")
 		return
 	}
 
