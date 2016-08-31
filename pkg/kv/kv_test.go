@@ -113,8 +113,8 @@ func (s *KVSuite) TestNew() {
 		{"", true, nil},
 		{"kvite://", true, nil},
 		{"etcd://", true, e},
-		{fmt.Sprintf("consul://127.0.0.1:%d", s.KVPort), false, c},
-		{fmt.Sprintf("http://127.0.0.1:%d", s.KVPort), false, h},
+		{fmt.Sprintf("consul://127.0.0.10:%d", s.KVPort), false, c},
+		{fmt.Sprintf("http://127.0.0.10:%d", s.KVPort), false, h},
 	}
 	for _, test := range tests {
 		_, err := kv.New(test.addr)
@@ -133,7 +133,7 @@ func (s *KVSuite) TestPing() {
 }
 
 func (s *KVSuite) TestIsKeyNotFound() {
-	s.Require().Panics(func() { get(s.KVURL, "lochness/non-existent-key") })
+	s.Require().Panics(func() { get(s.KVURLs[0], "lochness/non-existent-key") })
 	_, err := s.KV.Get("lochness/non-existent-key")
 	s.Require().True(s.KV.IsKeyNotFound(err))
 }
@@ -172,9 +172,9 @@ func (s *KVSuite) TestSet() {
 	for _, str := range []string{"FEE", "FI", "FO", "FUM"} {
 		key := s.KVPrefix + "/" + str
 		s.Require().NoError(s.KV.Set(key, str))
-		s.Require().Equal(str, get(s.KVURL, key))
+		s.Require().Equal(str, get(s.KVURLs[0], key))
 		s.Require().NoError(s.KV.Set(key, str+str))
-		s.Require().Equal(str+str, get(s.KVURL, key))
+		s.Require().Equal(str+str, get(s.KVURLs[0], key))
 	}
 }
 
@@ -367,7 +367,7 @@ func (s *KVSuite) makeEKey(key string) kv.EphemeralKey {
 	s.Require().NoError(err)
 
 	s.Require().NoError(ekey.Set("init"))
-	s.Require().Equal("init", get(s.KVURL, key))
+	s.Require().Equal("init", get(s.KVURLs[0], key))
 	return ekey
 }
 
