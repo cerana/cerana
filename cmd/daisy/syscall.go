@@ -29,13 +29,13 @@ import (
 // signal and be able to wait(2) on the process to discover its
 // termination status.
 
-// PR_SET_CHILD_SUBREAPER prctl flag
-const PR_SET_CHILD_SUBREAPER = 36
-// PR_SET_NO_NEW_PRIVS prctl flag
-const PR_SET_NO_NEW_PRIVS = 38
+const prSetChildSubreaper = 36
+const prSetNoNewPrivs = 38
 
+// ParentDeathSignal is the signal a process receives when its parent terminates
 type ParentDeathSignal int
 
+// Restore restores the previously set parent death signal
 func (p ParentDeathSignal) Restore() error {
 	if p == 0 {
 		return nil
@@ -50,10 +50,12 @@ func (p ParentDeathSignal) Restore() error {
 	return p.Set()
 }
 
+// Set sets a new parent death signal
 func (p ParentDeathSignal) Set() error {
 	return SetParentDeathSignal(uintptr(p))
 }
 
+// Execv executes the specified command cmd
 func Execv(cmd string, args []string, env []string) error {
 	name, err := exec.LookPath(cmd)
 	if err != nil {
@@ -63,6 +65,7 @@ func Execv(cmd string, args []string, env []string) error {
 	return syscall.Exec(name, args, env)
 }
 
+// Prlimit retrieves the resource limits of the calling process
 func Prlimit(pid, resource int, limit syscall.Rlimit) error {
 	_, _, err := syscall.RawSyscall6(syscall.SYS_PRLIMIT64, uintptr(pid), uintptr(resource), uintptr(unsafe.Pointer(&limit)), uintptr(unsafe.Pointer(&limit)), 0, 0)
 	if err != 0 {
@@ -71,6 +74,7 @@ func Prlimit(pid, resource int, limit syscall.Rlimit) error {
 	return nil
 }
 
+// SetParentDeathSignal sets the signal the calling process receives when its parent terminates
 func SetParentDeathSignal(sig uintptr) error {
 	if _, _, err := syscall.RawSyscall(syscall.SYS_PRCTL, syscall.PR_SET_PDEATHSIG, sig, 0); err != 0 {
 		return err
@@ -78,6 +82,7 @@ func SetParentDeathSignal(sig uintptr) error {
 	return nil
 }
 
+// GetParentDeathSignal gets the signal the calling process receives when its parent terminates
 func GetParentDeathSignal() (ParentDeathSignal, error) {
 	var sig int
 	_, _, err := syscall.RawSyscall(syscall.SYS_PRCTL, syscall.PR_GET_PDEATHSIG, uintptr(unsafe.Pointer(&sig)), 0)
@@ -87,6 +92,7 @@ func GetParentDeathSignal() (ParentDeathSignal, error) {
 	return ParentDeathSignal(sig), nil
 }
 
+// SetKeepCaps makes the calling thread keep capabilities across uid changes
 func SetKeepCaps() error {
 	if _, _, err := syscall.RawSyscall(syscall.SYS_PRCTL, syscall.PR_SET_KEEPCAPS, 1, 0); err != 0 {
 		return err
@@ -95,6 +101,7 @@ func SetKeepCaps() error {
 	return nil
 }
 
+// ClearKeepCaps makes the calling thread drop capabilities across uid changes
 func ClearKeepCaps() error {
 	if _, _, err := syscall.RawSyscall(syscall.SYS_PRCTL, syscall.PR_SET_KEEPCAPS, 0, 0); err != 0 {
 		return err
@@ -103,6 +110,7 @@ func ClearKeepCaps() error {
 	return nil
 }
 
+// Setctty changes the controlling terminal of the calling process to the one specified
 func Setctty() error {
 	if _, _, err := syscall.RawSyscall(syscall.SYS_IOCTL, 0, uintptr(syscall.TIOCSCTTY), 0); err != 0 {
 		return err
@@ -111,9 +119,10 @@ func Setctty() error {
 }
 
 /*
- * Detect whether we are currently running in a user namespace.
  * Copied from github.com/lxc/lxd/shared/util.go
  */
+
+// RunningInUserNS detects whether the calling process is in a new user namespace
 func RunningInUserNS() bool {
 	file, err := os.Open("/proc/self/uid_map")
 	if err != nil {
@@ -146,12 +155,12 @@ func RunningInUserNS() bool {
 
 // SetSubreaper sets the value i as the subreaper setting for the calling process
 func SetSubreaper(i int) error {
-	return Prctl(PR_SET_CHILD_SUBREAPER, uintptr(i), 0, 0, 0)
+	return Prctl(prSetChildSubreaper, uintptr(i), 0, 0, 0)
 }
 
-// Set the no_new_privs bit
+// SetNoNewPrivs sets the no_new_privs bit for the calling process
 func SetNoNewPrivs(i int) error {
-	return Prctl(PR_SET_NO_NEW_PRIVS, uintptr(i), 0, 0, 0)
+	return Prctl(prSetNoNewPrivs, uintptr(i), 0, 0, 0)
 }
 
 // Setuid sets the uid of the calling thread to the specified uid.
@@ -172,6 +181,7 @@ func Setgid(gid int) (err error) {
 	return
 }
 
+// SetNewUser sets the uid and gid of the calling thread to the specified values
 func SetNewUser(uid int, gid int) error {
 	if err := Setgid(gid); err != nil {
 		return err
@@ -182,6 +192,7 @@ func SetNewUser(uid int, gid int) error {
 	return nil
 }
 
+// Prctl changes properties of the calling thread or process
 func Prctl(option int, arg2, arg3, arg4, arg5 uintptr) (err error) {
 	_, _, e1 := syscall.Syscall6(syscall.SYS_PRCTL, uintptr(option), arg2, arg3, arg4, arg5, 0)
 	if e1 != 0 {
@@ -190,6 +201,7 @@ func Prctl(option int, arg2, arg3, arg4, arg5 uintptr) (err error) {
 	return
 }
 
+// CapabilitiesKVM is the set of capabilities allowed for a KVM container
 var CapabilitiesKVM = []string{
 	"CAP_CHOWN",
 	"CAP_DAC_OVERRIDE",
@@ -206,6 +218,7 @@ var CapabilitiesKVM = []string{
 	"CAP_AUDIT_WRITE",
 }
 
+// CapabilitiesDefault is the set of capabilities allowed for a normal container
 var CapabilitiesDefault = []string{
 	"CAP_CHOWN",
 	"CAP_DAC_OVERRIDE",
@@ -307,6 +320,7 @@ var setNsMap = map[string]uintptr{
 	"linux/s390x":   339,
 }
 
+// Setns replaces a namespace of the calling thread from the specified descriptor
 func Setns(fd uintptr, flags uintptr) error {
 	ns, exists := setNsMap[fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)]
 	if !exists {

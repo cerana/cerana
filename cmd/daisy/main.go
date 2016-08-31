@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	argSep  = "="
+	argSep = "="
 	// DefScmp is the default seccomp action for syscalls not whitelisted
 	DefScmp = "SCMP_ACT_ERRNO"
 )
