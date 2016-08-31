@@ -1,5 +1,5 @@
-hash: d943b56a13f871c9d5bfdae1d14120e9625ea63424a404368316c803a26eb720
-updated: 2016-07-06T16:33:44.726331912-04:00
+hash: 97ede47ac6580fa89e78275cafd15872dadafa5ad5341c11d60e81ca4a888447
+updated: 2016-08-31T16:31:45.628065486-04:00
 imports:
 - name: github.com/BurntSushi/toml
   version: bbd5bb678321a0d6e58f1099321dfa73391c1b6f
@@ -31,7 +31,7 @@ imports:
 - name: github.com/godbus/dbus
   version: d40f8873baf2c51e569484fd212d0667c54aa343
 - name: github.com/hashicorp/consul
-  version: 26a0ef8c41aa2252ab4cf0844fc6470c8e1d8256
+  version: 0047f09be55fdf790263cbc088bf5ec924ffe644
   subpackages:
   - api
   - watch
@@ -52,7 +52,6 @@ imports:
   version: e4ec8cc423bbe20d26584b96efbeb9102e16d05f
   subpackages:
   - coordinate
-  - serf
 - name: github.com/inconshreveable/mousetrap
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
 - name: github.com/kr/pretty
@@ -71,10 +70,14 @@ imports:
   version: a97ce2ca70fa5a848076093f05e639a89ca34d06
 - name: github.com/pin/tftp
   version: 324291e0967af944a3006811cc603be00db2a6b2
+  subpackages:
+  - netascii
 - name: github.com/pmezard/go-difflib
   version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:
   - difflib
+- name: github.com/seccomp/libseccomp-golang
+  version: 32f571b70023028bd57d9288c20efbcb237f3ce0
 - name: github.com/shirou/gopsutil
   version: 22a03b5be3f384f558742929065778aa26471033
   subpackages:
@@ -108,13 +111,22 @@ imports:
   - suite
   - assert
   - require
+- name: github.com/syndtr/gocapability
+  version: 2c00daeb6c3b45114c80ac44119e7b8801fdd852
+  subpackages:
+  - capability
 - name: github.com/tylerb/graceful
-  version: ecde8c8f16df93a994dda8936c8f60f0c26c28ab
+  version: 50a48b6e73fcc75b45e22c05b79629a67c79e938
+- name: github.com/vishvananda/netlink
+  version: 63381f39fceb1c5c13503a90e1c2603caeafe3c5
+  subpackages:
+  - nl
+- name: github.com/vishvananda/netns
+  version: 8ba1072b58e0c2a240eb5f6120165c7776c3e7b8
 - name: golang.org/x/net
   version: 7dbad50ab5b31073856416cdcfeb2796d682f844
   subpackages:
   - ipv4
-  - netutil
   - internal/iana
 - name: golang.org/x/sys
   version: 042a8f53ce82bbe081222da955159491e32146a0
@@ -126,4 +138,4 @@ imports:
   version: 14b3d72120e8d10ea6e6b7f87f7175734b1faab8
 - name: gopkg.in/yaml.v2
   version: a83829b6f1293c91addabc89d0571c246397bbf4
-devImports: []
+testImports: []

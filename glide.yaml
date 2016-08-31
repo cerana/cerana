@@ -49,3 +49,7 @@ import:
 - package: gopkg.in/tomb.v2
 - package: github.com/krolaw/dhcp4
 - package: github.com/pin/tftp
+- package: github.com/seccomp/libseccomp-golang
+- package: github.com/syndtr/gocapability
+  subpackages:
+  - capability
