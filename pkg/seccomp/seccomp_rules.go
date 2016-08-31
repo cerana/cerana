@@ -1,7 +1,9 @@
-// +build linux,seccomp
+// +build linux
+
 package seccomp
 
 var (
+	// Whitelist lists the allowed syscalls for containers
 	Whitelist = []SyscallRule{
 		{"access", nil, "SCMP_ACT_ALLOW"},
 		{"chdir", nil, "SCMP_ACT_ALLOW"},
@@ -329,6 +331,7 @@ var (
 		{"unshare", nil, "SCMP_ACT_ALLOW"},
 	}
 
+	// WhitelistKVM lists the allowed syscalls for KVM containers
 	WhitelistKVM = []SyscallRule{
 		{"access", nil, "SCMP_ACT_ALLOW"},
 		{"chdir", nil, "SCMP_ACT_ALLOW"},

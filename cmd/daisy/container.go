@@ -8,15 +8,20 @@ import (
 	"strconv"
 	"syscall"
 
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/pkg/seccomp"
 )
 
+// Namespace specifies a new namespace to create or an existing namespace to open
+// from a non-empty path
 type Namespace struct {
+	// Path specifies path to namespace procfs node, or empty string for none
 	Path string
+	// Type specifies of namespace as a lowercase string
 	Type string
 }
 
+// Namespaces contains a list of Namespaces and utility methods
 type Namespaces []Namespace
 
 // imported from github.com:opencontainers/runc/libcontainer/configs/namespaces_syscall.go
@@ -27,7 +32,6 @@ var namespaceInfo = map[string]int{
 	"ipc":   syscall.CLONE_NEWIPC,
 	"uts":   syscall.CLONE_NEWUTS,
 	"pid":   syscall.CLONE_NEWPID,
-	//"cgroup":  syscall.CLONE_NEWCGROUP,
 }
 
 // CloneFlags parses the container's Namespaces options to set the correct
@@ -43,15 +47,17 @@ func (n Namespaces) CloneFlags() uintptr {
 	return uintptr(flag)
 }
 
+// Container is the base container configuration for the parent process
 type Container struct {
 	Args       []string
 	Namespaces Namespaces
-	Uid        uint32
-	Gid        uint32
-	UidRange   uint32
-	GidRange   uint32
+	UID        uint32
+	GID        uint32
+	UIDRange   uint32
+	GIDRange   uint32
 }
 
+// Mount specifies a mount entry with parameters
 type Mount struct {
 	Source string
 	Target string
@@ -60,11 +66,12 @@ type Mount struct {
 	Data   string
 }
 
+// Cfg specifies container configuration details for the process running inside
 type Cfg struct {
 	Args         []string
 	Env          []string
-	Uid          int
-	Gid          int
+	UID          int
+	GID          int
 	Hostname     string
 	Mounts       []Mount
 	Rootfs       string
@@ -73,6 +80,7 @@ type Cfg struct {
 	Seccomp      []seccomp.SyscallRule
 }
 
+// Start is the entry point to launch a Container
 func (c *Container) Start() error {
 	var uidmap []syscall.SysProcIDMap
 	var gidmap []syscall.SysProcIDMap
@@ -81,8 +89,8 @@ func (c *Container) Start() error {
 
 	environment = []string{
 		fmt.Sprintf("TERM=%s", os.Getenv("TERM")),
-		fmt.Sprintf("_CERANA_DAISY_UID=%d", c.Uid),
-		fmt.Sprintf("_CERANA_DAISY_GID=%d", c.Gid),
+		fmt.Sprintf("_CERANA_DAISY_UID=%d", c.UID),
+		fmt.Sprintf("_CERANA_DAISY_GID=%d", c.GID),
 	}
 
 	flags := c.Namespaces.CloneFlags()
@@ -90,25 +98,25 @@ func (c *Container) Start() error {
 		uidmap = []syscall.SysProcIDMap{
 			{
 				ContainerID: 0,
-				HostID:      int(c.Uid),
+				HostID:      int(c.UID),
 				Size:        1,
 			},
 			{
 				ContainerID: 1,
-				HostID:      int(c.Uid) + 1,
-				Size:        int(c.UidRange),
+				HostID:      int(c.UID) + 1,
+				Size:        int(c.UIDRange),
 			},
 		}
 		gidmap = []syscall.SysProcIDMap{
 			{
 				ContainerID: 0,
-				HostID:      int(c.Gid),
+				HostID:      int(c.GID),
 				Size:        1,
 			},
 			{
 				ContainerID: 1,
-				HostID:      int(c.Gid) + 1,
-				Size:        int(c.GidRange),
+				HostID:      int(c.GID) + 1,
+				Size:        int(c.GIDRange),
 			},
 		}
 	}
@@ -143,14 +151,14 @@ func (c *Container) Start() error {
 		UidMappings: uidmap,
 		GidMappings: gidmap,
 		Credential: &syscall.Credential{
-			Uid: c.Uid,
-			Gid: c.Gid,
+			Uid: c.UID,
+			Gid: c.GID,
 		},
 	}
 	if err := cmd.Start(); err != nil {
 		return err
 	}
-	log.Debugf("child PID: %d", cmd.Process.Pid)
+	logrus.Debugf("child PID: %d", cmd.Process.Pid)
 	return cmd.Wait()
 }
 
@@ -172,11 +180,11 @@ func pivotRoot(rootfs string, pivotBaseDir string) (err error) {
 		pivotBaseDir = "/"
 	}
 	tmpDir := filepath.Join(rootfs, pivotBaseDir)
-	if err := os.MkdirAll(tmpDir, 0755); err != nil {
+	if err = os.MkdirAll(tmpDir, 0755); err != nil {
 		return fmt.Errorf("can't create tmp dir %s, error %v", tmpDir, err)
 	}
 	pivotDir := filepath.Join(tmpDir, ".pivot_root")
-	if err := os.MkdirAll(pivotDir, 0755); err != nil {
+	if err = os.MkdirAll(pivotDir, 0755); err != nil {
 		return fmt.Errorf("can't create pivot_root dir %s, error %v", pivotDir, err)
 	}
 	defer func() {
@@ -185,32 +193,20 @@ func pivotRoot(rootfs string, pivotBaseDir string) (err error) {
 			err = errVal
 		}
 	}()
-	//if err := syscall.PivotRoot(rootfs, pivotDir); err != nil {
-	if err := syscall.Chroot(rootfs); err != nil {
+	if err = syscall.Chroot(rootfs); err != nil {
 		return fmt.Errorf("pivot_root %s %s", pivotDir, err)
 	}
-	if err := syscall.Chdir("/"); err != nil {
+	if err = syscall.Chdir("/"); err != nil {
 		return fmt.Errorf("chdir / %s", err)
 	}
-	// path to pivot dir now changed, update
-	pivotDir = filepath.Join(pivotBaseDir, filepath.Base(pivotDir))
 
-	// Make pivotDir rprivate to make sure any of the unmounts don't
-	// propagate to parent.
-	//if err := syscall.Mount("", pivotDir, "", syscall.MS_PRIVATE|syscall.MS_REC, ""); err != nil {
-	//	return err
-	//}
-
-	//if err := syscall.Unmount(pivotDir, syscall.MNT_DETACH); err != nil {
-	//	return fmt.Errorf("unmount pivot_root dir %s", err)
-	//}
 	return nil
 }
 
 func mountFilesystems(cfg Cfg) error {
 	for _, m := range cfg.Mounts {
 		target := filepath.Join(cfg.Rootfs, m.Target)
-		log.Debugf("Mount %s to %s", m.Source, target)
+		logrus.Debugf("Mount %s to %s", m.Source, target)
 		if err := os.MkdirAll(target, 0755); err != nil {
 			return fmt.Errorf("cannot create mountpoint %s, error %v", target, err)
 		}
@@ -224,6 +220,7 @@ func mountFilesystems(cfg Cfg) error {
 	}
 	return nil
 }
+
 func createDevices(cfg Cfg) error {
 	oldMask := syscall.Umask(0000)
 	for _, node := range cfg.Devices {
@@ -242,7 +239,7 @@ func createDevices(cfg Cfg) error {
 			// prevent entropy exhaustion
 			node = "/dev/urandom"
 		}
-		log.Debugf("Mount %s to %s", node, dest)
+		logrus.Debugf("Mount %s to %s", node, dest)
 		if err := bindMountDeviceNode(dest, node); err != nil {
 			syscall.Umask(oldMask)
 			return err
@@ -289,15 +286,6 @@ func fixStdioPermissions(uid int, gid int) error {
 }
 
 func setup(cfg Cfg) error {
-	//dieOnError(makeRequest(coordinator, 'getExtNamespaces', httpAddr))
-
-	//select {
-	//case err := <-respErr:
-	//	dieOnError(err)
-	//case result := <-result:
-	//	j, _ := json.Marshal(result)
-	//	fmt.Println(string(j))
-	//}
 	for k, v := range namespaceInfo {
 		env := os.Getenv(fmt.Sprintf("_CERANA_DAISY_NAMESPACE_%s", k))
 		if env == "" {
@@ -305,11 +293,11 @@ func setup(cfg Cfg) error {
 		}
 		fd, err := strconv.Atoi(env)
 		if err != nil {
-			log.Fatalf("Invalid child environment")
+			logrus.Fatalf("Invalid child environment")
 		}
 		err = Setns(uintptr(fd), uintptr(v))
 		if err != nil {
-			log.Fatalf("Setns: %v", err)
+			logrus.Fatalf("Setns: %v", err)
 		}
 	}
 	if err := syscall.Sethostname([]byte(cfg.Hostname)); err != nil {
@@ -335,27 +323,28 @@ func setup(cfg Cfg) error {
 
 func execProc(cfg Cfg) error {
 	path := filepath.Join("/", cfg.Args[0])
-	log.Debugf("Execute %s", append([]string{path}, cfg.Args...))
+	logrus.Debugf("Execute %s", append([]string{path}, cfg.Args...))
 	return syscall.Exec(path, cfg.Args, cfg.Env)
 }
 
 func fillCfg(cfg Cfg) error {
 	uid, err := strconv.Atoi(os.Getenv("_CERANA_DAISY_UID"))
 	if err != nil {
-		log.Fatalf("Invalid child environment")
+		logrus.Fatalf("Invalid child environment")
 	}
 	gid, err := strconv.Atoi(os.Getenv("_CERANA_DAISY_GID"))
 	if err != nil {
-		log.Fatalf("Invalid child environment")
+		logrus.Fatalf("Invalid child environment")
 	}
-	cfg.Uid = uid
-	cfg.Gid = gid
+	cfg.UID = uid
+	cfg.GID = gid
 
 	return nil
 }
 
+// Child is the entry point for container execution with initial Cfg
 func Child(cfg Cfg) error {
-	log.Debug("Start child")
+	logrus.Debug("Start child")
 	if err := fillCfg(cfg); err != nil {
 		return fmt.Errorf("fillCfg: %v", err)
 	}

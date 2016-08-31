@@ -28,7 +28,10 @@ import (
 // nearest still living ancestor subreaper will receive a SIGCHLD
 // signal and be able to wait(2) on the process to discover its
 // termination status.
+
+// PR_SET_CHILD_SUBREAPER prctl flag
 const PR_SET_CHILD_SUBREAPER = 36
+// PR_SET_NO_NEW_PRIVS prctl flag
 const PR_SET_NO_NEW_PRIVS = 38
 
 type ParentDeathSignal int
@@ -170,12 +173,6 @@ func Setgid(gid int) (err error) {
 }
 
 func SetNewUser(uid int, gid int) error {
-	//if err := fixStdioPermissions(uid, gid); err != nil {
-	//	return err
-	//}
-	//if (gid == 0 || uid == 0) {
-	//	return nil
-	//}
 	if err := Setgid(gid); err != nil {
 		return err
 	}

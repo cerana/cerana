@@ -5,21 +5,20 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
 	"os"
 	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
-	"time"
 
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 	"github.com/cerana/cerana/pkg/seccomp"
 	flags "github.com/spf13/pflag"
 )
 
 const (
-	ArgSep  = "="
+	argSep  = "="
+	// DefScmp is the default seccomp action for syscalls not whitelisted
 	DefScmp = "SCMP_ACT_ERRNO"
 )
 
@@ -85,9 +84,9 @@ func (k *kvPairValue) String() string {
 
 func (k *kvPairValue) Set(value string) error {
 	for _, kv := range strings.Split(value, ",") {
-		parts := strings.Split(kv, ArgSep)
+		parts := strings.Split(kv, argSep)
 		if len(parts) != 2 {
-			return fmt.Errorf("invalid key%svalue pair '%s'", ArgSep, kv)
+			return fmt.Errorf("invalid key%svalue pair '%s'", argSep, kv)
 		}
 		*k = append(*k, kvPair{parts[0], parts[1]})
 	}
@@ -101,7 +100,6 @@ func (k *kvPairValue) Type() string {
 func init() {
 	// pin main goroutine to thread
 	runtime.LockOSThread()
-	rand.Seed(time.Now().UnixNano())
 
 	for k, v := range namespaceInfo {
 		env := os.Getenv(fmt.Sprintf("_CERANA_DAISY_NAMESPACE_%s", k))
@@ -110,17 +108,16 @@ func init() {
 		}
 		fd, err := strconv.Atoi(env)
 		if err != nil {
-			log.Fatalf("Invalid child environment")
+			logrus.Fatalf("Invalid child environment")
 		}
 		err = Setns(uintptr(fd), uintptr(v))
 		if err != nil {
-			log.Fatalf("Setns: %v", err)
+			logrus.Fatalf("Setns: %v", err)
 		}
 	}
 }
 
 func main() {
-
 	var coordinator, namespaces, rootFs, hostname, devices string
 	var uid, gid, uidrange, gidrange int
 	var verbose, kvm bool
@@ -140,17 +137,17 @@ func main() {
 	flags.StringVarP(&hostname, "hostname", "h", "daisy", "hostname of new uts namespace")
 	flags.StringVarP(&devices, "devices", "d", "null,zero,full,random,urandom,tty,ptmx,zfs", "list of device nodes to allow")
 	flags.StringVarP(&namespaces, "namespace list", "n", "user,mount,uts,pid,ipc", "list of namespaces to unshare")
-	flags.VarP(&extNamespaces, "external namespace", "x", fmt.Sprintf("list of external namespaces in the form 'type%spath'", ArgSep))
+	flags.VarP(&extNamespaces, "external namespace", "x", fmt.Sprintf("list of external namespaces in the form 'type%spath'", argSep))
 	flags.StringVarP(&coordinator, "coordinator_url", "c", "", "url of the coordinator")
 	flags.Parse()
 
 	if verbose {
-		log.SetLevel(log.DebugLevel)
+		logrus.SetLevel(logrus.DebugLevel)
 	}
 	// extract argv for executable
 	execArgs = flags.Args()
 	if len(execArgs) == 0 {
-		log.Fatalf("Missing path to executable")
+		logrus.Fatalf("Missing path to executable")
 		os.Exit(1)
 	}
 	for _, ns := range strings.Split(namespaces, ",") {
@@ -161,7 +158,6 @@ func main() {
 	}
 
 	if os.Args[0] == "child" {
-		var devList []string
 		var scmp = seccomp.Whitelist
 		var caps = CapabilitiesDefault
 
@@ -178,33 +174,35 @@ func main() {
 		cfg.Seccomp = scmp
 		cfg.Capabilities = caps
 
+		var devList []string
 		for _, dev := range strings.Split(devices, ",") {
 			devList = append(devList, "/dev/"+dev)
 		}
 		cfg.Devices = devList
+
 		if err := Child(cfg); err != nil {
-			log.Fatalf("Child execution failed: %v", err)
+			logrus.Fatalf("Child execution failed: %v", err)
 		}
 		os.Exit(1)
 	}
 
 	if rootFs != "/" && rootFs != "" {
 		if err := syscall.Chdir(rootFs); err != nil {
-			log.Fatalf("Cannot enter root directory '%s': %v", rootFs, err)
+			logrus.Fatalf("Cannot enter root directory '%s': %v", rootFs, err)
 			os.Exit(1)
 		}
 	}
 
 	c := &Container{
 		Args:       execArgs,
-		Uid:        uint32(uid),
-		Gid:        uint32(gid),
-		UidRange:   uint32(uidrange),
-		GidRange:   uint32(gidrange),
+		UID:        uint32(uid),
+		GID:        uint32(gid),
+		UIDRange:   uint32(uidrange),
+		GIDRange:   uint32(gidrange),
 		Namespaces: nsList,
 	}
 	if err := c.Start(); err != nil {
-		log.Fatalf("Container start failed: %v", err)
+		logrus.Fatalf("Container start failed: %v", err)
 	}
 }
 

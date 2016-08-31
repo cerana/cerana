@@ -1,4 +1,5 @@
-// +build linux,cgo,seccomp
+// +build linux,cgo
+
 // Package seccomp provides basic interfaces for applying seccomp filters
 package seccomp
 
@@ -14,6 +15,7 @@ import (
 	libseccomp "github.com/seccomp/libseccomp-golang"
 )
 
+// ArgFilter describes a filter expression to match syscall arguments
 type ArgFilter struct {
 	arg    uint
 	op     string
@@ -21,6 +23,7 @@ type ArgFilter struct {
 	value2 uint64
 }
 
+// SyscallRule is a single seccomp action for a particular syscall and args
 type SyscallRule struct {
 	name   string
 	args   []ArgFilter
@@ -56,6 +59,8 @@ var (
 
 // Filters given syscalls in a container, preventing them from being used
 // Started in the container init process, and carried over to all child processes
+
+// InitSeccomp loads the specified policy of rules and a default action
 func InitSeccomp(rules []SyscallRule, defaultAction string) error {
 	filter, err := libseccomp.NewFilter(actions[defaultAction])
 
@@ -64,7 +69,7 @@ func InitSeccomp(rules []SyscallRule, defaultAction string) error {
 	}
 
 	// Unset no new privs bit
-	if err := filter.SetNoNewPrivsBit(false); err != nil {
+	if err = filter.SetNoNewPrivsBit(false); err != nil {
 		return fmt.Errorf("error setting no new privileges: %s", err)
 	}
 
@@ -82,7 +87,7 @@ func InitSeccomp(rules []SyscallRule, defaultAction string) error {
 	return nil
 }
 
-// IsEnabled returns if the kernel has been configured to support seccomp.
+// IsEnabled returns true if the kernel has been configured to support seccomp
 func IsEnabled() bool {
 	// Try to read from /proc/self/status for kernels > 3.8
 	s, err := parseStatusFile("/proc/self/status")
