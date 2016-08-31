@@ -26,12 +26,22 @@ func SetLevel(logLevel string) error {
 }
 
 // LogReturnedErr wraps a function that returns an error, calls the function,
-// and logs any error.
+// and logs any error at the Error level.
 // Useful for basic defer, e.g.
 // `defer LogReturnedErr(f.Close,logrus.Fields{"file":f.Name()}, "failed to close file")`
 func LogReturnedErr(fn func() error, fields map[string]interface{}, message string) {
 	if err := fn(); err != nil {
 		logrus.WithField("error", errors.Wrapv(err, fields)).Error(message)
+	}
+}
+
+// DebugReturnedErr wraps a function that returns an error, calls the function,
+// and logs any error at the Debug level.
+// Useful for basic defer, e.g.
+// `defer DebugReturnedErr(f.Close,logrus.Fields{"file":f.Name()}, "failed to close file")`
+func DebugReturnedErr(fn func() error, fields map[string]interface{}, message string) {
+	if err := fn(); err != nil {
+		logrus.WithField("error", errors.Wrapv(err, fields)).Debug(message)
 	}
 }
 
