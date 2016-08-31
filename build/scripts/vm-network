@@ -33,7 +33,7 @@ statevars=(
 
 u=$USER
 
-usage () {
+usage() {
     warning +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     message This script uses sudo to run as root and can break an existing
     message network configuration. Use with caution!
@@ -47,7 +47,7 @@ usage () {
     message e.g. sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.dhcpd
     warning ----------------------------------------------------------------
 
-    cat << EOF
+    cat <<EOF
 Usage: $0 [options]
     Use this script to configure the local network for testing CeranaOS within
     a virtual machine.
@@ -158,7 +158,7 @@ function shutdowndhcpd() {
     verbose Shutting down the dhcp server.
     ps -C dhcpd
     if [ $? -gt 0 ]; then
-        message  The dhcp server is not running.
+        message The dhcp server is not running.
     else
         ps -fp `pgrep dhcpd` | grep $dhcpdconf
         if [ $? -gt 0 ]; then
@@ -169,7 +169,7 @@ function shutdowndhcpd() {
         else
             message Shutting down the dhcp server.
             sudo kill `pidof dhcpd`
-            message  The dhcp server has been shut down.
+            message The dhcp server has been shut down.
         fi
     fi
 }
@@ -186,8 +186,7 @@ function shutdown() {
         check_interface_exists $b
         if [ $? -eq 0 ]; then
             sudo ip link set $b down
-            for i in `brctl showstp $b | grep $2 | cut -d ' ' -f 1`
-            do
+            for i in `brctl showstp $b | grep $2 | cut -d ' ' -f 1`; do
                 check_interface_exists $i
                 if [ $? -eq 0 ]; then
                     verbose Shutting down $i
@@ -204,16 +203,15 @@ function shutdown() {
     done
 }
 
-function init_variables () {
+function init_variables() {
     # Parameters:
     #   1: The name of the configuration to use.
-    for v in "${statevars[@]}"
-    do
+    for v in "${statevars[@]}"; do
         init_test_variable $1/$v
     done
 }
 
-function build_bridges () {
+function build_bridges() {
     # Parameters:
     #   1: The number of bridges to build.
     #   2: The base name for each bridge.
@@ -241,7 +239,7 @@ function build_bridges () {
     done
 }
 
-function set_bridge_1_address () {
+function set_bridge_1_address() {
     # Parameters:
     #   1: The base name for each bridge.
     #   2: The base IP address for each bridge.
@@ -261,7 +259,7 @@ function set_bridge_1_address () {
     fi
 }
 
-function enable_bridges () {
+function enable_bridges() {
     # Parameters:
     #   1: The number of bridges to enable.
     #   2: The base name for each bridge.
@@ -281,7 +279,7 @@ function enable_bridges () {
     done
 }
 
-function build_taps () {
+function build_taps() {
     # Parameters:
     #   1: The number of tap sets to build.
     #   2: The number of taps per taps set to build.
@@ -337,7 +335,7 @@ resetdefaults,\
 verbose,\
 dryrun,\
 help" \
-   -o "h" -- "$@"`
+    -o "h" -- "$@"`
 
 if [ $? -gt 0 ]; then
     usage
@@ -417,7 +415,7 @@ while [ $# -ge 1 ]; do
         --dryrun)
             dryrun=y
             ;;
-        -h|--help)
+        -h | --help)
             showusage=y
             ;;
         # using getopt should avoid needing this catchall but just in case...
@@ -474,9 +472,9 @@ fi
 
 if [ "$config" != "$current" ]; then
     verbose Switching from $current to $config
-    b=$(get_test_default $current/bridge "" )
-    t=$(get_test_default $current/tap "" )
-    n=$(get_test_default $current/numtaps "" )
+    b=$(get_test_default $current/bridge "")
+    t=$(get_test_default $current/tap "")
+    n=$(get_test_default $current/numtaps "")
     shutdown $b $t $n
 fi
 
@@ -559,7 +557,7 @@ else
         message Using subnet $subnet.0
         run rm -f $dhcpdconf
         run sudo touch $leasesfile
-        cat << EOF >>$dhcpdconf
+        cat <<EOF >>$dhcpdconf
         ###
         subnet $subnet.0 netmask 255.255.255.0 {
         range $subnet.$dhcplow $subnet.$dhcphigh;

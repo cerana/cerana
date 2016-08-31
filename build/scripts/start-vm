@@ -14,8 +14,8 @@
 
 source `dirname "$(readlink -f "$0")"`/cerana-functions.sh
 
-usage () {
-cat << EOF
+usage() {
+    cat <<EOF
 Usage: $0 [options]
     Use this script to start a virtual machine running CeranaOS.
 
@@ -163,7 +163,7 @@ resetdefaults,\
 verbose,\
 dryrun,\
 help" \
-   -o "h" -- "$@"`
+    -o "h" -- "$@"`
 
 if [ $? -gt 0 ]; then
     usage
@@ -270,7 +270,7 @@ while [ $# -ge 1 ]; do
         --dryrun)
             dryrun=echo
             ;;
-        -h|--help)
+        -h | --help)
             showusage=y
             ;;
         # using getopt should avoid needing this catchall but just in case...
@@ -311,8 +311,7 @@ statevars=(
     job=build-cerana
     build=""
 )
-for v in "${statevars[@]}"
-do
+for v in "${statevars[@]}"; do
     if [ ! -z "$resetdefaults" ]; then
         clear_test_variable $config/$v
     fi
@@ -343,8 +342,7 @@ if [ -n "$download" ]; then
     fi
     verbose Downloading $job/$build images
     run mkdir -p $ceranaimagedir/$job/$build
-    for f in bzImage initrd cerana.iso
-    do
+    for f in bzImage initrd cerana.iso; do
         df=$ceranaimagedir/$job/$build/$f
         verbose df
         # TODO Added verification of MD5 sums.
@@ -356,11 +354,10 @@ if [ -n "$download" ]; then
         fi
     done
     verbose Setting image symlinks.
-    for f in $kernelimage $initrdimage $isoimage
-    do
+    for f in $kernelimage $initrdimage $isoimage; do
         verbose Checking $f for symlink.
         e=0
-        if [ -e  $ceranaimagedir/$f ]; then
+        if [ -e $ceranaimagedir/$f ]; then
             if [ -h $ceranaimagedir/$f ]; then
                 verbose Replacing symlink $ceranaimagedir/$f
                 rm $ceranaimagedir/$f
@@ -369,7 +366,7 @@ if [ -n "$download" ]; then
                 e=1
             fi
         else
-            verbose The file  $ceranaimagedir/$f does not exist.
+            verbose The file $ceranaimagedir/$f does not exist.
         fi
     done
     if [ $e -gt 0 ]; then
@@ -443,12 +440,12 @@ case "$boot" in
         verbose The initrd image is: $initrd
 
         $dryrun kvm \
-        $commonoptions \
-        $disklist \
-        $devicelist \
-        -kernel $kernel \
-        -initrd $initrd \
-        -append "noapic acpi=off console=ttyS0 cerana.zfs_config=auto"
+            $commonoptions \
+            $disklist \
+            $devicelist \
+            -kernel $kernel \
+            -initrd $initrd \
+            -append "noapic acpi=off console=ttyS0 cerana.zfs_config=auto"
         ;;
 
     iso)
@@ -459,20 +456,20 @@ case "$boot" in
 
         verbose Booting from ISO image.
         $dryrun kvm \
-        $commonoptions \
-        $disklist \
-        $devicelist \
-        -cdrom $iso \
-        -boot d
+            $commonoptions \
+            $disklist \
+            $devicelist \
+            -cdrom $iso \
+            -boot d
         ;;
 
     net)
         verbose Booting from ISO image.
         $dryrun kvm \
-        $commonoptions \
-        $disklist \
-        $devicelist \
-        -option-rom $pxeoptionrom -boot n
+            $commonoptions \
+            $disklist \
+            $devicelist \
+            -option-rom $pxeoptionrom -boot n
         ;;
 
     *)

@@ -32,7 +32,7 @@ function set_test_default() {
     #   1: option name
     #   2: value
     mkdir -p $(dirname $testceranastatedir/$1)
-    echo "$2">$testceranastatedir/$1
+    echo "$2" >$testceranastatedir/$1
     verbose The test default $1 has been set to $2
 }
 
@@ -163,29 +163,29 @@ white='\e[1;37m'$darkgreybg
 nc='\e[0m'
 id=$(basename $0)
 
-message () {
+message() {
     echo -e "$green$id$nc: $*"
 }
 
-tip () {
+tip() {
     echo -e "$green$id$nc: $white$*$nc"
 }
 
-warning () {
+warning() {
     echo -e "$green$id$yellow WARNING$nc: $*"
 }
 
-error () {
+error() {
     echo >&2 -e "$green$id$red ERROR$nc: $*"
 }
 
-verbose () {
+verbose() {
     if [[ "$verbose" == "y" ]]; then
         echo >&2 -e "$lightblue$id$nc: $*"
     fi
 }
 
-log () {
+log() {
     echo $* >>$testlogdir/$testlog
     verbose "$*"
 }
@@ -202,36 +202,36 @@ function die() {
 function run() {
     verbose "Running: '$@'"
     if [ -z "$dryrun" ]; then
-        "$@"; code=$?; [ $code -ne 0 ] && die "Command [$*] returned status code $code";
+        "$@"
+        code=$?
+        [ $code -ne 0 ] && die "Command [$*] returned status code $code"
         return $code
-    else
-        return 0
-    fi
+    else return 0; fi
 }
 
-function run_ignore {
+function run_ignore() {
     verbose "Running: '$@'"
     if [ -z "$dryrun" ]; then
-        "$@"; code=$?; [ $code -ne 0 ] && verbose "Command [$*] returned status code $code";
+        "$@"
+        code=$?
+        [ $code -ne 0 ] && verbose "Command [$*] returned status code $code"
         return $code
-    else
-        return 0
-    fi
+    else return 0; fi
 }
 
-function confirm () {
+function confirm() {
     read -r -p "${1:-Are you sure? [y/N]} " response
     case $response in
-    [yY][eE][sS]|[yY])
-        true
-        ;;
-    *)
-        false
-        ;;
+        [yY][eE][sS] | [yY])
+            true
+            ;;
+        *)
+            false
+            ;;
     esac
 }
 
-is_mounted () {
+is_mounted() {
     mount | grep $1
     return $?
 }

@@ -10,7 +10,7 @@ verify_existing() {
     [[ -n "${CERANA_INITRD_HASH}" ]] || return 1 # no checksum to verify
     DESTINATION="/data/platform/${CERANA_INITRD_HASH}"
     IFS=- read -r ALG HASH <<<"${CERANA_INITRD_HASH}"
-    type "${ALG}sum" || return 2                                # don't know how to verify this checksum
+    type "${ALG}sum" || return 2                                   # don't know how to verify this checksum
     "${ALG}sum" -c <<<"${HASH}  ${DESTINATION}/initrd" || return 3 # checksum failed
 }
 

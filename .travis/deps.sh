@@ -36,6 +36,7 @@ function fetch() {
 
     go get github.com/alecthomas/gometalinter
     gometalinter --install --update
+    go get github.com/mvdan/sh/cmd/shfmt
 }
 
 function install() {

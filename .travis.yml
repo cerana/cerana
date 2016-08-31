@@ -8,6 +8,7 @@ env:
     - DEBIAN_FRONTEND=noninteractive
     - DEBIAN_PRIORITY=critical
     - KV=consul
+    - SHELLCHECK_VERSION=0.4.4
     - VCONSUL=0.6.4
     - VETCD=2.1.1
     - VGLIDE=0.10.2
@@ -17,6 +18,7 @@ env:
 cache:
   directories:
     - $ZFS_CACHE
+    - $HOME/.cabal
 
 # Versions of Go and deps in the build matrix should test the current in use by
 # cerana-os and the latest release.
@@ -32,15 +34,18 @@ install:
   - glide install
   - .travis/deps.sh install
   - sudo modprobe zfs
+  - .travis/install-shellcheck.sh $SHELLCHECK_VERSION
 
 before_script:
   - make lint-required
+  - make bash-lint-required
 
 script:
   - make test
 
 after_success:
   - make lint-optional
+  - make bash-lint-optional
 
 notifications:
   email: false
