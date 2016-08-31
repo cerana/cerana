@@ -64,6 +64,10 @@ var (
 func InitSeccomp(rules []SyscallRule, defaultAction string) error {
 	filter, err := libseccomp.NewFilter(actions[defaultAction])
 
+	if len(rules) == 0 {
+		return nil
+	}
+
 	if err != nil {
 		return fmt.Errorf("error creating filter: %s", err)
 	}

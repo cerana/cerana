@@ -120,7 +120,7 @@ func init() {
 func main() {
 	var coordinator, namespaces, rootFs, hostname, devices string
 	var uid, gid, uidrange, gidrange int
-	var verbose, kvm bool
+	var verbose, useScmp, kvm bool
 	var execArgs []string
 	var nsList Namespaces
 	var env stringValue
@@ -133,6 +133,7 @@ func main() {
 	flags.IntVarP(&uidrange, "uid range", "U", 1000, "length of mapped user id range")
 	flags.IntVarP(&gidrange, "gid range", "G", 1000, "length of mapped group id range")
 	flags.BoolVarP(&kvm, "kvm mode", "k", false, "whether we are running just qemu")
+	flags.BoolVarP(&useScmp, "enable_seccomp", "S", true, "whether to use seccomp to filter syscalls")
 	flags.VarP(&env, "environment", "e", "environment variable to set in the form 'name=value'")
 	flags.StringVarP(&hostname, "hostname", "h", "daisy", "hostname of new uts namespace")
 	flags.StringVarP(&devices, "devices", "d", "null,zero,full,random,urandom,tty,ptmx,zfs", "list of device nodes to allow")
@@ -164,6 +165,9 @@ func main() {
 		if kvm {
 			scmp = seccomp.WhitelistKVM
 			caps = CapabilitiesKVM
+		}
+		if useScmp != true {
+			scmp = []seccomp.SyscallRule{}
 		}
 
 		cfg := defaultCfg

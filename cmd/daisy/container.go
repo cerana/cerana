@@ -357,7 +357,7 @@ func Child(cfg Cfg) error {
 	if err := SetSubreaper(1); err != nil {
 		return fmt.Errorf("SetSubreaper: %v", err)
 	}
-	if err := seccomp.InitSeccomp(seccomp.Whitelist, DefScmp); err != nil {
+	if err := seccomp.InitSeccomp(cfg.Seccomp, DefScmp); err != nil {
 		return err
 	}
 
