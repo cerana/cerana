@@ -61,6 +61,13 @@ func (c *Config) ConfigFile() string
 ```
 ConfigFile returns a path to a config file.
 
+#### func (*Config) HTTPResponseURL
+
+```go
+func (c *Config) HTTPResponseURL() *url.URL
+```
+HTTPResponseURL returns the url of the http response listener.
+
 #### func (*Config) LoadConfig
 
 ```go
@@ -122,7 +129,7 @@ Validate ensures the configuration is valid.
 #### func (*Config) ValidateURL
 
 ```go
-func (c *Config) ValidateURL(name string) error
+func (c *Config) ValidateURL(name string, required bool) error
 ```
 ValidateURL is used in validation for checking url parameters.
 
@@ -132,6 +139,7 @@ ValidateURL is used in validation for checking url parameters.
 type ConfigData struct {
 	NodeDataURL       string `json:"nodeDataURL"`
 	ClusterDataURL    string `json:"clusterDataURL"`
+	HTTPResponseAddr  string `json:"responseAddr"`
 	LogLevel          string `json:"logLevel"`
 	RequestTimeout    string `json:"requestTimeout"`
 	TickInterval      string `json:"tickInterval"`
@@ -148,6 +156,7 @@ type Configer interface {
 	ConfigFile() string
 	NodeDataURL() *url.URL
 	ClusterDataURL() *url.URL
+	HTTPResponseURL() *url.URL
 	LogLevel() string
 	RequestTimeout() time.Duration
 	TickInterval() time.Duration
