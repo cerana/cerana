@@ -1,5 +1,5 @@
 {
     "service_name": "systemd-provider",
-    "coordinator_url": "unix:///tmp/mistify/coordinator/coordinator.sock",
+    "coordinator_url": "unix:///tmp/cerana/coordinator/coordinator.sock",
     "node_coordinator_port": 8080
 }
