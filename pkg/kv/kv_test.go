@@ -133,13 +133,13 @@ func (s *KVSuite) TestPing() {
 }
 
 func (s *KVSuite) TestIsKeyNotFound() {
-	s.Require().Panics(func() { get(s.KVPort, "lochness/non-existent-key") })
+	s.Require().Panics(func() { get(s.KVURL, "lochness/non-existent-key") })
 	_, err := s.KV.Get("lochness/non-existent-key")
 	s.Require().True(s.KV.IsKeyNotFound(err))
 }
 
-func getConsul(port uint16, key string) string {
-	resp, err := http.Get(fmt.Sprintf("http://localhost:%d/v1/kv/%s", port, key))
+func getConsul(url, key string) string {
+	resp, err := http.Get(fmt.Sprintf("%s/v1/kv/%s", url, key))
 	if err != nil {
 		panic(err)
 	}
@@ -158,12 +158,12 @@ func getConsul(port uint16, key string) string {
 	return string(b)
 }
 
-func get(port uint16, key string) string {
+func get(url, key string) string {
 	switch os.Getenv("KV") {
 	case "etcd":
 		panic("Not Implemented Yet")
 	default:
-		return getConsul(port, key)
+		return getConsul(url, key)
 	}
 }
 
@@ -172,9 +172,9 @@ func (s *KVSuite) TestSet() {
 	for _, str := range []string{"FEE", "FI", "FO", "FUM"} {
 		key := s.KVPrefix + "/" + str
 		s.Require().NoError(s.KV.Set(key, str))
-		s.Require().Equal(str, get(s.KVPort, key))
+		s.Require().Equal(str, get(s.KVURL, key))
 		s.Require().NoError(s.KV.Set(key, str+str))
-		s.Require().Equal(str+str, get(s.KVPort, key))
+		s.Require().Equal(str+str, get(s.KVURL, key))
 	}
 }
 
@@ -367,7 +367,7 @@ func (s *KVSuite) makeEKey(key string) kv.EphemeralKey {
 	s.Require().NoError(err)
 
 	s.Require().NoError(ekey.Set("init"))
-	s.Require().Equal("init", get(s.KVPort, key))
+	s.Require().Equal("init", get(s.KVURL, key))
 	return ekey
 }
 
