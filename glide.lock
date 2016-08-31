@@ -3,32 +3,6 @@ updated: 2016-07-06T16:33:44.726331912-04:00
 imports:
 - name: github.com/BurntSushi/toml
   version: bbd5bb678321a0d6e58f1099321dfa73391c1b6f
-- name: github.com/cerana/cerana
-  version: 01495927114d8d3788db9d7fef5f00e5ebfb4a48
-  subpackages:
-  - pkg/logrusx
-  - acomm
-  - provider
-  - providers/dhcp
-  - providers/clusterconf
-  - coordinator
-  - pkg/seccomp
-  - providers/datatrade
-  - providers/health
-  - providers/kv
-  - providers/metrics
-  - providers/namespace
-  - zfs/nv
-  - providers/service
-  - providers/zfs
-  - providers/systemd
-  - zfs
-  - pkg/kv
-  - pkg/kv/consul
-  - provider/examples/simple
-  - internal/tests/common
-  - pkg/errorutils
-  - pkg/test
 - name: github.com/coreos/etcd
   version: 6335fdc595ff03d27007db04e5b545189b9647c6
   subpackages:
