@@ -179,22 +179,8 @@ func pivotRoot(rootfs string, pivotBaseDir string) (err error) {
 	if pivotBaseDir == "" {
 		pivotBaseDir = "/"
 	}
-	tmpDir := filepath.Join(rootfs, pivotBaseDir)
-	if err = os.MkdirAll(tmpDir, 0755); err != nil {
-		return fmt.Errorf("can't create tmp dir %s, error %v", tmpDir, err)
-	}
-	pivotDir := filepath.Join(tmpDir, ".pivot_root")
-	if err = os.MkdirAll(pivotDir, 0755); err != nil {
-		return fmt.Errorf("can't create pivot_root dir %s, error %v", pivotDir, err)
-	}
-	defer func() {
-		errVal := os.Remove(pivotDir)
-		if err == nil {
-			err = errVal
-		}
-	}()
 	if err = syscall.Chroot(rootfs); err != nil {
-		return fmt.Errorf("pivot_root %s %s", pivotDir, err)
+		return fmt.Errorf("chroot %s %v", rootfs, err)
 	}
 	if err = syscall.Chdir("/"); err != nil {
 		return fmt.Errorf("chdir / %s", err)
