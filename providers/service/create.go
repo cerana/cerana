@@ -50,11 +50,21 @@ func (p *Provider) Create(req *acomm.Request) (interface{}, *url.URL, error) {
 
 	name := serviceName(args.BundleID, args.ID)
 	datasetCloneName := filepath.Join(p.config.DatasetCloneDir(), name)
+	daisyEnvParts := make([]string, 0, len(args.Env))
+	for key, val := range args.Env {
+		daisyEnvParts = append(daisyEnvParts, fmt.Sprintf("%s=%s", key, val))
+	}
+	envArgs := strings.Join(daisyEnvParts, ",")
+	envString := ""
+	if envArgs != "" {
+		envString = "-e " + envArgs
+	}
+	execStart := fmt.Sprintf("/run/current-system/sw/bin/daisy %s -r /%s %s", envString, datasetCloneName, strings.Join(args.Cmd, " "))
 	unitOptions := []*unit.UnitOption{
 		{Section: "Unit", Name: "Description", Value: args.Description},
 		// TODO: Does cmd get prepended with daisy?
-		{Section: "Service", Name: "ExecStart", Value: strings.Join(args.Cmd, " ")},
-		{Section: "Service", Name: "Type", Value: "forking"},
+		{Section: "Service", Name: "ExecStart", Value: execStart},
+		{Section: "Service", Name: "Type", Value: "simple"},
 		{Section: "Service", Name: "Restart", Value: "always"},
 		{Section: "Service", Name: "RestartSec", Value: "3"},
 		{Section: "Install", Name: "WantedBy", Value: "cerana.target"},
