@@ -37,8 +37,6 @@ function fetch() {
     go get github.com/alecthomas/gometalinter
     gometalinter --install --update
     go get github.com/mvdan/sh/cmd/shfmt
-    curl -LO https://us-east.manta.joyent.com/nahamu/public/cerana/shellcheck_0.4.4_amd64.deb \
-        && sudo dpkg -i shellcheck_0.4.4_amd64.deb
 }
 
 function install() {

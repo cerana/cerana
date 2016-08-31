@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 
 # Bash scripts known to be lint-clean
-BASH_CLEAN=boot/*/*
+BASH_CLEAN=boot/*/* .travis/install-shellcheck.sh
 # Bash scripts not yet lint-clean
 BASH_DIRTY=.travis/deps.sh build/*.sh build/scripts/cerana-functions.sh build/scripts/start-vm build/scripts/vm-network
 
