@@ -3,6 +3,7 @@ package kv
 import (
 	"os"
 	"os/exec"
+	"sync"
 	"time"
 
 	"github.com/cerana/cerana/acomm"
@@ -15,8 +16,8 @@ import (
 // Mock is a mock KV provider
 type Mock struct {
 	*KV
-	dir string
-	cmd *exec.Cmd
+	dir  string
+	cmds []*exec.Cmd
 }
 
 // NewMock starts up a kv backend server and instantiates a new kv.KV provider.
@@ -36,7 +37,7 @@ func NewMock(config *provider.Config, tracker *acomm.Tracker) (*Mock, error) {
 	v.Set("socket_dir", config.SocketDir())
 	v.Set("coordinator_url", config.CoordinatorURL())
 	v.Set("log_level", "fatal")
-	v.Set("address", s.KVURL)
+	v.Set("address", s.KVURLs[0])
 	s.Require().NoError(config.LoadConfig())
 	s.Require().NoError(config.SetupLogging())
 
@@ -55,13 +56,22 @@ func NewMock(config *provider.Config, tracker *acomm.Tracker) (*Mock, error) {
 		return nil, err
 	}
 
-	return &Mock{KV: kv, cmd: s.KVCmd, dir: s.KVDir}, nil
+	return &Mock{KV: kv, cmds: s.KVCmds, dir: s.KVDir}, nil
 }
 
 // Stop will stop the kv and remove the temporary directory used for it's data
 func (m *Mock) Stop() {
-	_ = m.cmd.Process.Kill()
-	_ = m.cmd.Wait()
+	wg := sync.WaitGroup{}
+	wg.Add(len(m.cmds))
+	for _, cmd := range m.cmds {
+		cmd := cmd
+		go func() {
+			_ = cmd.Process.Kill()
+			_ = cmd.Wait()
+			wg.Done()
+		}()
+	}
+	wg.Wait()
 	_ = os.RemoveAll(m.dir)
 }
 

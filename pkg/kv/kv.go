@@ -134,6 +134,9 @@ type EphemeralKey interface {
 
 // KV is the interface for distributed key value store interaction
 type KV interface {
+	// IsLeader returns whether the local node is the master/leader node
+	IsLeader() (bool, error)
+
 	Delete(string, bool) error
 	Get(string) (Value, error)
 	GetAll(string) (map[string]Value, error)

@@ -13,6 +13,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -27,52 +29,92 @@ func init() {
 }
 
 // ConsulMaker will create an exec.Cmd to run consul with the given paramaters
-func ConsulMaker(port uint16, dir, prefix string) *exec.Cmd {
-	b, err := json.Marshal(map[string]interface{}{
-		"ports": map[string]interface{}{
-			"dns":      port + 1,
-			"http":     port + 2,
-			"rpc":      port + 3,
-			"serf_lan": port + 4,
-			"serf_wan": port + 5,
-			"server":   port + 6,
-		},
-		"session_ttl_min": "1s",
-	})
-	if err != nil {
-		panic(err)
-	}
-	err = ioutil.WriteFile(dir+"/config.json", b, 0444)
-	if err != nil {
-		panic(err)
+func ConsulMaker(port uint16, dir, prefix string) ([]*exec.Cmd, []string) {
+	nodes := 3
+	cmds := make([]*exec.Cmd, nodes)
+	addrs := make([]string, nodes)
+
+	for i := range addrs {
+		addrs[i] = fmt.Sprintf("127.0.0.1%d", i)
 	}
 
-	return exec.Command("consul",
-		"agent",
-		"-server",
-		"-bootstrap-expect", "1",
-		"-config-file", dir+"/config.json",
-		"-data-dir", dir,
-		"-bind", "127.0.0.1",
-		"-http-port", strconv.Itoa(int(port)),
-	)
+	for i := range cmds {
+		name := prefix + strconv.Itoa(i)
+		dir := filepath.Join(dir, strconv.Itoa(i))
+		err := os.Mkdir(dir, 0700)
+		if err != nil {
+			panic(err)
+		}
+		conf := dir + "/config.json"
+
+		b, err := json.Marshal(map[string]interface{}{
+			"session_ttl_min": "1s",
+		})
+		if err != nil {
+			panic(err)
+		}
+		err = ioutil.WriteFile(conf, b, 0444)
+		if err != nil {
+			panic(err)
+		}
+
+		args := []string{
+			"agent", "-server",
+			"-bind", addrs[i],
+			"-client", addrs[i],
+			"-config-file", conf,
+			"-data-dir", dir,
+			"-http-port", strconv.Itoa(int(port)),
+			"-node", name,
+		}
+		if i == 0 {
+			args = append(args, "-bootstrap-expect", strconv.Itoa(nodes))
+		} else {
+			args = append(args, "-join", addrs[0])
+		}
+		cmds[i] = exec.Command("consul", args...)
+	}
+	for i := range addrs {
+		addrs[i] = fmt.Sprintf("http://%s:%d", addrs[i], port)
+	}
+	return cmds, addrs
 }
 
 // EtcdMaker will create an exec.Cmd to run etcd with the given paramaters
-func EtcdMaker(port uint16, dir, prefix string) *exec.Cmd {
-	clientURL := fmt.Sprintf("http://127.0.0.1:%d", port)
-	peerURL := fmt.Sprintf("http://127.0.0.1:%d", port+1)
-	return exec.Command("etcd",
-		"-name", prefix,
-		"-data-dir", dir,
-		"-initial-cluster-state", "new",
-		"-initial-cluster-token", prefix,
-		"-initial-cluster", prefix+"="+peerURL,
-		"-initial-advertise-peer-urls", peerURL,
-		"-listen-peer-urls", peerURL,
-		"-listen-client-urls", clientURL,
-		"-advertise-client-urls", clientURL,
-	)
+func EtcdMaker(port uint16, dir, prefix string) ([]*exec.Cmd, []string) {
+	nodes := 3
+	cmds := make([]*exec.Cmd, nodes)
+	peerURLs := make([]string, nodes)
+	clientURLs := make([]string, nodes)
+	names := make([]string, nodes)
+	clusterList := make([]string, nodes)
+
+	for i := range peerURLs {
+		name := fmt.Sprintf("%s%d", prefix, i)
+		peerURL := fmt.Sprintf("http://127.0.0.1%d", i)
+		clusterList[i] = fmt.Sprintf("%s=%s", name, peerURL)
+		names[i] = name
+		peerURLs[i] = peerURL
+	}
+	cluster := strings.Join(clusterList, ",")
+
+	for i := range cmds {
+		clientURL := fmt.Sprintf("http://127.0.0.1%d:%d", i, port)
+		cmd := exec.Command("etcd",
+			"-name", names[i],
+			"-data-dir", fmt.Sprintf("%s%d", dir, i),
+			"-initial-cluster-state", "new",
+			"-initial-cluster-token", prefix,
+			"-initial-cluster", cluster,
+			"-initial-advertise-peer-urls", peerURLs[i],
+			"-listen-peer-urls", peerURLs[i],
+			"-listen-client-urls", clientURL,
+			"-advertise-client-urls", clientURL,
+		)
+		clientURLs[i] = clientURL
+		cmds[i] = cmd
+	}
+	return cmds, clientURLs
 }
 
 // Suite sets up a general test suite with setup/teardown.
@@ -81,10 +123,10 @@ type Suite struct {
 	KVDir      string
 	KVPrefix   string
 	KVPort     uint16
-	KVURL      string
+	KVURLs     []string
 	KV         kv.KV
-	KVCmd      *exec.Cmd
-	KVCmdMaker func(uint16, string, string) *exec.Cmd
+	KVCmds     []*exec.Cmd
+	KVCmdMaker func(uint16, string, string) ([]*exec.Cmd, []string)
 	TestPrefix string
 }
 
@@ -103,18 +145,20 @@ func (s *Suite) SetupSuite() {
 	if s.KVCmdMaker == nil {
 		s.KVCmdMaker = ConsulMaker
 	}
-	s.KVCmd = s.KVCmdMaker(s.KVPort, s.KVDir, s.TestPrefix)
+	s.KVCmds, s.KVURLs = s.KVCmdMaker(s.KVPort, s.KVDir, s.TestPrefix)
 
-	if testing.Verbose() {
-		s.KVCmd.Stdout = os.Stdout
-		s.KVCmd.Stderr = os.Stderr
+	for _, cmd := range s.KVCmds {
+		if testing.Verbose() {
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+		}
+		s.Require().NoError(cmd.Start())
 	}
-	s.Require().NoError(s.KVCmd.Start())
-	time.Sleep(2500 * time.Millisecond) // Wait for test kv to be ready
+	time.Sleep(5000 * time.Millisecond) // Wait for test kv to be ready
 
 	var err error
 	for i := 0; i < 10; i++ {
-		s.KV, err = kv.New("http://127.0.0.1:" + strconv.Itoa(int(s.KVPort)))
+		s.KV, err = kv.New("http://127.0.0.10:" + strconv.Itoa(int(s.KVPort)))
 		if err == nil {
 			break
 		}
@@ -129,7 +173,6 @@ func (s *Suite) SetupSuite() {
 	}
 
 	s.KVPrefix = "lochness"
-	s.KVURL = "http://127.0.0.1:" + strconv.Itoa(int(s.KVPort))
 }
 
 // SetupTest prepares anything needed per test.
@@ -143,9 +186,18 @@ func (s *Suite) TearDownTest() {
 
 // TearDownSuite stops the kv instance and removes all data.
 func (s *Suite) TearDownSuite() {
-	// Stop the test kv process
-	s.Require().NoError(s.KVCmd.Process.Kill())
-	s.Require().Error(s.KVCmd.Wait())
+	// Stop the test kv processes
+	wg := sync.WaitGroup{}
+	wg.Add(len(s.KVCmds))
+	for _, cmd := range s.KVCmds {
+		cmd := cmd
+		go func() {
+			_ = cmd.Process.Kill()
+			_ = cmd.Wait()
+			wg.Done()
+		}()
+	}
+	wg.Wait()
 
 	// Remove the test kv data directory
 	_ = os.RemoveAll(s.KVDir)
