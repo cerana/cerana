@@ -33,7 +33,7 @@ func (t *Tracker) NewStreamUnix(dir string, src io.ReadCloser) (*url.URL, error)
 
 	go func() {
 		defer func() {
-			logrusx.LogReturnedErr(src.Close, map[string]interface{}{"socketPath": socketPath}, "failed to close stream source")
+			logrusx.DebugReturnedErr(src.Close, map[string]interface{}{"socketPath": socketPath}, "failed to close stream source")
 
 			t.dsLock.Lock()
 			delete(t.dataStreams, socketPath)
@@ -48,7 +48,7 @@ func (t *Tracker) NewStreamUnix(dir string, src io.ReadCloser) (*url.URL, error)
 
 		if _, err := io.Copy(conn, src); err != nil {
 			err = errors.Wrapv(err, map[string]interface{}{"socketPath": socketPath}, "failed to stream data")
-			logrus.WithField("error", err).Error(err.Error())
+			logrus.WithField("error", err).Debug(err.Error())
 			return
 		}
 	}()
@@ -100,7 +100,7 @@ func streamUnix(dest io.Writer, addr *url.URL) error {
 	if err != nil {
 		return errors.Wrapv(err, map[string]interface{}{"addr": addr})
 	}
-	defer logrusx.LogReturnedErr(conn.Close,
+	defer logrusx.DebugReturnedErr(conn.Close,
 		map[string]interface{}{"addr": addr},
 		"failed to close stream connection",
 	)
@@ -115,7 +115,7 @@ func streamHTTP(dest io.Writer, addr *url.URL) error {
 	if err != nil {
 		return errors.Wrapv(err, map[string]interface{}{"addr": addr})
 	}
-	defer logrusx.LogReturnedErr(httpResp.Body.Close,
+	defer logrusx.DebugReturnedErr(httpResp.Body.Close,
 		map[string]interface{}{"addr": addr},
 		"failed to close stream response body",
 	)
@@ -135,7 +135,7 @@ func ProxyStreamHandler(w http.ResponseWriter, r *http.Request) {
 	if err := Stream(w, addr); err != nil {
 		if _, ok := errors.Cause(err).(*net.OpError); ok {
 			// TODO: find out what the result is for "not-exist" and return 404
-			logrus.WithField("error", err).Error("failed to stream data")
+			logrus.WithField("error", err).Debug("failed to stream data")
 		}
 		http.Error(w, "failed to stream data", http.StatusInternalServerError)
 		return

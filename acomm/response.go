@@ -109,7 +109,7 @@ func sendUnix(addr *url.URL, payload interface{}) error {
 	if err != nil {
 		return errors.Wrapv(err, map[string]interface{}{"addr": addr, "payload": payload})
 	}
-	defer logrusx.LogReturnedErr(conn.Close,
+	defer logrusx.DebugReturnedErr(conn.Close,
 		map[string]interface{}{"addr": addr},
 		"failed to close unix connection",
 	)
@@ -137,7 +137,7 @@ func sendHTTP(addr *url.URL, payload interface{}) error {
 	if err != nil {
 		return errors.Wrapv(err, map[string]interface{}{"addr": addr, "payload": payload})
 	}
-	defer logrusx.LogReturnedErr(httpResp.Body.Close, nil, "failed to close http body")
+	defer logrusx.DebugReturnedErr(httpResp.Body.Close, nil, "failed to close http body")
 
 	body, _ := ioutil.ReadAll(httpResp.Body)
 	resp := &Response{}

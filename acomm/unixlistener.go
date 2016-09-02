@@ -99,7 +99,7 @@ func (ul *UnixListener) createListener() error {
 // limit.
 func (ul *UnixListener) listen() {
 	defer ul.waitgroup.Done()
-	defer logrusx.LogReturnedErr(ul.listener.Close, map[string]interface{}{
+	defer logrusx.DebugReturnedErr(ul.listener.Close, map[string]interface{}{
 		"addr": ul.Addr(),
 	}, "failed to close listener")
 
@@ -115,7 +115,7 @@ func (ul *UnixListener) listen() {
 
 		if err := ul.listener.SetDeadline(time.Now().Add(time.Second)); err != nil {
 			err = errors.Wrapv(err, map[string]interface{}{"addr": ul.Addr()})
-			logrus.WithField("error", err).Error("failed to set listener deadline")
+			logrus.WithField("error", err).Debug("failed to set listener deadline")
 		}
 
 		conn, err := ul.listener.Accept()
@@ -126,7 +126,7 @@ func (ul *UnixListener) listen() {
 				continue
 			}
 
-			logrus.WithField("error", err).Error("failed to accept new connection")
+			logrus.WithField("error", err).Debug("failed to accept new connection")
 			continue
 		}
 
@@ -167,7 +167,7 @@ func (ul *UnixListener) DoneConn(conn net.Conn) {
 	if conn == nil {
 		return
 	}
-	logrusx.LogReturnedErr(conn.Close,
+	logrusx.DebugReturnedErr(conn.Close,
 		map[string]interface{}{
 			"addr": ul.addr,
 		}, "failed to close unix connection",
