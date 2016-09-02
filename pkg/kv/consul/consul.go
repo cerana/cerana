@@ -1,6 +1,7 @@
 package consul
 
 import (
+	"net"
 	"net/url"
 	"strings"
 	"time"
@@ -306,6 +307,40 @@ func (l *lock) Unlock() error {
 func (c *ckv) Ping() error {
 	_, err := c.client.Agent().NodeName()
 	return errors.Wrap(err)
+}
+
+func (c *ckv) IsLeader() (bool, error) {
+	leaderAddr, err := c.client.Status().Leader()
+	if err != nil {
+		return false, errors.Wrap(err)
+	}
+
+	leader, _, err := net.SplitHostPort(leaderAddr)
+	if err != nil {
+		return false, errors.Wrap(err)
+	}
+
+	self, err := c.client.Agent().Self()
+	if err != nil {
+		return false, errors.Wrap(err)
+	}
+
+	ctx := map[string]interface{}{"self": self}
+	member, ok := self["Member"]
+	if !ok {
+		return false, errors.Newv(`missing "Member" key in description of self`, ctx)
+	}
+
+	addrI, ok := member["Addr"]
+	if !ok {
+		return false, errors.Newv(`missing "Addr" key from self.Member`, ctx)
+	}
+	addr, ok := addrI.(string)
+	if !ok {
+		return false, errors.Newv(`"self.Member.Addr" value is an unexpected type`, ctx)
+	}
+
+	return addr == leader, nil
 }
 
 type ekey struct {

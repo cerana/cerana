@@ -67,7 +67,8 @@ func (k *KV) kvDown() bool {
 
 // RegisterTasks registers all of KV's task handlers with the server.
 func (k *KV) RegisterTasks(server *provider.Server) {
-	// simple.go
+	// basic.go
+	server.RegisterTask("kv-is-leader", k.isLeader)
 	server.RegisterTask("kv-delete", k.delete)
 	server.RegisterTask("kv-get", k.get)
 	server.RegisterTask("kv-getAll", k.getAll)

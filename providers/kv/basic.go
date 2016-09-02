@@ -24,6 +24,13 @@ type SetArgs struct {
 	Data string `json:"string"`
 }
 
+func (k *KV) isLeader(req *acomm.Request) (interface{}, *url.URL, error) {
+	if k.kvDown() {
+		return nil, nil, errors.Wrap(errorKVDown)
+	}
+	leader, err := k.kv.IsLeader()
+	return leader, nil, err
+}
 func (k *KV) delete(req *acomm.Request) (interface{}, *url.URL, error) {
 	args := DeleteArgs{}
 
