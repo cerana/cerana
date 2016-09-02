@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Config contains configuration required for the dataset heartbeat tick.
+// Config contains configuration required for the dataset tick.
 type Config struct {
 	*tick.Config
 	flagSet *pflag.FlagSet
@@ -61,6 +61,9 @@ func (c *Config) Validate() error {
 	}
 	if c.DatasetPrefix() == "" {
 		return errors.New("missing datasetPrefix")
+	}
+	if c.HTTPResponseURL() == nil {
+		return errors.New("missing responseAddr")
 	}
 
 	return nil

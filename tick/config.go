@@ -18,6 +18,7 @@ type Configer interface {
 	ConfigFile() string
 	NodeDataURL() *url.URL
 	ClusterDataURL() *url.URL
+	HTTPResponseURL() *url.URL
 	LogLevel() string
 	RequestTimeout() time.Duration
 	TickInterval() time.Duration
@@ -34,6 +35,7 @@ type Config struct {
 type ConfigData struct {
 	NodeDataURL       string `json:"nodeDataURL"`
 	ClusterDataURL    string `json:"clusterDataURL"`
+	HTTPResponseAddr  string `json:"responseAddr"`
 	LogLevel          string `json:"logLevel"`
 	RequestTimeout    string `json:"requestTimeout"`
 	TickInterval      string `json:"tickInterval"`
@@ -56,6 +58,7 @@ func NewConfig(flagSet *pflag.FlagSet, v *viper.Viper) *Config {
 	flagSet.StringP("configFile", "c", "", "path to config file")
 	flagSet.StringP("nodeDataURL", "n", "", "url of coordinator for node information retrieval")
 	flagSet.StringP("clusterDataURL", "u", "", "url of coordinator for the cluster information")
+	flagSet.StringP("responseAddr", "a", "", "address on which to listen for http responses")
 	flagSet.StringP("logLevel", "l", "warning", "log level: debug/info/warn/error/fatal/panic")
 	flagSet.DurationP("requestTimeout", "r", 0, "default timeout for external requests made")
 	flagSet.DurationP("tickInterval", "t", 0, "tick run frequency")
@@ -112,6 +115,20 @@ func (c *Config) ClusterDataURL() *url.URL {
 	return u
 }
 
+// HTTPResponseURL returns the url of the http response listener.
+func (c *Config) HTTPResponseURL() *url.URL {
+	// Error checking has been done during validation
+	addr := c.viper.GetString("responseAddr")
+	if addr == "" {
+		return nil
+	}
+	return &url.URL{
+		Scheme: "http",
+		Host:   addr,
+		Path:   "/response",
+	}
+}
+
 // RequestTimeout returns the default timeout for task requests.
 func (c *Config) RequestTimeout() time.Duration {
 	return c.viper.GetDuration("requestTimeout")
@@ -150,10 +167,10 @@ func (c *Config) Validate() error {
 		return errors.New("requestTimeout must be greater than 0")
 	}
 
-	if err := c.ValidateURL("nodeDataURL"); err != nil {
+	if err := c.ValidateURL("nodeDataURL", true); err != nil {
 		return err
 	}
-	if err := c.ValidateURL("clusterDataURL"); err != nil {
+	if err := c.ValidateURL("clusterDataURL", true); err != nil {
 		return err
 	}
 
@@ -161,10 +178,13 @@ func (c *Config) Validate() error {
 }
 
 // ValidateURL is used in validation for checking url parameters.
-func (c *Config) ValidateURL(name string) error {
+func (c *Config) ValidateURL(name string, required bool) error {
 	u := c.viper.GetString(name)
 	if u == "" {
-		return errors.New("missing " + name)
+		if required {
+			return errors.New("missing " + name)
+		}
+		return nil
 	}
 	if _, err := url.ParseRequestURI(u); err != nil {
 		return errors.Wrapv(err, map[string]interface{}{"url": u}, "invalid "+name)

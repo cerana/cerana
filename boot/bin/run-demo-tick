@@ -1,0 +1,11 @@
+#!/bin/bash
+export PATH=/run/current-system/sw/bin/
+
+ARGS="-u unix:///task-socket/l2-coordinator/coordinator/l2-coord.sock -d data/datasets -n http://localhost:8080 -r 60s -t 30s -i 30s -l debug"
+
+# I do want ARGS to get split up. Thanks anyway, Shellcheck.
+# shellcheck disable=SC2086
+{
+    dataset-tick $ARGS -a :5555 2>&1 &
+    bundle-tick $ARGS -a :5556 2>&1 &
+} | jq .
