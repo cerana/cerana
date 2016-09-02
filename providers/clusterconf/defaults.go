@@ -2,6 +2,7 @@ package clusterconf
 
 import (
 	"encoding/json"
+	"net"
 	"net/url"
 	"strings"
 
@@ -20,7 +21,11 @@ type Defaults struct {
 
 // DefaultsConf is the configuration for the cluster.
 type DefaultsConf struct {
-	ZFSManual bool `json:"zfsManual"`
+	ZFSManual         bool       `json:"zfsManual"`
+	MgmtSubnet        *net.IPNet `json:"mgmtSubnet"`
+	MgmtReserve       uint64     `json:"mgmtReserve"`
+	InterBundleSubnet *net.IPNet `json:"interBundleSubnet"`
+	IntraBundleSubnet *net.IPNet `json:"intraBundleSubnet"`
 }
 
 // DefaultsPayload can be used for task args or result when a cluster object
