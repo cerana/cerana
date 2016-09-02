@@ -133,8 +133,8 @@ func (s *KVSuite) TestPing() {
 }
 
 func (s *KVSuite) TestIsKeyNotFound() {
-	s.Require().Panics(func() { get(s.KVPort, "lochness/non-existent-key") })
-	_, err := s.KV.Get("lochness/non-existent-key")
+	s.Require().Panics(func() { get(s.KVPort, "cerana/non-existent-key") })
+	_, err := s.KV.Get("cerana/non-existent-key")
 	s.Require().True(s.KV.IsKeyNotFound(err))
 }
 
@@ -241,19 +241,19 @@ func (s *KVSuite) TestUpdate() {
 	_, err := s.KV.Update("some-key", kv.Value{})
 	s.Require().Error(err)
 
-	_, err = s.KV.Get("lochness/some-key")
+	_, err = s.KV.Get("cerana/some-key")
 	s.Require().True(s.KV.IsKeyNotFound(err))
 
-	idx, err := s.KV.Update("lochness/some-key", kv.Value{Data: []byte("1")})
+	idx, err := s.KV.Update("cerana/some-key", kv.Value{Data: []byte("1")})
 	s.Require().NoError(err)
 	s.Require().True(idx > 0)
 
-	_, err = s.KV.Update("lochness/some-key", kv.Value{Data: []byte("2")})
+	_, err = s.KV.Update("cerana/some-key", kv.Value{Data: []byte("2")})
 	s.Require().Error(err)
-	_, err = s.KV.Update("lochness/some-key", kv.Value{Data: []byte("2"), Index: idx - 1})
+	_, err = s.KV.Update("cerana/some-key", kv.Value{Data: []byte("2"), Index: idx - 1})
 	s.Require().Error(err)
 
-	idx2, err := s.KV.Update("lochness/some-key", kv.Value{Data: []byte("2"), Index: idx})
+	idx2, err := s.KV.Update("cerana/some-key", kv.Value{Data: []byte("2"), Index: idx})
 	s.Require().NoError(err)
 	s.Require().True(idx2 > idx)
 }
@@ -261,35 +261,35 @@ func (s *KVSuite) TestUpdate() {
 func (s *KVSuite) TestRemove() {
 	s.Require().NoError(s.KV.Remove("some-random-key", 0))
 
-	idx, err := s.KV.Update("lochness/some-key", kv.Value{Data: []byte("1")})
+	idx, err := s.KV.Update("cerana/some-key", kv.Value{Data: []byte("1")})
 	s.Require().NoError(err)
 	s.Require().True(idx > 0)
 
-	s.Require().Error(s.KV.Remove("lochness/some-key", idx-1))
-	v, err := s.KV.Get("lochness/some-key")
+	s.Require().Error(s.KV.Remove("cerana/some-key", idx-1))
+	v, err := s.KV.Get("cerana/some-key")
 	s.Require().NoError(err)
 	s.Require().True(v.Index == idx)
 	s.Require().Equal([]byte("1"), v.Data)
 
-	s.Require().Error(s.KV.Remove("lochness/some-key", idx+1))
-	v, err = s.KV.Get("lochness/some-key")
+	s.Require().Error(s.KV.Remove("cerana/some-key", idx+1))
+	v, err = s.KV.Get("cerana/some-key")
 	s.Require().NoError(err)
 	s.Require().True(v.Index == idx)
 	s.Require().Equal([]byte("1"), v.Data)
 
-	s.Require().NoError(s.KV.Remove("lochness/some-key", idx))
-	_, err = s.KV.Get("lochness/some-key")
+	s.Require().NoError(s.KV.Remove("cerana/some-key", idx))
+	_, err = s.KV.Get("cerana/some-key")
 	s.Require().Error(err)
 	s.Require().True(s.KV.IsKeyNotFound(err))
 }
 
 func (s *KVSuite) TestWatch() {
-	index, err := s.KV.Update("lochness/some-key", kv.Value{Data: []byte("1")})
+	index, err := s.KV.Update("cerana/some-key", kv.Value{Data: []byte("1")})
 	s.Require().NoError(err)
 	s.Require().True(index > 0)
 
 	stop := make(chan struct{})
-	events, errors, err := s.KV.Watch("lochness/", index, stop)
+	events, errors, err := s.KV.Watch("cerana/", index, stop)
 	s.Require().NoError(err)
 	s.Require().NotNil(events)
 	s.Require().NotNil(errors)
@@ -312,7 +312,7 @@ func (s *KVSuite) TestWatch() {
 		{name: "delete", eType: kv.Delete},
 	}
 
-	key := "lochness/watcher-test-key"
+	key := "cerana/watcher-test-key"
 	index = 0
 	for i := range tests {
 		t := &tests[i]
@@ -372,7 +372,7 @@ func (s *KVSuite) makeEKey(key string) kv.EphemeralKey {
 }
 
 func (s *KVSuite) TestEphemeralSet() {
-	key := "lochness/ekey-set"
+	key := "cerana/ekey-set"
 	ekey := s.makeEKey(key)
 
 	s.Require().NoError(ekey.Set("value"))
@@ -382,7 +382,7 @@ func (s *KVSuite) TestEphemeralSet() {
 }
 
 func (s *KVSuite) TestEphemeralDestroy() {
-	key := "lochness/ekey-destroy"
+	key := "cerana/ekey-destroy"
 	ekey := s.makeEKey(key)
 
 	s.Require().NoError(ekey.Renew())
@@ -394,7 +394,7 @@ func (s *KVSuite) TestEphemeralDestroy() {
 func (s *KVSuite) TestEphemeralRenew() {
 	s.T().Parallel()
 
-	key := "lochness/ekey-renew"
+	key := "cerana/ekey-renew"
 	ekey := s.makeEKey(key)
 
 	for i := 0; i < 5; i++ {
@@ -414,7 +414,7 @@ func (s *KVSuite) TestEphemeralRenew() {
 func (s *KVSuite) TestLock() {
 	s.T().Parallel()
 
-	key := "lochness/lock"
+	key := "cerana/lock"
 
 	// acquire lock
 	lock, err := s.KV.Lock(key, 1*time.Second)

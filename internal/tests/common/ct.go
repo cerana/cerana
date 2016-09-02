@@ -91,7 +91,7 @@ type Suite struct {
 // SetupSuite runs a new kv instance.
 func (s *Suite) SetupSuite() {
 	if s.TestPrefix == "" {
-		s.TestPrefix = "lochness-test"
+		s.TestPrefix = "cerana-test"
 	}
 
 	s.KVDir, _ = ioutil.TempDir("", s.TestPrefix+"-"+uuid.New())
@@ -128,7 +128,7 @@ func (s *Suite) SetupSuite() {
 		panic(err)
 	}
 
-	s.KVPrefix = "lochness"
+	s.KVPrefix = "cerana"
 	s.KVURL = "http://127.0.0.1:" + strconv.Itoa(int(s.KVPort))
 }
 
