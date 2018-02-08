@@ -1,19 +1,16 @@
 { stdenv, lib, buildGoPackage, git, glide10, libseccomp, pkgconfig, fetchFromGitHub }:
-
-buildGoPackage rec {
-  name = "cerana-${version}";
-     version = "2016-08-31";
-     owner = "cerana";
-     repo = "cerana";
-     rev = "5c345c6290b7aa1fec8410fe85f7c2466f2df60e";
+let
+  srcDef = builtins.fromJSON (builtins.readFile ./cerana.json);
+in buildGoPackage rec {
+  rev = "${builtins.substring 0 10 srcDef.date}-${builtins.substring 0 10 srcDef.rev}";
+  name = "cerana-${rev}";
 
   goPackagePath = "github.com/cerana/cerana";
 
   src = fetchFromGitHub {
     owner = "cerana";
     repo = "cerana";
-    inherit rev;
-    sha256 = "1hf59qcv9p27jbb5zns3bafbwjxyijxlqqakpydhlklk40a4slm9";
+    inherit (srcDef) rev sha256;
   };
 
   preConfigure = ''
