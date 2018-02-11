@@ -43,38 +43,6 @@ with lib;
 
     system.build.netbootIpxeScript = pkgs.writeTextDir "netboot.ipxe" "#!ipxe\nkernel bzImage console=ttyS0 vga=794 cerana.mgmt_mac=\${mac} ${toString config.boot.kernelParams}\ninitrd initrd\nboot";
 
-    system.build.ceranaGrubConfig = pkgs.writeTextDir "menu.lst"
-''
-default 0
-timeout 10
-min_mem64 1024
-serial
-terminal serial
-
-title CeranaOS Standalone Automatic ZFS
-   kernel /bzImage ${toString config.boot.kernelParams} cerana.zfs_config=auto console=ttyS0
-   module /initrd
-
-title CeranaOS Standalone Pool Prompt
-   kernel /bzImage ${toString config.boot.kernelParams} console=ttyS0
-   module /initrd
-
-title CeranaOS Rescue Mode
-   kernel /bzImage ${toString config.boot.kernelParams} cerana.rescue console=ttyS0
-   module /initrd
-
-title CeranaOS Cluster Bootstrap (Automatic ZFS, 172.16.10.2/16)
-   kernel /bzImage ${toString config.boot.kernelParams} cerana.cluster_bootstrap cerana.zfs_config=auto cerana.mgmt_ip=172.16.10.2/16 console=ttyS0
-   module /initrd
-
-title CeranaOS Cluster Join (iPXE)
-   kernel /ipxe.lkrn
-
-title Boot from first HDD
-   rootnoverify (hd0)
-   chainloader +1
-'';
-
     system.build.ceranaGrub2Config = pkgs.writeTextDir "grub.cfg"
 ''
 serial --unit=0 --speed=115200
@@ -127,9 +95,9 @@ menuentry "Boot from first HDD" {
         ${pkgs.procps}/bin/sysctl -w net.core.wmem_max=8388608
         ${pkgs.coreutils}/bin/rm /etc/hostid
         ${pkgs.coreutils}/bin/mkdir -p /task-socket/node-coordinator/
-        ${pkgs.cerana-scripts}/scripts/parse-cmdline.sh
-        ${pkgs.cerana-scripts}/scripts/gen-hostid.sh
       '';
+        #${pkgs.cerana-scripts}/scripts/parse-cmdline.sh
+        #${pkgs.cerana-scripts}/scripts/gen-hostid.sh
 
   };
 
