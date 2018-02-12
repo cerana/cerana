@@ -27,11 +27,11 @@ in rec {
 
   minimal_media = makeNetboot {
     system = "x86_64-linux";
-    modules = import ./nixos/modules/module-list.nix ++ [
+    modules = import ./modules/module-list.nix ++ [
       "${pkgs.path}/nixos/modules/profiles/minimal.nix"
-      ./nixos/modules/cerana/cerana.nix
-      ./nixos/modules/profiles/cerana-hardware.nix
-      ./nixos/modules/profiles/ceranaos.nix
+      ./modules/cerana/cerana.nix
+      ./modules/profiles/cerana-hardware.nix
+      ./modules/profiles/ceranaos.nix
     ];
   };
 
