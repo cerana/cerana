@@ -20,7 +20,7 @@
     pkgs.iptables
     pkgs.strace
     pkgs.lshw
-    #pkgs.cerana-scripts
+    pkgs.cerana-scripts
     pkgs.dhcpcd
     pkgs.gptfdisk
 
@@ -44,11 +44,11 @@
 
   security.apparmor.enable = false;
 
-  #services.cerananet.enable = true;
-  #services.ceranaPlatformImport.enable = true;
-  #services.ceranapool.enable = true;
-  #services.ceranaMoveLogs.enable = true;
-  #targets.cerana.enable = true;
+  services.cerananet.enable = true;
+  services.ceranaPlatformImport.enable = true;
+  services.ceranapool.enable = true;
+  services.ceranaMoveLogs.enable = true;
+  targets.cerana.enable = true;
 
   nix.nrBuildUsers = 0;
   systemd.network.enable = true;

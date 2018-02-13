@@ -1,4 +1,5 @@
 [
+  ./nixpkgs-overlay.nix
   ./services/cerana/bootserver.nix
   ./services/cerana/bootstrap.nix
   ./services/cerana/bundle-heartbeat.nix
