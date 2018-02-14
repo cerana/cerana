@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> { overlays = [ (import ./overlay.nix) ]; }
+{ pkgs ? import ./nixpkgs { overlays = [ (import ./overlay.nix) ]; }
 , supportedSystems ? [ "x86_64-linux" ]
 }:
 
