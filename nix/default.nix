@@ -9,19 +9,15 @@ let
       build = config_evaled.config.system.build;
     in
       pkgs.symlinkJoin {
-        name="netboot";
+        name="boot-media";
         paths=[
-          build.netbootRamdisk
+          build.ceranaRamdisk
           build.kernel
           build.netbootIpxeScript
           build.ceranaGrub2Config
         ];
       };
 in rec {
-
-  ipxe = pkgs.ipxe;
-  cerana = pkgs.cerana;
-  cerana-scripts = pkgs.cerana-scripts;
 
   minimal_media = makeNetboot {
     system = "x86_64-linux";
@@ -35,7 +31,7 @@ in rec {
 
   minimal_iso = pkgs.stdenv.mkDerivation {
   system = "x86_64-linux";
-  name = "cerana-iso";
+  name = "cerana-minimal-iso";
   src = minimal_media;
   installPhase =
     ''

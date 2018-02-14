@@ -25,7 +25,7 @@ with lib;
       };
 
     # Create the initrd
-    system.build.netbootRamdisk = pkgs.makeInitrd {
+    system.build.ceranaRamdisk = pkgs.makeInitrd {
       inherit (config.boot.initrd) compressor;
 
       contents =
