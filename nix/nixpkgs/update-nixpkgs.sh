@@ -3,4 +3,4 @@
 
 nix-prefetch-git https://github.com/nixos/nixpkgs-channels.git \
 	--no-deepClone \
-	--rev refs/heads/nixos-17.09 > $(dirname $0)/nixpkgs.json
+	--rev refs/heads/nixos-unstable-small > $(dirname $0)/nixpkgs.json
