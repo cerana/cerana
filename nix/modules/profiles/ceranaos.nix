@@ -29,6 +29,8 @@
     pkgs.patchelf
     pkgs.screen
     pkgs.jq
+
+    pkgs.linuxPackages_latest.bcc
   ];
 
 
