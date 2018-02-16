@@ -13,6 +13,8 @@ in buildGoPackage rec {
     inherit (srcDef) rev sha256;
   };
 
+  CGO_CFLAGS_ALLOW = "-fms-extensions";
+
   preConfigure = ''
     export GIT_SSL_CAINFO=/etc/ssl/certs/ca-certificates.crt
     glide install
