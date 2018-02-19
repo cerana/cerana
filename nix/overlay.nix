@@ -7,7 +7,7 @@ with super.lib;
 (foldl' (flip extends) (_: super) [
 
   (import ./overlays/cerana.nix)
-  (import ./overlays/glide10.nix)
+  (import ./overlays/go-packages.nix)
   (import ./overlays/ipxe.nix)
 
 ]) self

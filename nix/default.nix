@@ -19,6 +19,8 @@ let
       };
 in rec {
 
+  cerana = pkgs.cerana;
+
   minimal_media = makeNetboot {
     system = "x86_64-linux";
     modules = import ./modules/module-list.nix ++ [

@@ -1,4 +1,4 @@
-{ stdenv, lib, buildGoPackage, git, glide10, libseccomp, pkgconfig, fetchFromGitHub }:
+{ stdenv, lib, buildGoPackage, git, glide10, godocdown, libseccomp, pkgconfig, fetchFromGitHub }:
 let
   srcDef = builtins.fromJSON (builtins.readFile ./cerana.json);
 in buildGoPackage rec {
@@ -21,5 +21,5 @@ in buildGoPackage rec {
   '';
   postBuild = "rm $NIX_BUILD_TOP/go/bin/zfs";
 
-  buildInputs = [ git glide10 libseccomp pkgconfig ];
+  buildInputs = [ git glide10 godocdown libseccomp pkgconfig ];
 }

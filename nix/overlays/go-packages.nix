@@ -8,5 +8,6 @@ in
 {
 
  glide10 = callPackage ../pkgs/development/tools/glide/glide10.nix {};
+ godocdown = callPackage ../pkgs/development/tools/godocdown {};
 
 }
