@@ -95,9 +95,9 @@ menuentry "Boot from first HDD" {
         ${pkgs.procps}/bin/sysctl -w net.core.wmem_max=8388608
         ${pkgs.coreutils}/bin/rm /etc/hostid
         ${pkgs.coreutils}/bin/mkdir -p /task-socket/node-coordinator/
+        ${pkgs.cerana-scripts}/scripts/parse-cmdline.sh
+        ${pkgs.cerana-scripts}/scripts/gen-hostid.sh
       '';
-        #${pkgs.cerana-scripts}/scripts/parse-cmdline.sh
-        #${pkgs.cerana-scripts}/scripts/gen-hostid.sh
 
   };
 
