@@ -1,13 +1,10 @@
-# From GitHub: mozilla/nixpkgs-mozilla/default.nix.
-
 self: super:
 
-with super.lib;
-
-(foldl' (flip extends) (_: super) [
-
-  (import ./overlays/cerana.nix)
-  (import ./overlays/go-packages.nix)
-  (import ./overlays/ipxe.nix)
-
-]) self
+let
+  inherit (super) callPackage;
+in {
+  cerana = callPackage pkgs/os-specific/linux/cerana {};
+  cerana-scripts = callPackage pkgs/os-specific/linux/cerana/scripts.nix {};
+  glide10 = callPackage pkgs/development/tools/glide/glide10.nix {};
+  godocdown = callPackage pkgs/development/tools/godocdown {};
+}
