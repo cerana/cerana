@@ -1,4 +1,4 @@
-{ stdenv, lib, buildGoPackage, git, glide10, godocdown, libseccomp, pkgconfig, fetchFromGitHub }:
+{ stdenv, lib, buildGoPackage, git, glide10, godocdown, libseccomp, pkgconfig, fetchgit }:
 let
   srcDef = builtins.fromJSON (builtins.readFile ./cerana.json);
 in buildGoPackage rec {
@@ -7,10 +7,12 @@ in buildGoPackage rec {
 
   goPackagePath = "github.com/cerana/cerana";
 
-  src = fetchFromGitHub {
-    owner = "cerana";
-    repo = "cerana";
-    inherit (srcDef) rev sha256;
+  # We intentionally use fetchgit rather than the wrapper for github
+  # so that users can build and test a locally comitted tree
+  # see update-local.sh
+  src = fetchgit {
+    postFetch = "echo hello world;";
+    inherit (srcDef) url rev sha256;
   };
 
   CGO_CFLAGS_ALLOW = "-fms-extensions";
