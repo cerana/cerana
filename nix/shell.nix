@@ -6,5 +6,7 @@ stdenv.mkDerivation rec {
   buildInputs = [
     cerana.buildInputs
     which
+    less
+    godocdown
     ] ++ [ pkgs.nix ];
 }
