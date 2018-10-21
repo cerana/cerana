@@ -1,4 +1,4 @@
-{ stdenv, cerana, utillinux, coreutils, systemd, gnugrep, gawk, zfs, bash, gptfdisk, grub2, lshw }:
+{ stdenv, cerana, utillinux, coreutils, systemd, gnugrep, gawk, zfs, bash, gptfdisk, grub2_efi, lshw }:
 
 stdenv.mkDerivation {
   name = "cerana-scripts-${cerana.rev}";

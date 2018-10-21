@@ -15,7 +15,7 @@
     pkgs.pciutils
     pkgs.usbutils
 
-    pkgs.grub2
+    pkgs.grub2_efi
     pkgs.libselinux
     pkgs.iptables
     pkgs.strace

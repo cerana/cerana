@@ -7,6 +7,7 @@ stdenv.mkDerivation rec {
     cerana.buildInputs
     which
     less
+    vim
     godocdown
     ] ++ [ pkgs.nix ];
 }

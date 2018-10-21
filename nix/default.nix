@@ -35,12 +35,12 @@ in rec {
   system = "x86_64-linux";
   name = "cerana-minimal-iso";
   src = minimal_media;
+  buildInputs = [ pkgs.grub2_efi pkgs.mtools pkgs.xorriso ] ;
   installPhase =
     ''
-      ${pkgs.grub2}/bin/grub-mkrescue \
+      grub-mkrescue \
         -o $out \
         -V CERANA \
-        --xorriso=${pkgs.xorriso}/bin/xorriso \
         -- \
         -follow on \
         -pathspecs on \
@@ -65,12 +65,12 @@ in rec {
   system = "x86_64-linux";
   name = "cerana-iso";
   src = full_media;
+  buildInputs = [ pkgs.grub2_efi pkgs.mtools pkgs.xorriso ] ;
   installPhase =
     ''
-      ${pkgs.grub2}/bin/grub-mkrescue \
+      grub-mkrescue \
         -o $out \
         -V CERANA \
-        --xorriso=${pkgs.xorriso}/bin/xorriso \
         -- \
         -follow on \
         -pathspecs on \
