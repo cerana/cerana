@@ -30,7 +30,7 @@
       "virtio_net" "virtio_pci" "virtio_blk" "virtio_scsi" "virtio_balloon" "virtio_console"
 
       # Keyboards
-      "usbhid" "hid_apple" "hid_logitech_dj" "hid_lenovo_tpkbd" "hid_roccat"
+      "usbhid" "hid_apple" "hid_logitech_dj" "hid_roccat"
     ];
 
   # Include lots of firmware.

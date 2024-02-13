@@ -1,4 +1,4 @@
-{ stdenv, cerana, utillinux, coreutils, systemd, gnugrep, gawk, zfs, bash, gptfdisk, grub2_efi, lshw }:
+{ stdenv, lib, cerana, utillinux, coreutils, systemd, gnugrep, gawk, zfs, bash, gptfdisk, grub2_efi, lshw }:
 
 stdenv.mkDerivation {
   name = "cerana-scripts-${cerana.rev}";
@@ -12,7 +12,7 @@ stdenv.mkDerivation {
     substituteInPlace $out/scripts/gen-hostid.sh --replace "uuidgen" "${utillinux}/bin/uuidgen"
   '';
 
-  meta = with stdenv.lib; {
+  meta = with lib; {
     homepage    = http://cerana.org;
     description = "Cerana OS";
     license     = licenses.mit ;
